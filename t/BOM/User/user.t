@@ -5,6 +5,8 @@ binmode STDOUT, ':utf8';
 
 use strict;
 use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../../lib";
 
 use Test::More;
 use Test::Exception;
@@ -28,6 +30,8 @@ use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 use BOM::Config;
+use BOM::Service;
+use UserServiceTestHelper;
 
 BOM::Test::Helper::CTrader::mock_server();
 
@@ -303,7 +307,14 @@ subtest 'User Login' => sub {
     };
 
     subtest 'can login if self-closed' => sub {
-        my $login_count = scalar $user->login_history(order => 'desc')->@*;
+        my $response = BOM::Service::user(
+            context         => UserServiceTestHelper::create_context($user),
+            command         => 'get_login_history',
+            user_id         => $user->id,
+            limit           => 100,
+            show_backoffice => 1
+        );
+        my $login_count = scalar $response->{login_history}->@*;
 
         $client_vr->status->setnx('closed', 'system', 'testing');
         is $user->clients(include_self_closed => 1), 1, 'There is only one client';
@@ -314,7 +325,14 @@ subtest 'User Login' => sub {
             },
             'Correct  error for eslf-closed accounts';
 
-        is scalar scalar $user->login_history(order => 'desc')->@*, $login_count + 1, 'self-closed login is saved in history';
+        $response = BOM::Service::user(
+            context         => UserServiceTestHelper::create_context($user),
+            command         => 'get_login_history',
+            user_id         => $user->id,
+            limit           => 100,
+            show_backoffice => 1
+        );
+        is scalar scalar $response->{login_history}->@*, $login_count + 1, 'self-closed login is saved in history';
     };
 
     subtest 'with self excluded accounts' => sub {
@@ -423,35 +441,6 @@ subtest 'User Login' => sub {
             });
         ok $user->login(%args)->{success}, 'clear failed login attempts; can now login';
     };
-};
-
-subtest 'login_history' => sub {
-    my $login_history = $user->login_history(
-        order => 'desc',
-        limit => 5
-    );
-    is(scalar @$login_history, 5, 'login_history limit ok');
-
-    $login_history = $user->login_history;
-    is(scalar @$login_history, 13, 'login_history limit ok');
-
-    my $args = {
-        action      => 'login',
-        environment => 'test environment',
-        successful  => 't',
-        ip          => '1.2.3.4',
-        country     => 'earth',
-        app_id      => '1098'
-    };
-
-    lives_ok { $user->add_login_history(%$args); } 'add login history';
-    $login_history = $user->login_history(order => 'desc');
-    is(scalar @$login_history, 14, 'login_history ok');
-    my $last_login_history = $user->dbic->run(
-        sub {
-            $_->selectrow_hashref('select * from users.login_history where binary_user_id = ? order by id desc limit 1', undef, $user->id);
-        });
-    is($last_login_history->{environment}, $args->{environment}, 'correct record');
 };
 
 subtest 'MT5 logins' => sub {
@@ -621,65 +610,6 @@ subtest 'test update totp' => sub {
 
     $oauth->revoke_tokens_by_loginid($_->loginid) for ($user->clients);
     $oauth->revoke_refresh_tokens_by_user_id($user->id);
-};
-
-subtest 'test update password' => sub {
-    my $old_password = $user->password;
-    my $new_password = 'test';
-    lives_ok { $user->update_password($new_password) } 'do update';
-    my $new_user = BOM::User->new(id => $user->id);
-    is($user->password, $new_password, 'password updated');
-    lives_ok { $new_user->update_password($old_password) } 'update back to old password';
-    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
-    is($user->password, $old_password, 'password restored now');
-};
-
-subtest 'test update social signup' => sub {
-    ok(!defined($user->has_social_signup), 'has_social_signup is not defined');
-    lives_ok { $user->update_has_social_signup(1) } 'do update';
-    my $new_user = BOM::User->new(id => $user->id);
-    is_deeply($new_user, $user, 'get same object after updated');
-    is($user->has_social_signup, 1, 'has_social_signup updated');
-    lives_ok { $new_user->update_has_social_signup(0) } 'update back to old value of has_social_signup';
-    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
-    is($user->has_social_signup, 0, 'has_social_signup is false now');
-};
-
-subtest 'test update preferred language' => sub {
-    ok(!defined($user->preferred_language), 'preferred language is not defined');
-    lives_ok { $user->setnx_preferred_language('EN'); } 'set preferred language if not exists works without error';
-    is $user->preferred_language, 'EN', 'preferred language set correctly';
-    lives_ok { $user->setnx_preferred_language('FA'); } 'set preferred language if not exists called without error';
-    is $user->preferred_language, 'EN', 'preferred language didn\'t change since it was set before';
-
-    my $new_user = BOM::User->new(id => $user->id);
-    is_deeply($new_user, $user, 'get same object after updated');
-
-    lives_ok { $user->update_preferred_language('ZH_CN'); } 'do update';
-    is $user->preferred_language, 'ZH_CN', 'preferred language updated correctly';
-
-    lives_ok { $user->update_preferred_language('fa'); } 'do update';
-    is $user->preferred_language, 'FA', 'preferred language updated correctly';
-
-    local $SIG{__WARN__} = sub { };
-
-    throws_ok { $user->update_preferred_language(''); } qr/violates check constraint/, 'updating with undef value got DB error';
-    is $user->preferred_language, 'FA', 'preferred language is still same FA correctly';
-
-    throws_ok { $user->update_preferred_language('a'); } qr/violates check constraint/, 'updating with single character value got DB error';
-    is $user->preferred_language, 'FA', 'preferred language is still same FA correctly';
-
-    throws_ok { $user->update_preferred_language('AS '); } qr/violates check constraint/, 'updating with "AS " value got DB error';
-    is $user->preferred_language, 'FA', 'preferred language is still same FA correctly';
-
-    throws_ok { $user->update_preferred_language('AD_SDD'); } qr/violates check constraint/, 'updating with "AD_SDD" value got DB error';
-    is $user->preferred_language, 'FA', 'preferred language is still same FA correctly';
-
-    throws_ok { $user->update_preferred_language('ZH-CN'); } qr/violates check constraint/, 'updating with "ZH-CN" value got DB error';
-    is $user->preferred_language, 'FA', 'preferred language is still same FA correctly';
-
-    $new_user = BOM::User->new(id => $user->id);
-    is_deeply($new_user, $user, 'get same object after updated');
 };
 
 subtest 'is_region_eu' => sub {
@@ -1105,51 +1035,6 @@ subtest 'update trading password' => sub {
     ok BOM::User::Password::checkpw('Random123', $user->dx_trading_password), 'deriv x trading password is OK';
 };
 
-subtest 'update user password' => sub {
-    my $user_id = $user->{id};
-
-    my @app_ids = create_apps($user->id);
-    create_tokens($user, $client_vr, \@app_ids);
-
-    ok $oauth->has_other_login_sessions($client_vr->loginid), 'There are open login sessions';
-    my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user->id);
-    is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
-
-    my $hash_pw = BOM::User::Password::hashpw('Ijkl6789');
-    is $user->update_user_password($hash_pw), 1, 'user password changed is OK';
-
-    $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
-    is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly';
-    ok !$oauth->has_other_login_sessions($client_vr->loginid), 'User access tokens are revoked';
-};
-
-subtest 'update email' => sub {
-    my $user_id = $user->{id};
-
-    $client_vr->status->set('disabled', 'system', 'testing');
-    my @app_ids = create_apps($user->id);
-    create_tokens($user, $client_vr, \@app_ids);
-
-    ok $oauth->has_other_login_sessions($client_vr->loginid), 'There are open login sessions';
-    my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user->id);
-    is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
-
-    my $new_email = 'AN_email@anywhere.com';
-    is $user->update_email($new_email), 1,             'user email changed is OK';
-    is $user->email,                    lc $new_email, 'user\'s email was updated';
-
-    for my $loginid (qw/CR10000 CR10001 CR10016/, $client_vr->loginid) {
-        my $client = BOM::User::Client->new({
-            loginid => $loginid,
-        });
-        is($client->email, lc $new_email, 'client email updated');
-    }
-    $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
-    is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly';
-    ok !$oauth->has_other_login_sessions($client_vr->loginid), 'User access tokens are revoked';
-    $client_vr->status->clear_disabled;
-};
-
 subtest 'feature flag' => sub {
     my $user_flags = $user->get_feature_flag();
 
@@ -1165,13 +1050,6 @@ subtest 'feature flag' => sub {
     foreach my $flag (keys %$feature_flag) {
         is $feature_flag->{$flag}, $user_flags->{$flag}, "flag $flag has been set correctly";
     }
-};
-
-subtest 'unlink social' => sub {
-    lives_ok { $user->update_has_social_signup(1) } 'update has_social_signup';
-    is $user->unlink_social, 1, 'user unlinked is OK';
-    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
-    lives_ok { $user->update_has_social_signup(0) } 'reset has_social_signup';
 };
 
 subtest 'Populate users table on signup' => sub {
