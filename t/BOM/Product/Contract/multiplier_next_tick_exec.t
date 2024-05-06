@@ -138,4 +138,51 @@ subtest 'next tick execution for limit orders' => sub {
 
 };
 
+subtest 'entry_tick validation' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([99.99, $now->epoch, 'R_100']);
+
+    my $args = {
+        bet_type            => 'MULTDOWN',
+        underlying          => 'R_100',
+        date_start          => $now,
+        date_pricing        => $now,
+        amount_type         => 'stake',
+        amount              => 100,
+        multiplier          => 10,
+        currency            => 'USD',
+        next_tick_execution => 1
+    };
+
+    $args->{date_pricing} = $now->epoch + 1;
+    my $c = produce_contract($args);
+    is $c->entry_tick, undef, 'entry tick is undef at the start';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    is $c->primary_validation_error->message_to_client->[0], 'Waiting for entry tick.', 'message - Waiting for entry tick.';
+};
+
+subtest 'entry_tick is ignored for the first tick' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([99.99, $now->epoch, 'R_100'], [100.2, $now->epoch + 3, 'R_100']);
+
+    my $args = {
+        bet_type            => 'MULTDOWN',
+        underlying          => 'R_100',
+        date_start          => $now,
+        date_pricing        => $now,
+        amount_type         => 'stake',
+        amount              => 100,
+        multiplier          => 10,
+        currency            => 'USD',
+        next_tick_execution => 1
+    };
+
+    my $c = produce_contract($args);
+    is $c->entry_tick, undef, 'entry tick is undef at the start';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    is $c->primary_validation_error->message_to_client->[0], 'Waiting for entry tick.', 'message - Waiting for entry tick.';
+
+    $args->{date_pricing} = $now->epoch + 1;
+    $c = produce_contract($args);
+    is $c->entry_tick->quote, 100.20, 'entry spot is 100.20 for next tick execution';
+};
+
 done_testing();

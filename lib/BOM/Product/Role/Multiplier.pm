@@ -549,7 +549,7 @@ override _build_entry_tick => sub {
             message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
             message_to_client => [$ERROR_MAPPING->{EntryTickMissing}],
         });
-        return $self->current_tick;
+        return undef;
     }
 };
 
