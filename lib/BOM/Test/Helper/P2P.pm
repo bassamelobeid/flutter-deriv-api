@@ -47,18 +47,21 @@ my $mock_config;
 sub create_advertiser {
     my %param = @_;
 
-    $param{balance}     //= 0;
-    $param{name}        //= 'test advertiser ' . (++$advertiser_num);
-    $param{currency}    //= 'USD';
-    $param{is_approved} //= 1;
-
+    $param{balance}               //= 0;
+    $param{name}                  //= 'test advertiser ' . (++$advertiser_num);
+    $param{currency}              //= 'USD';
+    $param{is_approved}           //= 1;
     $param{client_details}{email} //= 'p2p_' . (++$client_num) . '@binary.com';
+
+    my $user = BOM::User->create(
+        email    => $param{client_details}{email},
+        password => 'test'
+    );
+
+    $param{binary_user_uid} = $user->id;
     my $client = BOM::Test::Helper::Client::create_client(undef, undef, $param{client_details});
 
-    BOM::User->create(
-        email    => $client->email,
-        password => 'test'
-    )->add_client($client);
+    $user->add_client($client);
 
     $client->account($param{currency});
 
