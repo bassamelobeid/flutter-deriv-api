@@ -52,6 +52,8 @@ use BOM::Platform::S3Client;
 use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
 use BOM::User::Phone;
+use BOM::Backoffice::UserService;
+use BOM::Service;
 
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 use BOM::Backoffice::VirtualStatus;
@@ -2629,18 +2631,25 @@ if (not $client->is_virtual) {
 }
 
 Bar($user->{email} . " Login history", {nav_link => "Login History"});
-my $limit         = 200;
-my $login_history = $user->login_history(
-    order                    => 'desc',
-    show_impersonate_records => 1,
-    limit                    => $limit
+
+my $limit     = 200;
+my $user_data = BOM::Service::user(
+    context         => BOM::Backoffice::UserService::get_context(),
+    command         => 'get_login_history',
+    user_id         => $user->{email},
+    limit           => $limit,
+    show_backoffice => 1,
 );
+
+unless ($user_data->{status} eq 'ok') {
+    code_exit_BO("<p>" . $user_data->{message} . "</p>", "Error - Failed to read login history from user service");
+}
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/user_login_history.html.tt',
     {
         user    => $user,
-        history => $login_history,
+        history => $user_data->{login_history},
         limit   => $limit
     });
 
