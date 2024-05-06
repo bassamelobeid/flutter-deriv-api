@@ -10,6 +10,6 @@ use BOM::Test::CheckUserClientsUsage;
 # or a timeout. Do you really need to use $user->clients()??
 
 my $repo = 'bom-rpc';
-is(BOM::Test::CheckUserClientsUsage::check_count($repo), 11, "Usage of user->clients pattern in '$repo' matches expectations");
+is(BOM::Test::CheckUserClientsUsage::check_count($repo), 10, "Usage of user->clients pattern in '$repo' matches expectations");
 
 done_testing();

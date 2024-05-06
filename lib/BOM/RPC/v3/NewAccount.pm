@@ -136,20 +136,30 @@ rpc "confirm_email",
 
     return $verification_response if $verification_response->{error};
 
-    my $user = BOM::User->new(email => $email);
-    return BOM::RPC::v3::Utility::create_error_by_code('InvalidUser') unless $user;
+    my $user_data = BOM::Service::user(
+        context    => $params->{user_service_context},
+        command    => 'get_attributes',
+        user_id    => $email,
+        attributes => [qw(email_verified)],
+    );
+    unless ($user_data->{status} eq 'ok') {
+        return BOM::RPC::v3::Utility::create_error_by_code('InvalidUser');
+    }
 
     #Checking whether the user is already email verified or not
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UserAlreadyVerified',
-            message_to_client => BOM::Platform::Context::localize("User is already email verified.")}) if $user->email_verified;
+            message_to_client => BOM::Platform::Context::localize("User is already email verified.")}) if $user_data->{attributes}->{email_verified};
 
-    #Updating email fields for the user
-    my $updated_email_fields = {
-        email_consent  => $args->{email_consent},
-        email_verified => 1,
-    };
-    $user->update_email_fields($updated_email_fields->%*);
+    BOM::Service::user(
+        context    => $params->{user_service_context},
+        command    => 'update_attributes',
+        user_id    => $email,
+        attributes => {
+            email_verified => 1,
+            email_consent  => $args->{email_consent}
+        },
+    );
 
     return {status => 1};
     };
@@ -641,10 +651,16 @@ sub create_virtual_account {
         die +{code => 'InvalidEmail'}
             if ($is_email_verification_suspended && !Email::Valid->address($args->{email}));
 
-        $error = BOM::RPC::v3::Utility::check_password({
-                email        => $args->{email},
-                new_password => $args->{client_password}});
-        die $error if $error;
+        die BOM::RPC::v3::Utility::create_error({
+                code              => 'PasswordError',
+                message_to_client =>
+                    localize('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.')}
+        ) if $args->{client_password} !~ BOM::RPC::v3::Utility::REGEX_PASSWORD_VALIDATION;
+
+        die BOM::RPC::v3::Utility::create_error({
+                code              => 'PasswordError',
+                message_to_client => localize('You cannot use your email address as your password.')}
+        ) if lc $args->{client_password} eq lc $args->{email};
     }
     if ($args->{category} eq 'wallet') {
         my $countries_instance = request()->brand->countries_instance;

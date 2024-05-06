@@ -82,6 +82,7 @@ my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code            => 'CR',
     email                  => $email,
     account_opening_reason => 'Speculative',
+    binary_user_id         => $user->id,
 });
 $client_usd->account('USD');
 $user->add_client($client_usd);
@@ -93,15 +94,17 @@ $client_usd->payment_free_gift(
 $client_usd->status->set('crs_tin_information', 'system', 'testing');
 
 my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $email,
+    broker_code    => 'CR',
+    email          => $email,
+    binary_user_id => $user->id,
 });
 $client_btc->account('BTC');
 $user->add_client($client_btc);
 
 my $client_eth = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $email,
+    broker_code    => 'CR',
+    email          => $email,
+    binary_user_id => $user->id,
 });
 $client_eth->account('ETH');
 $user->add_client($client_eth);

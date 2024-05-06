@@ -46,18 +46,17 @@ $mocker_account->mock(
     });
 
 # Setup a test user
-my $test_client = create_client('CR');
-$test_client->email($DETAILS{email});
-$test_client->set_default_account('USD');
-$test_client->binary_user_id(1);
-
-$test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
-$test_client->save;
-
 my $user = BOM::User->create(
     email    => $DETAILS{email},
     password => 's3kr1t',
 );
+my $test_client = create_client('CR');
+$test_client->email($DETAILS{email});
+$test_client->set_default_account('USD');
+$test_client->binary_user_id($user->id);
+$test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+$test_client->save;
+
 $user->update_trading_password($DETAILS{password}{main});
 $user->add_client($test_client);
 

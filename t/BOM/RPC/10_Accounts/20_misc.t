@@ -29,26 +29,30 @@ sub get_values {
 }
 
 # init db
-my $email       = 'abc@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::User::Password::hashpw($password);
+my $email    = 'abc@binary.com';
+my $password = 'jskjd8292922';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
+    broker_code    => 'MF',
+    binary_user_id => $user->id,
 });
 
 $test_client->email($email);
 $test_client->save;
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
+    broker_code    => 'VRTC',
+    binary_user_id => $user->id,
 });
 $test_client_vr->email($email);
 $test_client_vr->save;
 
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
 

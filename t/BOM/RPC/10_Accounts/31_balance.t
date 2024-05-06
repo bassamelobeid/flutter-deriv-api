@@ -15,56 +15,66 @@ use Test::BOM::RPC::QueueClient;
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
 # init db
-my $email       = 'abc@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::User::Password::hashpw($password);
+my $email    = 'abc@binary.com';
+my $password = 'jskjd8292922';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
+    broker_code    => 'MF',
+    binary_user_id => $user->id,
 });
 
 $test_client->email($email);
 $test_client->save;
 
 my $test_loginid = $test_client->loginid;
-my $user         = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
+
 $user->add_client($test_client);
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
+    broker_code    => 'MF',
+    binary_user_id => $user->id,
 });
+$user->add_client($test_client_disabled);
 
 $test_client_disabled->status->set('disabled', 1, 'test disabled');
 
+my $email_mlt_mf = 'mltmf@binary.com';
+my $user_mlt_mf  = BOM::User->create(
+    email    => $email_mlt_mf,
+    password => $hash_pwd
+);
+
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
+    broker_code    => 'VRTC',
+    binary_user_id => $user_mlt_mf->id,
 });
 $test_client_vr->email($email);
 $test_client_vr->set_default_account('USD');
 $test_client_vr->save;
 
-my $email_mlt_mf    = 'mltmf@binary.com';
 my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
-    residence   => 'at',
+    broker_code    => 'MLT',
+    residence      => 'at',
+    binary_user_id => $user_mlt_mf->id,
 });
 $test_client_mlt->email($email_mlt_mf);
 $test_client_mlt->set_default_account('EUR');
 $test_client_mlt->save;
 
 my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    residence   => 'at',
+    broker_code    => 'MF',
+    residence      => 'at',
+    binary_user_id => $user_mlt_mf->id,
 });
 $test_client_mf->email($email_mlt_mf);
 $test_client_mf->save;
 
-my $user_mlt_mf = BOM::User->create(
-    email    => $email_mlt_mf,
-    password => $hash_pwd
-);
 $user_mlt_mf->add_client($test_client_vr);
 $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);

@@ -15,31 +15,37 @@ use Email::Stuffer::TestLinks;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my $email          = 'r@binary.com';
-my $password       = 'jskjd8292922';
-my $hash_pwd       = BOM::User::Password::hashpw($password);
-my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-});
-$test_client_vr->email($email);
-$test_client_vr->save;
-
-my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
-});
-$test_client_mlt->email($email);
-$test_client_mlt->save;
-
-my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-});
-$test_client_mf->email($email);
-$test_client_mf->save;
+my $email    = 'r@binary.com';
+my $password = 'jskjd8292922';
+my $hash_pwd = BOM::User::Password::hashpw($password);
 
 my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
+
+my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'VRTC',
+    binary_user_id => $user->id,
+});
+$test_client_vr->email($email);
+$test_client_vr->save;
+
+my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'MLT',
+    binary_user_id => $user->id,
+});
+$test_client_mlt->email($email);
+$test_client_mlt->save;
+
+my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        binary_user_id => $user->id,
+
+});
+$test_client_mf->email($email);
+$test_client_mf->save;
+
 $user->add_client($test_client_vr);
 $user->add_client($test_client_mlt);
 $user->add_client($test_client_mf);

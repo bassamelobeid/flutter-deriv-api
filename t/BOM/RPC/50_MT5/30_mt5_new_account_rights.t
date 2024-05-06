@@ -24,16 +24,21 @@ my $m       = BOM::Platform::Token::API->new;
 my %DETAILS = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
 subtest 'Payment Agent Account have trading rights disabled for REAL and enabled for DEMO servers' => sub {
-    my $email     = $DETAILS{email};
-    my $pa_client = create_client('CR', undef, {residence => 'id'});
-    my $token     = $m->create_token($pa_client->loginid, 'test token');
-    $pa_client->set_default_account('USD');
-    $pa_client->email($email);
-
-    my $user = BOM::User->create(
+    my $email = $DETAILS{email};
+    my $user  = BOM::User->create(
         email    => $email,
         password => 'Abcd1234',
     );
+    my $pa_client = create_client(
+        'CR', undef,
+        {
+            residence      => 'id',
+            binary_user_id => $user->id,
+        });
+    my $token = $m->create_token($pa_client->loginid, 'test token');
+    $pa_client->set_default_account('USD');
+    $pa_client->email($email);
+
     $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($pa_client);
 

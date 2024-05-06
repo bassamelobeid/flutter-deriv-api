@@ -46,20 +46,19 @@ my $user_X = BOM::User->create(
 );
 
 my $test_client_X_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
+    broker_code    => 'MF',
+    email          => $email_X,
+    binary_user_id => $user_X->id
 });
-
-$test_client_X_mf->email($email_X);
-$test_client_X_mf->save;
 
 my $test_client_X_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code              => 'VRTC',
+    email                    => $email_X,
     non_pep_declaration_time => undef,
     fatca_declaration_time   => undef,
-    fatca_declaration        => undef
+    fatca_declaration        => undef,
+    binary_user_id           => $user_X->id
 });
-$test_client_X_vr->email($email_X);
-$test_client_X_vr->save;
 
 $user_X->add_client($test_client_X_mf);
 $user_X->add_client($test_client_X_vr);
@@ -71,31 +70,31 @@ my $user_Y = BOM::User->create(
 );
 
 my $test_client_Y_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
+    broker_code    => 'VRTC',
+    email          => $email_Y,
+    binary_user_id => $user_Y->id,
 });
-
-$test_client_Y_vr->email($email_Y);
-$test_client_Y_vr->save;
 
 my $test_client_Y_cr_citizen_AT = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    citizen     => 'at',
+    broker_code    => 'CR',
+    citizen        => 'at',
+    email          => $email_Y,
+    binary_user_id => $user_Y->id,
 });
-$test_client_Y_cr_citizen_AT->email($email_Y);
 $test_client_Y_cr_citizen_AT->set_default_account('USD');
 $test_client_Y_cr_citizen_AT->save;
 
 my $test_client_Y_cr_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code    => 'CR',
+    email          => $email_Y,
+    binary_user_id => $user_Y->id,
 });
-$test_client_Y_cr_1->email($email_Y);
-$test_client_Y_cr_1->save;
 
 my $test_client_Y_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code    => 'CR',
+    email          => $email_Y,
+    binary_user_id => $user_Y->id,
 });
-$test_client_Y_cr_2->email($email_Y);
-$test_client_Y_cr_2->save;
 
 my $payment_agent_args = {
     payment_agent_name    => $test_client_Y_cr_2->first_name,
@@ -126,9 +125,10 @@ my $user_T = BOM::User->create(
 );
 
 my $test_client_T_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MX',
-    residence   => 'gb',
-    citizen     => ''
+    broker_code    => 'MX',
+    residence      => 'gb',
+    citizen        => '',
+    binary_user_id => $user_T->id,
 });
 $test_client_T_mx->email($email_T);
 
@@ -139,16 +139,18 @@ $test_client_T_vr->set_default_account('USD');
 $test_client_T_vr->save;
 
 my $test_client_T_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
-    residence   => 'at',
+    broker_code    => 'MLT',
+    residence      => 'at',
+    binary_user_id => $user_T->id,
 });
 $test_client_T_mlt->email($email_T);
 $test_client_T_mlt->set_default_account('EUR');
 $test_client_T_mlt->save;
 
 my $test_client_T_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    residence   => 'at',
+    broker_code    => 'MF',
+    residence      => 'at',
+    binary_user_id => $user_T->id,
 });
 $test_client_T_mf->email($email_T);
 $test_client_T_mf->save;
@@ -164,8 +166,9 @@ my $user_Q = BOM::User->create(
 );
 
 my $test_client_Q_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-    residence   => 'id'
+    broker_code    => 'VRTC',
+    residence      => 'id',
+    binary_user_id => $user_Q->id,
 });
 
 $user_Q->add_client($test_client_Q_vr);
@@ -367,23 +370,45 @@ subtest 'get settings' => sub {
     is_deeply(
         $c->tcall($method, $params),
         {
-            'email'                     => $email_Q,
-            'country'                   => 'Indonesia',
-            'residence'                 => 'Indonesia',
-            citizen                     => 'at',
-            'country_code'              => 'id',
-            'email_consent'             => '0',
-            'user_hash'                 => hmac_sha256_hex($user_Q->email, BOM::Config::third_party()->{elevio}->{account_secret}),
-            'immutable_fields'          => ['residence'],
-            'preferred_language'        => 'EN',
-            'feature_flag'              => {wallet => 0},
-            'trading_hub'               => 0,
-            'phone_number_verification' => {
+            'country'                        => 'Indonesia',
+            'residence'                      => 'Indonesia',
+            'salutation'                     => 'MR',
+            'is_authenticated_payment_agent' => 0,
+            'country_code'                   => 'id',
+            'date_of_birth'                  => '267408000',
+            'address_state'                  => '',
+            'address_postcode'               => '232323',
+            'phone'                          => '+15417543010',
+            'last_name'                      => 'pItT',
+            'email'                          => $email_Q,
+            'address_line_2'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+            'address_city'                   => 'Beverly Hills',
+            'address_line_1'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+            'first_name'                     => 'bRaD',
+            'email_consent'                  => '0',
+            'allow_copiers'                  => '0',
+            'client_tnc_status'              => '',
+            'place_of_birth'                 => undef,
+            'tax_residence'                  => undef,
+            'tax_identification_number'      => undef,
+            'account_opening_reason'         => undef,
+            'request_professional_status'    => 0,
+            'citizen'                        => 'at',
+            'user_hash'                      => hmac_sha256_hex($user_Q->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'has_secret_answer'              => 1,
+            'non_pep_declaration'            => 1,
+            'fatca_declaration'              => 1,
+            'immutable_fields'               => ['residence'],
+            'preferred_language'             => 'EN',
+            'feature_flag'                   => {wallet => 0},
+            'trading_hub'                    => 0,
+            'dxtrade_user_exception'         => 0,
+            'phone_number_verification'      => {
                 'verified'     => 0,
                 'next_attempt' => $time,
             },
         },
-        'vr client return less messages when it does not have real sibling'
+        'vr client returns same even when it does not have real sibling'
     );
 
     $params->{token} = $token_X_vr;
@@ -408,7 +433,7 @@ subtest 'get settings' => sub {
             'first_name'                     => 'bRaD',
             'email_consent'                  => '0',
             'allow_copiers'                  => '0',
-            'client_tnc_status'              => '',
+            'client_tnc_status'              => 'Version 1 2020-01-01',
             'place_of_birth'                 => undef,
             'tax_residence'                  => undef,
             'tax_identification_number'      => undef,
@@ -417,13 +442,15 @@ subtest 'get settings' => sub {
             'citizen'                        => 'at',
             'user_hash'                      => hmac_sha256_hex($user_X->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'has_secret_answer'              => 1,
-            'non_pep_declaration'            => 0,
+            'non_pep_declaration'            => 1,
             'fatca_declaration'              => 1,
-            'immutable_fields'               => ['residence'],
+            'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
             'preferred_language'             => 'AZ',
             'feature_flag'                   => {wallet => 0},
             'trading_hub'                    => 0,
             'dxtrade_user_exception'         => 0,
+            'employment_status'              => 'Employed',
+            'financial_assessment'           => {'employment_status' => 'Employed'},
             'phone_number_verification'      => {
                 'verified'     => 0,
                 'next_attempt' => $time,
@@ -1273,6 +1300,10 @@ subtest 'set_settings on virtual account should not change real account settings
         });
 
     $emitted = {};
+
+    # Stop PNV next attempt from failing and breaking the test
+    $user_X->pnv->update(1);
+
     my $get_settings_cr = $c->tcall('get_settings', {token => $token_X_vr});
 
     my $params = {
@@ -1295,7 +1326,7 @@ subtest 'set_settings on virtual account should not change real account settings
     ok !$emitted->{poi_check_rules};
 };
 
-subtest 'set_setting with empty phone' => sub {
+subtest 'set_settings with empty phone' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         phone       => '',
@@ -1319,7 +1350,7 @@ subtest 'set_setting with empty phone' => sub {
     cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with empty phone changed successfully');
 };
 
-subtest 'set_setting set tax_identification_number with client with tin_approved_time' => sub {
+subtest 'set_settings set tax_identification_number with client with tin_approved_time' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
@@ -1349,7 +1380,7 @@ subtest 'set_setting set tax_identification_number with client with tin_approved
     is $test_client->tin_approved_time,         undef,       'tin_approved_time is cleared';
 };
 
-subtest 'set_setting with feature flag' => sub {
+subtest 'set_settings with feature flag' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         phone       => ''
@@ -1373,7 +1404,7 @@ subtest 'set_setting with feature flag' => sub {
     cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with feature flag has been set successfully');
 };
 
-subtest 'set_setting with salutation update' => sub {
+subtest 'set_settings with salutation update' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         salutation  => 'Ms',
@@ -1414,7 +1445,7 @@ subtest 'set_setting with salutation update' => sub {
 
 };
 
-subtest 'set_setting duplicate account' => sub {
+subtest 'set_settings duplicate account' => sub {
     my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email         => 'duplicate_client1@test.com',
         broker_code   => 'CR',
@@ -1463,7 +1494,7 @@ subtest 'set_setting duplicate account' => sub {
     ok !exists $c->tcall('set_settings', $params)->{error}, 'can call set_settings even though the client is duplicating its own data';
 };
 
-subtest 'address mismatch' => sub {
+subtest 'set_settings address mismatch' => sub {
     # Positive Test
     my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email         => 'address_mismatch01@test.com',
@@ -1562,7 +1593,7 @@ subtest 'address mismatch' => sub {
     ok $redis->get('POA_ADDRESS_MISMATCH::' . $client2->binary_user_id), 'Redis key should exist';
 };
 
-subtest 'set_setting check salutuation not removed' => sub {
+subtest 'set_settings check salutation not removed' => sub {
 
     my $client_CR = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email                  => 'salutuation_1@test.com',
@@ -1623,7 +1654,7 @@ subtest 'set_setting check salutuation not removed' => sub {
     cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with feature flag trading_hub has been set successfully');
 };
 
-subtest 'get settings from virtual with a dup account' => sub {
+subtest 'get_settings from virtual with a dup account' => sub {
     my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email         => 'client+dup+900000009@test.com',
         broker_code   => 'VRTC',
@@ -1663,6 +1694,8 @@ subtest 'get settings from virtual with a dup account' => sub {
 
     my $dup_token = $token_gen->create_token($dup_client->loginid, 'test token for a dup');
     $user->add_client($dup_client);
+    # Stop pnv next_update from being a changeable time and breaking the immutable check
+    $user->pnv->update(1);
     $dup_client->user($user);
     $dup_client->binary_user_id($user->id);
     $dup_client->save;
@@ -1689,7 +1722,7 @@ subtest 'get settings from virtual with a dup account' => sub {
         'All immutable fields are included in the response (minus the secrets)';
 
     ok scalar $vr_only_result->{immutable_fields}->@* < scalar $dup_result->{immutable_fields}->@*, 'VR only response has less immutable fields';
-    ok scalar keys $vr_only_result->%* < scalar keys $dup_result->%*,                               'VR only response is way shorter';
+    ok scalar keys $vr_only_result->%* == scalar keys $dup_result->%*,                              'VR only is same at field level';
 
     $vr_only_result = $c->tcall('get_settings', $params);
     ok !$vr_only_result->{employment_status}, 'it does not have an employment status';
@@ -1708,13 +1741,13 @@ subtest 'get settings from virtual with a dup account' => sub {
 
     $vr_only_result = $c->tcall('get_settings', $params);
 
-    ok $vr_only_result->{employment_status}, 'employment status is present';
+    ok !$vr_only_result->{employment_status}, 'no financial assessment means no employment status is present';
 
     cmp_bag $vr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields, @fa_duplicated_fields)],
         'All immutable fields are included in the response (minus the secrets)';
 };
 
-subtest 'get settings from real with a dup account' => sub {
+subtest 'get_settings from real with a dup account' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email         => 'client+dup+cr900000010@test.com',
         broker_code   => 'CR',
@@ -1800,13 +1833,13 @@ subtest 'get settings from real with a dup account' => sub {
 
     $cr_only_result = $c->tcall('get_settings', $params);
 
-    ok $cr_only_result->{employment_status}, 'employment status is present';
+    ok !$cr_only_result->{employment_status}, 'employment status was set in dup, not visible in default';
 
     cmp_bag $cr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields, @fa_duplicated_fields)],
         'All immutable fields are included in the response (minus the secrets)';
 };
 
-subtest 'get settings returns correct address_state' => sub {
+subtest 'get_settings returns correct address_state' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email         => 'client+state+1@test.com',
         broker_code   => 'CR',

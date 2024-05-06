@@ -6,6 +6,7 @@ use warnings;
 use BOM::Platform::Context qw(localize request);
 use BOM::RPC::v3::Utility;
 use BOM::Config;
+use BOM::Service;
 
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(email_verification);
@@ -82,14 +83,19 @@ sub email_verification {
     my ($code, $website_name, $verification_uri, $language, $source, $app_name, $type, $email) =
         @{$args}{qw/code website_name verification_uri language source app_name type email/};
 
-    my ($user, $has_social_signup, $user_name, $name);
-    if ($user = BOM::User->new(email => $email)) {
-        $has_social_signup = $user->{has_social_signup};
-        my $client = $user->get_default_client(include_disabled => 1);
-        if ($client) {
-            $user_name = $client->last_name;
-            $name      = $client->first_name;
-        }
+    my ($has_social_signup, $last_name, $first_name);
+
+    my $user_data = BOM::Service::user(
+        context    => delete $args->{user_service_context},
+        command    => 'get_attributes',
+        user_id    => $email,
+        attributes => [qw(has_social_signup last_name first_name)],
+    );
+
+    if ($user_data->{status} eq 'ok') {
+        $has_social_signup = $user_data->{has_social_signup};
+        $last_name         = $user_data->{last_name};
+        $first_name        = $user_data->{first_name};
     }
 
     my $brand  = request()->brand;
@@ -109,7 +115,7 @@ sub email_verification {
         contact_url        => $contact_url,
         has_social_signup  => $has_social_signup,
         password_reset_url => $password_reset_url,
-        user_name          => $user_name,
+        user_name          => $last_name,
         support_email      => $brand->emails('support'),
         live_chat_url      => $brand->live_chat_url,
         email              => $email,
@@ -119,7 +125,7 @@ sub email_verification {
         account_opening_new => sub {
             return {
                 template_args => {
-                    name  => $name,
+                    name  => $first_name,
                     title => localize("You're nearly there!"),
                     (
                         $verification_uri
@@ -134,7 +140,7 @@ sub email_verification {
             return {
                 template_args => {
                     login_url => 'https://oauth.' . lc($brand->website_name) . '/oauth2/authorize?app_id=' . $source . '&brand=' . $brand->name,
-                    name      => $name,
+                    name      => $first_name,
                     title     => localize('Your email address looks familiar'),
                     %common_args,
                 },
@@ -143,7 +149,7 @@ sub email_verification {
         account_verification => sub {
             return {
                 template_args => {
-                    name  => $name,
+                    name  => $first_name,
                     title => localize('Verify your email'),
                     (
                         $verification_uri
@@ -157,7 +163,7 @@ sub email_verification {
         self_tagging_affiliates => sub {
             return {
                 template_args => {
-                    name  => $name,
+                    name  => $first_name,
                     title => localize("Here's how to create your Deriv account"),
                     %common_args,
                 },
@@ -169,7 +175,7 @@ sub email_verification {
 
             return {
                 template_args => {
-                    name  => $name,
+                    name  => $first_name,
                     title => localize('Do you wish to withdraw funds?'),
                     (
                         $verification_uri
@@ -206,17 +212,22 @@ sub email_verification {
         closed_account => sub {
             return {
                 template_args => {
-                    name => $name,
+                    name => $first_name,
                     %common_args,
                 },
             };
         },
         trading_platform_password_reset => sub {
+            # TODO - Currently too hard to remove the $user here because of the usage of
+            # TODO - the clients_for_landing_company method. Is there a way to tell from
+            # TODO - user only if the user has access to dxtrade?
+            my $user = BOM::User->new(email => $email);
+
             return {
                 subject       => localize('Your new trading password request'),
                 template_name => 'reset_password_request',
                 template_args => {
-                    name          => $name,
+                    name          => $first_name,
                     title         => localize("Forgot your trading password?[_1]Let's get you a new one.", '<br>'),
                     title_padding => 50,
                     brand_name    => ucfirst $brand->name,
@@ -238,7 +249,7 @@ sub email_verification {
                 subject       => localize('New [_1] password request', $display_name),
                 template_name => 'reset_password_request',
                 template_args => {
-                    name          => $name,
+                    name          => $first_name,
                     title         => localize('Need a new [_1] password?', $display_name),
                     title_padding => 50,
                     brand_name    => ucfirst $brand->name,
@@ -261,7 +272,7 @@ sub email_verification {
                 subject       => localize('New [_1] password request', $display_name),
                 template_name => 'reset_password_request',
                 template_args => {
-                    name          => $name,
+                    name          => $first_name,
                     title         => localize('Need a new [_1] password?', $display_name),
                     title_padding => 50,
                     brand_name    => ucfirst $brand->name,
@@ -284,7 +295,7 @@ sub email_verification {
                 subject       => localize('New [_1] investor password request', $display_name),
                 template_name => 'reset_password_request',
                 template_args => {
-                    name          => $name,
+                    name          => $first_name,
                     title         => localize('Need a new [_1] investor password?', $display_name),
                     title_padding => 50,
                     brand_name    => ucfirst $brand->name,

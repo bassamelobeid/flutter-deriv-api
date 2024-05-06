@@ -35,7 +35,8 @@ subtest 'kyc authorization status' => sub {
         );
 
         my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
+            broker_code    => 'CR',
+            binary_user_id => $user_cr->id,
         });
 
         $user_cr->add_client($client_cr);

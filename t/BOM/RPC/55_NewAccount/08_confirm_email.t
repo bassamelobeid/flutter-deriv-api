@@ -72,20 +72,38 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
+my $password = 'jskjd8292922';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
 $method = 'confirm_email';
 my $email = sprintf('Test%.5f@deriv.com', rand(999));
+
+sub create_user {
+    my ($email, $email_verified, $email_consent) = @_;
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => $email_verified // 0,
+        email_consent  => $email_consent  // 0,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $user->add_client($client);
+
+    return $user;
+}
 
 subtest $method => sub {
 
     my $password = 'jskjd8292922';
     my $hash_pwd = BOM::User::Password::hashpw($password);
 
-    my $user = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 0,
-        email_consent  => 0,
-    );
+    my $user = create_user($email);
 
     subtest 'verification_code token validation' => sub {
         #wrong token
@@ -139,12 +157,7 @@ subtest $method => sub {
 
         #Already verified user
         $email = sprintf('Test%.5f@deriv.com', rand(999));
-        $user  = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-            email_consent  => 0,
-        );
+        $user  = create_user($email, 1, 0);
 
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $email,
@@ -177,12 +190,7 @@ subtest $method => sub {
         #email consent should be updated
         $email = sprintf('Test%.5f@deriv.com', rand(999));
 
-        my $user = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 0,
-            email_consent  => 0,
-        );
+        my $user = create_user($email);
 
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $email,

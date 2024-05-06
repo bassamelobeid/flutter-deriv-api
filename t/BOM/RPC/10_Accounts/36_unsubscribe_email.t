@@ -8,13 +8,9 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::BOM::RPC::QueueClient;
 # init db
-my $email       = 'abc@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::User::Password::hashpw($password);
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $email,
-});
+my $email    = 'abc@binary.com';
+my $password = 'jskjd8292922';
+my $hash_pwd = BOM::User::Password::hashpw($password);
 
 my $user = BOM::User->create(
     email          => $email,
@@ -22,13 +18,20 @@ my $user = BOM::User->create(
     email_verified => 1,
     email_consent  => 1,
 );
+
+my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    email          => $email,
+    binary_user_id => $user->id,
+});
+
 $user->update_has_social_signup(0);
 $user->add_client($test_client);
 
 $test_client->binary_user_id($user->id);
 $test_client->save;
 
-is $user->email_consent, 1, 'email concent is accepted by default';
+is $user->email_consent, 1, 'email consent is accepted by default';
 
 my $c = Test::BOM::RPC::QueueClient->new();
 my $emitted;
@@ -86,6 +89,7 @@ subtest 'unsubscribe email' => sub {
         'binary_user_id'           => $test_client->binary_user_id,
         'email_unsubscribe_status' => 1
     };
+    print Data::Dumper::Dumper($result);
     is_deeply($result, $response, 'Unsubscribe Request Successful');
 
     $user = BOM::User->new(id => $user->id);
