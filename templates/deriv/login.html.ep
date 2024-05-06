@@ -247,6 +247,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@growthbook/growthbook/dist/bundles/index.js"></script>
 <script>
 const { startAuthentication, browserSupportsWebAuthn } = SimpleWebAuthnBrowser;
+// Time for the authenticater to throw an error when device is not supported < ~50ms and time to cancel operation > ~250ms
+const DEVICE_NOT_SUPPORTED_TIMEOUT = 200; // Time in milliseconds
 
 document.addEventListener('DOMContentLoaded', async function () {
     if(browserSupportsWebAuthn()) {
@@ -344,12 +346,16 @@ async function fetchOptionsFromServer() {
 }
 
 async function startWebAuthentication(publicKey) {
+    const startTime = performance.now();
     try {
         return await startAuthentication(publicKey);
     } catch (error) {
-        //escape timed out or cancel error
-        if (error.code != "ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY") {
-            showErrorPopUp("Sorry, an error occurred. Please try again later.", "Error");
+        const elapsedTime = performance.now() - startTime;
+        // The Web Authentication API only returns a NotAllowedError code when the user cancels the operation or the device does not support WebAuthn.
+        // As a workaround, we assume that the device does not support WebAuthn if the error is thrown within DEVICE_NOT_SUPPORTED_TIMEOUT,
+        // as the operation of cancellation needs user interaction and takes more time.
+        if (error.name === 'NotAllowedError' && elapsedTime < DEVICE_NOT_SUPPORTED_TIMEOUT) {
+            showErrorPopUp("This device doesn’t support passkeys. Choose a different login method.", "Passkey login unavailable");
         }
     }
 }
