@@ -373,7 +373,7 @@ sub mt5_accounts_lookup ($client, $account_type, $return_errors) {    ## no crit
                     $setting->{status} = $client->user->loginid_details->{$setting->{login}}->{status};
                     $setting->{status} = undef if ($setting->{status} // '') eq 'poa_outdated' and $client->risk_level_aml ne 'high';
                 }
-                $setting->{rights} = Deriv::TradingPlatform::MT5::UserRights::to_array($setting->{rights}) if exists $setting->{rights};
+                $setting->{rights} = Deriv::TradingPlatform::MT5::UserRights::to_hash($setting->{rights}) if exists $setting->{rights};
 
                 return Future->done($setting);
             }

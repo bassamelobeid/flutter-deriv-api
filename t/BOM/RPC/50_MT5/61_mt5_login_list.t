@@ -690,4 +690,72 @@ subtest 'mt5 white label links assignment' => sub {
     $client_mock->unmock_all;
 };
 
+subtest 'mt5 login list return boolean rights' => sub {
+
+    # Setup a test user
+    my $test_client = create_client('CR');
+    $test_client->email($DETAILS{email});
+    $test_client->set_default_account('USD');
+    $test_client->binary_user_id(1);
+
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $test_client->save;
+
+    my $user = BOM::User->create(
+        email    => $DETAILS{email},
+        password => 's3kr1t',
+    );
+    $user->update_trading_password($DETAILS{password}{main});
+    $user->add_client($test_client);
+
+    my $m     = BOM::Platform::Token::API->new;
+    my $token = $m->create_token($test_client->loginid, 'test token');
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            country      => 'mt',
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
+    my $r = $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account')->result;
+
+    my $expected_rights = {
+        api             => 1,
+        api_deprecated  => 0,
+        confirmed       => 0,
+        enabled         => 1,
+        exclude_reports => 0,
+        expert          => 1,
+        investor        => 0,
+        otp_enabled     => 0,
+        password_change => 1,
+        push            => 0,
+        readonly        => 0,
+        reports         => 1,
+        reset_pass      => 0,
+        sponsored       => 0,
+        technical       => 0,
+        trade_disabled  => 0,
+        trailing        => 1,
+    };
+
+    my $method = 'mt5_login_list';
+    $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {},
+    };
+
+    my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
+    is_deeply($login_list->[0]->{rights}, $expected_rights, 'Rights are correctly assigned');
+
+};
+
 done_testing();
