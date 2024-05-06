@@ -13,20 +13,22 @@ use await;
 
 my $t = build_wsapi_test();
 
-my $email  = 'test-binary' . rand(999) . '@binary.com';
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$client->email($email);
-$client->save;
-$client->set_default_account('USD');
-
-my $loginid = $client->loginid;
-my $user_id = $client->binary_user_id;
-my $user    = BOM::User->create(
+my $email = 'test-binary' . rand(999) . '@binary.com';
+my $user  = BOM::User->create(
     email    => $email,
     password => '1234',
 );
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    email          => $email,
+    binary_user_id => $user->id,
+});
+$client->set_default_account('USD');
+$client->save;
+
+my $loginid = $client->loginid;
+my $user_id = $client->binary_user_id;
+
 $user->add_client($client);
 
 my $token = BOM::Platform::Token::API->new->create_token($loginid, 'Test', ['read']);

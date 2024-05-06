@@ -16,19 +16,21 @@ use await;
 my $t = build_wsapi_test();
 
 # prepare client
-my $email  = 'test-binary@binary.com';
+my $email = 'test-binary@binary.com';
+my $user  = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
 });
 $client->email($email);
 $client->save;
 $client->set_default_account('USD');
 
 my $loginid = $client->loginid;
-my $user    = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
+
 $user->add_client($client);
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);

@@ -22,12 +22,18 @@ my $t = build_wsapi_test();
 my $email    = 'aBc1@binary.com';
 my $password = 'jskjP8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
+my $user     = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
 
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
+    broker_code    => 'VRTC',
+    binary_user_id => $user->id,
 });
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
 });
 $client_vr->email($email);
 $client_vr->save;
@@ -35,11 +41,6 @@ $client_cr->email($email);
 $client_cr->save;
 my $vr_1 = $client_vr->loginid;
 my $cr_1 = $client_cr->loginid;
-
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
 
 $user->add_client($client_vr);
 $user->add_client($client_cr);

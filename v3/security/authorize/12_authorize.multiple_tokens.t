@@ -17,23 +17,33 @@ my $t     = build_wsapi_test();
 my $oauth = BOM::Database::Model::OAuth->new;
 
 my $email = 'test-deriv@binary.com';
-
-my $client_cr  = create_client('CR', undef, {email => $email});
+my $user  = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
+my $client_cr = create_client(
+    'CR', undef,
+    {
+        email          => $email,
+        binary_user_id => $user->id,
+    });
 my $loginid_cr = $client_cr->loginid;
 my ($token_cr) = $oauth->store_access_token_only(1, $client_cr->loginid);
 $client_cr->set_default_account('USD');
 
-my $client_mf  = create_client('MF', undef, {email => $email});
+my $client_mf = create_client(
+    'MF', undef,
+    {
+        email          => $email,
+        binary_user_id => $user->id,
+    });
 my $loginid_mf = $client_mf->loginid;
 my ($token_mf) = $oauth->store_access_token_only(1, $client_mf->loginid);
 $client_mf->set_default_account('EUR');
 
 # Create user and the CR and MF clients for the user
 my $user_id = $client_cr->binary_user_id;
-my $user    = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
+
 $user->add_client($client_cr);
 $user->add_client($client_mf);
 

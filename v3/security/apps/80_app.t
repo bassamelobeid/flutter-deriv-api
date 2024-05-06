@@ -30,20 +30,22 @@ $dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.official_apps");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
 
-my $email     = 'abc@binary.com';
-my $password  = 'jskjd8292922';
-my $hash_pwd  = BOM::User::Password::hashpw($password);
+my $email    = 'abc@binary.com';
+my $password = 'jskjd8292922';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+my $user     = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
 });
 $client_cr->set_default_account('USD');
 $client_cr->email($email);
 $client_cr->save;
 my $cr_1 = $client_cr->loginid;
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
+
 $user->add_client($client_cr);
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);

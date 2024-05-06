@@ -25,10 +25,17 @@ use BOM::User;
 
 use await;
 
-my $t = build_wsapi_test({language => 'EN'});
-
+my $t        = build_wsapi_test({language => 'EN'});
+my $email    = 'account@testingforfun.com';
+my $hash_pwd = BOM::User::Password::hashpw('jskjd8292922');
+my $user     = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
+    broker_code    => 'MF',
+    binary_user_id => $user->id,
+    email          => $email,
 });
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
@@ -48,11 +55,6 @@ populate_exchange_rates({
     BTC => 6000,
 });
 
-my $hash_pwd = BOM::User::Password::hashpw('jskjd8292922');
-my $user     = BOM::User->create(
-    email    => $test_client->email,
-    password => $hash_pwd
-);
 $user->add_client($test_client);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -132,7 +134,7 @@ for (1 .. 10) {
 
 my $authorize = $t->await::authorize({authorize => $token});
 
-is $authorize->{authorize}->{email},   'unit_test@binary.com';
+is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $test_client->loginid;
 
 my $statement = $t->await::statement({

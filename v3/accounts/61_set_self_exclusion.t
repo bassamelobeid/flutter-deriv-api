@@ -24,19 +24,20 @@ $client_mocked->mock('add_note', sub { return 1 });
 
 my $t = build_wsapi_test();
 
-my $email       = 'test-binary' . rand(999) . '@binary.com';
+my $email = 'test-binary' . rand(999) . '@binary.com';
+my $user  = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
+    broker_code    => 'MLT',
+    binary_user_id => $user->id,
 });
 $test_client->email($email);
 $test_client->save;
 $test_client->set_default_account('USD');
 
 my $loginid = $test_client->loginid;
-my $user    = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
 $user->add_client($test_client);
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);

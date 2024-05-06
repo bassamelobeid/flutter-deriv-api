@@ -19,15 +19,17 @@ my $user  = BOM::User->create(
 );
 
 my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    residence   => 'gb',
-    email       => $email
+    broker_code    => 'MF',
+    residence      => 'gb',
+    email          => $email,
+    binary_user_id => $user->id,
 });
 
 my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-    residence   => 'gb',
-    email       => $email
+    broker_code    => 'VRTC',
+    residence      => 'gb',
+    email          => $email,
+    binary_user_id => $user->id,
 });
 
 $mf_client->smart_payment(
