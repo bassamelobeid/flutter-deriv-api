@@ -14,6 +14,7 @@ use List::Util            qw(any min max first);
 use POSIX                 qw(floor ceil);
 use Scalar::Util::Numeric qw(isint);
 use YAML::XS              qw(LoadFile);
+use Log::Any              qw($log);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 my $config;
@@ -967,6 +968,10 @@ sub ticks_for_payout {
 
     # payout = stake * (1 + growth_rate) ^ tickCount
     # => tickCount = log(payout/stake) / log(1 + growth_rate);
+    if (!defined($payout) || $payout == 0) {
+        $log->error("Error: payout is $payout. Caller: " . (caller(1))[3]);
+    }
+
     my $effective_ticks = log($payout / $self->_user_input_stake) / log(1 + $self->growth_rate);
     # calculate the exact tick considering growth_start_step
     my $tickcount = $effective_ticks + $self->growth_start_step;
