@@ -59,7 +59,7 @@ subtest 'Australian SVG Account' => sub {
     );
 
     is $test_client_au->landing_company->short, 'svg', 'We got a SVG account';
-    is $test_client_au->currency,               'AUD', 'Australian svg account default currency is AUD';
+    is $test_client_au->currency,               'USD', 'Australian svg account default currency is USD';
 
     subtest 'Australian Non-SVG Account' => sub {
         $test_client_au = BOM::User::Client->rnew(
