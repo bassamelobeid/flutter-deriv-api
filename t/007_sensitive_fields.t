@@ -15,7 +15,6 @@ for my $file (qx{git ls-files @{[BASE_PATH]}}) {
     chomp $file;
     my ($method, $type) = ($file =~ m{^@{[BASE_PATH]}([a-z0-9_]+)/([a-z]+)\.json$});
     next if $type eq 'example';
-
     my $schema = decode_json_text(path($file)->slurp_utf8);
     my $items  = get_items($schema->{properties});
     $elements{"$method/$type" . $_->{path}} = $_->{item} for @$items;
