@@ -18,6 +18,7 @@ concurrency:
 jobs:
   base:
     strategy:
+      fail-fast: false
       matrix:
         test_name: [structure, security, accounts, misc, pricing, p2p, schema, backends]
     uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
