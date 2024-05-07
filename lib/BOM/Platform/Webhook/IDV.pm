@@ -40,11 +40,14 @@ sub send_event {
     my ($self) = @_;
     my $json = $self->req->json;
     die 'malformed json' unless $json;
+
     BOM::Platform::Event::Emitter::emit(
-        idv_webhook_received => {
-            data    => {body => $self->req->body},
-            headers => $self->req->headers->to_hash
+        'idv_webhook',
+        {
+            headers => $self->req->headers->to_hash,
+            body    => $self->req->body,
         });
+
     stats_inc("bom_platform.webhook.idv_webhook_received");
     return 1;
 }

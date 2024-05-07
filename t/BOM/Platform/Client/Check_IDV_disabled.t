@@ -366,7 +366,10 @@ subtest 'idv_configuration' => sub {
                                 national_id => ignore(),
                                 alien_card  => ignore()}}}
                 },
-                ai_prise => {countries => {bd => {documents => {national_id => ignore()}}}}}};
+                ai_prise => {
+                    countries => {
+                        bd => {documents => {national_id => ignore()}},
+                        cn => {documents => {national_id => ignore()}}}}}};
 
         cmp_deeply $config, $expected, 'expected configuration for implemented providers';
 
