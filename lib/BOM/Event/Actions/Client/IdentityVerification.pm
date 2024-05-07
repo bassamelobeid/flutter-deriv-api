@@ -717,35 +717,6 @@ sub _has_provider {
     return 1;
 }
 
-=head2 idv_webhook_relay
-
-Relay the IDV request from the webhook to our idv microservice.
-
-It takes the following:
-
-=over 4
-
-=item * C<$args> - a hashref response from the webhook, including: headers and data
-
-=back
-
-Returns C<undef>.
-
-=cut
-
-async sub idv_webhook_relay {
-    my $args = shift;
-
-    BOM::Platform::Event::Emitter::emit(
-        'idv_webhook',
-        {
-            headers => $args->{headers},
-            body    => $args->{data}->{body},
-        });
-
-    return undef;
-}
-
 =head2 _upload_photo
 
 Gets the client's photo from IDV and uploads to S3

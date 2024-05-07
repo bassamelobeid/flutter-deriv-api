@@ -20,7 +20,9 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 
 use BOM::User::IdentityVerification;
+use BOM::Platform::Event::Emitter;
 use BOM::Event::Actions::Client::IdentityVerification;
+use BOM::Platform::Webhook::IDV;
 use BOM::Database::UserDB;
 
 use constant IDV_LOCK_PENDING => 'IDV::LOCK::PENDING::';
@@ -2343,26 +2345,6 @@ subtest 'testing unexpected error' => sub {
 
 };
 
-subtest 'unit test - idv_webhook_relay' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{idv_webhook_received};
-
-    subtest 'Callback' => sub {
-        @emissions = ();
-
-        BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
-                data    => {body           => {test => 1}},
-                headers => {'x-request-id' => '1234'}})->get;
-
-        cmp_deeply [@emissions],
-            [{
-                idv_webhook => {
-                    body    => {test           => '1'},
-                    headers => {'x-request-id' => '1234'}}}
-            ],
-            'expected emissions, monolith simply forwards the request for the microservice to resolve';
-    };
-};
-
 subtest 'integration test - webhook' => sub {
     my $email = 'integrates+webhook+idv@binary.com';
     my $user  = BOM::User->create(
@@ -2478,13 +2460,12 @@ subtest 'integration test - webhook' => sub {
         });
 
         @emissions = ();
-        my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
-                data => {
-                    body => {
-                        test => 1,
-                    }
+        my $data = BOM::Platform::Event::Emitter::emit(
+            idv_webhook => {
+                body => {
+                    test => 1,
                 },
-                headers => {'x-request-id' => '1234'}})->get;
+                headers => {'x-request-id' => '1234'}});
 
         # a verify process is dispatched!
         ok $idv_proc_handler->($idv_response)->get, 'the IDV response processed without error';
