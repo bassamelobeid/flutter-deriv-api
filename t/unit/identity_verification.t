@@ -45,7 +45,7 @@ subtest 'Get Filters data' => sub {
                 voter_id
                 /
         },
-        countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx uy cr cl pe vn id bd/},
+        countries => +{map { ($_ => $brand_countries_obj->countries_list->{$_}->{name}) } qw/br gh ke ng ug za zw in ar mx uy cr cl pe vn id bd cn/},
         providers => +{
             map { ($_ => $idv_config->{providers}->{$_}->{display_name}) }
                 qw/zaig smile_identity derivative_wealth data_zoo metamap identity_pass ai_prise/
