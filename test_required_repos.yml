@@ -6,7 +6,6 @@
 - regentmarkets/bom-market
 - regentmarkets/bom-myaffiliates
 - regentmarkets/bom-platform
-- regentmarkets/bom-populator
 - regentmarkets/bom-postgres
 - regentmarkets/bom-pricing
 - regentmarkets/bom-rules
