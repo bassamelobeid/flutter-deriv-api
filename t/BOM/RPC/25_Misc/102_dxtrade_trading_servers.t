@@ -16,16 +16,14 @@ my $c = Test::BOM::RPC::QueueClient->new();
 
 my $suspend = BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend;
 
-my $user = BOM::User->create(
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+
+BOM::User->create(
     email    => 'dxtrade@test.com',
     password => 'x',
-);
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
-    email          => 'dxtrade@test.com',
-});
-$user->add_client($client);
+)->add_client($client);
 
 my $token = $m->create_token($client->loginid, 'test token');
 

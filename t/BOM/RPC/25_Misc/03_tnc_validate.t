@@ -17,19 +17,12 @@ use Email::Stuffer::TestLinks;
 
 my $email = 'dummy@binary.com';
 
-my $user = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
-
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MX',
-    binary_user_id => $user->id,
+    broker_code => 'MX',
 });
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
+    broker_code => 'CR',
 });
 
 $test_client->set_default_account('USD');
@@ -39,6 +32,10 @@ $test_client->email($email);
 $test_client->save;
 $test_client_cr->email($email);
 $test_client_cr->save;
+my $user = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
 $user->add_client($test_client);
 $user->add_client($test_client_cr);
 

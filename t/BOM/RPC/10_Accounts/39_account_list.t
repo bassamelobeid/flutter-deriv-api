@@ -23,10 +23,7 @@ subtest 'legacy accounts' => sub {
         password => 'x',
     );
 
-    my $client_vrtc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'VRTC',
-        binary_user_id => $user->id,
-    });
+    my $client_vrtc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
     $client_vrtc->set_default_account('USD');
     $user->add_client($client_vrtc);
 

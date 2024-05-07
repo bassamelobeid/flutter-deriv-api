@@ -22,7 +22,6 @@ use Text::Trim      qw( trim );
 use JSON::MaybeUTF8 qw( decode_json_utf8 encode_json_utf8);
 use URI;
 use BOM::User::Client;
-use BOM::Service;
 use BOM::User::Utility;
 use BOM::User::FinancialAssessment
     qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD);
@@ -74,7 +73,6 @@ use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::TradingPlatform::CTrader;
 use BOM::User::Client::AuthenticationDocuments;
 use BOM::User::ExecutionContext;
-use BOM::Service;
 
 use Locale::Country;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
@@ -1854,17 +1852,11 @@ rpc change_email => sub {
     my ($token_type, $client_ip, $args) = @{$params}{qw/token_type client_ip args/};
     my $brand = request()->brand;
     # Allow OAuth token
-    return BOM::RPC::v3::Utility::permission_error() unless (($token_type // '') eq 'oauth_token');
+    unless (($token_type // '') eq 'oauth_token') {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
-    my $user_data = BOM::Service::user(
-        context    => $params->{user_service_context},
-        command    => 'get_attributes',
-        user_id    => $params->{user_id},
-        attributes => ['email', 'has_social_signup'],
-    );
-    return BOM::RPC::v3::Utility::client_error() unless $user_data->{status} eq 'ok';
-    my $email             = $user_data->{attributes}->{email};
-    my $has_social_signup = $user_data->{attributes}->{has_social_signup};
+    my $user = $client->user;
 
     if ($args->{new_email}) {
         $args->{new_email} = lc $args->{new_email};
@@ -1872,22 +1864,16 @@ rpc change_email => sub {
     }
 
     if ($args->{change_email} eq 'verify') {
-        my $err =
-            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'request_email', 0, $params->{user_id})->{error};
+        my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code},
+            $client->email, 'request_email', 0, $client->binary_user_id)->{error};
         if ($err) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $err->{code},
                     message_to_client => $err->{message_to_client}});
         }
 
-        my $check_email = BOM::Service::user(
-            context    => $params->{user_service_context},
-            command    => 'get_attributes',
-            user_id    => $args->{new_email},
-            attributes => ['binary_user_id'],
-        );
-
-        if ($check_email->{status} eq 'ok') {
+        my $erring_user = BOM::User->new(email => $args->{new_email});
+        if ($erring_user) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => "InvalidEmail",
                     message_to_client => localize("This email is already in use. Please use a different email.")});
@@ -1902,7 +1888,7 @@ rpc change_email => sub {
             })->token;
         my $uri    = get_verification_uri($params->{source}) // '';
         my $params = [
-            action => $has_social_signup ? 'social_email_change' : 'system_email_change',
+            action => $user->{has_social_signup} ? 'social_email_change' : 'system_email_change',
             code   => $code,
             lang   => request()->language,
             email  => $args->{new_email}];
@@ -1918,63 +1904,65 @@ rpc change_email => sub {
             uri                   => $uri,
             time_to_expire_in_min => CHANGE_EMAIL_TOKEN_TTL / 60,
             email                 => $args->{new_email},
-            social_signup         => $has_social_signup,
+            social_signup         => $user->{has_social_signup} // '',
             live_chat_url         => $brand->live_chat_url
         );
 
     } elsif ($args->{change_email} eq 'update') {
-        my $error =
-            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $args->{new_email}, 'request_email', 0, $params->{user_id})
-            ->{error};
+        my $error = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code},
+            $args->{new_email}, 'request_email', 0, $client->binary_user_id)->{error};
         if ($error) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $error->{code},
                     message_to_client => $error->{message_to_client}});
         }
 
-        if (!$args->{new_password} && $has_social_signup) {
+        if ($args->{new_password}) {
+            my $password_error = BOM::RPC::v3::Utility::check_password({
+                email        => $client->email,
+                new_password => $args->{new_password} // ''
+            });
+            return $password_error if $password_error;
+        }
+
+        if (!$args->{new_password} && $user->{has_social_signup}) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => "PasswordError",
                     message_to_client => localize("Unable to update email, password required for social login.")});
         }
 
-        my $updated_attributes = {email => $args->{new_email}};
-        my $flags              = {};
-        if ($args->{new_password}) {
-            $updated_attributes->{password}  = $args->{new_password};
-            $flags->{password_update_reason} = 'change_password';
-            $flags->{password_previous}      = $args->{old_password} // '';
-        }
-        $user_data = BOM::Service::user(
-            context    => $params->{user_service_context},
-            command    => 'update_attributes',
-            user_id    => $params->{user_id},
-            attributes => $updated_attributes,
-            flags      => $flags
-        );
-        unless ($user_data->{status} eq 'ok') {
-            unless ($user_data->{status} eq 'ok') {
-                if ($user_data->{class} eq 'PasswordError') {
-                    return BOM::RPC::v3::Utility::create_error({
-                        code              => 'PasswordError',
-                        message_to_client => localize($user_data->{message}),
-                    });
-                } else {
-                    return BOM::RPC::v3::Utility::create_error({
-                        code              => 'PasswordChangeError',
-                        message_to_client => localize("We were unable to change your password due to an unexpected error. Please try again."),
-                    });
-                }
+        try {
+            $client->user->update_email($args->{new_email});
+            if ($args->{new_password}) {
+                $client->user->update_user_password($args->{new_password});
             }
+
+            my $default_client = $user->get_default_client(
+                include_disabled   => 1,
+                include_duplicated => 1
+            );
+            my $default_client_loginid = $default_client->loginid;
+            BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',    {loginid => $default_client_loginid});
+            BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid}) unless $default_client->is_virtual;
+
+            my @properties = (
+                $client, 'confirm_change_email',
+                social_signup => $user->{has_social_signup} // '',
+                live_chat_url => $brand->live_chat_url,
+                email         => $args->{new_email});
+
+            $user->unlink_social if $user->{has_social_signup};
+            _send_change_email_verification_email(@properties);
+
+        } catch {
+            log_exception();
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'EmailChangeError',
+                message_to_client =>
+                    localize("We were unable to make the changes due to an error on our server. Please try again in a few minutes."),
+            });
         }
-
-        _send_change_email_verification_email(
-            $client, 'confirm_change_email',
-            social_signup => $has_social_signup,
-            live_chat_url => $brand->live_chat_url,
-            email         => $args->{new_email});
     }
-
     return {status => 1};
 };
 
@@ -2029,40 +2017,32 @@ rpc change_password => sub {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $user_data = BOM::Service::user(
-        context    => $params->{user_service_context},
-        command    => 'get_attributes',
-        user_id    => $params->{user_id},
-        attributes => [qw(email has_social_signup)],
-    );
-    return BOM::RPC::v3::Utility::client_error() unless $user_data->{status} eq 'ok';
+    # If the user doesn't exist then throw exception
+    my $user = $client->user;
+    return BOM::RPC::v3::Utility::client_error() unless $user;
 
+    # Do not allow social based clients to reset password
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
             message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
-    ) if $user_data->{attributes}->{has_social_signup};
+    ) if $user->{has_social_signup};
 
-    $user_data = BOM::Service::user(
-        context    => $params->{user_service_context},
-        command    => 'update_attributes',
-        user_id    => $params->{user_id},
-        attributes => {password => $args->{new_password}},
-        flags      => {
-            password_update_reason => 'change_password',
-            password_previous      => $args->{old_password}});
+    my $err = BOM::RPC::v3::Utility::check_password({
+            email        => $client->email,
+            old_password => $args->{old_password},
+            new_password => $args->{new_password},
+            user_pass    => $user->{password}});
+    return $err if $err;
 
-    unless ($user_data->{status} eq 'ok') {
-        if ($user_data->{class} eq 'PasswordError') {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'PasswordError',
-                message_to_client => localize($user_data->{message}),
-            });
-        } else {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'PasswordChangeError',
-                message_to_client => localize("We were unable to change your password due to an unexpected error. Please try again."),
-            });
-        }
+    try {
+        $client->user->update_user_password($args->{new_password}, 'change_password');
+        _send_reset_password_confirmation_email($client, 'change_password');
+    } catch {
+        log_exception();
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PasswordChangeError',
+            message_to_client => localize("We were unable to change your password due to an unexpected error. Please try again."),
+        });
     }
 
     return {status => 1};
@@ -2081,120 +2061,176 @@ rpc "reset_password",
                 message_to_client => $err->{message_to_client}});
     }
 
-    my $user_data = BOM::Service::user(
-        context    => $params->{user_service_context},
-        command    => 'update_attributes',
-        user_id    => $email,
-        attributes => {password => $args->{new_password}},
-        flags      => {
-            password_update_reason => 'reset_password',
-            password_previous      => '',
-        });
+    my $user = BOM::User->new(email => $email);
+    return BOM::RPC::v3::Utility::client_error() unless $user;
 
-    unless ($user_data->{status} eq 'ok') {
-        if ($user_data->{class} eq 'UserNotFound') {
-            return BOM::RPC::v3::Utility::client_error();
-        } elsif ($user_data->{class} eq 'PasswordError') {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'PasswordError',
-                message_to_client => localize($user_data->{message}),
-            });
-        } else {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'PasswordResetError',
-                message_to_client => localize("We were unable to reset your password due to an unexpected error. Please try again."),
-            });
-        }
+    if (
+        my $pass_error = BOM::RPC::v3::Utility::check_password({
+                email        => $email,
+                new_password => $args->{new_password}}))
+    {
+        return $pass_error;
+    }
+
+    # Returns default, non-disabled client
+    my $client = $user->get_default_client();
+    return BOM::RPC::v3::Utility::client_error() unless $client;
+
+    try {
+        $user->update_user_password($args->{new_password}, 'reset_password');
+        _send_reset_password_confirmation_email($client, 'reset_password');
+    } catch {
+        log_exception();
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PasswordResetError',
+            message_to_client => localize("We were unable to reset your password due to an unexpected error. Please try again."),
+        });
+    }
+
+    # If user has social signup and decided to proceed, update has_social_signup to false
+    if ($user->{has_social_signup}) {
+        $user->unlink_social;
     }
 
     return {status => 1};
     };
 
+=head2 _send_reset_password_confirmation_email
+
+Sends reset or change password confirmation email to the user.
+
+It takes the following named params:
+
+=over 4
+
+=item * C<client> A L<BOM::User::Client> instance.
+
+=item * C<type> 'reset_password' or 'change_password'
+
+=back
+
+Returns undef.
+
+=cut
+
+sub _send_reset_password_confirmation_email {
+    my ($client, $type) = @_;
+    BOM::Platform::Event::Emitter::emit(
+        'reset_password_confirmation',
+        {
+            loginid    => $client->loginid,
+            properties => {
+                first_name => $client->first_name,
+                email      => $client->email,
+                type       => $type,
+            }});
+    return undef;
+}
+
 rpc get_settings => sub {
     my $params = shift;
     my $client = $params->{client};
 
-    my $wanted_attributes = [qw(
-            account_opening_reason         default_client                 non_pep_declaration_time
-            address_city                   email                          phone
-            address_line_1                 email_consent                  place_of_birth
-            address_line_2                 fatca_declaration              preferred_language
-            address_postcode               feature_flag                   address_state
-            phone_number_verification      financial_assessment           residence
-            binary_user_id                 first_name                     salutation
-            citizen                        secret_answer                  tax_identification_number
-            accepted_tnc_version           immutable_attributes           tax_residence
-            date_of_birth                  last_name
-        )];
-
-    my $user_data = BOM::Service::user(
-        context    => $params->{user_service_context},
-        command    => 'get_attributes',
-        user_id    => $params->{user_id},
-        attributes => $wanted_attributes,
-    );
-
-    unless ($user_data->{status} eq 'ok') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'UserServiceFailed',
-                message           => $user_data->{message},
-                message_to_client => localize('There was a problem reading your user data.')});
-    }
-    my $settings = $user_data->{attributes};
-
-    # TODO - Remove reliance on client here
-    $settings->{trading_hub} = $client->status->trading_hub ? 1 : 0;
-    $settings->{is_authenticated_payment_agent} =
-        ($client->payment_agent and $client->payment_agent->status and $client->payment_agent->status eq 'authorized') ? 1 : 0;
-
-    # Setup address_state before residence gets mangled below and turned it full name
-    my $original_address_state = $settings->{address_state} // '';
-    $settings->{address_state} = BOM::User::Utility::get_valid_state($original_address_state, $settings->{residence});
-
-    if ($settings->{address_state} ne $original_address_state) {
-        stats_inc('bom_rpc.get_settings.override_address_state', {tags => ['client: ' . $settings->{default_client}]});
+    my ($dob_epoch, $country_code, $country);
+    $dob_epoch = Date::Utility->new($client->date_of_birth)->epoch if ($client->date_of_birth);
+    if ($client->residence) {
+        $country_code = $client->residence;
+        $country      = request()->brand->countries_instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
-    # Legacy issue, we should use residence instead of country_code, because backwards compatibility
-    $settings->{country_code} = $settings->{residence};
-    $settings->{country}      = request()->brand->countries_instance->countries->localized_code2country($settings->{residence}, $params->{language});
-    $settings->{residence}    = $settings->{country};
-    if (defined $settings->{date_of_birth}) {
-        my $epoch = Date::Utility->new($settings->{date_of_birth})->epoch;
-        $settings->{date_of_birth} = $epoch;
-    }
+    my $user = $client->user;
 
-    # Various other bits and pieces that are not part of user but are sent to FE in get_settings
     my $cooling_off_period =
-        BOM::Config::Redis::redis_replicated_read()->ttl(APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD . $settings->{binary_user_id});
+        BOM::Config::Redis::redis_replicated_read()->ttl(APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD . $client->{binary_user_id});
+
+    # Grab from dup account
+    my $duplicated;
+
+    $duplicated = $client->duplicate_sibling;
+
+    my $fa_client = $duplicated // $client;
+
+    my $financial_assessment = $fa_client->financial_assessment() // '';
+    $financial_assessment = decode_fa($financial_assessment) if $financial_assessment;
+
+    my $pnv_next_attempt = $user->pnv->next_attempt;
+
+    my $settings = {
+        email     => $user->email,
+        country   => $country,
+        residence => $country
+        , # Everywhere else in our responses to FE, we pass the residence key instead of country. However, we need to still pass in country for backwards compatibility.
+        country_code              => $country_code,
+        email_consent             => ($user and $user->{email_consent}) ? 1 : 0,
+        preferred_language        => $user->preferred_language,
+        trading_hub               => $client->status->trading_hub ? 1 : 0,
+        feature_flag              => $user->get_feature_flag,
+        immutable_fields          => [$client->immutable_fields()],
+        phone_number_verification => {
+            verified => $user->pnv->verified,
+            defined $pnv_next_attempt ? (next_attempt => $pnv_next_attempt) : (),
+        },
+        ($client->citizen ? (citizen => $client->citizen) : ()),
+        (
+              ($user and BOM::Config::third_party()->{elevio}{account_secret})
+            ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
+            : ())};
+
+    my @clients = grep { $_ and not $_->is_virtual } $user->clients(
+        include_disabled => 0,
+        include_virtual  => 0
+        ),
+        $client->duplicate_sibling_from_vr;
+
     if ($cooling_off_period > 0) {
         $settings->{cooling_off_expiration_date} = time + $cooling_off_period;
     }
 
-    if ($settings->{financial_assessment}->{employment_status}) {
-        $settings->{employment_status} = $settings->{financial_assessment}->{employment_status};
-    }
-
-    if (BOM::Config::third_party()->{elevio}{account_secret}) {
-        $settings->{user_hash} = hmac_sha256_hex($settings->{email}, BOM::Config::third_party()->{elevio}{account_secret});
+    if ($financial_assessment && $financial_assessment->{employment_status} && $fa_client->landing_company->short eq 'maltainvest') {
+        $settings->{employment_status} = $financial_assessment->{employment_status};
     }
 
     my $dxtrade_suspend = BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend;
-    $settings->{dxtrade_user_exception}      = (any { $settings->{email} eq $_ } $dxtrade_suspend->user_exceptions->@*) ? 1 : 0;
-    $settings->{non_pep_declaration}         = $settings->{non_pep_declaration_time}                                    ? 1 : 0;
-    $settings->{request_professional_status} = defined $client->status->professional_requested                          ? 1 : 0;
-    $settings->{has_secret_answer}           = defined $settings->{secret_answer}                                       ? 1 : 0;
-    $settings->{client_tnc_status}           = $settings->{accepted_tnc_version};
-    $settings->{immutable_fields}            = $settings->{immutable_attributes};
-    $settings->{allow_copiers}               = $client->allow_copiers // 0;
+    my ($real_client) = sort { $b->date_joined cmp $a->date_joined } @clients;
 
-    # Delete some fields that are not needed by the FE, we asked for them and some things are
-    # derived from them, if not required we should not send them, binary-websocket-api will barf
-    # on values it doesn't expect
-    delete $settings->{citizen}              unless defined $settings->{citizen};
-    delete $settings->{financial_assessment} unless defined $settings->{financial_assessment} && %{$settings->{financial_assessment}};
-    delete $settings->@{qw(default_client non_pep_declaration_time broker_code secret_answer)};
-    delete $settings->@{qw(accepted_tnc_version immutable_attributes binary_user_id)};
+    if ($real_client) {
+        # We should pick the information from the first created account for
+        # account settings attributes/fields that sync between clients - personal information
+        # And, use current client to return account settings attributes/fields
+        # for others, like is_authenticated_payment_agent, since they account specific
+        $settings = {
+            has_secret_answer              => defined $real_client->secret_answer ? 1 : 0,
+            salutation                     => $real_client->salutation,
+            first_name                     => $real_client->first_name,
+            last_name                      => $real_client->last_name,
+            address_line_1                 => $real_client->address_1,
+            address_line_2                 => $real_client->address_2,
+            address_city                   => $real_client->city,
+            address_postcode               => $real_client->postcode,
+            phone                          => $real_client->phone,
+            place_of_birth                 => $real_client->place_of_birth,
+            tax_residence                  => $real_client->tax_residence,
+            tax_identification_number      => $real_client->tax_identification_number,
+            account_opening_reason         => $real_client->account_opening_reason,
+            date_of_birth                  => $real_client->date_of_birth ? Date::Utility->new($real_client->date_of_birth)->epoch : undef,
+            citizen                        => $real_client->citizen  // '',
+            allow_copiers                  => $client->allow_copiers // 0,
+            non_pep_declaration            => $client->non_pep_declaration_time ? 1 : 0,
+            client_tnc_status              => $client->accepted_tnc_version,
+            request_professional_status    => $client->status->professional_requested                            ? 1 : 0,
+            dxtrade_user_exception         => (any { $user->email eq $_ } $dxtrade_suspend->user_exceptions->@*) ? 1 : 0,
+            is_authenticated_payment_agent =>
+                ($client->payment_agent and $client->payment_agent->status and $client->payment_agent->status eq 'authorized') ? 1 : 0,
+            %$settings,
+        };
+
+        $settings->{address_state} = BOM::User::Utility::get_valid_state(trim($real_client->state), $real_client->residence);
+
+        stats_inc('bom_rpc.get_settings.override_address_state', {tags => ['client: ' . $real_client->loginid]})
+            if ($settings->{address_state} ne trim($real_client->state));
+
+        $settings->{fatca_declaration} = $real_client->fatca_declaration if defined $real_client->fatca_declaration;
+    }
 
     return $settings;
 };
@@ -3392,25 +3428,26 @@ rpc tnc_approval => sub {
 
 rpc login_history => sub {
     my $params = shift;
+
     my $client = $params->{client};
 
-    my $user_data = BOM::Service::user(
-        context         => $params->{user_service_context},
-        command         => 'get_login_history',
-        user_id         => $client->binary_user_id,
-        limit           => $params->{args}->{limit} // 10,
-        show_backoffice => 0
-    );
-
-    unless ($user_data->{status} eq 'ok') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'UserServiceFailed',
-                message           => $user_data->{message},
-                message_to_client => localize('There was a problem reading your login history.')});
+    my $limit = 10;
+    if (exists $params->{args}->{limit}) {
+        if ($params->{args}->{limit} > 50) {
+            $limit = 50;
+        } else {
+            $limit = $params->{args}->{limit};
+        }
     }
 
+    my $user          = $client->user;
+    my $login_history = $user->login_history(
+        order => 'desc',
+        limit => $limit
+    );
+
     my @history = ();
-    foreach my $record (@{$user_data->{login_history}}) {
+    foreach my $record (@{$login_history}) {
         push @history,
             {
             time        => Date::Utility->new($record->{history_date})->epoch,

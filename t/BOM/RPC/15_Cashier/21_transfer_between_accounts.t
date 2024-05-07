@@ -65,22 +65,22 @@ my $params = {
 };
 
 subtest 'Basic transfers' => sub {
-    my $email = 'new_email' . rand(999) . '@binary.com';
-    my $user  = BOM::User->create(
+    my $email      = 'new_email' . rand(999) . '@binary.com';
+    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+
+    my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+
+    my $user = BOM::User->create(
         email          => $email,
         password       => BOM::User::Password::hashpw('hello'),
         email_verified => 1,
     );
-    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
 
     for ($client_cr1, $client_cr2) {
         $user->add_client($_);

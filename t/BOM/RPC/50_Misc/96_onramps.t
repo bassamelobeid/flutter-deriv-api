@@ -14,24 +14,21 @@ use LandingCompany::Registry;
 
 my $email = 'onramp@deriv.com';
 
+my $client_fiat = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => $email,
+});
+
+my $client_crypto = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => $email,
+});
+$client_crypto->account('BTC');
+
 my $user = BOM::User->create(
     email    => $email,
     password => 'test'
 );
-
-my $client_fiat = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email,
-    binary_user_id => $user->id,
-});
-
-my $client_crypto = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email,
-    binary_user_id => $user->id,
-});
-$client_crypto->account('BTC');
-
 $user->add_client($client_fiat);
 $user->add_client($client_crypto);
 

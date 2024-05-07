@@ -41,35 +41,33 @@ $app_config->payments->p2p->transaction_verification_countries_all(0);
 my $email_advertiser = 'p2p_advertiser@test.com';
 my $email_client     = 'p2p_client@test.com';
 
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    email       => $email_advertiser
+});
+
+my $client_advertiser = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => $email_advertiser,
+    residence   => 'za'
+});
+
 my $user_advertiser = BOM::User->create(
     email    => $email_advertiser,
     password => 'test'
 );
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    binary_user_id => $user_advertiser->id,
-    email          => $email_advertiser
-});
-
-my $client_advertiser = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email_advertiser,
-    binary_user_id => $user_advertiser->id,
-    residence      => 'za'
-});
 $user_advertiser->add_client($client_vr);
 $user_advertiser->add_client($client_advertiser);
+
+my $client_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => $email_client
+});
 
 my $user_client = BOM::User->create(
     email    => $email_client,
     password => 'test'
 );
-my $client_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user_client->id,
-    email          => $email_client
-});
-
 $user_client->add_client($client_client);
 
 my $token_vr         = BOM::Platform::Token::API->new->create_token($client_vr->loginid,         'test vr token');

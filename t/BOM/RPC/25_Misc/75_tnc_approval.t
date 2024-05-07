@@ -39,15 +39,13 @@ for my $currency (@all_currencies) {
     );
 }
 
-my $user = BOM::User->create(
-    email    => 'unit_test@binary.com',
-    password => BOM::User::Password::hashpw('jskjd8292922'));
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    email          => 'unit_test@binary.com',
-    broker_code    => 'MF',
-    binary_user_id => $user->id,
+    broker_code => 'MF',
 });
 my $test_loginid = $test_client->loginid;
+my $user         = BOM::User->create(
+    email    => $test_client->email,
+    password => BOM::User::Password::hashpw('jskjd8292922'));
 $user->add_client($test_client);
 
 my $res_ws = BOM::RPC::v3::Static::website_status({country_code => ''});
@@ -62,15 +60,9 @@ my $res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({
-        user_id              => $user->id,
-        user_service_context => {
-            auth_token     => 'test_token',
-            correlation_id => 'test_correlation_id',
-        },
-        client   => $test_client,
-        language => 'EN'
-    });
-print Data::Dumper::Dumper($res);
+    client   => $test_client,
+    language => 'EN'
+});
 is $res->{client_tnc_status}, 'Version 1', 'version 1';
 
 # switch to version 2
@@ -89,14 +81,9 @@ $res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({
-        user_id              => $user->id,
-        user_service_context => {
-            auth_token     => 'test_token',
-            correlation_id => 'test_correlation_id',
-        },
-        client   => $test_client,
-        language => 'EN'
-    });
+    client   => $test_client,
+    language => 'EN'
+});
 is $res->{client_tnc_status}, 'Version 2', 'version 2';
 
 done_testing();

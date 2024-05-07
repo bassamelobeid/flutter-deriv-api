@@ -10,15 +10,11 @@ use BOM::Database::Model::OAuth;
 
 subtest 'Do not send verification when Impersonating' => sub {
 
-    my $user = BOM::User->create(
+    my $cr_client = create_client('CR');
+    my $user      = BOM::User->create(
         email    => 'unit_test@binary.com',
         password => 'asdasd'
     );
-    my $cr_client = create_client(
-        'CR',
-        {
-            binary_user_id => $user->id,
-        });
     $user->add_client($cr_client);
     $cr_client->account('USD');
 

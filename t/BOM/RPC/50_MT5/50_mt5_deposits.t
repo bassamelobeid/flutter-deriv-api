@@ -83,14 +83,10 @@ my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 
 # Setup a test user
-my $user = BOM::User->create(
-    email    => $DETAILS{email},
-    password => 's3kr1t',
-);
 my $test_client = create_client('CR');
 $test_client->email($DETAILS{email});
 $test_client->set_default_account('USD');
-$test_client->binary_user_id($user->id);
+$test_client->binary_user_id(1);
 $test_client->tax_residence('mt');
 $test_client->tax_identification_number('111222333');
 $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
@@ -100,15 +96,17 @@ $test_client->save;
 my $test_client_vr = create_client('VRTC');
 $test_client_vr->email($DETAILS{email});
 $test_client_vr->set_default_account('USD');
-$test_client_vr->binary_user_id($user->id);
 $test_client_vr->save;
 
 my $test_wallet_vr = create_client('VRW');
 $test_wallet_vr->email($DETAILS{email});
 $test_wallet_vr->set_default_account('USD');
-$test_wallet_vr->binary_user_id($user->id);
 $test_wallet_vr->save;
 
+my $user = BOM::User->create(
+    email    => $DETAILS{email},
+    password => 's3kr1t',
+);
 $user->update_trading_password($DETAILS{password}{main});
 $user->add_client($test_client);
 $user->add_client($test_client_vr);

@@ -47,8 +47,7 @@ rpc authorize => sub {
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
     my $user = $client->user;
-    BOM::Service::User::Transitional::PreferredLanguage::setnx_preferred_language($user, $params->{language})
-        if $params->{language} && $params->{language} =~ /^[A-Z]{2}$|^[A-Z]{2}_[A-Z]{2}$/i;
+    $user->setnx_preferred_language($params->{language}) if $params->{language} && $params->{language} =~ /^[A-Z]{2}$|^[A-Z]{2}_[A-Z]{2}$/i;
 
     $params->{app_id} = $params->{source};
 

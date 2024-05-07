@@ -24,18 +24,12 @@ BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_t
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my $user = BOM::User->create(
+my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $user    = BOM::User->create(
     email    => 'dxtransfers@test.com',
     password => 'test'
 );
-my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
-});
-my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
-});
 map { $user->add_client($_), $_->account('USD') } ($client1, $client2);
 my $token1 = BOM::Platform::Token::API->new->create_token($client1->loginid, 'test token');
 my $token2 = BOM::Platform::Token::API->new->create_token($client2->loginid, 'test token');
@@ -45,15 +39,11 @@ $client_btc->account('BTC');
 $user->add_client($client_btc);
 my $token_btc = BOM::Platform::Token::API->new->create_token($client_btc->loginid, 'test token');
 
-my $user3 = BOM::User->create(
+my $client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+BOM::User->create(
     email    => 'transfers2@test.com',
-    password => 'test',
-);
-my $client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user3->id,
-});
-$user3->add_client($client3);
+    password => 'test'
+)->add_client($client3);
 $client3->account('USD');
 my $token3 = BOM::Platform::Token::API->new->create_token($client3->loginid, 'test token');
 

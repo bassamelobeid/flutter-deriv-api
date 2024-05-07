@@ -26,26 +26,27 @@ my %details        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 
 # Create user
+my $test_client    = create_client('CR');
+my $test_client_vr = create_client('VRTC');
+
+$test_client->email($details{email});
+$test_client->set_default_account('USD');
+$test_client->binary_user_id(1);
+
+$test_client_vr->email($details{email});
+$test_client_vr->set_default_account('USD');
+
+$test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+$test_client->save;
+
+$test_client_vr->save;
+
 my $password = 'Hello123';
 my $hash_pwd = BOM::User::Password::hashpw($password);
 my $user     = BOM::User->create(
     email    => $details{email},
     password => $hash_pwd,
 );
-my $test_client    = create_client('CR');
-my $test_client_vr = create_client('VRTC');
-
-$test_client->email($details{email});
-$test_client->set_default_account('USD');
-$test_client->binary_user_id($user->id);
-$test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
-$test_client->save;
-
-$test_client_vr->email($details{email});
-$test_client_vr->set_default_account('USD');
-$test_client_vr->binary_user_id($user->id);
-$test_client_vr->save;
-
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
 

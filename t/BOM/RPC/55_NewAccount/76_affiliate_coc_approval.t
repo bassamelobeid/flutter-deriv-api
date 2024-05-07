@@ -19,15 +19,13 @@ my $user  = BOM::User->create(
 );
 
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    binary_user_id => $user->id,
+    broker_code => 'VRTC',
 });
 $client_vr->email($email);
 $client_vr->save;
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
+    broker_code => 'CR',
 });
 $client->set_default_account('USD');
 $client->email($email);

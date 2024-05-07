@@ -24,10 +24,8 @@ my $user  = BOM::User->create(
 );
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
+    broker_code => 'CR',
 });
-
 $client->email($email);
 $client->save;
 $user->add_client($client);

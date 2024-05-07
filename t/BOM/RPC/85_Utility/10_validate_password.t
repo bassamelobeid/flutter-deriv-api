@@ -9,18 +9,16 @@ use BOM::User;
 use BOM::RPC::v3::Utility;
 
 # Setup a test user
+my $test_client = create_client('CR');
+$test_client->email('test@binary.com');
+$test_client->save;
+
 my $password = 's3kr1t';
 my $hash_pwd = BOM::User::Password::hashpw($password);
 my $user     = BOM::User->create(
     email    => 'test@binary.com',
     password => $hash_pwd,
 );
-my $test_client = create_client(
-    'CR',
-    {
-        email          => 'test@binary.com',
-        binary_user_id => $user->id,
-    });
 $user->add_client($test_client);
 
 subtest 'validate_password_with_attempts' => sub {

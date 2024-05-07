@@ -35,46 +35,42 @@ my $payment_agent_args = {
     status                => 'authorized'
 };
 
-my $email_pa = 'pa_restrictions_pa@binary.com';
-my $user_pa  = BOM::User->create(
-    email    => $email_pa,
-    password => 'abcd'
-);
+my $email_pa  = 'pa_restrictions_pa@binary.com';
 my $client_pa = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email_pa,
-    binary_user_id => $user_pa->id
+    broker_code => 'CR',
+    email       => $email_pa
 });
 $client_pa->account('USD');
 BOM::Test::Helper::Client::top_up($client_pa, 'USD', 1000);
+my $user_pa = BOM::User->create(
+    email    => $email_pa,
+    password => 'abcd'
+);
 $user_pa->add_client($client_pa);
 $client_pa->payment_agent($payment_agent_args);
 $client_pa->save;
 $client_pa->get_payment_agent->set_countries([$client_pa->residence]);
 
-my $email_cr = 'pa_restrictions_cr@binary.com';
-my $user_cr  = BOM::User->create(
-    email    => $email_cr,
-    password => 'abcd'
-);
+my $email_cr  = 'pa_restrictions_cr@binary.com';
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email_cr,
-    binary_user_id => $user_cr->id,
+    broker_code => 'CR',
+    email       => $email_cr
 });
 $client_cr->account('USD');
 BOM::Test::Helper::Client::top_up($client_cr, 'USD', 1000);
+my $user_cr = BOM::User->create(
+    email    => $email_cr,
+    password => 'abcd'
+);
 $user_cr->add_client($client_cr);
 
 my $client_pa2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email_cr,
-    binary_user_id => $user_cr->id,
+    broker_code => 'CR',
+    email       => $email_cr
 });
 $client_pa2->account('USD');
 BOM::Test::Helper::Client::top_up($client_pa2, 'USD', 1000);
-$user_cr->add_client($client_pa2);
-
+$user_cr->add_client($client_pa);
 $agent_name = 'Bob';
 $client_pa2->payment_agent($payment_agent_args);
 $client_pa2->save;

@@ -35,20 +35,16 @@ $mt5_config->suspend->real->p01_ts02->all(0);
 
 subtest 'create mt5 client with different currency' => sub {
     subtest 'svg' => sub {
-        my $new_email = $DETAILS{email};
-        my $user      = BOM::User->create(
+        my $new_email  = $DETAILS{email};
+        my $new_client = create_client('CR');
+        my $token      = $m->create_token($new_client->loginid, 'test token 2');
+        $new_client->set_default_account('EUR');
+        $new_client->email($new_email);
+
+        my $user = BOM::User->create(
             email    => $new_email,
             password => 's3kr1t',
         );
-        my $new_client = create_client(
-            'CR',
-            {
-                email          => $new_email,
-                binary_user_id => $user->id,
-            });
-        my $token = $m->create_token($new_client->loginid, 'test token 2');
-        $new_client->set_default_account('EUR');
-
         $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($new_client);
 

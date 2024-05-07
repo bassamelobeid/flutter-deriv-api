@@ -29,27 +29,25 @@ BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all
 my $email    = 'test@binary.com';
 my $password = 'Abcd1234';
 my $hash_pwd = BOM::User::Password::hashpw($password);
-my $user     = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
 
 my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    binary_user_id => $user->id,
+    broker_code => 'VRTC',
 });
 $vr_client->set_default_account('USD');
 $vr_client->email($email);
 $vr_client->save;
 
 my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRW',
-    binary_user_id => $user->id,
+    broker_code => 'VRW',
 });
 $vr_wallet->set_default_account('USD');
 $vr_wallet->email($email);
 $vr_wallet->save;
 
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
 $user->add_client($vr_client);
 $user->add_client($vr_wallet);
 

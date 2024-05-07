@@ -26,22 +26,17 @@ my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
 subtest 'trading servers for south africa' => sub {
-    my $new_email = 'abcdef' . $DETAILS{email};
-    my $user      = BOM::User->create(
-        email    => $new_email,
-        password => 's3kr1t',
-    );
-    my $new_client = create_client(
-        'CR', undef,
-        {
-            residence      => 'za',
-            binary_user_id => $user->id,
-        });
-    my $m     = BOM::Platform::Token::API->new;
-    my $token = $m->create_token($new_client->loginid, 'test token 2');
+    my $new_email  = 'abcdef' . $DETAILS{email};
+    my $new_client = create_client('CR', undef, {residence => 'za'});
+    my $m          = BOM::Platform::Token::API->new;
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
     $new_client->set_default_account('USD');
     $new_client->email($new_email);
 
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
     $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($new_client);
 

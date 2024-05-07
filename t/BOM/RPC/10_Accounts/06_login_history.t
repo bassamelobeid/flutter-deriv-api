@@ -19,24 +19,20 @@ my $c = BOM::Test::RPC::QueueClient->new();
 # init data
 ################################################################################
 
-my $email    = 'raunak@binary.com';
-my $password = 'jskjd8292922';
-my $hash_pwd = BOM::User::Password::hashpw($password);
-
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
-
+my $email       = 'raunak@binary.com';
+my $password    = 'jskjd8292922';
+my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    binary_user_id => $user->id,
-    broker_code    => 'CR',
+    broker_code => 'CR',
 });
 $test_client->email($email);
 $test_client->save;
 
 my $test_loginid = $test_client->loginid;
-
+my $user         = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
 $user->add_client($test_client);
 $user->add_login_history(
     environment => 'dummy environment',
@@ -84,8 +80,8 @@ $params->{args} = {limit => 15};
 $res = $c->call_ok($method, $params)->result;
 is scalar(@{$res->{records}}), 15, 'limit ok';
 
-$params->{args} = {limit => 110};
+$params->{args} = {limit => 60};
 $res = $c->call_ok($method, $params)->result;
-is scalar(@{$res->{records}}), 101, 'All items is 101';
+is scalar(@{$res->{records}}), 50, 'max limit is 50';
 
 done_testing();

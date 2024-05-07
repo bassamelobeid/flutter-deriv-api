@@ -22,34 +22,23 @@ my $invalid_emails = ['abc..xyz@nowhere.com', 'abc', '123@nowhere'];
 my $password       = 'Aer13';
 my $hash_pwd       = BOM::User::Password::hashpw($password);
 
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
-
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    binary_user_id => $user->id,
+    broker_code => 'MF',
 });
 
 $test_client->email($email);
 $test_client->save;
 
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
 $user->add_client($test_client);
 $user->update_has_social_signup(0);
 
-my $user2 = BOM::User->create(
-    email    => '2' . $email,
-    password => $hash_pwd
-);
-
 my $test_client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    binary_user_id => $user2->id,
+    broker_code => 'MF',
 });
-$user2->add_client($test_client_2);
-$test_client_2->email('2' . $email);
-$test_client_2->save();
 
 my $m       = BOM::Platform::Token::API->new;
 my $token   = $m->create_token($test_client->loginid,   'test token');
@@ -176,8 +165,6 @@ subtest 'change email' => sub {
         }};
     is_deeply($result, $error, 'change_email returns password error if email and binary_user_id do not match in token');
 
-    # Ensure social_signup is set to 0 before proceeding otherwise the test will fail
-    $user->update_has_social_signup(0);
     $code = BOM::Platform::Token->new({
             email       => lc $new_email,
             expires_in  => 3600,
@@ -215,13 +202,9 @@ subtest 'change email' => sub {
     is($emitted[2][1]->{loginid}, 'MF90000000',          'loginid is correct');
     is($emitted[2][0],            'sync_onfido_details', 'event name is correct');
 
-    is($emitted[3][1]->{properties}->{first_name}, 'bRaD',                        'first name is correct');
-    is($emitted[3][1]->{loginid},                  'MF90000000',                  'loginid is correct');
-    is($emitted[3][0],                             'reset_password_confirmation', 'event name is correct');
-
-    is($emitted[4][1]->{properties}->{first_name}, 'bRaD',                 'first name is correct');
-    is($emitted[4][1]->{loginid},                  'MF90000000',           'loginid is correct');
-    is($emitted[4][0],                             'confirm_change_email', 'event name is correct');
+    is($emitted[3][1]->{properties}->{first_name}, 'bRaD',                 'first name is correct');
+    is($emitted[3][1]->{loginid},                  'MF90000000',           'loginid is correct');
+    is($emitted[3][0],                             'confirm_change_email', 'event name is correct');
 
     $user = BOM::User->new(id => $user->{id});
     isnt($user->{password}, $hash_pwd, 'user password updated');

@@ -1508,7 +1508,6 @@ subtest $method => sub {
         );
         $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code               => 'CR',
-                binary_user_id            => $user->id,
                 email                     => $email,
                 residence                 => 'za',
                 tax_residence             => 'ag',
@@ -1521,6 +1520,7 @@ subtest $method => sub {
         my @hash_array = ({
                 field_name => "tax_residence",
                 value      => "agd",
+
             },
             {
                 field_name => "tax_identification_number",
@@ -1549,6 +1549,8 @@ subtest $method => sub {
         is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
 
         my $auth_token_mf = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token');
+
+        my $cl = BOM::User::Client->new({loginid => $new_loginid});
 
         my $result_mf = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
         my $result_cr = $rpc_ct->call_ok('get_settings', {token => $auth_token})->result;

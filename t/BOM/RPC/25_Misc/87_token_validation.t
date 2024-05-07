@@ -18,18 +18,17 @@ $mock_client->mock('is_tnc_approval_required', sub { return 0; });
 my $email_cr = 'abc@binary.com';
 my $dob      = '1990-07-09';
 
-my $user_cr = BOM::User->create(
-    email    => $email_cr,
-    password => BOM::User::Password::hashpw('jskjd8292922'));
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user_cr->id,
-    email          => $email_cr,
-    date_of_birth  => '1990-07-09'
+    broker_code   => 'CR',
+    date_of_birth => '1990-07-09'
 });
+$client_cr->email($email_cr);
 $client_cr->set_default_account('USD');
 $client_cr->save;
 
+my $user_cr = BOM::User->create(
+    email    => $email_cr,
+    password => BOM::User::Password::hashpw('jskjd8292922'));
 $user_cr->add_client($client_cr);
 
 my $code = BOM::Platform::Token->new({
@@ -37,21 +36,19 @@ my $code = BOM::Platform::Token->new({
         expires_in  => 3600,
         created_for => 'reset_password'
     })->token;
-
 #create 2nd client
-my $email_cr_2 = 'cr2_abc@binary.com';
-my $user_cr_2  = BOM::User->create(
-    email    => $email_cr_2,
-    password => BOM::User::Password::hashpw('jskjd8292922'));
+my $email_cr_2  = 'cr2_abc@binary.com';
 my $client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user_cr_2->id,
-    date_of_birth  => '1990-07-09',
-    email          => $email_cr_2,
+    broker_code   => 'CR',
+    date_of_birth => '1990-07-09'
 });
+$client_cr_2->email($email_cr_2);
 $client_cr_2->set_default_account('USD');
 $client_cr_2->save;
 
+my $user_cr_2 = BOM::User->create(
+    email    => $email_cr_2,
+    password => BOM::User::Password::hashpw('jskjd8292922'));
 $user_cr_2->add_client($client_cr_2);
 
 my $code_cr_2 = BOM::Platform::Token->new({

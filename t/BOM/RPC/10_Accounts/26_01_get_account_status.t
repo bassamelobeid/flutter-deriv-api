@@ -30,15 +30,8 @@ my $onfido_limit = BOM::User::Onfido::limit_per_user;
 my $email        = 'abc@binary.com';
 my $password     = 'jskjd8292922';
 my $hash_pwd     = BOM::User::Password::hashpw($password);
-
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
-
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    binary_user_id => $user->id,
+my $test_client  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
 });
 
 $test_client->email($email);
@@ -46,32 +39,28 @@ $test_client->set_default_account('EUR');
 $test_client->save;
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    binary_user_id => $user->id,
+    broker_code => 'VRTC',
 });
 $test_client_vr->email($email);
 $test_client_vr->save;
 
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
 
-my $user_cr = BOM::User->create(
-    email    => 'sample@binary.com',
-    password => $hash_pwd
-);
-
 my $test_client_cr_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    binary_user_id => $user_cr->id,
+    broker_code => 'VRTC',
 });
 
 $test_client_cr_vr->email('sample@binary.com');
 $test_client_cr_vr->save;
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    citizen        => 'at',
-    binary_user_id => $user_cr->id,
+    broker_code => 'CR',
+    citizen     => 'at',
 });
 
 $test_client_cr->email('sample@binary.com');
@@ -79,21 +68,24 @@ $test_client_cr->set_default_account('USD');
 $test_client_cr->save;
 
 my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user_cr->id,
+    broker_code => 'CR',
 });
 $test_client_cr_2->email('sample@binary.com');
 $test_client_cr_2->save;
 
 my $test_client_p2p = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    citizen        => 'id',
-    binary_user_id => $user_cr->id,
+    broker_code => 'CR',
+    citizen     => 'id',
 });
 
 $test_client_p2p->email('sample@binary.com');
 $test_client_p2p->set_default_account('USD');
 $test_client_p2p->save;
+
+my $user_cr = BOM::User->create(
+    email    => 'sample@binary.com',
+    password => $hash_pwd
+);
 
 $user_cr->add_client($test_client_cr_vr);
 $user_cr->add_client($test_client_cr);

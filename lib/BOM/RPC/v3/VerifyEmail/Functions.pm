@@ -41,12 +41,11 @@ Returns Functions object
 sub new {
     my ($class, %params) = @_;
 
-    $params{utm_medium}           = $params{args}->{url_parameters}->{utm_medium}   // '';
-    $params{utm_campaign}         = $params{args}->{url_parameters}->{utm_campaign} // '';
-    $params{email}                = lc $params{args}->{verify_email};
-    $params{type}                 = $params{args}->{type};
-    $params{url_params}           = $params{args}->{url_parameters};
-    $params{user_service_context} = $params{user_service_context} // {};
+    $params{utm_medium}   = $params{args}->{url_parameters}->{utm_medium}   // '';
+    $params{utm_campaign} = $params{args}->{url_parameters}->{utm_campaign} // '';
+    $params{email}        = lc $params{args}->{verify_email};
+    $params{type}         = $params{args}->{type};
+    $params{url_params}   = $params{args}->{url_parameters};
 
     my $self = \%params;
     bless $self, $class;
@@ -190,16 +189,15 @@ Create Email verification function base on verify_email arguments
 sub create_email_verification_function {
     my ($self) = @_;
     $self->{email_verification} = email_verification({
-        user_service_context => $self->{user_service_context},
-        loginid              => $self->{token_details}->{loginid},
-        code                 => $self->{code},
-        website_name         => $self->{website_name},
-        verification_uri     => BOM::RPC::v3::Utility::get_verification_uri($self->{source}),
-        language             => $self->{language},
-        source               => $self->{source},
-        app_name             => BOM::RPC::v3::Utility::get_app_name($self->{source}),
-        email                => $self->{email},
-        type                 => $self->{type},
+        loginid          => $self->{token_details}->{loginid},
+        code             => $self->{code},
+        website_name     => $self->{website_name},
+        verification_uri => BOM::RPC::v3::Utility::get_verification_uri($self->{source}),
+        language         => $self->{language},
+        source           => $self->{source},
+        app_name         => BOM::RPC::v3::Utility::get_app_name($self->{source}),
+        email            => $self->{email},
+        type             => $self->{type},
         $self->{url_params} ? ($self->{url_params}->%*) : (),
     });
     return;
@@ -681,7 +679,7 @@ sub do_verification {
     my $type = $self->{type};
 
     die "unknown type $type" unless $self->can($type);
-    my $error_response = $self->$type();
+    my $error_response = $self->$type;
     return $error_response if ref $error_response eq 'HASH';
 
     return {status => 1};

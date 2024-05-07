@@ -22,25 +22,23 @@ use BOM::Test::Helper::Client;
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
 # init db
-my $email    = 'abc@binary.com';
-my $password = 'jskjd8292922';
-my $hash_pwd = BOM::User::Password::hashpw($password);
-
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
-
+my $email       = 'abc@binary.com';
+my $password    = 'jskjd8292922';
+my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    binary_user_id => $user->id,
+    broker_code => 'MF',
 });
-$user->add_client($test_client);
 
 $test_client->email($email);
 $test_client->save;
 
 my $test_loginid = $test_client->loginid;
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+$user->add_client($test_client);
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',

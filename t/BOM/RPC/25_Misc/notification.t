@@ -17,9 +17,7 @@ my $user = BOM::User->create(
     password => 'abcdabcd'
 );
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    email          => 'rpc_notif@binary.com',
-    binary_user_id => $user->id,
+    broker_code => 'MF',
 });
 $user->add_client($test_client);
 

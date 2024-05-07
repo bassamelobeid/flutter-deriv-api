@@ -20,20 +20,18 @@ my $password = 'jskjd8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
 my $dob      = '1990-07-09';
 
-my $user_vr = BOM::User->create(
-    email    => $email_vr,
-    password => $hash_pwd
-);
-
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    date_of_birth  => undef,
-    binary_user_id => $user_vr->id,
+    broker_code   => 'VRTC',
+    date_of_birth => undef,
 });
 $test_client_vr->email($email_vr);
 $test_client_vr->save;
 my $test_loginid_vr = $test_client_vr->loginid;
 
+my $user_vr = BOM::User->create(
+    email    => $email_vr,
+    password => $hash_pwd
+);
 $user_vr->add_client($test_client_vr);
 
 my ($status, $code);

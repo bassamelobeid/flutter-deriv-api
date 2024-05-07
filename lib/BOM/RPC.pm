@@ -13,7 +13,6 @@ use BOM::Config::Runtime;
 use BOM::Database::Rose::DB;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
-use BOM::Service;
 use BOM::RPC::Registry;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::App;
@@ -94,11 +93,7 @@ sub wrap_rpc_sub {
         $params->{token_details} = $token_instance->get_client_details_from_token($params->{token});
         # set request log context for RPC methods
         set_request_logger_context($params->{token_details}, $log_context);
-
-        # Correlation IDs are mandatory for the User service, it will bomb without one, used in
-        # check auth and merged into the user context
-        $params->{correlation_id} = $log_context->{correlation_id} // UUID::Tiny::create_uuid_as_string(UUID::Tiny::UUID_V4);
-
+        $params->{correlation_id} = $log_context->{correlation_id} if defined $log_context->{correlation_id};
         set_current_context($params);
 
         if (exists $params->{server_name}) {
@@ -117,14 +112,6 @@ sub wrap_rpc_sub {
         return $result_auth->{error} if $result_auth->{status} == 0;
         $params->{client} = $result_auth->{result}{client};
         $params->{app_id} = $result_auth->{result}{app_id};
-
-        # All RPCs need the user service context, even if not authenticated
-        $params->{user_service_context} = {
-            correlation_id => $params->{correlation_id},
-            auth_token     => "Unused but required to be present",
-        };
-        # RPCs that use user service need to have the user_id set
-        $params->{user_id} = defined($params->{client}) ? $params->{client}->binary_user_id : undef;
 
         my $auth_timing = 1000 * Time::HiRes::tv_interval($tv);
 

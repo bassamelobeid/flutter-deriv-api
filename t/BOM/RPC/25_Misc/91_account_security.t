@@ -28,16 +28,17 @@ subtest 'Initialization' => sub {
         $rpc_ct = BOM::Test::RPC::QueueClient->new();
 
         $email = 'dummy@binary.com';
-        $user  = BOM::User->create(
+
+        $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => $email
+        });
+
+        $user = BOM::User->create(
             email          => $email,
             password       => BOM::User::Password::hashpw('a1b2c3D4'),
             email_verified => 1
         );
-        $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code    => 'CR',
-            binary_user_id => $user->id,
-            email          => $email
-        });
         $user->add_client($client_cr);
 
         $token = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');

@@ -28,16 +28,13 @@ my $bal_user  = BOM::User->create(
 );
 
 my $bal_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    binary_user_id => $bal_user->id,
+    broker_code => 'MF',
 });
 my $bal_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $bal_user->id,
+    broker_code => 'CR',
 });
 my $bal_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    binary_user_id => $bal_user->id,
+    broker_code => 'VRTC',
 });
 
 for my $c ($bal_mf, $bal_cr, $bal_vr) {

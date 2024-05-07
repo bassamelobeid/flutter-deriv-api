@@ -1,0 +1,159 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "first_name",
+      "date_of_birth",
+      "country",
+      "account_opening_reason",
+      "address_city",
+      "address_state",
+      "country_code",
+      "phone",
+      "address_line_1",
+      "address_postcode",
+      "address_line_2",
+      "email_consent",
+      "email",
+      "last_name",
+      "stash",
+      "salutation",
+      "is_authenticated_payment_agent",
+      "client_tnc_status",
+      "non_pep_declaration",
+      "fatca_declaration",
+      "preferred_language",
+      "trading_hub",
+      "phone_number_verification"
+   ],
+   "properties" : {
+      "date_of_birth" : {
+         "type" : "integer",
+         "enum" : [
+            318124800
+         ]
+      },
+      "phone" : {
+         "type" : "string",
+         "pattern" : "^\\+1 234 567 8900$"
+      },
+      "address_city" : {
+         "pattern" : "^Test City$",
+         "type" : "string"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "address_line_1" : {
+         "pattern" : "^Test Address Line 1$",
+         "type" : "string"
+      },
+      "is_authenticated_payment_agent" : {
+         "enum" : [
+            0
+         ],
+         "type" : "integer"
+      },
+      "account_opening_reason" : {
+         "type" : "string",
+         "pattern" : "^Hedging$"
+      },
+      "address_postcode" : {
+         "type" : "string",
+         "pattern" : "^123456$"
+      },
+      "first_name" : {
+         "type" : "string",
+         "pattern" : "^Peter$"
+      },
+      "country" : {
+         "pattern" : "^Indonesia$",
+         "type" : "string"
+      },
+      "email" : {
+         "pattern" : "test@binary.com",
+         "type" : "string"
+      },
+      "address_line_2" : {
+         "pattern" : "^Test Address Line 2$",
+         "type" : "string"
+      },
+      "client_tnc_status" : {
+         "type" : "string",
+         "pattern" : "^Version \\d{2} \\d{4}-\\d{2}-\\d{2}$"
+      },
+      "country_code" : {
+         "type" : "string",
+         "pattern" : "^id$"
+      },
+      "last_name" : {
+         "type" : "string",
+         "pattern" : "^Pan$"
+      },
+      "email_consent" : {
+         "enum" : [
+            0,
+            1
+         ],
+         "type" : "integer"
+      },
+      "salutation" : {
+         "type" : "string",
+         "pattern" : "^Mr$"
+      },
+      "address_state" : {
+         "pattern" : "^BT$",
+         "type" : "string"
+      },
+      "non_pep_declaration": {
+        "description": "Indicates client's self-declaration of not being a PEP/RCA (Politically Exposed Person/Relatives and Close Associates).",
+        "type": "integer",
+        "enum": [
+            1
+        ]
+      },
+      "fatca_declaration": {
+         "description": "Indicates client's self-declaration of FATCA.",
+         "type": "integer",
+         "enum": [
+            0,
+            1
+         ]
+      },
+      "immutable_fields" : {
+         "type" : "array",
+         "items" : {
+            "type" : "string"
+         }
+      },
+      "preferred_language" : {
+         "type" : "string",
+         "pattern": "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+      },
+      "trading_hub" : {
+         "type" : "integer",
+         "enum" : [
+            0,
+            1
+         ]
+      },
+      "phone_number_verification": {
+         "type": "object",
+         "properties" : {
+            "verified" : {
+               "type" : "integer",
+               "enum" : [
+                  0,
+                  1
+               ]
+            },
+            "next_attempt" : {
+               "type" : "integer"
+            }
+         }
+      }
+   }
+}

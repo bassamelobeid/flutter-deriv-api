@@ -54,10 +54,7 @@ subtest 'account closure' => sub {
         my ($broker_code, $currency) = @_;
         $currency //= 'USD';
 
-        my $new_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code    => $broker_code,
-            binary_user_id => $user->id,
-        });
+        my $new_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => $broker_code});
 
         $new_client->set_default_account($currency);
         $new_client->email($email);

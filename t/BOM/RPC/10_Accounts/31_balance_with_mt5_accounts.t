@@ -28,18 +28,11 @@ $t_mock->mock('_mt5_balance_call_enabled', sub { return 1 });
 my $method = 'balance';
 
 subtest 'balance with mt5 disabled' => sub {
-    my $email    = 'abccr@binary.com';
-    my $password = 'jskjd8292922';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-
-    my $user = BOM::User->create(
-        email    => $email,
-        password => $hash_pwd
-    );
-
+    my $email       = 'abccr@binary.com';
+    my $password    = 'jskjd8292922';
+    my $hash_pwd    = BOM::User::Password::hashpw($password);
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        binary_user_id => $user->id,
+        broker_code => 'CR',
     });
 
     my $m = BOM::Platform::Token::API->new;
@@ -48,6 +41,10 @@ subtest 'balance with mt5 disabled' => sub {
     $test_client->save;
 
     my $test_loginid = $test_client->loginid;
+    my $user         = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
     $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($test_client);
     my $token = $m->create_token($test_loginid, 'test token');
