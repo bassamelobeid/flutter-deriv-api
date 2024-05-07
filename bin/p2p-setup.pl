@@ -132,7 +132,6 @@ sub create_client {
     $log->infof('User %s', $user->id);
 
     my %details = (
-        binary_user_id           => $user->id,
         client_password          => $hashed_password,
         first_name               => '',
         last_name                => '',
