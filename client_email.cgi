@@ -25,8 +25,6 @@ use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use BOM::DualControl;
 use BOM::User::AuditLog;
-use BOM::Backoffice::UserService;
-use BOM::Service;
 use Log::Any qw($log);
 
 BOM::Backoffice::Sysinit::init();
@@ -61,21 +59,14 @@ unless ($email) {
     code_exit_BO("<p>ERROR: Email address is required<p> $retry_form", $title);
 }
 
-my $user_data = BOM::Service::user(
-    context    => BOM::Backoffice::UserService::get_context(),
-    command    => 'get_attributes',
-    user_id    => $email,
-    attributes => [qw(id has_social_signup default_client)],
-);
-
-unless ($user_data->{status} eq 'ok') {
+my $user = BOM::User->new(email => $email);
+if (not $user) {
     code_exit_BO("<p>ERROR: Clients with email <b>$encoded_email</b> not found.</p> $retry_form", $title);
 }
-my $user_attributes = $user_data->{attributes};
 
 Bar($title);
 
-my $logins             = loginids($user_attributes->{id});
+my $logins             = loginids($user);
 my $mt_logins_ids      = $logins->{mt5};
 my $bom_logins         = $logins->{bom};
 my $dx_logins_ids      = $logins->{dx};
@@ -106,42 +97,41 @@ unless ($input{transtype}) {
 }
 
 if ($email ne $new_email) {
-    my $check_email = BOM::Service::user(
-        context    => BOM::Backoffice::UserService::get_context(),
-        command    => 'get_attributes',
-        user_id    => $new_email,
-        attributes => [qw(binary_user_id)],
-    );
-
-    if ($check_email->{status} eq 'ok') {
+    if (BOM::User->new(email => $new_email)) {
         print "Email update not allowed, as same email [$encoded_new_email] already exists in system";
         code_exit_BO();
     }
 
     my $had_social_signup = '';
 
-    # User service will handle the unlinking of accounts, add to log
-    $had_social_signup = "(from social signup)" if ($user_attributes->{has_social_signup});
+    try {
+        # remove social signup flag also add note to audit log.
+        if ($user->{has_social_signup}) {
+            $user->unlink_social;
+            $had_social_signup = "(from social signup)";
+        }
+        my $dcc_code = $input{DCcode};
+        my $error    = BOM::DualControl->new({
+                staff           => $clerk,
+                transactiontype => $input{transtype}})->validate_client_control_code($dcc_code, $new_email, $user->{id});
+        if ($error) {
+            print $error->get_mesg();
+            code_exit_BO();
+        }
+        $user->update_email($new_email);
 
-    my $dcc_code = $input{DCcode};
-    my $error    = BOM::DualControl->new({
-            staff           => $clerk,
-            transactiontype => $input{transtype}})->validate_client_control_code($dcc_code, $new_email, $user_attributes->{id});
+        foreach my $login_id ($user->bom_loginids) {
+            unless (LandingCompany::Registry->check_broker_from_loginid($login_id)) {
+                $log->warnf("Invalid login id $login_id");
+                next;
+            }
 
-    if ($error) {
-        print $error->get_mesg();
-        code_exit_BO();
-    }
-
-    $user_data = BOM::Service::user(
-        context    => BOM::Backoffice::UserService::get_context,
-        command    => 'update_attributes',
-        user_id    => $email,
-        attributes => {email => $new_email},
-    );
-
-    unless ($user_data->{status} eq 'ok') {
-        print "Update email for user $encoded_email failed, reason: [" . encode_entities($user_data->{message}) . "]";
+            my $client_obj = BOM::User::Client->new({loginid => $login_id});
+            $client_obj->email($new_email);
+            $client_obj->save;
+        }
+    } catch ($e) {
+        print "Update email for user $encoded_email failed, reason: [" . encode_entities($e) . "]";
         code_exit_BO();
     }
 
@@ -150,6 +140,17 @@ if ($email ne $new_email) {
     BOM::User::AuditLog::log($msg, $new_email, $clerk);
     #CS: for every email address change request, we will disable the client's
     #    account and once receiving a confirmation from his new email address, we will change it and enable the account.
+    my $default_client = $user->get_default_client(
+        include_disabled   => 1,
+        include_duplicated => 1
+    );
+    my $default_client_loginid = $default_client->loginid;
+
+    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $default_client_loginid});
+
+    unless ($default_client->is_virtual) {
+        BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid});
+    }
 
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',

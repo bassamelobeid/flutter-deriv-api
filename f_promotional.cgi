@@ -23,8 +23,6 @@ use BOM::Backoffice::PromoCodeEligibility;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Event::Emitter;
-use BOM::Backoffice::UserService;
-use BOM::Service;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -303,20 +301,12 @@ foreach my $client (@clients) {
     my $client_authenticated = ($client->fully_authenticated) ? 'yes' : 'no';
     my $datetime             = $client->promo_code_apply_date;
 
-    my $user      = $client->user;
-    my $user_data = BOM::Service::user(
-        context         => BOM::Backoffice::UserService::get_context(),
-        command         => 'get_login_history',
-        user_id         => $user->{email},
-        limit           => 1,
-        show_backoffice => 1,
+    my $user          = $client->user;
+    my $login_history = $user->login_history(
+        order                    => 'desc',
+        show_impersonate_records => 1,
+        limit                    => 1,
     );
-
-    unless ($user_data->{status} eq 'ok') {
-        code_exit_BO("<p>" . $user_data->{message} . "</p>", "Error - Failed to read login history from user service");
-    }
-    my $login_history = $user_data->{login_history};
-
     my $client_ip = 'no ip';
     if (@$login_history > 0) {
         if ($login_history->[0]->{environment} =~ /(\d+\.\d+\.\d+\.\d+)/) {
