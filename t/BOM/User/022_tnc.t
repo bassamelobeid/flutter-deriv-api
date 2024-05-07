@@ -35,21 +35,23 @@ ok !$client_cr->is_tnc_approval_required, 'real client does not need tnc if lc d
 
 $mock_lc->mock(tnc_required => sub { 1 });
 ok $client_cr->is_tnc_approval_required, 'real client needs tnc if lc does';
-is $user->accepted_tnc_version,           '',                     'No tnc accepted yet';
+is $client_cr->accepted_tnc_version,      '',                     'No tnc accepted yet';
 is $client_cr->user->current_tnc_version, 'Version 1 2020-01-01', 'correct version from config and brand';
 
 $client_cr->user->set_tnc_approval();
 ok !$client_cr->is_tnc_approval_required, 'client does not need tnc after accepting';
-is $user->accepted_tnc_version, 'Version 1 2020-01-01', 'Client accepted version';
+is $client_cr->accepted_tnc_version, 'Version 1 2020-01-01', 'Client accepted version';
+is $client_vr->accepted_tnc_version, '',                     'vr client has no accepted t&c version';
 
 $r = BOM::Platform::Context::Request->new({brand_name => 'deriv'});
 BOM::Platform::Context::request($r);
 
 ok $client_cr->is_tnc_approval_required, 'client needs tnc for new brand';
-is $user->accepted_tnc_version, '', 'No tnc accepted for new brand';
+is $client_cr->accepted_tnc_version, '', 'No tnc accepted for new brand';
 $client_cr->user->set_tnc_approval();
 ok !$client_cr->is_tnc_approval_required, 'client does not need tnc after accepting';
-is $user->accepted_tnc_version, 'Version 2 2020-06-01', 'Client accepted version for new brand';
+is $client_cr->accepted_tnc_version, 'Version 2 2020-06-01', 'Client accepted version for new brand';
+is $client_vr->accepted_tnc_version, '',                     'vr client still has no accepted t&c version';
 
 $app_config->cgi->terms_conditions_versions('{ "deriv": "Version 3 2020-07-01" }');
 

@@ -30,11 +30,6 @@ use BOM::User::Onfido;
 use BOM::User::LexisNexis;
 use BOM::User::SocialResponsibility;
 use BOM::User::PhoneNumberVerification;
-use BOM::Service::User::Transitional::UpdateEmail;
-use BOM::Service::User::Transitional::Password;
-use BOM::Service::User::Transitional::PreferredLanguage;
-use BOM::Service::User::Transitional::SocialSignup;
-use BOM::Service::User::Transitional::TotpFields;
 use BOM::Config::Runtime;
 use BOM::Config::TradingPlatform::KycStatus;
 use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
@@ -1083,6 +1078,18 @@ sub failed_login {
         });
 }
 
+sub login_history {
+    my ($self, %args) = @_;
+    $args{order} //= 'desc';
+    my $limit = looks_like_number($args{limit}) ? "limit ?" : '';
+    my $sql   = "select * from users.get_login_history(?,?,?) $limit";    ## SQL safe($limit)
+    return $self->dbic(operation => 'replica')->run(
+        fixup => sub {
+            $_->selectall_arrayref($sql, {Slice => {}}, $self->{id}, $args{order}, $args{show_impersonate_records} // 0,
+                $limit ? ($args{limit}) : ());
+        });
+}
+
 sub add_login_history {
     my ($self, %args) = @_;
     $args{binary_user_id} = $self->{id};
@@ -1168,24 +1175,62 @@ sub get_siblings_for_transfer {
 # and the arg will be that field directly
 ################################################################################
 sub update_email_fields {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_email_fields from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
-    return BOM::Service::User::Transitional::UpdateEmail::update_email_fields(@_);
+    my ($self, %args) = @_;
+    $args{email} = lc $args{email} if $args{email};
+    my ($email, $email_consent, $email_verified) = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select * from users.update_email_fields(?, ?, ?, ?)',
+                undef, $self->{id}, $args{email}, $args{email_consent}, $args{email_verified});
+        });
+    $self->{email}          = $email;
+    $self->{email_consent}  = $email_consent;
+    $self->{email_verified} = $email_verified;
+    return $self;
 }
 
 sub update_totp_fields {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_totp_fields from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
-    return BOM::Service::User::Transitional::TotpFields::update_totp_fields(@_);
+    my ($self, %args) = @_;
+
+    my $user_is_totp_enabled = $self->is_totp_enabled;
+
+    # if 2FA is enabled, we won't update the secret key
+    if ($args{secret_key} && $user_is_totp_enabled && ($args{is_totp_enabled} // 1)) {
+        return;
+    }
+
+    my ($new_is_totp_enabled, $secret_key) = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select * from users.update_totp_fields(?, ?, ?)', undef, $self->{id}, $args{is_totp_enabled}, $args{secret_key});
+        });
+    $self->{is_totp_enabled} = $new_is_totp_enabled;
+    $self->{secret_key}      = $secret_key;
+
+    # revoke tokens if 2FA is updated
+    if ($user_is_totp_enabled xor $new_is_totp_enabled) {
+        my $oauth = BOM::Database::Model::OAuth->new;
+        $oauth->revoke_tokens_by_loignid_and_ua_fingerprint($_, $args{ua_fingerprint}) for ($self->bom_loginids);
+        $oauth->revoke_refresh_tokens_by_user_id($self->id);
+    }
+
+    return $self;
+}
+
+sub update_password {
+    my ($self, $password) = @_;
+    $self->{password} = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select * from users.update_password(?, ?)', undef, $self->{id}, $password);
+        });
+    return $self;
 }
 
 sub update_has_social_signup {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_has_social_signup from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
-    return BOM::Service::User::Transitional::SocialSignup::update_has_social_signup(@_);
+    my ($self, $has_social_signup) = @_;
+    $self->{has_social_signup} = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select * from users.update_has_social_signup(?, ?)', undef, $self->{id}, $has_social_signup);
+        });
+    return $self;
 }
 
 =head2 is_payment_agents_suspended_in_country
@@ -1716,13 +1761,13 @@ sub set_tnc_approval {
         });
 }
 
-=head2 accepted_tnc_version
+=head2 latest_tnc_version
 
 Returns the most recent terms & conditions version the user has accepted for the current brand.
 
 =cut
 
-sub accepted_tnc_version {
+sub latest_tnc_version {
     my $self = shift;
 
     return $self->dbic->run(
@@ -1746,6 +1791,18 @@ sub current_tnc_version {
     return $tnc_config->{$brand_name};
 }
 
+=head2 setnx_preferred_language
+
+Set preferred language if not exists
+
+=cut
+
+sub setnx_preferred_language {
+    my ($self, $lang_code) = @_;
+
+    $self->update_preferred_language($lang_code) if !$self->{preferred_language};
+}
+
 =head2 update_preferred_language
 
 Update user's preferred language
@@ -1755,10 +1812,16 @@ Returns 2 char-length language code
 =cut
 
 sub update_preferred_language {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_preferred_language from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
-    return BOM::Service::User::Transitional::PreferredLanguage::update_preferred_language(@_);
+    my ($self, $lang_code) = @_;
+
+    my $result = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select * from users.update_preferred_language(?, ?)', undef, $self->{id}, uc $lang_code);
+        });
+
+    $self->{preferred_language} = $result if $result;
+
+    return $self->{preferred_language};
 }
 
 =head2 has_virtual_client
@@ -1779,6 +1842,45 @@ sub has_virtual_client {
     return undef;
 }
 
+=head2 update_user_password
+
+Update user & clients password for the user.
+
+=over 4
+
+=item * C<$new_password> - new user password
+
+=item * C<$type> - 'reset_password' or 'change_password'
+
+=back
+
+Returns 1 on success
+
+=cut
+
+sub update_user_password {
+    my ($self, $new_password, $type) = @_;
+    my $is_reset_password = ($type && $type eq 'reset_password') || 0;
+    my $log               = '';
+
+    my $hash_pw = BOM::User::Password::hashpw($new_password);
+    $self->update_password($hash_pw);
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+    for my $loginid ($self->loginids) {
+        $oauth->revoke_tokens_by_loginid($loginid);
+    }
+
+    # revoke refresh_token
+    my $user_id = $self->{id};
+    $oauth->revoke_refresh_tokens_by_user_id($user_id);
+
+    $log = $is_reset_password ? 'Password has been reset' : 'Password has been changed';
+    BOM::User::AuditLog::log($log, $self->email);
+
+    return 1;
+}
+
 =head2 update_email
 
 Updates user and client emails for a given user.
@@ -1794,10 +1896,27 @@ Returns 1 on success
 =cut
 
 sub update_email {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_email from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
-    return BOM::Service::User::Transitional::UpdateEmail::update_email(@_);
+    my ($self, $new_email) = @_;
+
+    $new_email = lc $new_email;
+    $self->update_email_fields(email => $new_email);
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my @clients = $self->clients(
+        include_self_closed => 1,
+        include_disabled    => 1,
+        include_duplicated  => 1,
+    );
+    for my $client (@clients) {
+        $client->email($new_email);
+        $client->save;
+        $oauth->revoke_tokens_by_loginid($client->loginid);
+    }
+
+    # revoke refresh_token
+    my $user_id = $self->{id};
+    $oauth->revoke_refresh_tokens_by_user_id($user_id);
+    BOM::User::AuditLog::log('Email has been changed', $self->email);
+    return 1;
 }
 
 =head2 update_trading_password
@@ -1815,10 +1934,18 @@ Returns $self
 =cut
 
 sub update_trading_password {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_trading_password from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
-    return BOM::Service::User::Transitional::Password::update_trading_password(@_);
+    my ($self, $trading_password) = @_;
+
+    die 'PasswordRequired' unless $trading_password;
+
+    my $hash_pw = BOM::User::Password::hashpw($trading_password);
+
+    $self->{trading_password} = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select trading_password from users.update_trading_password(?, ?, ?)', undef, $self->{id}, $hash_pw, undef);
+        });
+
+    return $self;
 }
 
 =head2 update_dx_trading_password
@@ -1836,10 +1963,18 @@ Returns $self
 =cut
 
 sub update_dx_trading_password {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_dx_trading_password from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
-    return BOM::Service::User::Transitional::Password::update_dx_trading_password(@_);
+    my ($self, $trading_password) = @_;
+
+    die 'PasswordRequired' unless $trading_password;
+
+    my $hash_pw = BOM::User::Password::hashpw($trading_password);
+
+    $self->{dx_trading_password} = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select dx_trading_password from users.update_trading_password(?, ?, ?)', undef, $self->{id}, undef, $hash_pw);
+        });
+
+    return $self;
 }
 
 =head2 link_wallet_to_trading_account
@@ -2412,6 +2547,26 @@ sub affiliate_coc_approval_required {
     return undef unless defined $self->affiliate->{coc_approval};
 
     return $self->affiliate->{coc_approval} ? 0 : 1;
+}
+
+=head2 unlink_social
+
+Returns 1 if user was unlinked for social providers.
+Returns undef if user as no social providers.
+
+=cut
+
+sub unlink_social {
+    my $user = shift;
+
+    # remove social signup flag
+    $user->update_has_social_signup(0);
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    my @providers    = $user_connect->get_connects_by_user_id($user->{id});
+
+    # remove all other social accounts
+    $user_connect->remove_connect($user->{id}, $_) for @providers;
+    return 1;
 }
 
 =head2 oneall_data

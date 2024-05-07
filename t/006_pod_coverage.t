@@ -9,11 +9,11 @@ use Test::Pod::CoverageChange;
 # The number of naked (undocumented) subs should never be increased in this hashref.
 
 my $allowed_naked_packages = {
-    'BOM::User'                                        => 27,
+    'BOM::User'                                        => 29,
     'BOM::User::Client'                                => 61,
     'BOM::User::AuditLog'                              => 1,
     'BOM::User::Utility'                               => 4,
-    'BOM::User::Password'                              => 2,
+    'BOM::User::Password'                              => 3,
     'BOM::User::FinancialAssessment'                   => 3,
     'BOM::User::Client::Status'                        => 73,
     'BOM::User::Client::Account'                       => 4,
