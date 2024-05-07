@@ -141,6 +141,30 @@ subtest 'create account failed' => sub {
         is($res->{new_account_real}, undef, 'NO account created');
     };
 
+    subtest 'validate whitespace in first_name' => sub {
+        my %details = %client_details;
+        $details{first_name} = '    ';
+        my $res = $t->await::new_account_real(\%details);
+
+        is($res->{error}->{code},    'InputValidationFailed',               "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: first_name', "Checked that validation failed for first_name");
+    };
+
+    subtest 'validate one chinese character in first_name' => sub {
+        $vr_client->residence('cn');
+        $vr_client->save;
+
+        my %details = %client_details;
+        $details{first_name} = '强';
+        $details{last_name}  = '张';
+        $details{currency}   = 'USD';
+        $details{residence}  = 'cn';
+
+        my $res = $t->await::new_account_real(\%details);
+        ok($res->{msg_type}, 'new_account_real');
+        is($res->{error}, undef, 'account created successfully');
+    };
+
     subtest 'restricted or invalid country' => sub {
         subtest 'restricted - US' => sub {
             $vr_client->residence('us');
@@ -167,6 +191,7 @@ subtest 'create account failed' => sub {
             is($res->{error}->{code},    'InvalidAccountRegion', 'invalid country - xx');
             is($res->{new_account_real}, undef,                  'NO account created');
         };
+
     };
 
     subtest 'no MF' => sub {
