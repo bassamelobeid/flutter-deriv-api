@@ -74,21 +74,19 @@ is $timing->[1]->[2]->{tags}->[0], 'rpc:send_ask', 'Should set tag with rpc meth
 is $timing->[2]->[0], 'bom_websocket_api.v_3.rpc.call.timing.response.latency';
 ok $timing->[2]->[1], 'Should log timing';
 
-my $email = 'test-binary' . rand(999) . '@binary.com';
-my $user  = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
+my $email  = 'test-binary' . rand(999) . '@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
+    broker_code => 'CR',
 });
 $client->email($email);
 $client->save;
 $client->set_default_account('USD');
 
 my $loginid = $client->loginid;
-
+my $user    = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
 $user->add_client($client);
 
 my $token = BOM::Platform::Token::API->new->create_token($loginid, 'Test', ['trade']);

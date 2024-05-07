@@ -27,20 +27,18 @@ BOM::Database::Model::AccessToken->new->dbic->dbh->do("
 ");
 
 # prepare client
-my $email = 'test-binary@binary.com';
-my $user  = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
+my $email  = 'test-binary@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
+    broker_code => 'CR',
 });
 $client->email($email);
 $client->save;
 
 my $loginid = $client->loginid;
-
+my $user    = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
 $user->add_client($client);
 
 subtest 'validate_oauth_token' => sub {

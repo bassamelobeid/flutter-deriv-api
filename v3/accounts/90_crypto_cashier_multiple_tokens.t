@@ -34,8 +34,7 @@ my $client1 = create_client(
     {
         email          => $email,
         residence      => 'id',
-        place_of_birth => 'id',
-        binary_user_id => $user->id,
+        place_of_birth => 'id'
     });
 $client1->set_default_account('BTC');
 $user->add_client($client1);
@@ -47,8 +46,7 @@ my $client2 = create_client(
     {
         email          => $email,
         residence      => 'id',
-        place_of_birth => 'id',
-        binary_user_id => $user->id,
+        place_of_birth => 'id'
     });
 $client2->set_default_account('BTC');
 $user->add_client($client2);

@@ -14,22 +14,21 @@ use BOM::User;
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 
-my $email    = 'raunak@binary.com';
-my $password = 'jskjd8292922';
-my $hash_pwd = BOM::User::Password::hashpw($password);
-my $user     = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
+my $email       = 'raunak@binary.com';
+my $password    = 'jskjd8292922';
+my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
+    broker_code => 'CR',
 });
 $test_client->email($email);
 $test_client->save;
 
 my $json         = JSON::MaybeXS->new;
 my $test_loginid = $test_client->loginid;
+my $user         = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
 $user->add_client($test_client);
 $user->add_login_history(
     environment => 'dummy environment',

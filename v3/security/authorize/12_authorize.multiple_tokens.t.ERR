@@ -1,9 +1,0 @@
-Perltidy version is 20220613
-
-v3/security/authorize/12_authorize.multiple_tokens.t: Begin Error Output Stream
-
-35: binary_user_id => $user->id,
-    ^
-found binary_user_id where operator expected
-
-Missing ';' or ',' above?

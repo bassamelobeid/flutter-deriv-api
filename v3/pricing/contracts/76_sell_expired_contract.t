@@ -22,18 +22,18 @@ my $response = $t->await::sell_expired({sell_expired => 1});
 is $response->{error}->{code},    'AuthorizationRequired';
 is $response->{error}->{message}, 'Please log in.';
 
-my $email = 'unit_test@binary.com';
-my $user  = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
+my $email       = 'unit_test@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    binary_user_id => $user->id,
+    broker_code => 'MF',
 });
 $test_client->email($email);
 $test_client->save;
 
+my $loginid = $test_client->loginid;
+my $user    = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
 $user->add_client($test_client);
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);

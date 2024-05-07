@@ -39,20 +39,13 @@ $app_config->set({
 
 my $t = build_wsapi_test();
 
+my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+
 my $user = BOM::User->create(
-    email    => 'testing@deriv.com',
+    email    => $client1->email,
     password => 'test'
 );
-my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
-    email          => $user->email,
-});
-my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
-    email          => $user->email,
-});
 
 $user->add_client($client1);
 $user->add_client($client2);

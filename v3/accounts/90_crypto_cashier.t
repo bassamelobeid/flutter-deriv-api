@@ -34,8 +34,7 @@ my $client = create_client(
     {
         email          => $email,
         residence      => 'id',
-        place_of_birth => 'id',
-        binary_user_id => $user->id,
+        place_of_birth => 'id'
     });
 $client->set_default_account('BTC');
 $user->add_client($client);

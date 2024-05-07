@@ -27,18 +27,12 @@ my $user = BOM::User->create(
     password => $hash_pwd
 );
 
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    binary_user_id => $user->id,
-});
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
 $client_vr->set_default_account('USD');
 $client_vr->deposit_virtual_funds;
 $client_vr->save;
 
-my $wallet_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRW',
-    binary_user_id => $user->id,
-});
+my $wallet_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRW'});
 $wallet_vr->set_default_account('USD');
 $wallet_vr->deposit_virtual_funds;
 $wallet_vr->save;

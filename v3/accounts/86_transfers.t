@@ -31,37 +31,30 @@ sub _offer_to_clients {
 _offer_to_clients(1, $_) for qw/BTC USD ETH UST EUR/;
 
 #create client
-my $email       = 'dummy' . rand(999) . '@binary.com';
-my $user_client = BOM::User->create(
-    email          => $email,
-    password       => BOM::User::Password::hashpw('jskjd8292922'),
-    email_verified => 1,
-);
+my $email      = 'dummy' . rand(999) . '@binary.com';
 my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',
     email          => $email,
     residence      => 'id',
     place_of_birth => 'id',
-    binary_user_id => $user_client->id,
 });
 $client_usd->set_default_account('USD');
+my $user_client = BOM::User->create(
+    email          => $email,
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
 $user_client->add_client($client_usd);
 my $client_token = BOM::Platform::Token::API->new->create_token($client_usd->loginid, 'test token', ['read', 'payments']);
 
 #Create payment agent
 $email = 'dummy' . rand(999) . '@binary.com';
 my $agent_name = 'Test Agent';
-my $user_agent = BOM::User->create(
-    email          => $email,
-    password       => BOM::User::Password::hashpw('jskjd8292922'),
-    email_verified => 1,
-);
-my $agent_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $agent_usd  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',
     email          => $email,
     residence      => 'id',
     place_of_birth => 'id',
-    binary_user_id => $user_agent->id,
 });
 $agent_usd->set_default_account('USD');
 $agent_usd->payment_agent({
@@ -81,6 +74,11 @@ $agent->urls([{url => 'http://www.example.com/'}]);
 $agent->phone_numbers([{phone_number => '+123456789'}]);
 $agent->save;
 
+my $user_agent = BOM::User->create(
+    email          => $email,
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
 $user_agent->add_client($agent_usd);
 
 my $agent_token = BOM::Platform::Token::API->new->create_token($agent_usd->loginid, 'test token', ['read', 'payments']);

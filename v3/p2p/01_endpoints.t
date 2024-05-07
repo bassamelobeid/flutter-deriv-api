@@ -37,29 +37,28 @@ my $t = build_wsapi_test();
 
 my $email_advertiser = 'p2p_advertiser@test.com';
 my $email_client     = 'p2p_client@test.com';
-my $user_advertiser  = BOM::User->create(
+
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    email       => $email_advertiser
+});
+
+my $user_advertiser = BOM::User->create(
     email    => $email_advertiser,
     password => 'test'
 );
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    email          => $email_advertiser,
-    binary_user_id => $user_advertiser->id,
-});
-
 $user_advertiser->update_email_fields(email_verified => 't');
 $user_advertiser->add_client($client_vr);
+
+my $client_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => $email_client
+});
 
 my $user_client = BOM::User->create(
     email    => $email_client,
     password => 'test'
 );
-my $client_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email_client,
-    binary_user_id => $user_client->id,
-});
-
 $user_client->add_client($client_client);
 $client_client->account('USD');
 

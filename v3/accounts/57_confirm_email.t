@@ -22,18 +22,12 @@ $client_mocked->mock('add_note', sub { return 1 });
 
 subtest 'confirm_email Input Field Validation' => sub {
     my $email = 'test@deriv.com';
-    my $user  = BOM::User->create(
+    BOM::User->create(
         email          => $email,
         password       => BOM::User::Password::hashpw('Abcd1234!'),
         email_verified => 0,
         email_consent  => 0,
     );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    $user->add_client($client);
 
     my $verification_code = BOM::Platform::Token->new(
         email       => $email,
@@ -49,7 +43,7 @@ subtest 'confirm_email Input Field Validation' => sub {
     my $t   = build_wsapi_test();
     my $res = $t->await::confirm_email($confirm_user);
     is($res->{msg_type}, 'confirm_email');
-    ok($res->{confirm_email}, 'confirm_email RPC response success');
+    ok($res->{confirm_email}, 'confirm_email RPC response sucess');
     test_schema('confirm_email', $res);
 
     #Missing verification code
@@ -97,12 +91,6 @@ subtest 'confirm_email token validation' => sub {
         email_verified => 0,
         email_consent  => 0,
     );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    $user->add_client($client);
 
     my $verification_code = BOM::Platform::Token->new(
         email       => $email,

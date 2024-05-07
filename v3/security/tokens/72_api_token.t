@@ -23,20 +23,18 @@ BOM::Database::Model::AccessToken->new->dbic->dbh->do("
 my $t = build_wsapi_test();
 
 # prepare client
-my $email = 'test-binary@binary.com';
-my $user  = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
+my $email  = 'test-binary@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id,
+    broker_code => 'CR',
 });
 $client->email($email);
 $client->save;
 
 my $loginid = $client->loginid;
-
+my $user    = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
 $user->add_client($client);
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
