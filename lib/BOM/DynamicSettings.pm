@@ -550,11 +550,6 @@ sub get_settings_by_group {
                 payments.crypto.auto_update.stable_payment_methods
                 payments.crypto.auto_update.approve_dry_run
                 payments.crypto.auto_update.reject_dry_run
-                payments.crypto.auto_update.max_profit_limit.day
-                payments.crypto.auto_update.max_profit_limit.month
-                payments.crypto.auto_update.lookback_time_cfd_net_transfer
-                payments.crypto.auto_update.max_cfd_net_transfer_limit
-                payments.crypto.auto_update.lookback_time_trading_activity
                 payments.crypto.stablecoin.bounds.min
                 payments.crypto.stablecoin.bounds.max
                 payments.transfer_between_accounts.limits.fiat_to_crypto
