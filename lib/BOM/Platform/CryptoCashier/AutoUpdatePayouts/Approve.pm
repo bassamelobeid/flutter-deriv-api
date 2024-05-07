@@ -44,15 +44,19 @@ Tag: NO_CRYPTOCURRENCY_DEPOSIT
 
 =cut
 
-use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
-use List::Util                 qw(any);
-use Log::Any                   qw($log);
+use DataDog::DogStatsd::Helper qw/stats_inc stats_count/;
+use LandingCompany::Registry;
+use List::Util   qw(first any max);
+use Log::Any     qw($log);
+use Scalar::Util qw/blessed/;
 use Syntax::Keyword::Try;
-use Text::CSV qw(csv);
+use Text::CSV  qw (csv);
+use Text::Trim qw(trim);
 use Time::Moment;
-
-use BOM::User::Client;
-use BOM::Config::Runtime;
+use URI;
+use JSON::MaybeXS;
+use Date::Utility;
+use BOM::User;
 
 use parent qw(BOM::Platform::CryptoCashier::AutoUpdatePayouts);
 
@@ -72,8 +76,6 @@ use constant ACCEPTABLE_PERCENTAGE    => 20;
 use constant THRESHOLD_AMOUNT         => 999;
 use constant ALLOWED_ABOVE_THRESHOLD  => 0;
 use constant THRESHOLD_AMOUNT_PER_DAY => 7999;
-
-my $app_config = BOM::Config::Runtime->instance->app_config;
 
 =head2 new
 
@@ -245,17 +247,9 @@ Takes the following arguments as named parameters
 
 =over 4
 
-=item * C<binary_user_id> - User unique identifier from database
+=item * C<binary_user_id> - user unique identifier from database
 
-=item * C<client_loginid> - Client login id
-
-=item * C<total_withdrawal_amount> - Total withdrawal amount requested by user
-
-=item * C<total_withdrawal_amount_today> - Total withdrawal amount for a user withinin the current day.
-
-=item * C<currency_code> - Currency code
-
-=item * C<withdrawal_amount_in_crypto> - Withdrawal amount in crypto currency
+=item * C<total_withdrawal_amount> - total withdrawal amount requested by user
 
 =back
 
@@ -267,7 +261,7 @@ Returns a hash ref with the following keys:
 
 =item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not
 
-=item * C<risk_percentage> - Risk percentage calculation based on net deposit
+=item * C<risk_percentage> - risk percentage calculation based on net deposit
 
 =back
 
@@ -276,121 +270,21 @@ Returns a hash ref with the following keys:
 sub user_activity {
     my ($self, %args) = @_;
 
-    my $client = BOM::User::Client->new({loginid => $args{client_loginid}});
+    my $allowed_above_threshold       = $self->{allowed_above_threshold}  // ALLOWED_ABOVE_THRESHOLD;
+    my $threshold_amount              = $self->{threshold_amount}         // THRESHOLD_AMOUNT;
+    my $threshold_amount_per_day      = $self->{threshold_amount_per_day} // THRESHOLD_AMOUNT_PER_DAY;
+    my $acceptable_percentage         = $self->{acceptable_percentage}    // ACCEPTABLE_PERCENTAGE;
+    my $total_withdrawal_amount       = $args{total_withdrawal_amount};
+    my $total_withdrawal_amount_today = $args{total_withdrawal_amount_today} // 0;
+    my $withdrawal_amount_in_crypto   = $args{withdrawal_amount_in_crypto}   // 0;
+    my $currency_code                 = $args{currency_code};
+    my $binary_user_id                = $args{binary_user_id};
+    my $client_loginid                = $args{client_loginid};
+    my $response                      = {};
+    # my $user                          = BOM::User->new(id => $binary_user_id);
+    $response->{total_withdrawal_amount_today_in_usd} = $total_withdrawal_amount_today;
 
-    $args{start_date_to_inspect} = Time::Moment->from_epoch(Time::Moment->now->epoch - TIME_RANGE);
-    $args{account_id}            = $client->account->id;
-
-    my @rules_order = (
-        \&_rule_insufficient_balance,
-        \&_rule_client_auto_approval_disabled,
-        \&_rule_empty_amount_no_exchange_rates,
-        \&_rule_amount_above_threshold,
-        \&_rule_client_status_restricted,
-        \&_rule_max_profit_limit,
-        \&_rule_low_trade_recent_deposit,
-        \&_rule_low_trade_for_timerange,
-        \&_rule_low_trade_recent_net_cfd_deposit,
-        \&_rule_cfd_net_transfers,
-        \&_rule_no_recent_payment,
-        \&_rule_no_crypto_currency_deposit,
-        \&_rule_acceptable_net_deposit,
-
-    );
-
-    my $response = {
-        total_withdrawal_amount_today_in_usd => $args{total_withdrawal_amount_today} // 0,
-        tag                                  => 'MANUAL_VERIFICATION_REQUIRED',              # Default tag in case none of the rules have been met
-        auto_approve                         => 0,
-    };
-
-    for my $rule_func (@rules_order) {
-        my $rule_response = $rule_func->($self, $response, %args);
-        if ($rule_response) {
-            $response = $rule_response;
-            last;
-        }
-    }
-
-    # cleanup
-    delete $self->{$args{binary_user_id}};
-
-    return $response;
-}
-
-=head2 _get_user_payments
-
-Fetches user payments from database and caches it.
-
-Takes the following arguments
-
-=over 4
-
-=item * C<binary_user_id> - Binary User ID
-
-=item * C<start_date_to_inspect> - Start time to query the DB for getting payments
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _get_user_payments {
-    my ($self, %args) = @_;
-
-    my $binary_user_id = $args{binary_user_id};
-    return $self->{$binary_user_id}{user_payments} //= do {
-        my ($user_payments) = $self->user_payment_details(
-            binary_user_id => $binary_user_id,
-            from_date      => $args{start_date_to_inspect}->to_string,
-        );
-        $user_payments;
-    };
-}
-
-=head2 _rule_insufficient_balance
-
-Do not approve if the client balance is lower than the withdrawal amount.
-TAG: INSUFFICIENT_BALANCE
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<client_loginid> - Client Login id
-
-=item * C<withdrawal_amount_in_crypto> - Withdrawal amount in crypto currency
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_insufficient_balance {
-    my ($self, $response, %args) = @_;
-
-    my $client_balance              = $self->get_client_balance($args{client_loginid});
-    my $withdrawal_amount_in_crypto = $args{withdrawal_amount_in_crypto} // 0;
+    my $client_balance = $self->get_client_balance($client_loginid);
     if ($client_balance < $withdrawal_amount_in_crypto) {
         $log->debugf('Client balance %s is lower than the withdrawal amount %s', $client_balance, $withdrawal_amount_in_crypto);
         $response->{tag}          = 'INSUFFICIENT_BALANCE';
@@ -398,48 +292,6 @@ sub _rule_insufficient_balance {
         return $response;
     }
 
-    return undef;
-}
-
-=head2 _rule_client_auto_approval_disabled
-
-Do not approve if the client has auto approval disabled.
-TAG: AUTO_APPROVAL_IS_DISABLED_FOR_CLIENT
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<client_loginid> - Client Login id
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_client_auto_approval_disabled {
-    my ($self, $response, %args) = @_;
-
-    my $client_loginid = $args{client_loginid};
     if ($self->is_client_auto_approval_disabled($client_loginid)) {
         $log->debugf('Auto approval is not enabled for client %s', $client_loginid);
         $response->{tag}          = 'AUTO_APPROVAL_IS_DISABLED_FOR_CLIENT';
@@ -447,146 +299,17 @@ sub _rule_client_auto_approval_disabled {
         return $response;
     }
 
-    return undef;
-}
-
-=head2 _rule_empty_amount_no_exchange_rates
-
-Do not approve if the exchange rate is missing for the currency.
-TAG: EMPTY_AMOUNT_NO_EXCHANGE_RATES
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<total_withdrawal_amount> - Amount in the withdrawal request which is pending verification
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_empty_amount_no_exchange_rates {
-    my ($self, $response, %args) = @_;
-
-    if (!$args{total_withdrawal_amount}) {
+    if (!$total_withdrawal_amount) {
         $response->{tag}          = 'EMPTY_AMOUNT_NO_EXCHANGE_RATES';
         $response->{auto_approve} = 0;
         return $response;
     }
-
-    return undef;
-}
-
-=head2 _rule_amount_above_threshold
-
-Do not approve if the payout amount is greater than the configurable allowed limit.
-TAG: AMOUNT_ABOVE_THRESHOLD
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<total_withdrawal_amount_today> - Total withdrawal amount for a user withinin the current day.
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_amount_above_threshold {
-    my ($self, $response, %args) = @_;
-
-    my $allowed_above_threshold       = $self->{allowed_above_threshold}     // ALLOWED_ABOVE_THRESHOLD;
-    my $threshold_amount              = $self->{threshold_amount}            // THRESHOLD_AMOUNT;
-    my $threshold_amount_per_day      = $self->{threshold_amount_per_day}    // THRESHOLD_AMOUNT_PER_DAY;
-    my $total_withdrawal_amount_today = $args{total_withdrawal_amount_today} // 0;
-    if (not $allowed_above_threshold
-        and ($threshold_amount < $args{total_withdrawal_amount} || $threshold_amount_per_day < $total_withdrawal_amount_today))
+    if (not $allowed_above_threshold and ($threshold_amount < $total_withdrawal_amount || $threshold_amount_per_day < $total_withdrawal_amount_today))
     {
         $response->{tag}          = 'AMOUNT_ABOVE_THRESHOLD';
         $response->{auto_approve} = 0;
         return $response;
     }
-
-    return undef;
-}
-
-=head2 _rule_client_status_restricted
-
-Do not approve if the client status is restricted.
-TAG: CLIENT_STATUS_RESTRICTED
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<binary_user_id> - Binary User ID
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_client_status_restricted {
-    my ($self, $response, %args) = @_;
 
     if (my $restricted_status = $self->user_restricted(binary_user_id => $args{binary_user_id})) {
         $response->{tag}               = 'CLIENT_STATUS_RESTRICTED';
@@ -595,349 +318,38 @@ sub _rule_client_status_restricted {
         return $response;
     }
 
-    return undef;
-}
-
-=head2 _rule_low_trade_recent_deposit
-
-Do not approve if the user has less than 25% of total deposit amount in trades.
-TAG: LOW_TRADE_RECENT_DEPOSIT
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<binary_user_id> - Binary User ID
-
-=item * C<account_id> - User account id
-
-=item * C<client_loginid> - client loginid id
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_low_trade_recent_deposit {
-    my ($self, $response, %args) = @_;
-
-    my $recent_deposit_to_crypto_account = $self->get_recent_deposit_to_crypto_account(account_id => $args{account_id});
-    my $deposit_amount                   = $recent_deposit_to_crypto_account->{amount};
-    my $payment_time                     = $recent_deposit_to_crypto_account->{payment_time};
-
-    unless ($payment_time) {
-        $log->debugf('User %s has no crypto deposits recently', $args{client_loginid});
-        return undef;
-    }
-
-    my $client_trading_activity = $self->get_client_trading_activity($args{account_id}, $payment_time);
-
-    if ($client_trading_activity < 0.25 * $deposit_amount) {
-        $log->debugf('User %s has less trading activity since the recent deposit', $args{client_loginid});
-        $response->{tag}          = 'LOW_TRADE_RECENT_DEPOSIT';
-        $response->{auto_approve} = 0;
-        return $response;
-    }
-
-    return undef;
-}
-
-=head2 _rule_low_trade_recent_net_cfd_deposit
-
-Do not approve if the net cfd transfer of a user is negative or greater than 25% of last cfd deposit.
-TAG: LOW_TRADE_RECENT_NEGATIVE_NET_CFD_DEPOSIT or LOW_TRADE_RECENT_NET_CFD_DEPOSIT
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<binary_user_id> - Binary User ID
-
-=item * C<client_loginid> - client loginid id
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_low_trade_recent_net_cfd_deposit {
-    my ($self, $response, %args) = @_;
-
-    my $get_recent_cfd_deposit = $self->get_recent_cfd_deposit(binary_user_id => $args{binary_user_id});
-    my $payment_time           = $get_recent_cfd_deposit->{payment_time};
-
-    unless ($payment_time) {
-        $log->debugf('User %s has no recent cfd deposit', $args{client_loginid});
-        return undef;
-    }
-
-    my $net_cfd_transfers = $self->get_net_cfd_transfers(
-        binary_user_id => $args{binary_user_id},
-        lookback_time  => $payment_time
+    my $start_date_to_inspect = Time::Moment->from_epoch(Time::Moment->now->epoch - TIME_RANGE);
+    my ($user_payments) = $self->user_payment_details(
+        binary_user_id => $binary_user_id,
+        from_date      => $start_date_to_inspect->to_string,
     );
+    # TO-DO temporary disabled this check. To be fixed in separate card.
+    # my $total_user_deposit_amount = $user_payments->{non_crypto_deposit_amount} + $user_payments->{total_crypto_deposits};
+    # my $total_trade_volume        = $user->total_trades($start_date_to_inspect);
+    # if ($total_trade_volume < $total_user_deposit_amount / 4) {
+    #     $response->{tag}          = 'LOW_TRADE';
+    #     $response->{auto_approve} = 0;
+    #     return $response;
+    # }
 
-    if ($net_cfd_transfers < 0) {
-        $log->debugf('User %s has negative cfd net transfer activity since the recent crypto deposit', $args{client_loginid});
-        $response->{tag}          = 'LOW_TRADE_RECENT_NEGATIVE_NET_CFD_DEPOSIT';
-        $response->{auto_approve} = 0;
-        return $response;
-    }
-
-    my $recent_cfd_deposit = $get_recent_cfd_deposit->{amount};
-
-    if ($net_cfd_transfers > 0.25 * $recent_cfd_deposit) {
-        $log->debugf('User %s has high net transfer activity since the recent cfd deposit', $args{client_loginid});
-        $response->{tag}          = 'LOW_TRADE_RECENT_NET_CFD_DEPOSIT';
-        $response->{auto_approve} = 0;
-        return $response;
-    }
-
-    return undef;
-}
-
-=head2 _rule_low_trade_for_timerange
-
-Do not auto approve if total trading activity of the client is less than 25 % of the total deposits over a configurable timerange.
-
-TAG: LOW_TRADE_FOR_TIMERANGE
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<account_id> - Client's account id
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_low_trade_for_timerange {
-    my ($self, $response, %args) = @_;
-
-    my $trading_activity_timeframe          = $app_config->payments->crypto->auto_update->lookback_time_trading_activity;
-    my $trading_activity_timestamp          = Time::Moment->from_epoch(Time::Moment->now->epoch - ($trading_activity_timeframe * 86400));
-    my $client_trading_activity             = $self->get_client_trading_activity($args{account_id}, $trading_activity_timestamp);
-    my $crypto_account_total_deposit_amount = $self->get_crypto_account_total_deposit_amount($args{account_id}, $trading_activity_timestamp);
-
-    if ($client_trading_activity < 0.25 * $crypto_account_total_deposit_amount) {
-        $response->{tag}          = 'LOW_TRADE_FOR_TIMERANGE';
-        $response->{auto_approve} = 0;
-        return $response;
-    }
-    return undef;
-}
-
-=head2 _rule_no_recent_payment
-
-Approve if the user has no payment in the last six months.
-TAG: NO_RECENT_PAYMENT
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<binary_user_id> - Binary User ID
-
-=item * C<start_date_to_inspect> - Start time to query the DB for getting payments
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_no_recent_payment {
-    my ($self, $response, %args) = @_;
-
-    my $user_payments = $self->_get_user_payments(%args);
     if (!$user_payments->{count}) {
-        $log->debugf('User has no payments since %s', $args{start_date_to_inspect}->to_string);
+        $log->debugf('User has no payments since %s', $start_date_to_inspect->to_string);
         $response->{tag}          = 'NO_RECENT_PAYMENT';
         $response->{auto_approve} = 1;
         return $response;
     }
-
-    return undef;
-}
-
-=head2 _rule_no_crypto_currency_deposit
-
-Do not approve if the most deposited method not from the same cryptocurrency
-in last six months (time period is configurable).
-Tag: NO_CRYPTOCURRENCY_DEPOSIT
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<binary_user_id> - Binary User ID
-
-=item * C<currency_code> - Currency code
-
-=item * C<start_date_to_inspect> - Start time to query the DB
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_no_crypto_currency_deposit {
-    my ($self, $response, %args) = @_;
-
-    my $user_payments             = $self->_get_user_payments(%args);
     my $all_crypto_net_deposits   = $user_payments->{currency_wise_crypto_net_deposits} // {};
-    my $net_crypto_deposit_amount = $all_crypto_net_deposits->{$args{currency_code}}    // 0;
+    my $net_crypto_deposit_amount = $all_crypto_net_deposits->{$currency_code}          // 0;
     my $highest_deposited_amount  = $self->find_highest_deposit($user_payments);
 
     if (%$highest_deposited_amount and $net_crypto_deposit_amount < $highest_deposited_amount->{net_amount_in_usd}) {
-        $log->debugf('User has more Fiat deposits than crypto deposits since %s', $args{start_date_to_inspect}->to_string);
+
+        $log->debugf('User has more Fiat deposits than crypto deposits since %s', $start_date_to_inspect->to_string);
         $response->{tag}          = 'NO_CRYPTOCURRENCY_DEPOSIT';
         $response->{auto_approve} = 0;
         return $response;
     }
 
-    return undef;
-}
-
-=head2 _rule_acceptable_net_deposit
-
-Approve if client's risk is acceptable.
-TAG: ACCEPTABLE_NET_DEPOSIT
-
-Do not approve if client's risk is above acceptable limit.
-TAG: RISK_ABOVE_ACCEPTABLE_LIMIT
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<binary_user_id> - Binary User ID
-
-=item * C<start_date_to_inspect> - Start time to query the DB
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_acceptable_net_deposit {
-    my ($self, $response, %args) = @_;
-
-    my $user_payments = $self->_get_user_payments(%args);
     $log->debugf('Total user payment records %s', $user_payments);
 
     my $risk_deposit_amount    = $user_payments->{non_crypto_deposit_amount};
@@ -956,8 +368,7 @@ sub _rule_acceptable_net_deposit {
         $risk_withdrawal_amount = $user_payments->{reversible_withdraw_amount};
     }
 
-    my $acceptable_percentage = $self->{acceptable_percentage} // ACCEPTABLE_PERCENTAGE;
-    my $risk_details          = $self->risk_calculation(
+    my $risk_details = $self->risk_calculation(
         deposit               => $risk_deposit_amount,
         withdraw              => $risk_withdrawal_amount,
         acceptable_percentage => $acceptable_percentage
@@ -974,116 +385,6 @@ sub _rule_acceptable_net_deposit {
     }
 
     return $response;
-}
-
-=head2 _rule_max_profit_limit
-
-Do not auto approve if client has reached max profit limit for a day
-TAG: ABOVE_MAX_PROFIT_LIMIT_FOR_DAY
-
-Do not auto approve if client has reached max profit limit for a month
-TAG: ABOVE_MAX_PROFIT_LIMIT_FOR_MONTH
-
-Limits can be configured from backoffice.
-
-Takes the following arguments
-
-=over 4
-
-=item * C<$response> - A hash reference having the following keys as default approval response.
-
-=over 4
-
-=item * C<tag> - A label assigned to the payout request based on the outcome of rule evaluations.
-
-=item * C<auto_approve> - Boolean flag to represent whether to auto approve the payout or not.
-
-=item * C<total_withdrawal_amount_today_in_usd> - Total withdrawal amount in USD for a client withinin the current day.
-
-=back
-
-=item * C<%args> - A hash having the following keys to be used for rule evaluation.
-
-=over 4
-
-=item * C<account_id> - Client's account id
-
-=item * C<currency_code> - Account currency code
-
-=back
-
-=back
-
-Updates and returns the response hash if the rule is met, else returns undef.
-
-=cut
-
-sub _rule_max_profit_limit {
-    my ($self, $response, %args) = @_;
-
-    my $client_profit_day       = $self->get_client_profit($args{account_id}, 'day', $args{currency_code});
-    my $client_profit_limit_day = $app_config->payments->crypto->auto_update->max_profit_limit->day // 0;
-
-    if ($client_profit_day > $client_profit_limit_day) {
-        $log->debugf('User has reached max profit limit for a day %s', $client_profit_limit_day);
-        $response->{tag}          = 'ABOVE_MAX_PROFIT_LIMIT_FOR_DAY';
-        $response->{auto_approve} = 0;
-        return $response;
-    }
-
-    my $client_profit_month       = $self->get_client_profit($args{account_id}, 'month', $args{currency_code});
-    my $client_profit_limit_month = $app_config->payments->crypto->auto_update->max_profit_limit->month // 0;
-
-    if ($client_profit_month > $client_profit_limit_month) {
-        $log->debugf('User has reached max profit limit for a month %s', $client_profit_limit_month);
-        $response->{tag}          = 'ABOVE_MAX_PROFIT_LIMIT_FOR_MONTH';
-        $response->{auto_approve} = 0;
-        return $response;
-    }
-
-    return undef;
-}
-
-=head2 _rule_cfd_net_transfers
-
-Do not auto approve if Net transfers from CFD account that are:
-1. Less than USD amount (configurable) 
-2. In a time period (number of days - configurable)
-
-TAG: MANUAL_VERIFICATION_REQUIRED
-
-=cut
-
-sub _rule_cfd_net_transfers {
-    my ($self, $response, %args) = @_;
-
-    my $lookback_time_cfd_net_transfer_days = $app_config->payments->crypto->auto_update->lookback_time_cfd_net_transfer;
-    my $lookback_time_cfd_net_transfer      = Time::Moment->from_epoch(Time::Moment->now->epoch - ($lookback_time_cfd_net_transfer_days * 86400));
-
-    my $net_cfd_transfers = $self->get_net_cfd_transfers(
-        binary_user_id => $args{binary_user_id},
-        lookback_time  => $lookback_time_cfd_net_transfer
-    );
-
-    $log->debugf('Net cfd transfers %s', $net_cfd_transfers);
-
-    if ($net_cfd_transfers < 0) {
-        $log->debugf('User %s has negative cfd net transfer activity since the recent crypto deposit', $args{client_loginid});
-        $response->{tag}          = 'NEGATIVE_NET_CFD_DEPOSIT_LOOKBACK_TIMERANGE';
-        $response->{auto_approve} = 0;
-        return $response;
-    }
-
-    my $cfd_max_net_transfer_limit = $app_config->payments->crypto->auto_update->max_cfd_net_transfer_limit;
-
-    if ($net_cfd_transfers > $cfd_max_net_transfer_limit) {
-        $log->debugf('User %s has negative cfd net transfer activity since the recent crypto deposit', $args{client_loginid});
-        $response->{tag}          = 'ABOVE_MAX_CFD_NET_TRANSFER_LIMIT';
-        $response->{auto_approve} = 0;
-        return $response;
-    }
-
-    return undef;
 }
 
 =head2 db_approve_withdrawal
