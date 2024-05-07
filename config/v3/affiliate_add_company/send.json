@@ -93,15 +93,15 @@
             "pattern": "^[0-9]{4}-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|3[0-1])$"
         },
         "first_name": {
-            "description": "The official first name of the affiliate. Within 2-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
+            "description": "The official first name of the affiliate. Within 1-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
             "type": "string",
-            "pattern": "^(?!.*\\s{2,})[\\p{L}\\s'.-]{2,50}$",
+            "pattern": "^(?!.*\\s{2,})[\\p{L}\\s'.-]{1,50}$",
             "sensitive": 1
         },
         "last_name": {
-            "description": "The official last name of the affiliate. Within 2-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
+            "description": "The official last name of the affiliate. Within 1-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
             "type": "string",
-            "pattern": "^(?!.*\\s{2,})[\\p{L}\\s'.-]{2,50}$",
+            "pattern": "^(?!.*\\s{2,})[\\p{L}\\s'.-]{1,50}$",
             "sensitive": 1
         },
         "non_pep_declaration": {
