@@ -4494,16 +4494,14 @@ sub link_affiliate_client {
 
     unless ($aff) {
         DataDog::DogStatsd::Helper::stats_inc('myaffiliates.' . $platform . '.failure.get_aff_id', 1);
-        $log->warnf("Unable to connect to MyAffiliate to parse token %s to link %s", $myaffiliate_token, $loginid);
-        return;
+        return Future->fail("Unable to connect to MyAffiliate to parse token $myaffiliate_token to link $loginid");
     }
 
     my $myaffiliate_id = $aff->get_affiliate_id_from_token($myaffiliate_token);
 
     unless ($myaffiliate_id) {
         DataDog::DogStatsd::Helper::stats_inc('myaffiliates.' . $platform . '.failure.get_aff_id', 1);
-        $log->warnf("Unable to parse token %s", $myaffiliate_token);
-        return;
+        return Future->fail("Unable to parse token $myaffiliate_token");
     }
 
     my $commission_db = BOM::Database::CommissionDB::rose_db();
@@ -4516,12 +4514,12 @@ sub link_affiliate_client {
             });
         $affiliate_id = $res->[0] if $res;
     } catch ($e) {
-        $log->warnf("Exception thrown while querying data for affiliate [%s] error [%s]", $myaffiliate_id, $e);
+        return Future->fail("Exception thrown while querying data for affiliate [$myaffiliate_id] error [$e]");
     }
 
     unless ($affiliate_id) {
         DataDog::DogStatsd::Helper::stats_inc('myaffiliates.' . $platform . '.failure.get_internal_aff_id', 1);
-        return;
+        return Future->fail;
     }
 
     try {
@@ -4540,10 +4538,10 @@ sub link_affiliate_client {
         }
         $redis_write->execute('xadd', $stream, '*', 'platform', $platform, 'account_id', $loginid) if $redis_write;
     } catch ($e) {
-        $log->warnf("Unable to add client %s to affiliate.affiliate_client table. Error [%s]", $loginid, $e);
+        return Future->fail("Unable to add client $loginid to affiliate.affiliate_client table. Error [$e]");
     }
 
-    return;
+    return Future->done;
 }
 
 =head2 account_verification

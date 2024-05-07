@@ -398,7 +398,7 @@ async sub stream_process_loop {
             }
 
             # Setting retry_count
-            $log->debug('Retry count: %s', $retry_count);
+            $log->debugf('Retry count: %s', $retry_count);
             if ($retry_count == NUMBER_OF_RETRIES) {
                 $decoded_data->{details}->{retry_last} = 1;
             }

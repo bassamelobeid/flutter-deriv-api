@@ -107,7 +107,6 @@ my $action_mapping = {
         p2p_adverts_updated                         => \&BOM::Event::Actions::P2P::p2p_adverts_updated,
         affiliate_loginids_sync                     => \&BOM::Event::Actions::MyAffiliate::affiliate_loginids_sync,
         p2p_advertiser_approval_changed             => \&BOM::Event::Actions::P2P::p2p_advertiser_approval_changed,
-        cms_add_affiliate_client                    => \&BOM::Event::Actions::Client::link_affiliate_client,
         df_anonymization_done                       => \&BOM::Event::Actions::Anonymization::df_anonymization_done,
         mt5_archived_account_reset_trading_password => \&BOM::Event::Actions::MT5::mt5_archived_account_reset_trading_password,
         account_verification_for_pending_payout     => \&BOM::Event::Services::Track::account_verification_for_pending_payout,
@@ -231,6 +230,7 @@ my $action_mapping = {
     },
     generic_retryable => {
         wallet_migration_started => \&BOM::Event::Actions::Wallets::wallet_migration_started,
+        cms_add_affiliate_client => \&BOM::Event::Actions::Client::link_affiliate_client,
     }};
 
 =head1 METHODS
