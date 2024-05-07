@@ -682,7 +682,7 @@ sub p2p_advert_list {
         my $config = $BOM::Config::CurrencyConfig::ALL_CURRENCIES{uc $param{local_currency}} or die +{error_code => 'InvalidLocalCurrency'};
         push @countries, $config->{countries}->@*;
         $self->_validate_cross_border_availability if $param{local_currency} ne uc($self->local_currency);
-    } else {
+    } elsif (not($param{advertiser_id} or $param{advertiser_name})) {
         $param{country} = $self->residence;
     }
 
