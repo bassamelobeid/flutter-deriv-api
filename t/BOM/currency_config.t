@@ -729,8 +729,8 @@ subtest 'Check Signup disabled currencies' => sub {
         is_deeply BOM::Config::CurrencyConfig::get_signup_disabled_currencies('malta'), ['GBP'], 'Currency GBP is disabled for signup for malta';
     };
 
-    subtest 'Returns empty for signup disabled currencies' => sub {
-        is_deeply BOM::Config::CurrencyConfig::get_signup_disabled_currencies('svg'), [], 'No currencies disabled for signup on SVG';
+    subtest 'Returns AUD for signup disabled currencies' => sub {
+        is_deeply BOM::Config::CurrencyConfig::get_signup_disabled_currencies('svg'), ['AUD'], 'Currency AUD disabled for signup on SVG';
     };
 };
 
