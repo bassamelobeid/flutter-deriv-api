@@ -11,6 +11,7 @@ use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
+use P2P;
 
 BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 BOM::Test::Helper::P2PWithClient::create_escrow();
@@ -173,6 +174,55 @@ subtest 'search by advertiser name' => sub {
         type            => 'buy'
         ),
         [], 'no match';
+};
+
+subtest 'list adverts for specific advertiser regardless of currency' => sub {
+    my %advert_params = (
+        account_currency  => 'USD',
+        amount            => 100,
+        description       => 'test advert',
+        max_order_amount  => 10,
+        min_order_amount  => 0.1,
+        payment_method    => 'bank_transfer',
+        payment_info      => 'ad pay info',
+        contact_info      => 'ad contact info',
+        rate              => 1.23,
+        rate_type         => 'fixed',
+        type              => 'buy',
+        counterparty_type => 'sell',
+        block_trade       => 0,
+    );
+
+    my $client_za = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'za'
+    });
+    $client_za->account('USD');
+    $client_za->status->set('age_verification', 'system', 'testing');
+    $client_za->set_authentication('ID_ONLINE', {status => 'pass'});
+    my $adv_za = $client_za->p2p_advertiser_create(name => 'jafar');
+    my $ad_zar = P2P->new(client => $client_za)->p2p_advert_create(%advert_params);
+
+    my $client_india = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'in'
+    });
+    $client_india->account('USD');
+    $client_india->status->set('age_verification', 'system', 'testing');
+    $client_india->set_authentication('ID_ONLINE', {status => 'pass'});
+    my $adv_india = $client_india->p2p_advertiser_create(name => 'gholi');
+    my $ad_inr    = P2P->new(client => $client_india)->p2p_advert_create(%advert_params);
+
+    cmp_deeply([map { $_->{id} } $client_za->p2p_advert_list()->@*],    [$adv_za->{id}],    "default advert list is showing only ZAR adverts");
+    cmp_deeply([map { $_->{id} } $client_india->p2p_advert_list()->@*], [$adv_india->{id}], "default advert list is showing only INR adverts");
+
+    cmp_deeply([map { $_->{id} } $client_india->p2p_advert_list(advertiser_id => $adv_za->{id})->@*],
+        [$ad_zar->{id}], "search by advertiser id is showing only target advertiser adverts");
+    cmp_deeply([map { $_->{id} } $client_za->p2p_advert_list(advertiser_id => $adv_india->{id})->@*],
+        [$ad_inr->{id}], "search by advertiser id is showing only target advertiser adverts");
+    cmp_deeply([map { $_->{id} } $client_india->p2p_advert_list(advertiser_name => $adv_za->{name})->@*],
+        [$ad_zar->{id}], "search by advertiser name is showing only target advertiser adverts");
+
 };
 
 BOM::Test::Helper::P2PWithClient::reset_escrow();
