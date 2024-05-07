@@ -718,6 +718,35 @@ payments:
               description: "Stable payment methods config for client withdrawal"
               default: '{"skrill" : "Skrill", "neteller" : "Neteller", "perfectm" : "Perfect Money", "fasapay" : "FasaPay", "paysafe" : "PaySafe", "sticpay" : "SticPay", "webmoney" : "Webmoney", "airtm" : "AirTM", "paylivre" : "Paylivre", "nganluong" : "NganLuong", "astropay" : "Astropay", "onlinenaira" : "Onlinenaira", "directa24s" : "Directa24", "zingpay" : "ZingPay", "pix" : "PIX", "payrtransfer" : "PayRTransfer", "advcash" : "Advcash", "upi" : "UPI", "beyonicmt" : "BeyonicMT", "imps" : "IMPS", "btc" : "BTCCOP", "ltc" : "BTCCOP", "eth" : "BTCCOP", "bch" : "BTCCOP", "solidpaywave" : "SolidPayWave", "verve" : "Verve", "help2pay" : "Help2pay", "p2p" : "Deriv P2P", "payment_agent_transfer" : "Payment Agent"}'
               global: 1
+            max_profit_limit:
+              description: 'Maximum profit limit for crypto auto approval'
+              isa: section
+              contains:
+                day:
+                  description: 'Maximum profit limit in a day for crypto auto approval in USD'
+                  isa: Num
+                  global: 1
+                  default: 5000
+                month:
+                  description: 'Maximum profit limit in a month for crypto auto approval in USD'
+                  isa: Num
+                  global: 1
+                  default: 8000
+            lookback_time_cfd_net_transfer:
+              description: 'The timeframe to compute net CFD transfers.(Number of days)'
+              isa: Num
+              global: 1 
+              default: 180
+            max_cfd_net_transfer_limit:
+              description: 'The threshold limit for net CFD transfers in USD.'
+              isa: Num
+              global: 1
+              default: 5000
+            lookback_time_trading_activity:
+              description: 'The timeframe to compute trading activity. (Number of days)'
+              isa: Num
+              global: 1
+              default: 180
         stablecoin:
           description: "Crypto stablecoins limits"
           isa: section
