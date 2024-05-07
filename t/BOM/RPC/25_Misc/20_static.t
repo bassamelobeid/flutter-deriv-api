@@ -38,9 +38,14 @@ subtest 'residence_list' => sub {
             identity => {
                 services => {
                     idv => {
-                        is_country_supported => 0,
+                        is_country_supported => 1,
                         has_visual_sample    => 0,
-                        documents_supported  => {},
+                        documents_supported  => {
+                            national_id => {
+                                display_name => 'National ID Number',
+                                format       => '^\d{17}[0-9Xx]{1}$',
+                            },
+                        },
                     },
                     onfido => {
                         is_country_supported => 0,
@@ -248,7 +253,7 @@ subtest 'residence_list' => sub {
     $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
     $index  = +{map { (delete $_->{value} => $_) } $result->@*};
     is_deeply($index->{ng}->{identity}->{services}->{idv}->{is_country_supported}, 0, 'IDV disabled for Nigeria');
-    is_deeply($index->{cn}->{identity}->{services}->{idv}->{is_country_supported}, 0, 'IDV not disabled for China');
+    is_deeply($index->{cn}->{identity}->{services}->{idv}->{is_country_supported}, 1, 'IDV not disabled for China');
 
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_countries([qw//]);
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw/identity_pass/]);

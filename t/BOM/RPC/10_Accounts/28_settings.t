@@ -1263,6 +1263,10 @@ subtest 'set settings' => sub {
 };
 
 subtest 'set_settings on virtual account should not change real account settings' => sub {
+    my $time = time;
+
+    set_fixed_time($time);
+
     my $emitted;
     my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
     $mock_events->mock(
@@ -1293,6 +1297,8 @@ subtest 'set_settings on virtual account should not change real account settings
     # Virtual account should not get beef with onfido
     ok !$emitted->{sync_onfido_details};
     ok !$emitted->{poi_check_rules};
+
+    restore_time();
 };
 
 subtest 'set_setting with empty phone' => sub {
@@ -1624,6 +1630,10 @@ subtest 'set_setting check salutuation not removed' => sub {
 };
 
 subtest 'get settings from virtual with a dup account' => sub {
+    my $time = time;
+
+    set_fixed_time($time);
+
     my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email         => 'client+dup+900000009@test.com',
         broker_code   => 'VRTC',
@@ -1712,9 +1722,15 @@ subtest 'get settings from virtual with a dup account' => sub {
 
     cmp_bag $vr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields, @fa_duplicated_fields)],
         'All immutable fields are included in the response (minus the secrets)';
+
+    restore_time();
 };
 
 subtest 'get settings from real with a dup account' => sub {
+    my $time = time;
+
+    set_fixed_time($time);
+
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email         => 'client+dup+cr900000010@test.com',
         broker_code   => 'CR',
@@ -1804,6 +1820,8 @@ subtest 'get settings from real with a dup account' => sub {
 
     cmp_bag $cr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields, @fa_duplicated_fields)],
         'All immutable fields are included in the response (minus the secrets)';
+
+    restore_time();
 };
 
 subtest 'get settings returns correct address_state' => sub {
