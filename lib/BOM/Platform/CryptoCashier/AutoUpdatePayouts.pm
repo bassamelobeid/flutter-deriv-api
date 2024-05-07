@@ -17,12 +17,14 @@ use Date::Utility;
 use Email::Address::UseXS;
 use Email::Sender::Transport::SMTP;
 use Email::Stuffer;
-use JSON::MaybeXS qw(decode_json encode_json);
+use ExchangeRates::CurrencyConverter qw(in_usd);
+use JSON::MaybeXS                    qw(decode_json encode_json);
 use LandingCompany::Registry;
 use List::Util    qw(first any);
 use List::UtilsBy qw(max_by);
 use Log::Any      qw($log);
 use Syntax::Keyword::Try;
+use Time::Moment;
 
 use BOM::Database::ClientDB;
 use BOM::Platform::CryptoCashier::InternalAPI;
@@ -62,7 +64,7 @@ sub client_dbic {
 
         die 'Invalid broker code.' unless grep { uc($self->broker_code) eq $_ } LandingCompany::Registry->all_real_broker_codes;
 
-        BOM::Database::ClientDB->new({broker_code => $self->broker_code})->db->dbic;
+        BOM::Database::ClientDB->new({broker_code => $self->broker_code, db_operation => 'replica'})->db->dbic;
     }
 }
 
@@ -756,6 +758,195 @@ sub get_stable_payment_methods {
     return $self->{stable_payment_methods} //= do {
         decode_json(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('stable_payment_methods') // '{}');
     }
+}
+
+=head2 get_client_profit
+
+Returns the client's profit for the timeframe passed.
+
+=over 4
+
+=item * C<$account_id> - Client's account id
+
+=item * C<$timeframe> - Time period for which the profit needs to be calculated. Possible values - day and month
+
+=item * C<$currency_code> - Currency code
+
+=back
+
+Query, convert to usd and returns the profit calculated for the timeframe from DB if the timeframe is valid, else returns undef.
+
+=cut
+
+sub get_client_profit {
+    my ($self, $account_id, $timeframe, $currency_code) = @_;
+
+    my $sell_time  = Time::Moment->now();
+    my $timeframes = {
+        day   => sub { $sell_time->minus_days(1) },
+        month => sub { $sell_time->minus_months(1) },
+        # can be extended by adding more timeframes if needed
+    };
+    die "Invalid timeframe passed for client profit calculation" unless exists $timeframes->{$timeframe};
+
+    my $purchase_time = $timeframes->{$timeframe}->();
+
+    # This is a legacy DB function currently used only in backoffice and doughflow auto approvals
+    # The function returning the profit without any conversion. Hence we need to convert before returning
+    my $profit = $self->client_dbic->run(
+        fixup => sub {
+            $_->selectrow_array(q{SELECT * FROM public.get_close_trades_profit_or_loss(?, ?, ?, ?)},
+                undef, $account_id, $currency_code, $purchase_time, $sell_time);
+        });
+
+    return in_usd($profit // 0, $currency_code);
+}
+
+=head2 get_net_cfd_transfers
+
+Returns net CFD transfers of client accounts.
+
+=over 4
+
+=item * C<$binary_user_id> - binary user id
+
+=item * C<lookback_time> - Time period (Timestamp)
+
+=back
+
+=cut
+
+sub get_net_cfd_transfers {
+    my ($self, %args) = @_;
+
+    return $self->client_dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM payment.get_net_cfd_transfers(?, ?)', undef, $args{binary_user_id}, $args{lookback_time});
+        });
+}
+
+=head2 get_recent_deposit_to_crypto_account
+
+Retrieves the most recent deposit to crypto account for a given account ID.
+Deposits includes crypto cashier deposits, payment agent transfers and internal account transfers.
+
+Receives the following named parameters:
+
+=over 4
+
+=item * C<account_id>       - user account id
+
+=back
+
+Returns a hashref containing the following keys:
+
+=over 4
+
+=item * C<amount> - numberic, amount of payment
+
+=item * C<payment_time>    - Timestamp, payment timestamp
+
+=back
+
+=cut
+
+sub get_recent_deposit_to_crypto_account {
+    my ($self, %args) = @_;
+
+    return $self->client_dbic->run(
+        fixup => sub {
+            return $_->selectrow_hashref(
+                'SELECT amount, payment_time FROM payment.get_crypto_account_recent_deposit(?)',
+                {Slice => {}},
+                $args{account_id});
+        });
+}
+
+=head2 get_recent_cfd_deposit
+
+Retrieves the most recent cfd deposit for a given user ID.
+Receives the following named parameters:
+
+=over 4
+
+=item * C<$binary_user_id> - binary user id
+
+=back
+
+Returns a hashref containing the following keys:
+
+=over 4
+
+=item * C<amount> - numberic, amount of deposit to cfd accounts
+
+=item * C<payment_time>    - Timestamp, payment timestamp
+
+=back
+
+=cut
+
+sub get_recent_cfd_deposit {
+    my ($self, %args) = @_;
+
+    return $self->client_dbic->run(
+        fixup => sub {
+            return $_->selectrow_hashref('SELECT amount, payment_time FROM payment.get_recent_cfd_deposit(?)', {Slice => {}}, $args{binary_user_id});
+        });
+}
+
+=head2 get_client_trading_activity
+
+Calculate the total trading activity for a client for the given timeframe from DB.
+
+Total trading activity = Total stake of binary contract  + (5 * sum of commission from multiplier trades)
+
+Where:
+commission from multiplier trades = commission rate * mulitplier * total stake
+
+Accepts below parameters
+
+=over 4
+
+=item * C<$account_id> - Client's account id
+
+=item * C<$timeperiod> - Time period from which the trading activity needs to be calculated.
+
+=back
+
+=cut
+
+sub get_client_trading_activity {
+    my ($self, $account_id, $timeperiod) = @_;
+
+    return $self->client_dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM bet.get_trading_activity_inclusive_of_multiplier_commission(?, ?)', undef, $account_id, $timeperiod);
+        });
+}
+
+=head2 get_crypto_account_total_deposit_amount
+
+Get the total deposit payment amount for the client.
+This payments includes crypto cashier deposits, payment agent transfers and internal account transfers.
+
+Accepts below parameters
+
+=over 4
+
+=item * C<$account_id> - Client's account id
+
+=item * C<$timeperiod> - Time period from which total deposit payments needs to be calculated.
+
+=back
+
+=cut
+
+sub get_crypto_account_total_deposit_amount {
+    my ($self, $account_id, $timeperiod) = @_;
+    return $self->client_dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM payment.get_crypto_account_total_deposit_amount(?, ?)', undef, $account_id, $timeperiod);
+        });
 }
 
 1;

@@ -16,14 +16,12 @@ Tag: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO
 
 =cut
 
-use BOM::Platform::Event::Emitter;
-use DataDog::DogStatsd::Helper qw/stats_inc stats_count/;
+use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 use List::Util                 qw(any);
 use Log::Any                   qw($log);
 use Syntax::Keyword::Try;
+use Text::CSV qw(csv);
 use Time::Moment;
-use Text::CSV qw (csv);
-use BOM::User;
 
 use parent qw(BOM::Platform::CryptoCashier::AutoUpdatePayouts);
 
@@ -154,18 +152,79 @@ Takes the following arguments as named parameters:
 
 sub user_activity {
     my ($self, %args) = @_;
-    my $total_withdrawal_amount_today = $args{total_withdrawal_amount_today} // 0;
-    my $withdrawal_amount_in_crypto   = $args{withdrawal_amount_in_crypto}   // 0;
-    my $currency_code                 = $args{currency_code};
-    my $binary_user_id                = $args{binary_user_id};
-    my $client_loginid                = $args{client_loginid};
-    my $response                      = {};
-    # my $user                          = BOM::User->new(id => $binary_user_id);
-    $response->{tag}                                  = TAGS->{high_crypto_deposit};
-    $response->{auto_reject}                          = 0;
-    $response->{total_withdrawal_amount_today_in_usd} = $total_withdrawal_amount_today;
 
-    my $client_balance = $self->get_client_balance($client_loginid);
+    $args{start_date_to_inspect} = Time::Moment->from_epoch(Time::Moment->now->epoch - TIME_RANGE);
+
+    my @rules_order = (
+        \&_rule_insufficient_balance,  \&_rule_auto_reject_disable_for_client, \&_rule_no_non_crypto_deposits,
+        \&_rule_net_deposits_negative, \&_rule_withdraw_via_ewallet,           \&_rule_highest_deposit_not_crypto,
+    );
+
+    my $response = {
+        total_withdrawal_amount_today_in_usd => $args{total_withdrawal_amount_today} // 0,
+        tag                                  => 'MANUAL_VERIFICATION_REQUIRED',              # Default tag in case none of the rules have been met
+        auto_reject                          => 0,
+    };
+
+    for my $rule_func (@rules_order) {
+        my $rule_response = $rule_func->($self, $response, %args);
+        if ($rule_response) {
+            $response = $rule_response;
+            last;
+        }
+    }
+
+    # cleanup
+    delete $self->{$args{binary_user_id}};
+
+    return $response;
+}
+
+=head2 _get_user_payments
+
+Fetches user payments from database and caches it.
+
+=cut
+
+sub _get_user_payments {
+    my ($self, %args) = @_;
+
+    my $binary_user_id = $args{binary_user_id};
+    return $self->{$binary_user_id}{user_payments} //= do {
+        my ($user_payments) = $self->user_payment_details(
+            binary_user_id => $binary_user_id,
+            from_date      => $args{start_date_to_inspect}->to_string,
+        );
+        $user_payments;
+    };
+}
+
+=head2 _get_highest_deposit
+
+Fetches highest deposited amount from database and caches it.
+
+=cut
+
+sub _get_highest_deposit {
+    my ($self, %args) = @_;
+
+    my $binary_user_id = $args{binary_user_id};
+    my $user_payments  = $self->_get_user_payments(%args);
+    return $self->{$binary_user_id}{highest_deposit} //= $self->find_highest_deposit($user_payments);
+}
+
+=head2 _rule_insufficient_balance
+
+Reject payout if client does not have sufficient balance.
+TAG: INSUFFICIENT_BALANCE
+
+=cut
+
+sub _rule_insufficient_balance {
+    my ($self, $response, %args) = @_;
+
+    my $client_balance              = $self->get_client_balance($args{client_loginid});
+    my $withdrawal_amount_in_crypto = $args{withdrawal_amount_in_crypto} // 0;
     if ($client_balance < $withdrawal_amount_in_crypto) {
         $log->debugf('Client balance %s is lower than the withdrawal amount %s', $client_balance, $withdrawal_amount_in_crypto);
         $response->{tag}           = TAGS->{insufficient_balance};
@@ -178,84 +237,145 @@ sub user_activity {
         return $response;
     }
 
+    return undef;
+}
+
+=head2 _rule_auto_reject_disable_for_client
+
+Do not reject the payout if auto reject is disabled for client.
+TAG: AUTO_REJECT_IS_DISABLED_FOR_CLIENT
+
+=cut
+
+sub _rule_auto_reject_disable_for_client {
+    my ($self, $response, %args) = @_;
+
+    my $client_loginid = $args{client_loginid};
     if ($self->is_client_auto_reject_disabled($client_loginid)) {
         $log->debugf('Auto reject is not enabled for client %s', $client_loginid);
         $response->{tag}         = TAGS->{auto_reject_disable_for_client};
         $response->{auto_reject} = 0;
         return $response;
     }
-    my $start_date_to_inspect = Time::Moment->from_epoch(Time::Moment->now->epoch - TIME_RANGE);
-    my ($user_payments) = $self->user_payment_details(
-        binary_user_id => $binary_user_id,
-        from_date      => $start_date_to_inspect->to_string,
-    );
+
+    return undef;
+}
+
+=head2 _rule_no_non_crypto_deposits
+
+Do not reject the payout if there are no stable non-crypto deposits.
+TAG: NO_NON_CRYPTO_DEPOSITS_RECENTLY
+
+=cut
+
+sub _rule_no_non_crypto_deposits {
+    my ($self, $response, %args) = @_;
+
+    my $user_payments = $self->_get_user_payments(%args);
+    unless ($user_payments->{count} and $user_payments->{has_stable_method_deposits}) {
+        $log->debugf('User has no stable non-crypto deposits since %s', $args{start_date_to_inspect}->to_string);
+        $response->{tag}         = TAGS->{no_non_crypto_deposits};
+        $response->{auto_reject} = 0;
+        return $response;
+    }
+
+    return undef;
+}
+
+=head2 _rule_net_deposits_negative
+
+Do not reject the payout if the net deposit of crypto
+and highest non-crypto stable methods are negative.
+TAG: CRYPTO_NON_CRYPTO_NET_DEPOSITS_NEGATIVE
+
+=cut
+
+sub _rule_net_deposits_negative {
+    my ($self, $response, %args) = @_;
 
     # Skip rejecting payout if there are no deposits via stable payment methods (non-crypto deposits).
     # Why because we do not have to proceed to the next rules where we consider net deposit of stable payment methods.
-    if ($user_payments->{count} and $user_payments->{has_stable_method_deposits}) {
-        my $all_crypto_net_deposits   = $user_payments->{currency_wise_crypto_net_deposits} // {};
-        my $net_crypto_deposit_amount = $all_crypto_net_deposits->{$currency_code}          // 0;
-        my $highest_deposited_amount  = $self->find_highest_deposit($user_payments);
-        my $mastercard_deposit_amount = $user_payments->{mastercard_deposit_amount} // 0;
+    my $user_payments             = $self->_get_user_payments(%args);
+    my $highest_deposited_amount  = $self->_get_highest_deposit(%args);
+    my $all_crypto_net_deposits   = $user_payments->{currency_wise_crypto_net_deposits} // {};
+    my $net_crypto_deposit_amount = $all_crypto_net_deposits->{$args{currency_code}}    // 0;
 
-        # Skip rejecting payout if the net deposit of crypto and highest non-crypto stable methods are negative
-        if (($highest_deposited_amount->{net_amount_in_usd} // 0) < 0 and $net_crypto_deposit_amount < 0) {
-            $log->debugf('User\'s net crypto deposit amount & highest deposited amount are both negative values since %s',
-                $start_date_to_inspect->to_string);
-            $response->{tag}         = TAGS->{crypto_non_crypto_net_deposits_negative};
-            $response->{auto_reject} = 0;
-            return $response;
-        }
-
-        # Reject highest deposited amount is Master Card
-        if (($highest_deposited_amount->{net_amount_in_usd} // 0) < $mastercard_deposit_amount
-            and $net_crypto_deposit_amount < $mastercard_deposit_amount)
-        {
-            $log->debugf('User has more mastercard deposits than crypto deposits since %s', $start_date_to_inspect->to_string);
-            $response->{tag}           = TAGS->{withdraw_via_ewallet};
-            $response->{auto_reject}   = 1;
-            $response->{reject_reason} = 'withdraw_via_ewallet';
-            $response->{reject_remark} = $self->generate_reject_remarks(
-                reject_reason => $response->{reject_reason},
-                extra_info    => "e-wallet"
-            );
-            return $response;
-        }
-
-        # Reject payout if the net deposit (deposit - withdrawal) of crypto is less than any other stable payment methods
-        # List of stable payment methods are provided by the payments team.
-        if (%$highest_deposited_amount and $net_crypto_deposit_amount < $highest_deposited_amount->{net_amount_in_usd}) {
-            $log->debugf('User has more Fiat deposits than crypto deposits since %s', $start_date_to_inspect->to_string);
-            $response->{tag}                       = TAGS->{highest_deposit_not_crypto};
-            $response->{reject_reason}             = 'highest_deposit_method_is_not_crypto';
-            $response->{auto_reject}               = 1;
-            $response->{suggested_withdraw_method} = $self->map_clean_method_name($highest_deposited_amount->{highest_deposit_method});
-            $response->{reject_remark}             = $self->generate_reject_remarks(
-                reject_reason => $response->{reject_reason},
-                extra_info    => $response->{suggested_withdraw_method});
-            return $response;
-        }
-    } else {
-        # We do not return here because we need to validate the next reject rules
-        $log->debugf('User has no stable non-crypto deposits since %s', $start_date_to_inspect->to_string);
-        $response->{tag}         = TAGS->{no_non_crypto_deposits};
+    # Skip rejecting payout if the net deposit of crypto and highest non-crypto stable methods are negative
+    if (($highest_deposited_amount->{net_amount_in_usd} // 0) < 0 and $net_crypto_deposit_amount < 0) {
+        $log->debugf("User's net crypto deposit amount & highest deposited amount are both negative values since %s",
+            $args{start_date_to_inspect}->to_string);
+        $response->{tag}         = TAGS->{crypto_non_crypto_net_deposits_negative};
         $response->{auto_reject} = 0;
+        return $response;
     }
 
-    # Reject payout if total amount used for trading is less than 25 percent of total deposit amount
-    # Total trade amount and deposit amount is calcualted across all the sibling accounts.
-    # my $total_user_deposit_amount = $user_payments->{non_crypto_deposit_amount} + $user_payments->{total_crypto_deposits};
-    # my $total_trade_volume        = $user->total_trades($start_date_to_inspect);
-    # if ($total_trade_volume < $total_user_deposit_amount / 4) {
-    #     $log->debugf('Insufficient trading activity since %s', $start_date_to_inspect->to_string);
-    #     $response->{tag}           = TAGS->{low_trade};
-    #     $response->{reject_reason} = 'low_trade';
-    #     $response->{auto_reject}   = 1;
-    #     $response->{reject_remark} = $self->generate_reject_remarks(reject_reason => $response->{reject_reason});
-    #     return $response;
-    # }
+    return undef;
+}
 
-    return $response;
+=head2 _rule_withdraw_via_ewallet
+
+Reject payout if the highest deposited amount is Master Card.
+TAG: WITHDRAW_VIA_EWALLET
+
+=cut
+
+sub _rule_withdraw_via_ewallet {
+    my ($self, $response, %args) = @_;
+
+    # Reject highest deposited amount is Master Card
+    my $user_payments             = $self->_get_user_payments(%args);
+    my $highest_deposited_amount  = $self->_get_highest_deposit(%args);
+    my $mastercard_deposit_amount = $user_payments->{mastercard_deposit_amount}         // 0;
+    my $all_crypto_net_deposits   = $user_payments->{currency_wise_crypto_net_deposits} // {};
+    my $net_crypto_deposit_amount = $all_crypto_net_deposits->{$args{currency_code}}    // 0;
+
+    if (($highest_deposited_amount->{net_amount_in_usd} // 0) < $mastercard_deposit_amount
+        and $net_crypto_deposit_amount < $mastercard_deposit_amount)
+    {
+        $log->debugf('User has more mastercard deposits than crypto deposits since %s', $args{start_date_to_inspect}->to_string);
+        $response->{tag}           = TAGS->{withdraw_via_ewallet};
+        $response->{auto_reject}   = 1;
+        $response->{reject_reason} = 'withdraw_via_ewallet';
+        $response->{reject_remark} = $self->generate_reject_remarks(
+            reject_reason => $response->{reject_reason},
+            extra_info    => 'e-wallet',
+        );
+        return $response;
+    }
+
+    return undef;
+}
+
+=head2 _rule_highest_deposit_not_crypto
+
+Reject payout if the highest net deposit (deposit - withdrawal) of crypto
+is less than any other stable payment methods.
+TAG: HIGHEST_DEPOSIT_METHOD_IS_NOT_CRYPTO
+
+=cut
+
+sub _rule_highest_deposit_not_crypto {
+    my ($self, $response, %args) = @_;
+
+    # Reject payout if the net deposit (deposit - withdrawal) of crypto is less than any other stable payment methods
+    # List of stable payment methods are provided by the payments team.
+    my $user_payments             = $self->_get_user_payments(%args);
+    my $highest_deposited_amount  = $self->_get_highest_deposit(%args);
+    my $all_crypto_net_deposits   = $user_payments->{currency_wise_crypto_net_deposits} // {};
+    my $net_crypto_deposit_amount = $all_crypto_net_deposits->{$args{currency_code}}    // 0;
+    if (%$highest_deposited_amount and $net_crypto_deposit_amount < $highest_deposited_amount->{net_amount_in_usd}) {
+        $log->debugf('User has more Fiat deposits than crypto deposits since %s', $args{start_date_to_inspect}->to_string);
+        $response->{tag}                       = TAGS->{highest_deposit_not_crypto};
+        $response->{auto_reject}               = 1;
+        $response->{reject_reason}             = 'highest_deposit_method_is_not_crypto';
+        $response->{suggested_withdraw_method} = $self->map_clean_method_name($highest_deposited_amount->{highest_deposit_method});
+        $response->{reject_remark}             = $self->generate_reject_remarks(
+            reject_reason => $response->{reject_reason},
+            extra_info    => $response->{suggested_withdraw_method});
+        return $response;
+    }
+
+    return undef;
 }
 
 =head2 db_reject_withdrawal
