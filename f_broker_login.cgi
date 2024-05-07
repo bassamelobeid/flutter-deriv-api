@@ -190,20 +190,6 @@ if (BOM::Backoffice::Auth::has_authorisation(['CS'])) {
     </div>~;
 }
 
-# DerivX Sync Service
-print qq~
-<div class="card">
-    <div class="card__label toggle">
-        DerivX Resync Service
-    </div>
-    <div class="card__content">
-        <h3>DerivX Resync Service</h3>
-        <form action="~ . request()->url_for('backoffice/f_resync_service.cgi') . qq~" method="get">
-            <input type="submit" class="btn btn--primary" value="Start">
-        </form>
-    </div>
-</div>~;
-
 # App management
 if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
     print qq~
@@ -369,6 +355,18 @@ if (BOM::Backoffice::Auth::has_authorisation(['Quants']) || BOM::Backoffice::Aut
                 <h3>Quants risk management tool</h3>
                 <form action="~ . request()->url_for('backoffice/quant/quants_config.cgi') . qq~" method="post">
                     <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>DerivX Resync Service</h3>
+                <form action="~ . request()->url_for('backoffice/f_derivx_resync_service.cgi') . qq~" method="get">
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>cTrader Resync Service</h3>
+                <form action="~ . request()->url_for('backoffice/f_ctrader_resync_service.cgi') . qq~" method="get">
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
             </div>

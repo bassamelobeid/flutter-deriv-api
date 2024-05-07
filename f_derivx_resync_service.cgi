@@ -51,14 +51,14 @@ try {
 }
 
 PrintContentType();
-BrokerPresentation("Resync Service");
+BrokerPresentation("DerivX Resync Service");
 Bar("Trigger DerivX Resync Service");
 
 BOM::Backoffice::Request::template()->process(
-    'backoffice/resync_service.html.tt',
+    'backoffice/derivx_resync_service.html.tt',
     {
         input               => $input,
-        refresh_url         => request()->url_for('backoffice/f_resync_service.cgi'),
+        refresh_url         => request()->url_for('backoffice/f_derivx_resync_service.cgi'),
         last_execution      => $last_execution_date     || 'Unknown',
         staffname           => $staffname               || 'Unknown',
         exec_start_datetime => $exec_start_datetime     || 'Unknown',

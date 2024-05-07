@@ -1,0 +1,60 @@
+<style>
+    .last_resync {
+        display: grid;
+        grid-template-columns: auto auto;
+    }
+
+    .form_element {
+        display: inline-block;
+        margin-right: 20px;
+    }
+
+    .running {
+        color: green;
+    }
+</style>
+<div class="last_resync">
+    <div>
+        <b><u>TRADERS</u></b><br><br>
+        <b>Last execution at [% last_run_traders %]</b>
+        <pre>Start Datetime:     [% start_date_traders %]</pre>
+        <pre>End Datetime:      [% end_date_traders %]</pre>
+        <pre>Resynced [% nb_traders %] trader(s)</pre>
+        <pre>Issued by [% staffname_traders %]</pre>
+        <pre class="running">[% traders_script_running %]</pre>
+    </div>
+    <div>
+        <b><u>DEALS</u></b><br><br>
+        <b>Last execution at [% last_run_deals %]</b>
+        <pre>Start Datetime:     [% start_date_deals %]</pre>
+        <pre>End Datetime:      [% end_date_deals %]</pre>
+        <pre>Resynced [% nb_deals %] deal(s)</pre>
+        <pre>Issued by [% staffname_deals %]</pre>
+        <pre class="running">[% deals_script_running %]</pre>
+    </div>
+</div>
+<br>
+<form class="refresh_button" action=[% refresh_url %] method="get">
+    <input type="submit" class="btn btn--primary" value="Refresh">
+</form>
+<hr>
+<form>
+    <div class="form_element">
+        <label>Data to resync: </label>
+        <select name="service_type" style="border:1px solid black;">
+            <option [% prev_selected_deals %] value="deals">Deals</option>
+            <option [% prev_selected_traders %] value="traders">Traders</option>
+        </select>
+    </div>
+    <div class="form_element">
+        <label>Start Datetime: </label>
+        <input type="datetime-local" name="start_datetime" value='[% prev_start_datetime %]' data-lpignore="true" style="color:black;"/>
+    </div>
+    <div class="form_element">
+        <label>End Datetime: </label>
+        <input type="datetime-local" name="end_datetime" value='[% prev_end_datetime %]' data-lpignore="true" style="color:black;"/>
+    </div>
+    <div class="form_element">
+        <input type="submit" class="btn btn--primary" value="Start" name="resync-button">
+    </div>
+</form>
