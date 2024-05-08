@@ -4519,7 +4519,7 @@ sub link_affiliate_client {
 
     unless ($affiliate_id) {
         DataDog::DogStatsd::Helper::stats_inc('myaffiliates.' . $platform . '.failure.get_internal_aff_id', 1);
-        return Future->fail;
+        return Future->fail("Unable to find affiliate ID in DB for client with MyAffiliate ID $myaffiliate_id");
     }
 
     try {
