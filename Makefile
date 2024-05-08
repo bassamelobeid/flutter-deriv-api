@@ -31,7 +31,7 @@ p2p:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/p2p t/999_redis_keys.t
 
 structure:
-	@$(PROVE) --norc t
+	@$(PROVE) --norc -It/lib t
 
 schema:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
@@ -71,7 +71,7 @@ unit:
 cover:
 	sed -i '/--exec/d' .proverc
 	sed -i '1667,1668d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
-	$C $$(find t/ -type f | grep -v 00) t/unit/
+	$C -It/lib $$(find t/ -type f -name '*.t' | grep -v 00) t/unit/
 
 cover_websocket_tests:
 	$C /home/git/regentmarkets/bom-websocket-tests/v3/$(sub_test)

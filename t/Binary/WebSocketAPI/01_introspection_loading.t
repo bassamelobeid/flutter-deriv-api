@@ -20,7 +20,6 @@ BEGIN {
 }
 
 use Binary::WebSocketAPI;
-use lib 't';
 use Binary::WebSocketAPI::StubApp;
 
 my $mock_app = Binary::WebSocketAPI::StubApp->new()->{app};
