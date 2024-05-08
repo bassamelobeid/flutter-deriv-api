@@ -6,7 +6,7 @@ use warnings;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use List::Util ();
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Warnings;
 use Test::Exception;
 use Test::Memory::Cycle;
@@ -73,6 +73,12 @@ my $now           = Date::Utility->new;
 my @contract_types =
     map { ($offerings_obj->query({contract_category => $_}, ['contract_type']))[0] } $offerings_obj->values_for_key('contract_category');
 my @submarkets = $offerings_obj->values_for_key('submarket');
+
+# Because this test taking too long, So we run parallel jobs in CI, each job run part of the test.
+# We divided @submarkets into several parts, and only loop one part in each job.
+
+@submarkets = run_test_sub_group($ENV{run_test_sub_group}, [@submarkets]) if $ENV{run_test_sub_group};
+
 my @underlyings =
     map { create_underlying($_) } map { ($offerings_obj->query({submarket => $_}, ['underlying_symbol']))[0] } @submarkets;
 
@@ -205,6 +211,60 @@ sub _get_barrier {
     }
 }
 
+=head2 run_test_sub_group
+
+Usage:
+run_test_sub_group('2/3',$arrayref)
+Divide the array into 3 parts, and return the 2nd part of the array
+
+=cut
+
+sub run_test_sub_group {
+    my ($param, $arrayref) = @_;
+
+    die "group param wrong: $param" unless $param =~ /^\d+\/\d+$/;
+
+    my ($group_number, $division) = split('/', $param);
+
+    note("Running the Number $group_number of $division groups");
+
+    my @array = sort @$arrayref;
+    die "group param wrong: $param"
+        if ($division > @array or $group_number > $division or $group_number < 1);
+
+    my $array_length = scalar @array;
+    my $part_size    = int($array_length / $division);
+    $part_size += 1 if $array_length % $division;
+
+    # Calculate the starting and ending indices for the specified part
+    my $start_index = ($group_number - 1) * $part_size;
+    my $end_index   = $group_number * $part_size - 1;
+    $end_index = $#array if $end_index > $#array;
+
+    return @array[$start_index .. $end_index];
+}
+
+subtest 'test_sub_group' => sub {
+    my $array = [1, 2, 3, 4, 5];
+    is_deeply [run_test_sub_group('1/3', $array)], [1, 2], 'group 1/3';
+    is_deeply [run_test_sub_group('2/3', $array)], [3, 4], 'group 2/3';
+    is_deeply [run_test_sub_group('3/3', $array)], [5],    'group 3/3';
+    is_deeply [run_test_sub_group('5/5', $array)], [5],    'group 5/5';
+
+    is_deeply [run_test_sub_group('1/1', [0])], [0], 'group 1/1';
+
+    $array = [qw/d b c e a/];
+    is_deeply [run_test_sub_group('1/2', $array)], ['a', 'b', 'c'], 'group 1/2';
+    is_deeply [run_test_sub_group('2/2', $array)], ['d', 'e'], 'group 2/2';
+
+    throws_ok { run_test_sub_group('a/2',   $array) } qr/group param wrong/, 'param wrong: a/2';
+    throws_ok { run_test_sub_group('4.3/3', $array) } qr/group param wrong/, 'param wrong: 4.3/3';
+    throws_ok { run_test_sub_group('0/2',   $array) } qr/group param wrong/, 'param wrong: 0/2';
+    throws_ok { run_test_sub_group('3/2',   $array) } qr/group param wrong/, 'param wrong: 3/2';
+    throws_ok { run_test_sub_group('1/10',  $array) } qr/group param wrong/, 'param wrong: 1/10';
+
+};
+
 subtest 'memory cycle test' => sub {
     foreach my $underlying (@underlyings) {
         my $u_symbol = $underlying->symbol;
@@ -280,4 +340,5 @@ subtest 'memory cycle test' => sub {
             }
         }
     }
-    }
+};
+

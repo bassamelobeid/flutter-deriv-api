@@ -16,11 +16,10 @@ PRODUCTALL=unit_test_validation \
       unit_test_product_model \
       unit_test_volatility \
       unit_test_offerings \
-      unit_test_product_contract_finder \
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
-P=/etc/rmg/bin/prove -lv --timer
+P=/etc/rmg/bin/prove -rvl --timer
 
 ifeq ($(GITHUB_ACTIONS),true)
 	EXTRA_ARGS = --merge --formatter TAP::Formatter::JUnit::PrintTxtStdout
@@ -41,45 +40,42 @@ syntax:
 	@$(PROVE) --norc t/*.t
 
 unit_test_product_contract:
-	@$(PROVE) -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFinder/
+	@$(PROVE) t/BOM/Product/Contract/
 
 unit_test_product_contract_settlement:
-	@$(PROVE) -r t/BOM/Product/Contract/Settlement/
+	@$(PROVE) t/BOM/Product/Settlement/
 
 unit_test_product_contract_extended:
-	@$(PROVE) -r t/BOM/Product/ContractFactory/ -r t/BOM/Product/ContractExtended/
-
-unit_test_product_contract_finder:
-	@$(PROVE) -r t/BOM/Product/ContractFinder/
+	@$(PROVE) t/BOM/Product/ContractExtended/
 
 unit_test_validation:
-	@$(PROVE) -r t/BOM/Product/Validation/*.t
+	@$(PROVE) t/BOM/Product/Validation/
 
 memory_test:
-	@$(PROVE) -r t/BOM/Product/Validation/MemoryTest/
+	@$(PROVE) t/BOM/MemoryTest/
 
 unit_test_volatility:
-	@$(PROVE) -r t/BOM/Product/Volatility/
+	@$(PROVE) t/BOM/Product/Volatility/
 
 unit_test_product_model:
-	@$(PROVE) -r t/BOM/Product/Model/
+	@$(PROVE) t/BOM/Product/Model/
 
 unit_test_pricing:
-	@$(PROVE) -r t/BOM/Product/Pricing/
+	@$(PROVE) t/BOM/Product/Pricing/
 
 unit_test_intraday:
-	@$(PROVE) -r t/BOM/Product/Pricing/Engine/IntradayHistorical
+	@$(PROVE) t/BOM/Product/Pricing/Engine/IntradayHistorical
 
 unit_test_offerings:
-	@$(PROVE) -r t/BOM/Product/Offerings/
+	@$(PROVE) t/BOM/Product/Offerings/
 
 unit_test_product_base:
-	@$(PROVE) t/BOM/Product/*.t
+	@$(PROVE) t/BOM/Product/Base
 
 unit_test_product_all: $(PRODUCTALL)
 
 unit_test_product_except_validation_contract_pricing:
-	@$(PROVE) t/BOM/Product/*.t -r t/BOM/Product/Model/ -r t/BOM/Product/Volatility/ -r t/BOM/Product/Offerings/
+	@$(PROVE) t/BOM/Product/*.t t/BOM/Product/Model/ t/BOM/Product/Volatility/ t/BOM/Product/Offerings/
 
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
@@ -99,4 +95,14 @@ cover:
 	cover -report coveralls
 
 unit:
-	@$(PROVE) -r t/unit/
+	@$(PROVE) t/unit/
+
+contract:
+	@$(PROVE) t/BOM/Product/Contract/
+
+pricing:
+	@$(PROVE) t/BOM/Product/Pricing/ t/BOM/Product/Validation/
+
+product_others:
+	@$(PROVE) $$(find t/BOM/Product -maxdepth 1 | grep -vE "/(Product|Contract|Pricing|Validation)$$")
+

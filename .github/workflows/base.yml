@@ -1,180 +1,34 @@
 name: Repository tests
-run-name: Repository tests
 on:
   workflow_call:
     inputs:
-      repository:
-        description: 'Repository name for running tests'
-        required: false
-        default: regentmarkets/bom
-        type: string 
       debianci_image:
         description: 'Docker container used by the workflow'
         required: false
         default: ${{ vars.DEBIAN_CI }}
         type: string
+      need_upload_result:
+        description: 'Upload the test result'
+        required: false
+        default: false
+        type: boolean
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
+  group: ${{ github.workflow }}-${{ github.ref }}-regentmarkets/bom
   cancel-in-progress: true
 jobs:
-  syntax_diff_unit:
-    uses: regentmarkets/github-actions/.github/workflows/syntax_diff_unit.yml@master
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        test_name: [contract, pricing, product_others]
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
     secrets: inherit
     with:
-      repository: ${{ inputs.repository }}
-      dependent_test: 'true'
-  product_contract:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
-      - name: Product contract test
-        run: make unit_test_product_contract
-  validation:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
-      - name: Validation
-        run: make unit_test_validation
-  memory_test:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
-      - name: MemoryTest
-        run: make memory_test
-  pricing:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
-      - name: Pricing
-        run: make unit_test_pricing
-  product_others:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
-      - name: Product extended
-        run: make unit_test_product_contract_extended
-      - name: Product base
-        run: make unit_test_product_base
-        if: ${{ !cancelled() }}
-      - name: Product model
-        run: make unit_test_product_model
-        if: ${{ !cancelled() }}
-      - name: Valatility
-        run: make unit_test_volatility
-        if: ${{ !cancelled() }}
-      - name: Offerings
-        run: make unit_test_offerings
-        if: ${{ !cancelled() }}
-  benchmark_merlin_ovra:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
-      - name: Merlin Benchmark
-        run: |
-          cd /home/git/regentmarkets/bom-quant-benchmark
-          make merlin_benchmark
-      - name: OVRA benchmark
-        run: |
-          cd /home/git/regentmarkets/bom-quant-benchmark
-          make OVRA_benchmark
-        if: ${{ !cancelled() }}
-  benchmark_SD:
+      test_name: ${{ matrix.test_name }}
+      repository: regentmarkets/bom
+      debianci_image: ${{ inputs.debianci_image }}
+      need_upload_result: ${{ inputs.need_upload_result }}
+  benchmark:
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -186,35 +40,30 @@ jobs:
       run:
         shell: bash -le {0}
         working-directory: /home/git/regentmarkets/bom-quant-benchmark
-    env:
-      LOG_LEVEL: debug
     steps:
       - name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
+          repository: regentmarkets/bom
       - name: SDFX benchmark major
         run: make SDFX_benchmark_major
-        if: ${{ !cancelled() }}
       - name: SDFX benchmark minor
         run: make SDFX_benchmark_minor
-        if: ${{ !cancelled() }}
       - name: SDEQ benchmark OTC_DJI
         run: make SDEQ_benchmark_OTC_DJI
-        if: ${{ !cancelled() }}
       - name: SDEQ benchmark OTC_FCHI
         run: make SDEQ_benchmark_OTC_FCHI
-        if: ${{ !cancelled() }}
       - name: SDEQ benchmark OTC_SPC
         run: make SDEQ_benchmark_OTC_SPC
-        if: ${{ !cancelled() }}
       - name: SDEQ benchmark SSECOMP
         run: make SDEQ_benchmark_SSECOMP
-        if: ${{ !cancelled() }}
       - name: SDEQ benchmark OTC_FTSE
         run: make SDEQ_benchmark_OTC_FTSE
-        if: ${{ !cancelled() }}
+      - name: Merlin Benchmark
+        run: make merlin_benchmark
+      - name: OVRA benchmark
+        run: make OVRA_benchmark
   Pricing-Engine-Tests:
     runs-on: ubuntu-latest
     container:
@@ -226,15 +75,12 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      LOG_LEVEL: debug
     steps:
       - name: setup CI step
         uses: regentmarkets/github-actions/ci-setup@master
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
+          repository: regentmarkets/bom
       - name: perl-Pricing-Engine-European-Digital-Slope
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-European-Digital-Slope
@@ -243,39 +89,43 @@ jobs:
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes
           make test
-        if: ${{ !cancelled() }}
       - name: perl-Pricing-Engine-Digits
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Digits
           make test
-        if: ${{ !cancelled() }}
       - name: perl-Pricing-Engine-HighLow-Ticks
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks
           make test
-        if: ${{ !cancelled() }}
       - name: perl-Pricing-Engine-Intraday-Forex-Base
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
           make test
-        if: ${{ !cancelled() }}
       - name: perl-Pricing-Engine-Lookback
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback
           make test
-        if: ${{ !cancelled() }}
       - name: perl-Pricing-Engine-Markup
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Markup
           make test
-        if: ${{ !cancelled() }}
       - name: perl-Pricing-Engine-Reset
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Reset
           make test
-        if: ${{ !cancelled() }}
       - name: perl-Pricing-Engine-TickExpiry
         run: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
           make test
-        if: ${{ !cancelled() }}
+  memory_test:
+    strategy:
+      matrix:
+        group_param: [1/2, 2/2]
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    secrets: inherit
+    with:
+      env_vars: run_test_sub_group=${{ matrix.group_param }}
+      test_name: memory_test
+      repository: regentmarkets/bom
+      debianci_image: ${{ inputs.debianci_image }}
+      need_upload_result: false
