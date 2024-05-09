@@ -441,11 +441,11 @@ sub startup {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::rpc_throttling,               \&Binary::WebSocketAPI::Hooks::start_timing,
-                \&Binary::WebSocketAPI::Hooks::before_forward,               \&Binary::WebSocketAPI::Hooks::ignore_queue_separations,
-                \&Binary::WebSocketAPI::Hooks::introspection_before_forward, \&Binary::WebSocketAPI::Hooks::assign_ws_backend,
-                \&Binary::WebSocketAPI::Hooks::check_app_id,                 \&Binary::WebSocketAPI::Hooks::rpc_timeout_extension,
-                \&Binary::WebSocketAPI::Hooks::check_circuit_breaker,
+                \&Binary::WebSocketAPI::Hooks::rpc_throttling,           \&Binary::WebSocketAPI::Hooks::start_timing,
+                \&Binary::WebSocketAPI::Hooks::start_timing_ws_total,    \&Binary::WebSocketAPI::Hooks::before_forward,
+                \&Binary::WebSocketAPI::Hooks::ignore_queue_separations, \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
+                \&Binary::WebSocketAPI::Hooks::assign_ws_backend,        \&Binary::WebSocketAPI::Hooks::check_app_id,
+                \&Binary::WebSocketAPI::Hooks::rpc_timeout_extension,    \&Binary::WebSocketAPI::Hooks::check_circuit_breaker,
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
@@ -462,8 +462,9 @@ sub startup {
                 \&Binary::WebSocketAPI::Hooks::output_validation, \&Binary::WebSocketAPI::Hooks::add_call_debug,
                 \&Binary::WebSocketAPI::Hooks::introspection_before_send_response
             ],
-            after_sent_api_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing_sent, \&Binary::WebSocketAPI::Hooks::close_bad_connection],
-            after_dispatch          => [\&Binary::WebSocketAPI::Hooks::after_dispatch],
+            after_sent_api_response =>
+                [\&Binary::WebSocketAPI::Hooks::log_call_timing_rpc_sent_and_totalws, \&Binary::WebSocketAPI::Hooks::close_bad_connection],
+            after_dispatch => [\&Binary::WebSocketAPI::Hooks::after_dispatch],
 
             # main config
             base_path         => '/websockets/v3',

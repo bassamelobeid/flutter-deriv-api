@@ -108,6 +108,16 @@ sub start_timing {
     return;
 }
 
+sub start_timing_ws_total {
+    my ($c, $req_storage) = @_;
+
+    if ($req_storage) {
+        $req_storage->{tv_start_ws_total} = [Time::HiRes::gettimeofday];
+    }
+
+    return;
+}
+
 sub log_call_timing_before_forward {
     my ($c, $req_storage) = @_;
 
@@ -136,11 +146,10 @@ sub log_call_timing {
     }
 
     $req_storage->{stat_tags} = [map { join ':', $_ => $tags{$_} } grep { $tags{$_} } sort(keys %tags)];
-    DataDog::DogStatsd::Helper::stats_timing(
-        'bom_websocket_api.v_3.rpc.call.timing',
-        1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-        {tags => $req_storage->{stat_tags}},
-    );
+    my $call_timing = Time::HiRes::tv_interval($req_storage->{tv});
+    $req_storage->{rpc_call_timing} = $call_timing;
+
+    DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.rpc.call.timing', 1000 * $call_timing, {tags => $req_storage->{stat_tags}},);
     return;
 }
 
@@ -227,7 +236,7 @@ sub add_call_debug {
     return;
 }
 
-sub log_call_timing_sent {
+sub log_call_timing_rpc_sent_and_totalws {
     my ($c, $req_storage) = @_;
 
     if ($req_storage && $req_storage->{tv} && $req_storage->{method}) {
@@ -237,6 +246,14 @@ sub log_call_timing_sent {
             'bom_websocket_api.v_3.rpc.call.timing.sent',
             1000 * Time::HiRes::tv_interval($req_storage->{tv}),
             {tags => $tags});
+
+        # Total time spend in websocket (excluding time at rpc)
+        if ($req_storage->{rpc_call_timing} && $req_storage->{tv_start_ws_total}) {
+            DataDog::DogStatsd::Helper::stats_timing(
+                'bom_websocket_api.v_3.ws.call.timing',
+                1000 * (Time::HiRes::tv_interval($req_storage->{tv_start_ws_total}) - $req_storage->{rpc_call_timing}),
+                {tags => $tags});
+        }
     }
     return;
 }
