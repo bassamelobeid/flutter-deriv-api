@@ -3,6 +3,9 @@ use warnings;
 
 use Test::More qw(no_plan);
 use Test::MockObject::Extends;
+use Test::MockModule;
+use Test::Deep;
+
 use Date::Utility;
 use BOM::User;
 
@@ -93,18 +96,90 @@ subtest 'creating a DF client' => sub {
     $df_client = BOM::Platform::Client::DoughFlowClient->register_and_return_new_client($client_details1);
     $user_client_cr->add_client($df_client);
 
-    is($df_client->CustName, 'Felix The cat',           'CustName correct');
-    is($df_client->Street,   '11 Bligh St',             'Street correct');
-    is($df_client->City,     'Sydney',                  'City correct');
-    is($df_client->Province, 'NSW',                     'Province correct');
-    is($df_client->Country,  'AU',                      'Country correct');
-    is($df_client->PCode,    '2000',                    'PCode correct');
-    is($df_client->Phone,    '21345678',                'Phone correct');
-    is($df_client->Email,    'felix@regentmarkets.com', 'Email correct');
-    is($df_client->DOB,      '1951-01-01',              'DOB correct');
-    is($df_client->Gender,   'M',                       'Gender correct');
-    is($df_client->Profile,  1,                         'Profile correct');
-    is($df_client->Password, 'DO NOT USE',              'Password correct');
+    is($df_client->CustName,   'Felix The cat',           'CustName correct');
+    is($df_client->Street,     '11 Bligh St',             'Street correct');
+    is($df_client->City,       'Sydney',                  'City correct');
+    is($df_client->Province,   'NSW',                     'Province correct');
+    is($df_client->Country,    'AU',                      'Country correct');
+    is($df_client->PCode,      '2000',                    'PCode correct');
+    is($df_client->Phone,      '21345678',                'Phone correct');
+    is($df_client->Email,      'felix@regentmarkets.com', 'Email correct');
+    is($df_client->DOB,        '1951-01-01',              'DOB correct');
+    is($df_client->Gender,     'M',                       'Gender correct');
+    is($df_client->Profile,    1,                         'Profile correct');
+    is($df_client->Password,   'DO NOT USE',              'Password correct');
+    is($df_client->NationalID, undef,                     'No Document');
+
+    my $bag = $df_client->create_customer_property_bag({
+        SecurePassCode => 'test',
+        Sportsbook     => 'foo',
+        IP_Address     => '127.0.0.1',
+        Password       => 'bar',
+    });
+
+    cmp_deeply $bag,
+        +{
+        CustName       => 'Felix The cat',
+        Email          => 'felix@regentmarkets.com',
+        DOB            => '1951-01-01',
+        City           => 'Sydney',
+        SecurePassCode => 'test',
+        PCode          => '2000',
+        Sportsbook     => 'foo',
+        Phone          => '21345678',
+        IP_Address     => '127.0.0.1',
+        Profile        => 1,
+        Gender         => 'M',
+        Password       => 'bar',
+        Province       => 'NSW',
+        Street         => '11 Bligh St',
+        Country        => 'AU',
+        PIN            => 'CR10000',
+        },
+        'Expected bag resolved';
+
+    subtest 'with IDV document' => sub {
+        my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+
+        $idv_mock->mock(
+            'get_last_updated_document',
+            sub {
+                return {document_number => '12345'};
+            });
+
+        is($df_client->NationalID, '12345', 'There is a document number');
+
+        my $bag = $df_client->create_customer_property_bag({
+            SecurePassCode => 'test',
+            Sportsbook     => 'foo',
+            IP_Address     => '127.0.0.1',
+            Password       => 'bar',
+        });
+
+        cmp_deeply $bag,
+            +{
+            CustName       => 'Felix The cat',
+            NationalID     => '12345',
+            Email          => 'felix@regentmarkets.com',
+            DOB            => '1951-01-01',
+            City           => 'Sydney',
+            SecurePassCode => 'test',
+            PCode          => '2000',
+            Sportsbook     => 'foo',
+            Phone          => '21345678',
+            IP_Address     => '127.0.0.1',
+            Profile        => 1,
+            Gender         => 'M',
+            Password       => 'bar',
+            Province       => 'NSW',
+            Street         => '11 Bligh St',
+            Country        => 'AU',
+            PIN            => 'CR10000',
+            },
+            'Expected bag resolved';
+
+        $idv_mock->unmock_all;
+    };
 };
 
 subtest 'Profile mapped correctly to DF levels' => sub {

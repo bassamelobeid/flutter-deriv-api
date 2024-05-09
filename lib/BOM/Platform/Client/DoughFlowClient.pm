@@ -29,6 +29,7 @@ use Locale::Country;
 use Lingua::EN::AddressParse;
 use Date::Utility;
 use BOM::Platform::Context qw(request);
+use BOM::User::IdentityVerification;
 
 # The currently suppoted country names and codes are:
 #     AU or Australia
@@ -43,9 +44,9 @@ use BOM::Platform::Context qw(request);
 # property bag for DoughFlow CreateCustomer API
 # requires SportsBook, SecurePassCode, IP, and hash key as "password"
 sub create_customer_property_bag {
-    my $self = shift;
-    my $args = shift;
-
+    my $self         = shift;
+    my $args         = shift;
+    my $national_id  = $self->NationalID;
     my $property_bag = {
         SecurePassCode => $args->{'SecurePassCode'},
         Sportsbook     => $args->{'Sportsbook'},
@@ -63,8 +64,28 @@ sub create_customer_property_bag {
         Email          => $self->Email,
         Gender         => $self->Gender,
         Profile        => $self->Profile,
+        ($national_id ? (NationalID => $self->NationalID) : ()),
     };
     return $property_bag;
+}
+
+=head2 NationalID
+
+Resolves the POI document number of the client.
+
+=cut
+
+sub NationalID {
+    my $self = shift;
+
+    my $idv_model    = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
+    my $idv_document = $idv_model->get_last_updated_document({
+        only_verified => 1,
+    });
+
+    return $idv_document->{document_number} if $idv_document;
+
+    return undef;
 }
 
 # CustName
