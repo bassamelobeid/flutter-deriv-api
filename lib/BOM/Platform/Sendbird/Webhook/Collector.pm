@@ -44,21 +44,26 @@ Returns,
 =cut
 
 sub save_message_data {
-    my ($self) = @_;
-    my $json = $self->req->json;
+    my ($self)    = @_;
+    my $json      = $self->req->json;
+    my @foul_keys = ();
 
-    return $self->_unexpected_format('type')                unless $json->{type};
-    return $self->_unexpected_format('category')            unless $json->{category} =~ /:message_send$/;
-    return $self->_unexpected_format('payload.created_at')  unless $json->{payload}->{created_at};
-    return $self->_unexpected_format('payload.message_id')  unless $json->{payload}->{message_id};
-    return $self->_unexpected_format('channel.channel_url') unless $json->{channel}->{channel_url};
-    return $self->_unexpected_format('sender.user_id')      unless $json->{sender}->{user_id};
+    return 1 if ($json->{category} && $json->{category} !~ /:message_send$/);
 
-    if ($json->{type} eq 'FILE') {
-        return $self->_unexpected_format('payload.url') unless $json->{payload}->{url};
+    push @foul_keys, 'type'                unless $json->{type};
+    push @foul_keys, 'category'            unless $json->{category};
+    push @foul_keys, 'payload.created_at'  unless $json->{payload}->{created_at};
+    push @foul_keys, 'payload.message_id'  unless $json->{payload}->{message_id};
+    push @foul_keys, 'channel.channel_url' unless $json->{channel}->{channel_url};
+    push @foul_keys, 'sender.user_id'      unless $json->{sender}->{user_id};
+
+    if (($json->{type} // '') eq 'FILE') {
+        push @foul_keys, 'payload.url' unless $json->{payload}->{url};
     } else {
-        return $self->_unexpected_format('payload.message') unless $json->{payload}->{message};
+        push @foul_keys, 'payload.message' unless $json->{payload}->{message};
     }
+
+    return $self->_unexpected_format(@foul_keys) if @foul_keys;
 
     BOM::Platform::Event::Emitter::emit(
         p2p_chat_received => {
@@ -76,7 +81,7 @@ sub save_message_data {
 
 =head2 _unexpected_format
 
-Prints out a debug message for foul key in payload.
+Sends out metric to datadog with foul key in payload as a tag.
 
 =over 4
 
@@ -90,8 +95,8 @@ Return,
 =cut
 
 sub _unexpected_format {
-    my $self = shift;
-    stats_inc('bom_platform.sendbird.webhook.bogus_payload');
+    my ($self, @foul_keys) = @_;
+    stats_inc('bom_platform.sendbird.webhook.bogus_payload', {tags => [map { "foul_key:$_" } @foul_keys]});
     return;
 }
 

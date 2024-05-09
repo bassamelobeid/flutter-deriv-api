@@ -1,4 +1,5 @@
 use Test::More;
+use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use BOM::Platform::Sendbird::Webhook;
@@ -11,6 +12,10 @@ my $t              = Test::Mojo->new('BOM::Platform::Sendbird::Webhook');
 my $config         = BOM::Config::third_party();
 my $token          = $config->{sendbird}->{api_token};
 my $collector_mock = Test::MockModule->new('BOM::Platform::Sendbird::Webhook::Collector');
+
+my $emitted_events;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock('emit' => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
 $collector_mock->mock(
     'p2p_chat_message_add',
@@ -37,8 +42,10 @@ subtest 'No Signature' => sub {
             my ($ua, $tx) = @_;
         });
 
+    undef $emitted_events;
     $t->post_ok('/', json => $payload)->status_is(401)->json_is(undef);
-    is $metrics[0], 'bom_platform.sendbird.webhook.missing_signature_header', 'Missing signature reported';
+    is $metrics[0],                          'bom_platform.sendbird.webhook.missing_signature_header', 'Missing signature reported';
+    is $emitted_events->{p2p_chat_received}, undef,                                                    'no p2p_chat_received event fired';
 };
 
 subtest 'Signature Mismatch' => sub {
@@ -54,8 +61,10 @@ subtest 'Signature Mismatch' => sub {
             $tx->req->headers->add('X-Sendbird-Signature' => $signature);
         });
 
+    undef $emitted_events;
     $t->post_ok('/', json => $payload)->status_is(401)->json_is(undef);
-    is $metrics[0], 'bom_platform.sendbird.webhook.signature_mismatch', 'Signature mismatch reported';
+    is $metrics[0],                          'bom_platform.sendbird.webhook.signature_mismatch', 'Signature mismatch reported';
+    is $emitted_events->{p2p_chat_received}, undef,                                              'no p2p_chat_received event fired';
 };
 
 subtest 'Correct signature, not valid payload' => sub {
@@ -63,6 +72,7 @@ subtest 'Correct signature, not valid payload' => sub {
     my $json      = encode_json $payload;
     my $signature = hmac_sha256_hex($json, $token);
     @metrics = ();
+    my $tags = [map { "foul_key:$_" } qw(type category payload.created_at payload.message_id channel.channel_url sender.user_id payload.message)];
 
     $t->ua->on(
         start => sub {
@@ -71,8 +81,11 @@ subtest 'Correct signature, not valid payload' => sub {
             $tx->req->headers->add('X-Sendbird-Signature' => $signature);
         });
 
+    undef $emitted_events;
     $t->post_ok('/', json => {test => 123})->status_is(200)->json_is(undef);
-    is @metrics[0], 'bom_platform.sendbird.webhook.bogus_payload', 'Bogus payload reported';
+    cmp_deeply(\@metrics, ['bom_platform.sendbird.webhook.bogus_payload', {tags => $tags}], 'Bogus payload reported');
+    is $emitted_events->{p2p_chat_received}, undef, 'no p2p_chat_received event fired';
+
 };
 
 subtest 'Correct signature, message saved' => sub {
@@ -118,8 +131,56 @@ subtest 'Correct signature, message saved' => sub {
             $tx->req->headers->add('X-Sendbird-Signature' => $signature);
         });
 
+    undef $emitted_events;
     $t->post_ok('/', json => $payload)->status_is(200)->json_is('ok');
     is $metrics[0], 'bom_platform.sendbird.webhook.messages_received', 'Message received reported';
+    cmp_deeply(
+        $emitted_events->{p2p_chat_received},
+        [{
+                message_id => $payload->{payload}->{message_id},
+                created_at => $payload->{payload}->{created_at},
+                user_id    => $payload->{sender}->{user_id},
+                channel    => $payload->{channel}->{channel_url},
+                type       => $payload->{type},
+                message    => $payload->{payload}->{message},
+                url        => '',
+            }
+        ],
+        'p2p_chat_received event fired'
+    );
+};
+
+subtest 'Ignore webhook payload when category is not related to message_send' => sub {
+    my $payload = {
+        category        => 'group_channel:join',
+        sender          => {},
+        custom_type     => '',
+        mention_type    => 'users',
+        mentioned_users => [],
+        app_id          => '3C6B5C02-BEB1-4092-BCCB-02EDDC0A0AE1',
+        payload         => {},
+        channel         => {
+            data        => 'Hola mundo',
+            channel_url => 'sendbird_open_channel_1962_9441ed29ee28b543cb9971afc22587b8f662e944',
+            name        => 'my first channel',
+            custom_type => 'test'
+        }};
+
+    my $json      = encode_json $payload;
+    my $signature = hmac_sha256_hex($json, $token);
+    @metrics = ();
+
+    $t->ua->on(
+        start => sub {
+            my ($ua, $tx) = @_;
+            $tx->req->headers->remove('X-Sendbird-Signature');
+            $tx->req->headers->add('X-Sendbird-Signature' => $signature);
+        });
+
+    undef $emitted_events;
+    $t->post_ok('/', json => $payload)->status_is(200)->json_is('ok');
+    is @$metrics,                            0,     'No success or failure metric populated since category is not related';
+    is $emitted_events->{p2p_chat_received}, undef, 'no p2p_chat_received event fired';
 };
 
 subtest 'Correct signature, file type message saved' => sub {
@@ -167,8 +228,24 @@ subtest 'Correct signature, file type message saved' => sub {
             $tx->req->headers->add('X-Sendbird-Signature' => $signature);
         });
 
+    undef $emitted_events;
     $t->post_ok('/', json => $payload)->status_is(200)->json_is('ok');
     is $metrics[0], 'bom_platform.sendbird.webhook.messages_received', 'Message received reported';
+
+    cmp_deeply(
+        $emitted_events->{p2p_chat_received},
+        [{
+                message_id => $payload->{payload}->{message_id},
+                created_at => $payload->{payload}->{created_at},
+                user_id    => $payload->{sender}->{user_id},
+                channel    => $payload->{channel}->{channel_url},
+                type       => $payload->{type},
+                message    => '',
+                url        => $payload->{payload}->{url},
+            }
+        ],
+        'p2p_chat_received event fired'
+    );
 
 };
 
