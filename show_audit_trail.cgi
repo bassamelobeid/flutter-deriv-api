@@ -243,7 +243,7 @@ my $stash = {
 
 # These hidden fields are not needed in audit trail
 unless ($myself_args->{category} eq 'payment_agent') {
-    $stash->{hidden_cols} = {map { $_ => 1 } (qw/client_password secret_answer secret_question date_joined document_path/)};
+    $stash->{hidden_cols} = {map { $_ => 1 } (qw/password secret_answer secret_question date_joined document_path/)};
 }
 Bar($title_bar);
 
@@ -261,7 +261,7 @@ sub _sort_headers {
         my $counter_begin = -200;
         $h->{$_} = $counter_end++
             for (
-            qw/address_city address_line_1 address_line_2 address_postcode address_state allow_copiers allow_login broker_code cashier_setting_password checked_affiliate_exposures citizen client_password/
+            qw/address_city address_line_1 address_line_2 address_postcode address_state allow_copiers allow_login broker_code cashier_setting_password checked_affiliate_exposures citizen password/
             );
         $h->{$_} = $counter_begin++ for (qw/reason status_code document_type expiration_date status comments first_name last_name/);
 
@@ -420,17 +420,18 @@ sub user_db_queries {
     my $client             = BOM::User::Client->new({loginid => $loginid}) || die "Cannot find client: $loginid";
     my $binary_user_id     = $client->binary_user_id;
     my $queries            = [];
-    my @interesting_fields = qw/is_totp_enabled/;
+    my @interesting_fields = qw/is_totp_enabled password/;
     my $query              = "tbl = ? AND binary_user_id = ?";
 
     # Since audittable stores data as JSON we may only want to retrieve those records that
     # contains changes in our interesting fields.
 
-    $query = join ' AND ', $query, map { "original_cols->'$_' IS NOT NULL" } @interesting_fields;
+    my $interesting_fields_query = '(' . (join ' OR ', map { "original_cols->'$_' IS NOT NULL" } @interesting_fields) . ')';
+    $query = join ' AND ', $query, $interesting_fields_query;
 
     # Tell the db which fields to grab
     my $pg_userid = "COALESCE(metadata->>'staff', 'system') AS pg_userid";
-    my $select    = join ',', 'stamp', 'tbl', $pg_userid, map { "new_row->>'$_' AS $_" } @interesting_fields;
+    my $select    = join ',', 'stamp', 'tbl', 'operation', $pg_userid, map { "new_row->>'$_' AS $_" } @interesting_fields;
 
     push $queries->@*, {
         select => $select,
