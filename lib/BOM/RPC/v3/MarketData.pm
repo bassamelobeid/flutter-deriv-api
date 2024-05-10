@@ -74,6 +74,9 @@ rpc exchange_rates => sub {
     my %rates_hash;
     if ($base_currency and $target_currency) {
         if ($include_spread) {
+            my $invalid_currency = BOM::Platform::Client::CashierValidation::invalid_currency_error($target_currency);
+            return BOM::RPC::v3::Utility::create_error($invalid_currency) if $invalid_currency;
+
             my ($spread, $is_inverted) = get_current_spread($base_currency, $target_currency);
             my ($spot_rate, $ask_rate, $bid_rate);
 
