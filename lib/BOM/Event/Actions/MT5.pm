@@ -1711,7 +1711,7 @@ async sub mt5_archive_restore_sync {
                 await BOM::MT5::User::Async::update_user({
                         %{$mt5_user},
                         login  => $mt5_user->{login},
-                        rights => Deriv::TradingPlatform::MT5::UserRights::get_value(qw(enabled))});
+                        rights => Deriv::TradingPlatform::MT5::UserRights::get_value(qw(enabled trailing expert reports))});
             } catch ($e) {
                 _create_error($process_mt5_fail, $mt5_account, 'MT5 Error', 'MT5 restored but failed to enable trading rights.');
                 next;
