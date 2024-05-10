@@ -10,11 +10,13 @@ jobs:
     uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
     secrets: inherit
   core:
-    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
+    uses: ./.github/workflows/base.yml
     secrets: inherit
+    with:
+      need_upload_result: true
   publish_test_results:
-    needs: [ syntax_unit , core ]
-    if: success() || failure()
+    needs: [syntax_unit, core]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       -

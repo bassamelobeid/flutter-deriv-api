@@ -17,14 +17,10 @@ jobs:
     with:
       repository: ${{ github.repository }}
   core:
-    strategy:
-      matrix:
-        test_name: [p2p, user, client, others]
-    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    uses: ./.github/workflows/base.yml
     secrets: inherit
     with:
-      test_name: ${{ matrix.test_name }}
-      repository: ${{ github.repository }}
+      need_upload_result: true
   check_dependent_tests:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
@@ -50,7 +46,7 @@ jobs:
     uses: ./.github/workflows/dependent.yml
     secrets: inherit
   ci_test_status:
-    needs: [syntax_diff_unit, dependent, core]
+    needs: [syntax_diff_unit, core, dependent]
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
