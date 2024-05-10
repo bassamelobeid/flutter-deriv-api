@@ -99,9 +99,9 @@ sub anonymize_user {
     for my $lead ($leads->@*) {
         my $del_result = $self->delete_lead($lead->{id});
 
-        unless ($del_result) {
+        unless ($del_result->{success}) {
             $log->errorf('An error occurred while anonymizing user %s due to HTTP status: %s, content: %s',
-                $self->user->id, $del_result->status, $del_result->content);
+                $self->user->id, $del_result->{status}, $del_result->{content});
             return 0;
         }
     }
@@ -163,7 +163,6 @@ sub delete_lead {
 
     my $response = $self->http->request('DELETE', $self->config->{api_url} . "lead/$lead_id/");
 
-    return $response->{content} if $response->{success};
     return $response;
 }
 

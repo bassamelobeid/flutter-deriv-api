@@ -19,7 +19,8 @@ my $user = BOM::User->create(
 );
 
 my @requests;
-my $response_sample;
+my $get_response;
+my $delete_response;
 
 my $mock_http = Test::MockModule->new('HTTP::Tiny');
 $mock_http->mock(
@@ -33,7 +34,12 @@ $mock_http->mock(
             url    => $url
             };
 
-        return $response_sample;
+        # Return different responses based on the request type
+        if ($method eq 'GET') {
+            return $get_response;
+        } elsif ($method eq 'DELETE') {
+            return $delete_response;
+        }
     });
 
 subtest 'initialization' => sub {
@@ -58,15 +64,15 @@ subtest 'search_lead' => sub {
     }
     qr/Please define at least one filter./;
 
-    $response_sample = {success => 0};
+    $get_response = {success => 0};
     my $response = $close->search_lead('keyword1');
 
-    is scalar @requests, 1,                'request performed';
-    is $response,        $response_sample, 'error happened';
+    is scalar @requests, 1,             'request performed';
+    is $response,        $get_response, 'error happened';
 
     @requests = ();
 
-    $response_sample = {
+    $get_response = {
         success => 1,
         content => {data => 'ok'}};
     $response = $close->search_lead('keyword1', 'sample2');
@@ -87,15 +93,15 @@ subtest 'delete_lead' => sub {
     }
     qr/Missing lead_id/;
 
-    $response_sample = {success => 0};
-    my $response = $close->delete_lead('id');
+    $delete_response = {success => 0};
+    my $response = $close->delete_lead('id1');
 
     is scalar @requests, 1,                'request performed';
-    is $response,        $response_sample, 'error happened';
+    is $response,        $delete_response, 'error happened';
 
     @requests = ();
 
-    $response_sample = {
+    $delete_response = {
         success => 1,
         content => {}};
     $response = $close->delete_lead('id4');
@@ -111,9 +117,7 @@ subtest 'anonymize user' => sub {
 
     my $close = BOM::Platform::CloseIO->new(user => $user);
 
-    $response_sample = {
-        success => 0,
-    };
+    $get_response = {success => 0};
     my $result = $close->anonymize_user();
 
     is scalar @requests, 1, '1 request performed';
@@ -121,26 +125,28 @@ subtest 'anonymize user' => sub {
 
     @requests = ();
 
-    $response_sample = {
+    $get_response = {
         success => 1,
         content => encode_json_utf8 {
             data          => [{id => '1'}, {id => '2'}],
             total_results => 2
         }};
-    $result = $close->anonymize_user();
+    $delete_response = {success => 1};
+    $result          = $close->anonymize_user();
 
     is scalar @requests, 3, '1 request performed';
     ok $result, 'user anonymized.';
 
     @requests = ();
 
-    $response_sample = {
+    $get_response = {
         success => 1,
         content => encode_json_utf8 {
             data          => [{id => 'id9'}],
             total_results => 1
         }};
-    $result = $close->anonymize_user();
+    $delete_response = {success => 1};
+    $result          = $close->anonymize_user();
 
     is scalar @requests,       2,     '2 request performed';
     is $requests[0]->{method}, 'GET', 'method of first call is correct';
@@ -153,7 +159,7 @@ subtest 'anonymize user' => sub {
 
     @requests = ();
 
-    $response_sample = {
+    $get_response = {
         success => 1,
         content => encode_json_utf8 {
             data          => [],
@@ -165,7 +171,29 @@ subtest 'anonymize user' => sub {
     is $requests[0]->{method}, 'GET', 'method of first call is correct';
     like $requests[0]->{url}, qr/lead\?query=test%40binary.com/, 'queries of first call is correct';
 
-    ok $result, 'there were no user to anonymize.';
+    @requests = ();
+
+    $get_response = {
+        success => 1,
+        content => encode_json_utf8 {
+            data          => [{id => 'id11'}],
+            total_results => 1
+        }};
+    $delete_response = {
+        success => 0,
+        status  => 404,
+        content => 'not found'
+    };
+
+    $result = $close->anonymize_user();
+
+    is scalar @requests,       2,     '2 request performed';
+    is $requests[0]->{method}, 'GET', 'method of first call is correct';
+    like $requests[0]->{url}, qr/lead\?query=test%40binary.com/, 'queries of first call is correct';
+    is $requests[1]->{method}, 'DELETE', 'method of second call is correct';
+    like $requests[1]->{url}, qr/lead\/id11/, 'the parameters of second call are correct';
+
+    ok !$result, 'user not anonymized';
 };
 
 done_testing();
