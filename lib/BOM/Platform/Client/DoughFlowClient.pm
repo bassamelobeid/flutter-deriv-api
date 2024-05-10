@@ -78,14 +78,18 @@ Resolves the POI document number of the client.
 sub NationalID {
     my $self = shift;
 
+    return undef unless $self->residence eq 'za';
+
     my $idv_model    = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
     my $idv_document = $idv_model->get_last_updated_document({
         only_verified => 1,
     });
 
-    return $idv_document->{document_number} if $idv_document;
+    return undef unless $idv_document;
 
-    return undef;
+    return undef unless $idv_document->{issuing_country} eq 'za';
+
+    return $idv_document->{document_number};
 }
 
 # CustName

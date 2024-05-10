@@ -138,48 +138,196 @@ subtest 'creating a DF client' => sub {
         },
         'Expected bag resolved';
 
-    subtest 'with IDV document' => sub {
-        my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+    subtest 'residence not ZA' => sub {
+        subtest 'with IDV document from ZA' => sub {
+            my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
 
-        $idv_mock->mock(
-            'get_last_updated_document',
-            sub {
-                return {document_number => '12345'};
+            $idv_mock->mock(
+                'get_last_updated_document',
+                sub {
+                    return {
+                        document_number => '12345',
+                        issuing_country => 'za'
+                    };
+                });
+
+            is($df_client->NationalID, undef, 'There is a document number');
+
+            my $bag = $df_client->create_customer_property_bag({
+                SecurePassCode => 'test',
+                Sportsbook     => 'foo',
+                IP_Address     => '127.0.0.1',
+                Password       => 'bar',
             });
 
-        is($df_client->NationalID, '12345', 'There is a document number');
+            cmp_deeply $bag,
+                +{
+                CustName       => 'Felix The cat',
+                Email          => 'felix@regentmarkets.com',
+                DOB            => '1951-01-01',
+                City           => 'Sydney',
+                SecurePassCode => 'test',
+                PCode          => '2000',
+                Sportsbook     => 'foo',
+                Phone          => '21345678',
+                IP_Address     => '127.0.0.1',
+                Profile        => 1,
+                Gender         => 'M',
+                Password       => 'bar',
+                Province       => 'NSW',
+                Street         => '11 Bligh St',
+                Country        => 'AU',
+                PIN            => 'CR10000',
+                },
+                'Expected bag resolved';
 
-        my $bag = $df_client->create_customer_property_bag({
-            SecurePassCode => 'test',
-            Sportsbook     => 'foo',
-            IP_Address     => '127.0.0.1',
-            Password       => 'bar',
-        });
+            $idv_mock->unmock_all;
+        };
 
-        cmp_deeply $bag,
-            +{
-            CustName       => 'Felix The cat',
-            NationalID     => '12345',
-            Email          => 'felix@regentmarkets.com',
-            DOB            => '1951-01-01',
-            City           => 'Sydney',
-            SecurePassCode => 'test',
-            PCode          => '2000',
-            Sportsbook     => 'foo',
-            Phone          => '21345678',
-            IP_Address     => '127.0.0.1',
-            Profile        => 1,
-            Gender         => 'M',
-            Password       => 'bar',
-            Province       => 'NSW',
-            Street         => '11 Bligh St',
-            Country        => 'AU',
-            PIN            => 'CR10000',
-            },
-            'Expected bag resolved';
+        subtest 'with IDV document from BR' => sub {
+            my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
 
-        $idv_mock->unmock_all;
+            $idv_mock->mock(
+                'get_last_updated_document',
+                sub {
+                    return {
+                        document_number => '12345',
+                        issuing_country => 'br'
+                    };
+                });
+
+            is($df_client->NationalID, undef, 'Only ZA is allowed');
+
+            my $bag = $df_client->create_customer_property_bag({
+                SecurePassCode => 'test',
+                Sportsbook     => 'foo',
+                IP_Address     => '127.0.0.1',
+                Password       => 'bar',
+            });
+
+            cmp_deeply $bag,
+                +{
+                CustName       => 'Felix The cat',
+                Email          => 'felix@regentmarkets.com',
+                DOB            => '1951-01-01',
+                City           => 'Sydney',
+                SecurePassCode => 'test',
+                PCode          => '2000',
+                Sportsbook     => 'foo',
+                Phone          => '21345678',
+                IP_Address     => '127.0.0.1',
+                Profile        => 1,
+                Gender         => 'M',
+                Password       => 'bar',
+                Province       => 'NSW',
+                Street         => '11 Bligh St',
+                Country        => 'AU',
+                PIN            => 'CR10000',
+                },
+                'Expected bag resolved';
+
+            $idv_mock->unmock_all;
+        };
     };
+
+    subtest 'residence is ZA' => sub {
+        $df_client->residence('za');
+        $df_client->save;
+
+        subtest 'with IDV document from ZA' => sub {
+            my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+
+            $idv_mock->mock(
+                'get_last_updated_document',
+                sub {
+                    return {
+                        document_number => '12345',
+                        issuing_country => 'za'
+                    };
+                });
+
+            is($df_client->NationalID, '12345', 'There is a document number');
+
+            my $bag = $df_client->create_customer_property_bag({
+                SecurePassCode => 'test',
+                Sportsbook     => 'foo',
+                IP_Address     => '127.0.0.1',
+                Password       => 'bar',
+            });
+
+            cmp_deeply $bag,
+                +{
+                CustName       => 'Felix The cat',
+                NationalID     => '12345',
+                Email          => 'felix@regentmarkets.com',
+                DOB            => '1951-01-01',
+                City           => 'Sydney',
+                SecurePassCode => 'test',
+                PCode          => '2000',
+                Sportsbook     => 'foo',
+                Phone          => '21345678',
+                IP_Address     => '127.0.0.1',
+                Profile        => 1,
+                Gender         => 'M',
+                Password       => 'bar',
+                Province       => 'NSW',
+                Street         => '11 Bligh St',
+                Country        => 'ZA',
+                PIN            => 'CR10000',
+                },
+                'Expected bag resolved';
+
+            $idv_mock->unmock_all;
+        };
+
+        subtest 'with IDV document from BR' => sub {
+            my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+
+            $idv_mock->mock(
+                'get_last_updated_document',
+                sub {
+                    return {
+                        document_number => '12345',
+                        issuing_country => 'br'
+                    };
+                });
+
+            is($df_client->NationalID, undef, 'Only ZA is allowed');
+
+            my $bag = $df_client->create_customer_property_bag({
+                SecurePassCode => 'test',
+                Sportsbook     => 'foo',
+                IP_Address     => '127.0.0.1',
+                Password       => 'bar',
+            });
+
+            cmp_deeply $bag,
+                +{
+                CustName       => 'Felix The cat',
+                Email          => 'felix@regentmarkets.com',
+                DOB            => '1951-01-01',
+                City           => 'Sydney',
+                SecurePassCode => 'test',
+                PCode          => '2000',
+                Sportsbook     => 'foo',
+                Phone          => '21345678',
+                IP_Address     => '127.0.0.1',
+                Profile        => 1,
+                Gender         => 'M',
+                Password       => 'bar',
+                Province       => 'NSW',
+                Street         => '11 Bligh St',
+                Country        => 'ZA',
+                PIN            => 'CR10000',
+                },
+                'Expected bag resolved';
+
+            $idv_mock->unmock_all;
+        };
+    };
+
+    $df_client->residence('au');
+    $df_client->save;
 };
 
 subtest 'Profile mapped correctly to DF levels' => sub {
