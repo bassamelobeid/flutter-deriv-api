@@ -4,7 +4,7 @@ use List::Util;
 use Test::More;
 use Test::Deep;
 use BOM::Platform::Locale;
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context qw(request localize);
 use Locale::SubCountry;
 
 subtest 'Netherlands' => sub {
@@ -15,6 +15,15 @@ subtest 'Netherlands' => sub {
 subtest 'France' => sub {
     my %states = map { $_->{value} => 1 } @{BOM::Platform::Locale::get_state_option('fr')};
     ok !$states{$_}, "$_ is not included in the list" foreach qw/BL WF PF PM/;
+};
+
+subtest 'Get state option: translate default subdivision' => sub {
+    request(BOM::Platform::Context::Request->new(brand_name => 'deriv', language => 'de'));
+    my @states = @{BOM::Platform::Locale::get_state_option('va')};
+    ok scalar @states == 1,                  "Vatican seems to have multiple states";
+    ok $states[0]->{text} eq 'Vatikanstadt', "did not get correct value for Vatican City";
+    #do we need to reset the language for the rest of the tests?
+    request(BOM::Platform::Context::Request->new(brand_name => 'deriv', language => 'en'));
 };
 
 subtest 'Valid state by value' => sub {
@@ -92,6 +101,67 @@ subtest 'Non-empty state list' => sub {
     subtest 'invalid country must be undefined' => sub {
         is BOM::Platform::Locale::get_state_option('0x00'), undef, 'Not defined states list for 0x00';
     };
+};
+
+my %codes = Locale::SubCountry::World->code_full_name_hash;
+
+sub old_get_state_option {
+    my $country_code = shift or return;
+
+    $country_code = uc $country_code;
+    return unless $codes{$country_code};
+
+    my @options = ();
+
+    my $country = Locale::SubCountry->new($country_code);
+    if ($country and $country->has_sub_countries) {
+        my %name_map = $country->full_name_code_hash;
+        push @options, map { {value => $name_map{$_}, text => $_} }
+            sort $country->all_full_names;
+    }
+
+    # to avoid issues let's assume a stateless country has a default self-titled state
+
+    if (scalar @options == 0) {
+        my $countries_instance = request()->brand->countries_instance;
+        my $countries          = $countries_instance->countries;
+        my $country_name       = $countries->localized_code2country($country_code, request()->language);
+
+        push @options,
+            {
+            value => '00',
+            text  => $country_name,
+            };
+    }
+
+    # Filter out some Netherlands territories
+    @options = grep { $_->{value} !~ /\bSX|AW|BQ1|BQ2|BQ3|CW\b/ } @options if $country_code eq 'NL';
+    # Filter out some France territories
+    @options = grep { $_->{value} !~ /\bBL|WF|PF|PM\b/ } @options if $country_code eq 'FR';
+
+    return \@options;
+}
+
+subtest 'Validate backwards compatibility' => sub {
+    my $countries_instance = request()->brand->countries_instance;
+    my $countries          = $countries_instance->countries;
+    for my $country (sort $countries->all_country_codes) {
+        subtest "country: $country" => sub {
+            my $list     = BOM::Platform::Locale::get_state_option($country);
+            my $old_list = old_get_state_option($country);
+            cmp_deeply $list, $old_list, 'Should have the same result as the old get_state_option';
+        }
+    }
+};
+
+subtest 'Get state by id' => sub {
+    cmp_deeply BOM::Platform::Locale::get_state_by_id('BA', 'id'), 'Bali', 'got correct state name';
+
+    cmp_deeply BOM::Platform::Locale::get_state_by_id('ba', 'id'), undef, 'got undef with lowercased state code';
+};
+
+subtest 'translate salutation' => sub {
+    cmp_deeply BOM::Platform::Locale::translate_salutation('Mr'), 'Mr', 'got correct salutation';
 };
 
 done_testing;

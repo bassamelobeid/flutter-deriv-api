@@ -22,6 +22,7 @@ use Locale::SubCountry;
 
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(request localize);
+use Business::Config::Country;
 
 sub translate_salutation {
     my $provided = shift;
@@ -60,28 +61,18 @@ Each hash contains the following keys:
 
 sub get_state_option {
     my $country_code = shift or return;
+    $country_code = lc $country_code;
 
-    $country_code = uc $country_code;
-    state %codes;
-    unless (%codes) {
-        %codes = Locale::SubCountry::World->code_full_name_hash;
-    }
-    return unless $codes{$country_code};
+    my $country_list = Business::Config::Country->new()->list();
+    return unless $country_list->{$country_code};
 
-    my @options = ({
-            value => '',
-            text  => localize('Please select')});
+    my @options = @{$country_list->{$country_code}->{subdivision}};
 
-    my $country = Locale::SubCountry->new($country_code);
-    if ($country and $country->has_sub_countries) {
-        my %name_map = $country->full_name_code_hash;
-        push @options, map { {value => $name_map{$_}, text => $_} }
-            sort $country->all_full_names;
-    }
-
-    # to avoid issues let's assume a stateless country has a default self-titled state
-
-    if (scalar @options == 1) {
+    # FE seems to have removed the constraint, but BE has NOT NULL constraint for state and tests fail when
+    # we remove the default country. We will keep the localization as the countries are
+    # localized and it will look odd to have the same country name displayed in the correct language
+    # and in english.
+    if (scalar @options == 0) {
         my $countries_instance = request()->brand->countries_instance;
         my $countries          = $countries_instance->countries;
         my $country_name       = $countries->localized_code2country($country_code, request()->language);
@@ -92,11 +83,6 @@ sub get_state_option {
             text  => $country_name,
             };
     }
-
-    # Filter out some Netherlands territories
-    @options = grep { $_->{value} !~ /\bSX|AW|BQ1|BQ2|BQ3|CW\b/ } @options if $country_code eq 'NL';
-    # Filter out some France territories
-    @options = grep { $_->{value} !~ /\bBL|WF|PF|PM\b/ } @options if $country_code eq 'FR';
 
     return \@options;
 }
@@ -128,7 +114,8 @@ Usage: get_state_by_id('BA', 'id') => Bali
 sub get_state_by_id {
     my $id           = shift;
     my $residence    = shift;
-    my ($state_name) = sort map { $_->{text} } grep { $_->{value} eq $id } @{get_state_option($residence) || []};
+    my ($state_name) = sort map { $_->{text} }
+        grep { $_->{value} eq $id } @{get_state_option($residence) || []};
 
     return $state_name;
 }
@@ -161,7 +148,8 @@ Usage: validate_state('BA', 'id') => { value => 'BA', text => 'Bali' }
 sub validate_state {
     my $state     = shift;
     my $residence = shift;
-    my $match     = first { lc $_->{value} eq lc $state or lc $_->{text} eq lc $state } @{get_state_option($residence) || []};
+    my $match =
+        first { lc $_->{value} eq lc $state or lc $_->{text} eq lc $state } @{get_state_option($residence) || []};
 
     return $match;
 }
