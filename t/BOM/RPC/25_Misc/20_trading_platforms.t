@@ -19,23 +19,33 @@ subtest 'Trading Platforms config' => sub {
         +{
         shortcode           => 'cfd',
         available_platforms => {
-            mt5     => {display_name => 'Deriv MT5'},
-            ctrader => {display_name => 'Deriv cTrader'},
-            derivx  => {display_name => 'Deriv X'}
+            mt5 => {
+                display_name => 'Deriv MT5',
+                description  => 'This account offers CFDs on derived and financial instruments',
+            },
+            ctrader => {
+                display_name => 'Deriv cTrader',
+                description  => 'This account offers CFDs on a feature-rich trading platform',
+            },
+            derivx => {
+                display_name => 'Deriv X',
+                description  => 'This account offers CFDs on a highly customisable CFD trading platform',
+            }
         },
         markets => {
             financial => {
-                description => 'This account offers CFDs on financial instruments',
+                display_name => 'Financial',
+                description  => 'This account offers CFDs on financial instruments',
             },
             derived => {
-                description => 'This account offers CFDs on derived instruments',
+                display_name => 'Derived',
+                description  => 'This account offers CFDs on derived instruments',
             },
         },
         products => {
             swap_free => {
-                description =>
-                    'Trade swap-free CFDs on MT5 with forex, stocks, stock indices, commodities, cryptocurrencies, ETFs and synthetic indices',
-                display_name        => 'Swap Free',
+                display_name        => 'Swap-Free',
+                description         => 'Trade swap-free CFDs on Financial and Derived instruments',
                 supported_platforms => {
                     mt5 => {
                         real => {
@@ -53,6 +63,7 @@ subtest 'Trading Platforms config' => sub {
                 }
             },
             straight_through_processing => {
+                display_name        => 'STP',
                 supported_platforms => {
                     mt5 => {
                         real => {
@@ -62,7 +73,6 @@ subtest 'Trading Platforms config' => sub {
                         },
                     }
                 },
-                display_name => 'STP'
             },
             standard => {
                 display_name        => 'Standard',
@@ -102,16 +112,17 @@ subtest 'Trading Platforms config' => sub {
         shortcode           => 'options',
         available_platforms => {
             go => {
-                description  => 'Trade on the go with our mobile app',
-                display_name => 'Deriv Go'
+                description  => 'Multipliers trading with our mobile app',
+                display_name => 'Deriv Go',
             },
             binary_bot => {
                 legacy       => 1,
-                display_name => 'Binary Bot'
+                display_name => 'Binary Bot',
+                description  => 'Our legacy automated trading platform',
             },
             dtrader => {
                 description  => 'Options trading platform',
-                display_name => 'Deriv Trader'
+                display_name => 'Deriv Trader',
             },
             bot => {
                 display_name => 'Deriv Bot',
@@ -120,7 +131,7 @@ subtest 'Trading Platforms config' => sub {
             smart_trader => {
                 legacy       => 1,
                 description  => 'Our legacy options trading platform',
-                display_name => 'SmartTrader'
+                display_name => 'Smart Trader',
             }
         },
         products => {
