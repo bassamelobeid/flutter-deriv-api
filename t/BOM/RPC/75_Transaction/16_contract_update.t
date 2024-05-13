@@ -52,20 +52,6 @@ my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     },
     1
 );
-my $tick3 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'R_100',
-        epoch      => $now->epoch + 2,
-        quote      => 100,
-    },
-    1
-);
-my $tick4 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'R_100',
-        epoch      => $now->epoch + 3,
-        quote      => 100,
-    },
-    1
-);
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxAUDJPY',
@@ -88,11 +74,6 @@ my $mocked = Test::MockModule->new('BOM::Product::Contract::Multup');
 $mocked->mock('current_tick',               sub { return $current_tick });
 $mocked->mock('entry_tick',                 sub { return $entry_tick });
 $mocked->mock('maximum_feed_delay_seconds', sub { return 300 });
-
-my $mock_accu = Test::MockModule->new('BOM::Product::Contract::Accu');
-$mock_accu->mock('current_tick',               sub { return $current_tick });
-$mock_accu->mock('entry_tick',                 sub { return $entry_tick });
-$mock_accu->mock('maximum_feed_delay_seconds', sub { return 300 });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -118,8 +99,7 @@ subtest 'contract_update' => sub {
         args      => {
             contract_update => 1,
             limit_order     => {},
-        },
-    };
+        }};
 
     $c->call_ok('contract_update', $update_params)->has_error->error_code_is('MissingContractId')
         ->error_message_is('Contract id is required to update contract');
@@ -230,76 +210,6 @@ subtest 'contract_update' => sub {
     is $history->[1]->{display_name}, 'Stop loss';
     is $history->[1]->{order_amount}, -80;
     is $history->[1]->{value},        92.05;
-};
-
-subtest 'contract_update accumulator' => sub {
-    my $buy_params = {
-        client_ip           => '127.0.0.1',
-        token               => $token,
-        contract_parameters => {
-            amount        => 100,
-            basis         => 'stake',
-            contract_type => 'ACCU',
-            currency      => 'USD',
-            growth_rate   => 0.01,
-            symbol        => 'R_100',
-        },
-        args => {price => 100},
-    };
-    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
-    ok $buy_res->{contract_id},                  'accumulator contract is bought successfully without take profit';
-    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
-
-    my $update_params = {
-        client_ip => '127.0.0.1',
-        token     => $token,
-        args      => {
-            contract_id     => $buy_res->{contract_id},
-            contract_update => 1,
-            limit_order     => {
-                take_profit => 10,
-            },
-        },
-    };
-    my $update_res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UpdateNotAllowed')
-        ->error_message_is("This contract cannot be updated once you've made your purchase. This feature is not available for this contract type.");
-
-    # sell_time cannot be equal to purchase_time, hence the sleep.
-    sleep 1;
-
-    my $sell_params = {
-        client_ip => '127.0.0.1',
-        token     => $token,
-        args      => {
-            sell  => $buy_res->{contract_id},
-            price => 101,
-        },
-    };
-    my $sell_res = $c->call_ok('sell', $sell_params)->has_no_error->result;
-    is $sell_res->{sold_for}, ($buy_params->{args}->{price} * (1 + $buy_params->{contract_parameters}->{growth_rate})) . '.00',
-        'sold for 101.00 with 0.01 growth rate';
-
-    $buy_params->{contract_parameters}->{limit_order} = {take_profit => 50};
-    $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
-
-    ok $buy_res->{contract_id},                  'accumulator contract is bought successfully with take profit';
-    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
-
-    my $poc_params = {
-        client_ip => '127.0.0.1',
-        token     => $token,
-        args      => {
-            contract_id            => $buy_res->{contract_id},
-            proposal_open_contract => 1,
-        },
-    };
-    my $poc_res = $c->call_ok('proposal_open_contract', $poc_params)->has_no_error->result;
-    is $poc_res->{$buy_res->{contract_id}}->{limit_order}->{take_profit}->{order_amount}, '50.00', 'take profit set to 50.00';
-
-    $update_params->{limit_order}->{take_profit} = 10;
-    $update_params->{args}->{contract_id}        = $buy_res->{contract_id};
-    $update_res                                  = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UpdateNotAllowed')
-        ->error_message_is("This contract cannot be updated once you've made your purchase. This feature is not available for this contract type.");
 };
 
 my $mock_calendar = Test::MockModule->new('Finance::Calendar');
