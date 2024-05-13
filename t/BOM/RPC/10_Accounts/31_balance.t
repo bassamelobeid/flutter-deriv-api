@@ -45,34 +45,34 @@ $test_client_vr->email($email);
 $test_client_vr->set_default_account('USD');
 $test_client_vr->save;
 
-my $email_mlt_mf    = 'mltmf@binary.com';
-my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
+my $email_mf2       = 'mf@binary.com';
+my $test_client_mf2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
     residence   => 'at',
 });
-$test_client_mlt->email($email_mlt_mf);
-$test_client_mlt->set_default_account('EUR');
-$test_client_mlt->save;
+$test_client_mf2->email($email_mf2);
+$test_client_mf2->set_default_account('EUR');
+$test_client_mf2->save;
 
 my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
     residence   => 'at',
 });
-$test_client_mf->email($email_mlt_mf);
+$test_client_mf->email($email_mf2);
 $test_client_mf->save;
 
-my $user_mlt_mf = BOM::User->create(
-    email    => $email_mlt_mf,
+my $user_mf2 = BOM::User->create(
+    email    => $email_mf2,
     password => $hash_pwd
 );
-$user_mlt_mf->add_client($test_client_vr);
-$user_mlt_mf->add_client($test_client_mlt);
-$user_mlt_mf->add_client($test_client_mf);
+$user_mf2->add_client($test_client_vr);
+$user_mf2->add_client($test_client_mf2);
+$user_mf2->add_client($test_client_mf);
 
 my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_loginid,                  'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-my $token_mlt      = $m->create_token($test_client_mlt->loginid,      'test token');
+my $token_mf2      = $m->create_token($test_client_mf2->loginid,      'test token');
 
 my $c = Test::BOM::RPC::QueueClient->new();
 
@@ -126,17 +126,17 @@ subtest 'balance' => sub {
     my $bal_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
-    my $bal_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
+    my $bal_mf2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
     });
     my $bal_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
     my $bal_mf_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
+        broker_code => 'MF',
     });
 
-    for my $c ($bal_mf, $bal_mlt, $bal_vr, $bal_mf_disabled) {
+    for my $c ($bal_mf, $bal_mf2, $bal_vr, $bal_mf_disabled) {
         $c->email($bal_email);
         $c->save;
         $bal_user->add_client($c);
@@ -151,9 +151,9 @@ subtest 'balance' => sub {
         remark   => 'free gift',
     );
 
-    $bal_mlt->set_default_account('USD');
-    $bal_mlt->save;
-    $bal_mlt->payment_free_gift(
+    $bal_mf2->set_default_account('USD');
+    $bal_mf2->save;
+    $bal_mf2->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
         remark   => 'free gift',
@@ -171,13 +171,13 @@ subtest 'balance' => sub {
     );
     $bal_mf_disabled->status->set('disabled', 1, 'test disabled');
 
-    my $bal_token = $m->create_token($bal_mlt->loginid, 'mlt token');
+    my $bal_token = $m->create_token($bal_mf2->loginid, 'mf token');
 
     my $expected_result = {
-        'account_id' => $bal_mlt->default_account->id,
+        'account_id' => $bal_mf2->default_account->id,
         'balance'    => '1000.00',
         'currency'   => 'USD',
-        'loginid'    => $bal_mlt->loginid,
+        'loginid'    => $bal_mf2->loginid,
     };
 
     my $result = $c->tcall($method, {token => $bal_token});
@@ -188,7 +188,7 @@ subtest 'balance' => sub {
         account => 'current'
     };
 
-    for my $account ('current', $bal_mlt->loginid) {
+    for my $account ('current', $bal_mf2->loginid) {
         $args->{account} = $account;
         $result = $c->tcall(
             $method,
@@ -218,10 +218,10 @@ subtest 'balance' => sub {
     is_deeply(
         $result,
         {
-            'account_id' => $bal_mlt->default_account->id,
+            'account_id' => $bal_mf2->default_account->id,
             'balance'    => '1000.00',
             'currency'   => 'USD',
-            'loginid'    => $bal_mlt->loginid,
+            'loginid'    => $bal_mf2->loginid,
             'total'      => {
                 'deriv' => {
                     'amount'   => '2500.00',
@@ -251,9 +251,9 @@ subtest 'balance' => sub {
                     'converted_amount'                => '1500.00',
                     'status'                          => 1,
                 },
-                $bal_mlt->loginid => {
+                $bal_mf2->loginid => {
                     'currency_rate_in_total_currency' => 1,
-                    'account_id'                      => $bal_mlt->default_account->id,
+                    'account_id'                      => $bal_mf2->default_account->id,
                     'balance'                         => '1000.00',
                     'currency'                        => 'USD',
                     'type'                            => 'deriv',
@@ -278,16 +278,16 @@ subtest 'balance' => sub {
     $result = $c->tcall(
         $method,
         {
-            token      => $token_mlt,
+            token      => $token_mf2,
             token_type => 'oauth_token',
             args       => $args,
         });
 
     $expected_result = {
-        'account_id' => $test_client_mlt->default_account->id,
+        'account_id' => $test_client_mf2->default_account->id,
         'balance'    => '0.00',
         'currency'   => 'EUR',
-        'loginid'    => $test_client_mlt->loginid,
+        'loginid'    => $test_client_mf2->loginid,
         'total'      => {
             'deriv' => {
                 'amount'   => '0.00',
@@ -307,9 +307,9 @@ subtest 'balance' => sub {
             },
         },
         accounts => {
-            $test_client_mlt->loginid => {
+            $test_client_mf2->loginid => {
                 'currency_rate_in_total_currency' => 1,
-                'account_id'                      => $test_client_mlt->default_account->id,
+                'account_id'                      => $test_client_mf2->default_account->id,
                 'balance'                         => '0.00',
                 'currency'                        => 'EUR',
                 'type'                            => 'deriv',

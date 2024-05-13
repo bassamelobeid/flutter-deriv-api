@@ -36,7 +36,7 @@ my $hash_pwd  = BOM::User::Password::hashpw('jskjd8292922');
 
 my $email_X = 'abc@binary.com';
 my $email_Y = 'sample@binary.com';
-my $email_T = 'mlt_mf@binary.com';
+my $email_T = 'mf@binary.com';
 my $email_Q = 'abcd@binary.com';
 
 # User X
@@ -125,26 +125,11 @@ my $user_T = BOM::User->create(
     password => $hash_pwd
 );
 
-my $test_client_T_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MX',
-    residence   => 'gb',
-    citizen     => ''
-});
-$test_client_T_mx->email($email_T);
-
 my $test_client_T_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
 
 $test_client_T_vr->email($email_T);
 $test_client_T_vr->set_default_account('USD');
 $test_client_T_vr->save;
-
-my $test_client_T_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
-    residence   => 'at',
-});
-$test_client_T_mlt->email($email_T);
-$test_client_T_mlt->set_default_account('EUR');
-$test_client_T_mlt->save;
 
 my $test_client_T_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -154,7 +139,6 @@ $test_client_T_mf->email($email_T);
 $test_client_T_mf->save;
 
 $user_T->add_client($test_client_T_vr);
-$user_T->add_client($test_client_T_mlt);
 $user_T->add_client($test_client_T_mf);
 
 # User Q
@@ -187,9 +171,7 @@ my $token_Y_cr_citizen_AT = $token_gen->create_token($test_client_Y_cr_citizen_A
 my $token_Y_cr_1          = $token_gen->create_token($test_client_Y_cr_1->loginid,          'test token');
 my $token_Y_cr_2          = $token_gen->create_token($test_client_Y_cr_2->loginid,          'test token');
 
-my $token_T_mx  = $token_gen->create_token($test_client_T_mx->loginid,  'test token');
-my $token_T_mlt = $token_gen->create_token($test_client_T_mlt->loginid, 'test token');
-my $token_T_mf  = $token_gen->create_token($test_client_T_mf->loginid,  'test token');
+my $token_T_mf = $token_gen->create_token($test_client_T_mf->loginid, 'test token');
 
 my $token_Q_vr = $token_gen->create_token($test_client_Q_vr->loginid, 'test token');
 
@@ -969,30 +951,6 @@ subtest 'set settings' => sub {
     $poi_status = 'none';
 
     subtest 'Check for citizenship value' => sub {
-
-        subtest 'empty/unspecified' => sub {
-            $params->{token} = $token_T_mx;
-
-            my $user_mx = BOM::User->create(
-                email    => 'dummy+test@email.com',
-                password => '12345',
-            );
-
-            $test_client_T_mx->user($user_mx);
-            $test_client_T_mx->save;
-
-            $params->{args} = {
-                %full_args,
-                address_state => 'LND',
-                citizen       => ''
-            };
-            is(
-                $c->tcall($method, $params)->{error}{message_to_client},
-                'Please provide complete details for your account.',
-                'empty value for citizenship'
-            );
-        };
-
         $params->{token} = $token_X_mf;
 
         subtest 'invalid' => sub {
@@ -1025,21 +983,6 @@ subtest 'set settings' => sub {
             }
         };
         subtest 'po box' => sub {
-            subtest 'regulated account' => sub {
-                $test_client_T_mx->citizen('gb');
-                $test_client_T_mx->save;
-
-                my $params = {
-                    token      => $token_T_mx,
-                    language   => 'EN',
-                    client_ip  => '127.0.0.1',
-                    user_agent => 'agent',
-                    args       => {address_line_1 => 'P.O. box 25243'}};
-
-                my $response = $c->tcall($method, $params);
-                is $response->{error}->{message_to_client}, 'P.O. Box is not accepted in address.', 'Invalid P.O. Box in address';
-            };
-
             subtest 'unregulated account' => sub {
                 $test_client_Y_cr_citizen_AT->citizen('br');
                 $test_client_Y_cr_citizen_AT->save;
@@ -1174,24 +1117,11 @@ subtest 'set settings' => sub {
     $full_args{address_postcode} = '';
 
     $params->{args} = {%full_args};
-    cmp_deeply($c->tcall($method, $params), {status => 1}, 'postcode is optional for non-MX clients and can be set to null');
-
-    $params->{token}                        = $token_T_mx;
-    $params->{args}{account_opening_reason} = 'Income Earning';
-    $params->{args}{address_state}          = 'Burgenland';
+    cmp_deeply($c->tcall($method, $params), {status => 1}, 'postcode is optional and can be set to null');
 
     delete $emitted->{profile_change};
     # setting account settings for one client also updates for clients that have a different landing company
-    $params->{token} = $token_T_mlt;
     $params->{args}->{place_of_birth} = 'ir';
-
-    cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
-    ok($emitted->{profile_change}, 'profile_change emit exist');
-
-    is_deeply $emitted->{profile_change}->{properties}->{updated_fields}, $params->{args}, "updated fields are correctly sent to track event";
-    is($c->tcall('get_settings', {token => $token_T_mlt})->{address_line_1}, "address line 1", "Was able to set settings for MLT client");
-    is($c->tcall('get_settings', {token => $token_T_mf})->{address_line_1},  "address line 1", "Was able to set settings for MF client");
-
     # setting account settings for one client updates for all clients with the same landing company
     $params->{token} = $token_Y_cr_1;
     delete $params->{args}{address_state};

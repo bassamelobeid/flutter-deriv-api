@@ -64,14 +64,13 @@ my $trader_CR    = create_client('CR',   0, {email => 'trader_cr@binary.com'});
 my $copier_CR    = create_client('CR',   0, {email => 'copier_cr@binary.com'});
 my $trader_VRTC  = create_client('VRTC', 0, {email => 'trader_vrtc@binary.com'});
 my $copier_VRTC  = create_client('VRTC', 0, {email => 'copier_vrtc@binary.com'});
-my $copier_MLT   = create_client('MLT',  0, {email => 'copier_mlt@binary.com'});
-my $copier_MF    = create_client('MLT',  0, {email => 'copier_mf@binary.com'});
+my $copier_MF    = create_client('MF',   0, {email => 'copier_mf@binary.com'});
 my $EUR_copier   = create_client('CR');
 my $unset_trader = create_client('CR');
 my $CR_client    = create_client('CR', 0, {email => 'client@binary.com'});
 
 my %tokens;
-for ($trader_CR, $copier_CR, $trader_VRTC, $copier_VRTC, $copier_MLT, $copier_MF, $EUR_copier, $unset_trader, $CR_client) {
+for ($trader_CR, $copier_CR, $trader_VRTC, $copier_VRTC, $copier_MF, $EUR_copier, $unset_trader, $CR_client) {
     $tokens{$_->loginid} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $_->loginid);
 }
 
@@ -99,14 +98,7 @@ foreach my $pair (@valid_test_pairs) {
 # Test Invalid copy-trade pairs
 ####################################################################
 
-my @invalid_test_pairs = (
-    [$trader_CR,   $copier_VRTC],
-    [$trader_CR,   $copier_MLT],
-    [$trader_CR,   $copier_MF],
-    [$trader_VRTC, $copier_CR],
-    [$trader_VRTC, $copier_MLT],
-    [$trader_VRTC, $copier_MF],
-);
+my @invalid_test_pairs = ([$trader_CR, $copier_VRTC], [$trader_CR, $copier_MF], [$trader_VRTC, $copier_CR], [$trader_VRTC, $copier_MF],);
 
 foreach my $pair (@invalid_test_pairs) {
     my $test_name    = join(' ', 'Invalid Pair | Trader:', $pair->[0]->loginid, 'Copier:',           $pair->[1]->loginid);

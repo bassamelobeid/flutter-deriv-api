@@ -435,7 +435,7 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
 
 subtest 'trading_servers' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+        broker_code => 'MF',
         residence   => '',
         citizen     => ''
     });

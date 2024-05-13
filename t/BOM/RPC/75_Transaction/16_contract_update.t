@@ -350,68 +350,6 @@ subtest 'forex major pair - frxAUDJPY [VRTC]' => sub {
 my $mock_client = Test::MockModule->new('BOM::User::Client');
 $mock_client->mock(is_tnc_approval_required => sub { 0 });
 
-my $mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MX',
-    email       => $email,
-});
-$mx->status->set('age_verification', 'system', 'age verified');
-top_up $mx, 'USD', 1000;
-my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx->loginid);
-
-subtest 'multiplier on MX' => sub {
-    note "commission on forex is a function of spread seasonality. So it changes throughout the day";
-
-    my $buy_params = {
-        client_ip           => '127.0.0.1',
-        token               => $mx_token,
-        contract_parameters => {
-            contract_type => 'MULTUP',
-            basis         => 'stake',
-            amount        => 100,
-            multiplier    => 50,
-            symbol        => 'frxAUDJPY',
-            currency      => 'USD',
-        },
-        args => {price => 100},
-    };
-    my $buy_res = $c->call_ok('buy', $buy_params)->has_error->error_code_is('NotLegalContractCategory')
-        ->error_message_is('Please switch accounts to trade this contract.');
-};
-
-my $mx_uk = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MX',
-    residence   => 'gb',
-    email       => $email,
-});
-$mx_uk->status->set('age_verification', 'system', 'age verified');
-top_up $mx_uk, 'USD', 1000;
-my ($mx_uk_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_uk->loginid);
-
-subtest 'multiplier on MX [with UK residence]' => sub {
-    note "commission on forex is a function of spread seasonality. So it changes throughout the day";
-
-    my $buy_params = {
-        client_ip           => '127.0.0.1',
-        token               => $mx_uk_token,
-        contract_parameters => {
-            contract_type => 'MULTUP',
-            basis         => 'stake',
-            amount        => 100,
-            multiplier    => 50,
-            symbol        => 'frxAUDJPY',
-            currency      => 'USD',
-        },
-        args => {price => 100},
-    };
-    $c->call_ok('buy', $buy_params)->has_error->error_code_is('NotLegalContractCategory')
-        ->error_message_is('Please switch accounts to trade this contract.');
-
-    $buy_params->{contract_parameters}{symbol} = 'R_100';
-    my $buy_res = $c->call_ok('buy', $buy_params)->has_error->error_code_is('NotLegalContractCategory')
-        ->error_message_is('Please switch accounts to trade this contract.');
-
-};
-
 my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
     email       => $email,

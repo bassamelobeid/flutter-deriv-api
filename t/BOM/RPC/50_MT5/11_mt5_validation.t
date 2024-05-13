@@ -274,9 +274,9 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Please complete your financial assessment.', 'Financial assessment mandatory for financial account');
 
-    # Non-MLT/CR client
+    # Non-CR client
     $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+        broker_code => 'MF',
         citizen     => 'de',
         residence   => 'fr',
     });
@@ -517,134 +517,6 @@ subtest 'CR account types - high risk' => sub {
     ok $login, 'financial mt5 account is created without authentication';
     is $mt5_account_info->{group}, 'real\p01_ts01\financial\svg_std_usd', 'correct CR financial group';
 
-};
-
-subtest 'MLT account types - low risk' => sub {
-    my $client = create_client('MLT');
-    $client->set_default_account('EUR');
-    $client->residence('at');
-    $client->aml_risk_classification('low');
-    $client->account_opening_reason('speculative');
-    $client->save();
-
-    my $user = BOM::User->create(
-        email    => 'mlt+low@binary.com',
-        password => 'Abcd33@!',
-    );
-    $user->update_trading_password('Abcd33@!');
-    $user->add_client($client);
-    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-    #demo account
-    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'MT5NotAllowed', 'MLT client cannot gaming demo account');
-
-    my $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial'
-        });
-    ok $login, 'MLT client can create a financial demo account';
-    is $mt5_account_info->{group}, 'demo\p01_ts01\financial\maltainvest_std_eur', 'correct MLT demo group';
-
-    $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'MLT client cannot create a financial_stp demo account'
-    );
-
-    #real accounts
-    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'MT5NotAllowed', 'MLT client cannot gaming demo account');
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial'
-        },
-        'FinancialAccountMissing',
-        'MLT client cannot create a financial real account before upgrading to MF'
-    );
-
-    $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'MLT client cannot create a financial_stp real account'
-    );
-};
-
-subtest 'MLT account types - high risk' => sub {
-    my $client = create_client('MLT');
-    $client->set_default_account('EUR');
-    $client->residence('at');
-    $client->aml_risk_classification('high');
-    $client->account_opening_reason('speculative');
-    $client->save();
-
-    my $user = BOM::User->create(
-        email    => 'mlt+high@binary.com',
-        password => 'Abcd33@!',
-    );
-    $user->update_trading_password('Abcd33@!');
-    $user->add_client($client);
-    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-    #demo account
-    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'MT5NotAllowed', 'MLT client cannot create a gaming demo account');
-
-    my $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial'
-        });
-    ok $login, 'MLT client can create a financial demo account';
-    is $mt5_account_info->{group}, 'demo\p01_ts01\financial\maltainvest_std_eur', 'correct MLT demo group';
-
-    $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'MLT client cannot create a financial_stp demo account'
-    );
-
-    #real accounts
-    financial_assessment($client, 'none');
-    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'MT5NotAllowed', 'Gaming account not allowed');
-
-    financial_assessment($client, 'financial_info');
-    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'MT5NotAllowed', 'Gaming account not allowed');
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial'
-        },
-        'FinancialAccountMissing',
-        'MLT client cannot create a financial real account before upgrading to MF'
-    );
-
-    $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'MLT client cannot create a financial_stp real account'
-    );
 };
 
 subtest 'MF accout types' => sub {
@@ -1067,10 +939,7 @@ my %lc_company_specific_details = (
         email_prefix => "vrtc+mf2",
         residence    => "de"
     },
-    MLT => {
-        email_prefix => "vrtc+mlt2",
-        residence    => "at"
-    });
+);
 my ($email, $user, $vr_client, $client, $token_vr, $email_prefix, $residence);
 foreach my $broker_code (keys %lc_company_specific_details) {
     subtest $broker_code. ': No real account enabled' => sub {

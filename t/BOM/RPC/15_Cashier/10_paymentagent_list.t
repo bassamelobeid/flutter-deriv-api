@@ -432,7 +432,7 @@ subtest 'suspend countries' => sub {
 
 subtest 'PAs without currency' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
+        broker_code => 'MF',
         residence   => 'cy'
     });
     $client->set_default_account('GBP');

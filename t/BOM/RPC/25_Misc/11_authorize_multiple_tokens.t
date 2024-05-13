@@ -80,35 +80,35 @@ my ($token_duplicated) = $oauth->store_access_token_only(1, $test_client_duplica
 
 is $test_client->default_account, undef, 'new client has no default account';
 
-my $email_mx       = 'dummy_mx@binary.com';
-my $test_client_mx = create_client(
-    'MX', undef,
+my $email_mf       = 'dummy_mf@binary.com';
+my $test_client_mf = create_client(
+    'MF', undef,
     {
-        email       => $email_mx,
+        email       => $email_mf,
         date_joined => '2021-06-06 23:59:59'
     });
-my $user_mx = BOM::User->create(
-    email    => $email_mx,
+my $user_mf = BOM::User->create(
+    email    => $email_mf,
     password => '1234',
 );
-$user_mx->add_client($test_client_mx);
-$test_client_mx->load;
-my ($token_mx) = $oauth->store_access_token_only(1, $test_client_mx->loginid);
+$user_mf->add_client($test_client_mf);
+$test_client_mf->load;
+my ($token_mf) = $oauth->store_access_token_only(1, $test_client_mf->loginid);
 
-my $email_mx_2       = 'dummy_mx_2@binary.com';
-my $test_client_mx_2 = create_client(
-    'MX', undef,
+my $email_mf_2       = 'dummy_mf_2@binary.com';
+my $test_client_mf_2 = create_client(
+    'MF', undef,
     {
-        email       => $email_mx_2,
+        email       => $email_mf_2,
         date_joined => '2021-06-06 23:59:59'
     });
-my $user_mx_2 = BOM::User->create(
-    email    => $email_mx_2,
+my $user_mf_2 = BOM::User->create(
+    email    => $email_mf_2,
     password => '1234',
 );
-$user_mx_2->add_client($test_client_mx_2);
-$test_client_mx_2->load;
-my ($token_mx_2) = $oauth->store_access_token_only(1, $test_client_mx_2->loginid);
+$user_mf_2->add_client($test_client_mf_2);
+$test_client_mf_2->load;
+my ($token_mf_2) = $oauth->store_access_token_only(1, $test_client_mf_2->loginid);
 
 my $method = 'authorize';
 
@@ -116,12 +116,12 @@ subtest "$method with multiple tokens" => sub {
     my $params = {
         language => 'EN',
         token    => $token,
-        args     => {tokens => [$token_mx, '1111']}};
+        args     => {tokens => [$token, '1111']}};
 
     $c->call_ok($method, $params)
         ->has_error->error_message_is("Invalid/duplicate token for a loginid provided.", 'Invalid/duplicate token for a loginid provided.');
 
-    $params->{args}{tokens} = [$token_mx, $token_mx_2];
+    $params->{args}{tokens} = [$token_mf, $token_mf_2];
 
     $c->call_ok($method, $params)->has_error->error_message_is('Token is not valid for current user.', "check tokens don't belong to user");
 
@@ -318,7 +318,7 @@ subtest "$method with multiple tokens" => sub {
     };
 
     subtest "duplicated token added" => sub {
-        $params->{args}{tokens} = [$cr_token, $vr_token, $token_mx, $token_mx];
+        $params->{args}{tokens} = [$cr_token, $vr_token, $token_mf, $token_mf];
         $c->call_ok($method, $params)->has_error->error_message_is('Invalid/duplicate token for a loginid provided.', 'Duplicate token for loginid.');
     };
 
@@ -341,7 +341,7 @@ subtest "$method with multiple tokens" => sub {
     };
 
     subtest "Add a non available account" => sub {
-        $params->{args}{tokens} = [$cr2_token, $token_mx];
+        $params->{args}{tokens} = [$cr2_token, $token_mf];
         $params->{token} = $vr_token;
         $cr2_login->status->set('duplicate_account', 1, 'test non available account');
         $c->call_ok($method, $params)->has_error->error_message_is('Token is not valid for current user.', 'Non available account.');
@@ -371,7 +371,7 @@ subtest 'get account tokens' => sub {
     ok $tokens_result->{error}->{error}{code} eq 'InvalidToken', 'invalid token';
 
     $auth_token = $token_vr;
-    $params     = {args => {tokens => [$token_mx_2, $token_mx]}};
+    $params     = {args => {tokens => [$token_mf_2, $token_mf]}};
 
     $tokens_result = BOM::RPC::v3::Authorize::_get_account_tokens($params, $auth_token, $token_details);
     my $expected_result = {
@@ -379,19 +379,19 @@ subtest 'get account tokens' => sub {
             token  => $token_vr,
             app_id => 1
         },
-        $test_client_mx->loginid => {
-            token  => $token_mx,
+        $test_client_mf->loginid => {
+            token  => $token_mf,
             app_id => 1
         },
-        $test_client_mx_2->loginid => {
-            token  => $token_mx_2,
+        $test_client_mf_2->loginid => {
+            token  => $token_mf_2,
             app_id => 1
         },
     };
 
     is_deeply($tokens_result->{result}, $expected_result, 'get tokens by loginid');
 
-    $params->{args}{tokens} = [$token_mx, '2222'];
+    $params->{args}{tokens} = [$token_mf, '2222'];
     $tokens_result = BOM::RPC::v3::Authorize::_get_account_tokens($params, $auth_token, $token_details);
 
     ok $tokens_result->{error}->{error}{code} eq 'InvalidToken', 'invalid token';

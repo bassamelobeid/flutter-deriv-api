@@ -2806,7 +2806,7 @@ rpc set_self_exclusion => sub {
     }
 
 # Need to send email in 1 circumstance:
-#   - Any MX/MLT/MF client sets a self exclusion period && balance > 0
+#   - Any MF client sets a self exclusion period && balance > 0
 
     my $balance;
     if ($client->default_account) {

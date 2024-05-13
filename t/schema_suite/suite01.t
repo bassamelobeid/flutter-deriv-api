@@ -28,8 +28,6 @@ test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_rec
 
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_svg.json',         'svg';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_virtual.json',     'virtual';
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_iom.json',         'iom';
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_malta.json',       'malta';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_maltainvest.json', 'maltainvest';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_error.json',       'unknown';
 test_sendrecv_params 'payout_currencies/test_send.json',       'payout_currencies/test_receive.json',                   '', $currencies, $length;

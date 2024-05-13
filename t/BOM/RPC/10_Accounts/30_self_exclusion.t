@@ -51,32 +51,22 @@ my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_cl
 });
 $test_client_disabled->status->set('disabled', 1, 'test disabled');
 
-my $email_mlt_mf    = 'mltmf@binary.com';
-my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
-    residence   => 'at',
-});
-$test_client_mlt->email($email_mlt_mf);
-$test_client_mlt->set_default_account('EUR');
-$test_client_mlt->save;
-
-my $test_client_mlt_loginid = $test_client_mlt->loginid;
+my $email_mf = 'mf@binary.com';
 
 my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
     residence   => 'at',
 });
-$test_client_mf->email($email_mlt_mf);
+$test_client_mf->email($email_mf);
 $test_client_mf->set_default_account('USD');
 $test_client_mf->save;
 
-my $user_mlt_mf = BOM::User->create(
-    email         => $email_mlt_mf,
+my $user_mf = BOM::User->create(
+    email         => $email_mf,
     password      => $hash_pwd,
     email_consent => 1
 );
-$user_mlt_mf->add_client($test_client_mlt);
-$user_mlt_mf->add_client($test_client_mf);
+$user_mf->add_client($test_client_mf);
 
 my $test_client_cr   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
@@ -106,7 +96,6 @@ my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_loginid,                  'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_vr       = $m->create_token($test_client_vr->loginid,       'test token');
-my $token_mlt      = $m->create_token($test_client_mlt->loginid,      'test token');
 
 my $token_cr   = $m->create_token($test_client_cr->loginid,   'test token');
 my $token_cr_2 = $m->create_token($test_client_cr_2->loginid, 'test token');
@@ -431,67 +420,9 @@ subtest 'get and set self_exclusion' => sub {
     ##  clients under Deriv (Europe) Limited, are sent under correct circumstances.
     mailbox_clear();
 
-    ## Set some limits, and no email should be sent, because no MT5 account has
-    ##   been opened yet.
-    $params->{token} = $token_mlt;
-    ##  clients under Deriv (Europe) Limited, are sent under correct circumstances.
-
-    ## Set some limits, and no email should be sent, because no MT5 account has
-    ##   been opened yet.
-    $params->{token} = $token_mlt;
-    $params->{args}  = {
-        set_self_exclusion     => 1,
-        max_balance            => 9998,
-        max_turnover           => 1000,
-        max_open_bets          => 50,
-        session_duration_limit => 1440,
-    };
-    delete $emitted->{email_subscription};
-    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
-    $msg = mailbox_search(
-        email   => 'compliance@deriv.com',
-        subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
-    );
-
-    ok(!$msg, 'No email for MLT client limits without MT5 accounts');
-    is($emitted->{email_subscription}, undef, 'email_subscription event not emitted');
-
-    my $update_mt5_params = {
-        language   => 'EN',
-        token      => $token_mlt,
-        client_ip  => '127.0.0.1',
-        user_agent => 'agent',
-        args       => {
-            address_line_1         => 'address line 1',
-            address_line_2         => 'address line 2',
-            address_city           => 'address city',
-            address_state          => 'Wien',
-            place_of_birth         => 'de',
-            account_opening_reason => 'Income Earning',
-        }};
-    cmp_deeply($c->tcall('set_settings', $update_mt5_params)->{status}, 1, 'update successfully');
-
     my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
     my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
-
-    my $mt5_params = {
-        language => 'EN',
-        token    => $token_mlt,
-        args     => {
-            account_type   => 'gaming',
-            country        => 'mt',
-            email          => $DETAILS{email},
-            name           => $DETAILS{name},
-            investPassword => $DETAILS{password}{investor},
-            mainPassword   => $DETAILS{password}{main},
-            leverage       => 100,
-            company        => 'svg'
-        }};
-
-    $test_client_mlt->user->update_trading_password($DETAILS{password}{main});
-    my $error = $c->tcall('mt5_new_account', $mt5_params)->{error};
-    is $error->{code}, 'MT5NotAllowed', 'error code is MT5NotAllowed';
 
     # Test for Maximum balance CR account
     my $new_max_balance = 39999999;

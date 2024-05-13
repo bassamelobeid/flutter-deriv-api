@@ -1218,8 +1218,8 @@ sub _new_account_post_process {
         my $config = request()->brand->countries_instance->countries_list->{$new_client->residence};
         if (   $config->{need_set_max_turnover_limit}
             or $new_client->landing_company->check_max_turnover_limit_is_set)
-        {    # RTS 12 - Financial Limits - UK Clients and MLT Clients
-            try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client or MLT client - have to set turnover limit') }
+        {    # RTS 12 - Financial Limits - UK Clients
+            try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit') }
             catch { return BOM::RPC::v3::Utility::client_error() }
         }
     }

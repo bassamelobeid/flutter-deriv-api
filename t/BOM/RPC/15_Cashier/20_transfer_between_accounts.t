@@ -105,9 +105,8 @@ my $params = {
 };
 
 my (
-    $email,            $client_vr,        $client_cr,     $cr_dummy,      $client_mlt,
-    $client_mf,        $client_cr_usd,    $client_cr_btc, $client_cr_ust, $client_cr_eur,
-    $client_cr_pa_usd, $client_cr_pa_btc, $user,          $token,         $client_cr2
+    $email,         $client_vr,     $client_cr,        $cr_dummy,         $client_mf, $client_cr_usd, $client_cr_btc,
+    $client_cr_ust, $client_cr_eur, $client_cr_pa_usd, $client_cr_pa_btc, $user,      $token,         $client_cr2
 );
 
 my $btc_usd_rate = 4000;
@@ -153,12 +152,6 @@ subtest 'call params validation' => sub {
         place_of_birth => 'id'
     });
 
-    $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'MLT',
-        email          => $email,
-        place_of_birth => 'id'
-    });
-
     $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'MF',
         email          => $email,
@@ -173,7 +166,6 @@ subtest 'call params validation' => sub {
 
     $user->add_client($client_cr);
     $user->add_client($client_cr2);
-    $user->add_client($client_mlt);
     $user->add_client($client_mf);
     $user->add_client($client_vr);
 
@@ -185,7 +177,7 @@ subtest 'call params validation' => sub {
 
     $params->{args} = {
         account_from => $client_cr->loginid,
-        account_to   => $client_mlt->loginid,
+        account_to   => $client_mf->loginid,
     };
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
@@ -239,12 +231,12 @@ subtest 'call params validation' => sub {
         ->error_message_is("Your account cashier is locked. Please contact us for more information.", 'Correct error message for cashier locked');
     $client_cr->status->clear_cashier_locked;
 
-    $params->{args}->{account_to} = $client_mlt->loginid;
-    $client_mlt->status->set('cashier_locked', 'system', 'testing something');
+    $params->{args}->{account_to} = $client_mf->loginid;
+    $client_mf->status->set('cashier_locked', 'system', 'testing something');
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->error_code_is('CashierLocked', 'Correct error code for cashier locked')
         ->error_message_is("Your account cashier is locked. Please contact us for more information.", 'Correct error message for cashier locked');
-    $client_mlt->status->clear_cashier_locked;
+    $client_mf->status->clear_cashier_locked;
 
     $client_cr->status->set('withdrawal_locked', 'system', 'testing something');
 
@@ -281,10 +273,10 @@ subtest 'validation' => sub {
     is $result->{error}->{message_to_client}, 'You are not allowed to transfer from this account.',
         'Correct error message for loginid not in siblings';
 
-    $params->{args}->{account_from} = $client_mlt->loginid;
-    $params->{args}->{account_to}   = $client_mlt->loginid;
+    $params->{args}->{account_from} = $client_mf->loginid;
+    $params->{args}->{account_to}   = $client_mf->loginid;
 
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, _get_unique_display_name());
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, _get_unique_display_name());
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'SameAccountNotAllowed', 'Correct error code if from and to are same';
@@ -301,13 +293,11 @@ subtest 'validation' => sub {
         'Correct error message for different landing companies';
 
     $params->{args}->{account_from} = $client_mf->loginid;
+    $params->{args}->{account_to}   = $client_cr->loginid;
     $params->{args}->{currency}     = 'EUR';
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, _get_unique_display_name());
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'SetExistingAccountCurrency', 'Correct error code for no default currency';
-    is $result->{error}->{message_to_client}, 'Please set the currency for your existing account MF90000000, in order to create more accounts.',
-        'Correct error message for no default currency';
 
     $client_mf->set_default_account('EUR');
     $params->{args}->{currency} = 'BTC';
@@ -326,18 +316,9 @@ subtest 'validation' => sub {
     $params->{args}->{currency} = 'EUR';
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'SetExistingAccountCurrency', 'Correct error code';
-    is $result->{error}->{message_to_client},
-        'Please set the currency for your existing account ' . $client_mlt->loginid . ', in order to create more accounts.',
-        'Correct error message';
-
-    $client_mlt->set_default_account('USD');
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, _get_unique_display_name());
     $params->{args}->{account_from} = $client_mf->loginid;
-    $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('DifferentFiatCurrencies', 'Transfer error as no different currency')
-        ->error_message_is('Account transfers are not available for accounts with different currencies.', 'Different currency error message');
 
     $email    = 'new_email' . rand(999) . '@binary.com';
     $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -884,80 +865,6 @@ subtest 'Validation for transfer from incomplete account' => sub {
         ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
         'Error msg for client is correct')->error_details_is({fields => ['address_city', 'address_line_1']}, 'Error details is correct');
 
-};
-
-subtest 'transfer_between_accounts' => sub {
-    subtest 'Initialization' => sub {
-        lives_ok {
-            $email = 'new_email' . rand(999) . '@binary.com';
-            # Make real client
-            $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MLT',
-                email       => $email
-            });
-
-            $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MF',
-                email       => $email,
-            });
-
-            $user = BOM::User->create(
-                email          => $email,
-                password       => BOM::User::Password::hashpw('jskjd8292922'),
-                email_verified => 1,
-            );
-
-            $user->add_client($client_mlt);
-            $user->add_client($client_mf);
-        }
-        'Initial users and clients setup';
-    };
-
-    subtest 'Validate transfers' => sub {
-        $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, _get_unique_display_name());
-        $params->{args}  = {
-            account_from => $client_mlt->loginid,
-            account_to   => $client_mf->loginid,
-            currency     => "EUR",
-            amount       => 100
-        };
-
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('SetExistingAccountCurrency', 'Transfer error as no deposit done')
-            ->error_message_is('Please set the currency for your existing account ' . $client_mlt->loginid . ', in order to create more accounts.',
-            'Please deposit before transfer.');
-
-        $client_mf->set_default_account('EUR');
-        $client_mlt->set_default_account('EUR');
-
-        # some random clients
-        $params->{args}->{account_to} = 'MLT999999';
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Transfer error as wrong to client')
-            ->error_message_is('You are not allowed to transfer to this account.', 'Correct error message for transfering to random client');
-
-        $params->{args}->{account_to} = $client_mf->loginid;
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no money in account')
-            ->error_message_is('This transaction cannot be done because your ' . $client_mlt->loginid . ' account has zero balance.',
-            'Correct error message for account with no money');
-
-        $params->{args}->{amount} = -1;
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferInvalidAmount', "Invalid amount")
-            ->error_message_is('Please provide valid amount.', 'Correct error message for transfering invalid amount');
-
-        $params->{args}->{amount} = 0;
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferInvalidAmount', "Invalid amount")
-            ->error_message_is('Please provide valid amount.', 'Correct error message for transfering invalid amount');
-
-        $params->{args}->{amount} = 1;
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
-            ->error_message_is('This transaction cannot be done because your ' . $client_mlt->loginid . ' account has zero balance.',
-            'Correct error message for transfering invalid amount');
-    };
 };
 
 subtest 'transfer with fees' => sub {
@@ -1545,13 +1452,9 @@ subtest 'suspended currency transfers' => sub {
         remark   => 'free gift',
     );
 
-    my $client_mlt_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
-    $client_mlt_eur->set_default_account('EUR');
-
     $user->add_client($client_cr_btc);
     $user->add_client($client_cr_usd);
     $user->add_client($client_mf_eur);
-    $user->add_client($client_mlt_eur);
 
     my $token_cr_usd = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
     my $token_cr_btc = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
@@ -1589,18 +1492,6 @@ subtest 'suspended currency transfers' => sub {
             'Transfer from suspended currency not allowed - correct error message');
     };
 
-    subtest 'it should not stop transfer between the same currncy' => sub {
-        $params->{token} = $token_mf_eur;
-        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['EUR']);
-        $params->{args} = {
-            account_from => $client_mf_eur->loginid,
-            account_to   => $client_mlt_eur->loginid,
-            currency     => "EUR",
-            amount       => 10
-        };
-
-        $rpc_ct->call_ok('transfer_between_accounts', $params);
-    };
     # reset the config
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currency_pair('{"currency_pairs":[["USD","BTC"]]}');

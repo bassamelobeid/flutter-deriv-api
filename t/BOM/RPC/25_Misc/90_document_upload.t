@@ -408,274 +408,23 @@ subtest 'Check audit information after all above upload requests' => sub {
     ok(all { $_->[0] eq 'system' and $_->[1] eq '127.0.0.1/32' } @$result), 'Check staff and staff IP for all audit info';
 };
 
-subtest 'Siblings accounts sync' => sub {
-    subtest 'MLT to MF' => sub {
-        my $mlt_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MLT',
-        });
-        my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-        my ($mlt_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mlt_client->loginid);
-        my ($mf_token)  = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf_client->loginid);
-
-        my $user = BOM::User->create(
-            email          => 'mlt2mf@binary.com',
-            password       => BOM::User::Password::hashpw('ASDF2222'),
-            email_verified => 1,
-        );
-        $user->add_client($mf_client);
-        $user->add_client($mlt_client);
-
-        my $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mlt_token,
-                args  => {
-                    document_id       => '',
-                    expiration_date   => '',
-                    document_type     => 'proofaddress',
-                    document_format   => 'png',
-                    expected_checksum => '12341412412412',
-                }})->has_no_error->result;
-
-        my $file_id = $result->{file_id};
-
-        $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mlt_token,
-                args  => {
-                    file_id => $file_id,
-                    status  => 'success',
-                }})->has_no_error->result;
-
-        is $mlt_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication is under review for the client';
-        is $mf_client->get_authentication('ID_DOCUMENT')->status,  'under_review', 'Authentication is under review for the sibling';
-    };
-
-    subtest 'MF to MLT' => sub {
-        my $mlt_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MLT',
-        });
-        my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-        my ($mlt_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mlt_client->loginid);
-        my ($mf_token)  = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf_client->loginid);
-
-        my $user = BOM::User->create(
-            email          => 'mf2mlt@binary.com',
-            password       => BOM::User::Password::hashpw('ASDF2222'),
-            email_verified => 1,
-        );
-        $user->add_client($mf_client);
-        $user->add_client($mlt_client);
-
-        my $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mf_token,
-                args  => {
-                    document_id       => '',
-                    expiration_date   => '',
-                    document_type     => 'proofaddress',
-                    document_format   => 'png',
-                    expected_checksum => '12341412412412',
-                }})->has_no_error->result;
-
-        my $file_id = $result->{file_id};
-
-        $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mf_token,
-                args  => {
-                    file_id => $file_id,
-                    status  => 'success',
-                }})->has_no_error->result;
-
-        is $mf_client->get_authentication('ID_DOCUMENT')->status,  'under_review', 'Authentication is under review for the client';
-        is $mlt_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication is under review for the sibling';
-    };
-
-    subtest 'MX to MF (onfido)' => sub {
-        my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
-
-        my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MLT',
-        });
-        my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-        my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_client->loginid);
-        my ($mf_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf_client->loginid);
-
-        my $user = BOM::User->create(
-            email          => 'mltmmx2mfOnfido@binary.com',
-            password       => BOM::User::Password::hashpw('ASDF2222'),
-            email_verified => 1,
-        );
-        $user->add_client($mf_client);
-        $user->add_client($mx_client);
-
-        my $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mx_token,
-                args  => {
-                    document_id       => '',
-                    expiration_date   => '',
-                    document_type     => 'proofaddress',
-                    document_format   => 'png',
-                    expected_checksum => '12341412412412'
-                }})->has_no_error->result;
-
-        my $file_id = $result->{file_id};
-
-        $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mx_token,
-                args  => {
-                    file_id => $file_id,
-                    status  => 'success',
-                }})->has_no_error->result;
-
-        is $mx_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication is under review for the client';
-        is $mf_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication is under review for the sibling';
-        $status_mock->unmock_all;
-    };
-
-    subtest 'POI upload' => sub {
-        my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
-        my $client_mock = Test::MockModule->new('BOM::User::Client');
-
-        $client_mock->mock(
-            'fully_authenticated',
-            sub {
-                0;
-            });
-
-        my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-        });
-        my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-        my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_client->loginid);
-        my ($mf_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf_client->loginid);
-
-        my $user = BOM::User->create(
-            email          => 'docuploadpoi@binary.com',
-            password       => BOM::User::Password::hashpw('ASDF2222'),
-            email_verified => 1,
-        );
-        $user->add_client($mf_client);
-        $user->add_client($mx_client);
-
-        my $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mx_token,
-                args  => {
-                    document_id              => '1618',
-                    document_type            => 'passport',
-                    document_format          => 'png',
-                    expected_checksum        => '124124124124',
-                    document_issuing_country => 'co',
-                    expiration_date          => '2117-08-11',
-                }})->has_no_error->result;
-
-        my $file_id = $result->{file_id};
-
-        $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mx_token,
-                args  => {
-                    file_id => $file_id,
-                    status  => 'success',
-                }})->has_no_error->result;
-        ok !$mx_client->get_authentication('ID_DOCUMENT'), 'POI upload does not update authentication';
-        ok !$mf_client->get_authentication('ID_DOCUMENT'), 'POI upload does not update authentication';
-        $status_mock->unmock_all;
-        $client_mock->unmock_all;
-    };
-
-    subtest 'Fully authenticated upload' => sub {
-        my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
-        my $client_mock = Test::MockModule->new('BOM::User::Client');
-
-        $client_mock->mock(
-            'fully_authenticated',
-            sub {
-                1;
-            });
-
-        my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-        });
-        my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-        my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_client->loginid);
-        my ($mf_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf_client->loginid);
-
-        my $user = BOM::User->create(
-            email          => 'mx2mfFullyAuth@binary.com',
-            password       => BOM::User::Password::hashpw('ASDF2222'),
-            email_verified => 1,
-        );
-        $user->add_client($mf_client);
-        $user->add_client($mx_client);
-
-        my $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mx_token,
-                args  => {
-                    document_id       => '',
-                    expiration_date   => '',
-                    document_type     => 'proofaddress',
-                    document_format   => 'png',
-                    expected_checksum => '252352362362'
-                }})->has_no_error->result;
-
-        my $file_id = $result->{file_id};
-
-        $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mx_token,
-                args  => {
-                    file_id => $file_id,
-                    status  => 'success',
-                }})->has_no_error->result;
-        ok !$mx_client->get_authentication('ID_DOCUMENT'), 'Fully authenticated account does not update authentication';
-        ok !$mf_client->get_authentication('ID_DOCUMENT'), 'Fully authenticated account does not update authentication';
-        $status_mock->unmock_all;
-        $client_mock->unmock_all;
-    };
-};
-
 subtest 'Lifetime valid' => sub {
-    my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+    my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
     });
-    my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_client->loginid);
+    my ($mf_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf_client->loginid);
 
     my $user = BOM::User->create(
         email          => 'upload.lifetime@binary.com',
         password       => BOM::User::Password::hashpw('ASDF2222'),
         email_verified => 1,
     );
-    $user->add_client($mx_client);
+    $user->add_client($mf_client);
 
     my $result = $c->call_ok(
         'document_upload',
         {
-            token => $mx_token,
+            token => $mf_token,
             args  => {
                 document_id              => '1618',
                 document_type            => 'passport',
@@ -691,34 +440,34 @@ subtest 'Lifetime valid' => sub {
     $c->call_ok(
         'document_upload',
         {
-            token => $mx_token,
+            token => $mf_token,
             args  => {
                 file_id => $file_id,
                 status  => 'success',
             }})->has_no_error->result;
 
-    my ($document) = $mx_client->client_authentication_document;
+    my ($document) = $mf_client->client_authentication_document;
     ok $document->lifetime_valid,   'Document uploaded is lifetime valid';
     ok !$document->expiration_date, 'Expiration date is empty';
     is $document->origin, 'client', 'Client is the origin of the document';
 
     subtest 'POA' => sub {
-        my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
+        my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
         });
-        my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_client->loginid);
+        my ($mf_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf_client->loginid);
 
         my $user = BOM::User->create(
             email          => 'upload.lifetime.poa@binary.com',
             password       => BOM::User::Password::hashpw('ASDF2222'),
             email_verified => 1,
         );
-        $user->add_client($mx_client);
+        $user->add_client($mf_client);
 
         my $result = $c->call_ok(
             'document_upload',
             {
-                token => $mx_token,
+                token => $mf_token,
                 args  => {
                     document_id       => '0990',
                     document_type     => 'utility_bill',
@@ -733,13 +482,13 @@ subtest 'Lifetime valid' => sub {
         $result = $c->call_ok(
             'document_upload',
             {
-                token => $mx_token,
+                token => $mf_token,
                 args  => {
                     file_id => $file_id,
                     status  => 'success',
                 }})->has_no_error->result;
 
-        my ($document) = $mx_client->client_authentication_document;
+        my ($document) = $mf_client->client_authentication_document;
         ok $document->expiration_date, 'Expiration date set';
         ok !$document->lifetime_valid, 'POA cannot be lifetime valid';
     };
@@ -863,7 +612,7 @@ subtest 'Proof of ownership upload' => sub {
 
 subtest 'POA is pending' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+        broker_code => 'MF',
     });
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
@@ -995,7 +744,7 @@ subtest 'POA is pending' => sub {
 
 subtest 'POI is pending' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+        broker_code => 'MF',
     });
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 

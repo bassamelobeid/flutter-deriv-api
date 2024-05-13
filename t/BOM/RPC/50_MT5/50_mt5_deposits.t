@@ -409,66 +409,6 @@ subtest 'virtual deposit' => sub {
     $demo_account_mock->unmock_all();
 };
 
-subtest 'mx_deposit' => sub {
-    my $test_mx_client = create_client('MX');
-    $test_mx_client->account('USD');
-    $test_mx_client->email($DETAILS{email});
-    $test_mx_client->save();
-
-    $user->add_client($test_mx_client);
-
-    my $token_mx = $m->create_token($test_mx_client->loginid, 'test token');
-
-    my $params_mx = {
-        language => 'EN',
-        token    => $token_mx,
-        args     => {
-            from_binary => $test_mx_client->loginid,
-            to_mt5      => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
-            amount      => 180,
-        },
-    };
-
-    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('maltainvest'); });
-
-    my $method = "mt5_deposit";
-
-    $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')
-        ->error_code_is('MT5DepositError', 'Transfers to MT5 not allowed error_code')->error_message_like(qr/not allow MT5 trading/);
-    $demo_account_mock->unmock_all();
-};
-
-subtest 'mx_withdrawal' => sub {
-    my $test_mx_client = create_client('MX');
-    $test_mx_client->account('USD');
-    $test_mx_client->email($DETAILS{email});
-    $test_mx_client->save();
-
-    $user->add_client($test_mx_client);
-
-    my $token_mx = $m->create_token($test_mx_client->loginid, 'test token');
-
-    my $params_mx = {
-        language => 'EN',
-        token    => $token_mx,
-        args     => {
-            from_mt5  => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
-            to_binary => $test_mx_client->loginid,
-            amount    => 350,
-        },
-    };
-
-    my $method = "mt5_withdrawal";
-
-    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('maltainvest'); });
-
-    $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
-        ->error_message_like(qr/not allow MT5 trading/);
-    $demo_account_mock->unmock_all();
-};
-
 subtest 'withdrawal' => sub {
     # TODO(leonerd): assertions in here about balance amounts would be
     #   sensitive to results of the previous test of mt5_deposit.

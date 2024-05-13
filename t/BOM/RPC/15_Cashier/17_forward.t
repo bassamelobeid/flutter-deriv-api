@@ -24,13 +24,10 @@ use BOM::User::Password;
 use Email::Stuffer::TestLinks;
 
 my $rpc_ct;
-my $client_mocked      = Test::MockModule->new('BOM::User::Client');
-my $status_mocked      = Test::MockModule->new('BOM::User::Client::Status');
-my @can_affect_cashier = (
-    'age_verification',        'crs_tin_information',   'cashier_locked',             'disabled',
-    'financial_risk_approval', 'ukgc_funds_protection', 'max_turnover_limit_not_set', 'unwelcome',
-    'withdrawal_locked'
-);
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
+my $status_mocked = Test::MockModule->new('BOM::User::Client::Status');
+my @can_affect_cashier =
+    ('age_verification', 'crs_tin_information', 'cashier_locked', 'disabled', 'financial_risk_approval', 'unwelcome', 'withdrawal_locked');
 
 my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 my $documents_expired;
@@ -128,31 +125,6 @@ my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $user_client_mf->add_client($client_mf);
 
-my $user_client_mlt = BOM::User->create(
-    email          => 'mlt@binary.com',
-    password       => BOM::User::Password::hashpw('jskjd8292922'),
-    email_verified => 1,
-);
-my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
-    email       => $email,
-    first_name  => 'John',
-    phone       => '6060842'
-});
-$user_client_mlt->add_client($client_mlt);
-
-my $user_client_mx = BOM::User->create(
-    email          => 'mx@binary.com',
-    password       => BOM::User::Password::hashpw('jskjd8292922'),
-    email_verified => 1,
-);
-my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MX',
-    email       => $email
-});
-$user_client_mx->add_client($client_mx);
-$client_mx->status->set('max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
-
 subtest 'common' => sub {
     $params->{args}->{cashier} = 'deposit';
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
@@ -164,10 +136,6 @@ subtest 'common' => sub {
 
     my $user_mocked = Test::MockModule->new('BOM::User');
     $user_mocked->mock('new', sub { bless {}, 'BOM::User' });
-
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
-    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
-        ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
 
     $client_mocked->mock(is_tnc_approval_required => sub { 0 });
 
@@ -297,33 +265,6 @@ subtest 'withdraw' => sub {
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
         ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
 
-    $client_mocked->mock(is_tnc_approval_required => sub { 1 });
-
-    $params->{args}->{verification_code} = BOM::Platform::Token->new({
-            email       => $client_mx->email,
-            expires_in  => 3600,
-            created_for => 'payment_withdraw',
-        })->token;
-
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token1');
-    $rpc_ct->call_ok('cashier', $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_CURRENCY',
-        'Terms and condition check is skipped for withdrawal, currency check comes after that.')
-        ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
-
-    $client_mocked->unmock('is_tnc_approval_required');
-
-    $params->{args}->{verification_code} = BOM::Platform::Token->new({
-            email       => $client_mx->email,
-            expires_in  => 3600,
-            created_for => 'payment_withdraw',
-        })->token;
-
-    $rpc_ct->call_ok('cashier', $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_CURRENCY',
-        'Terms and condition check is skipped for withdrawal, even with correct version set same currency error occur.')
-        ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
-
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token1');
     $params->{args}->{verification_code} = BOM::Platform::Token->new({
             email       => $client_cr->email,
@@ -340,32 +281,6 @@ subtest 'withdraw' => sub {
 subtest 'landing_companies_specific' => sub {
     $params->{args}->{cashier} = 'deposit';
     delete $params->{args}->{verification_code};
-
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token1');
-
-    $client_mocked->mock(is_tnc_approval_required => sub { 0 });
-
-    $client_mlt->set_default_account('EUR');
-
-    $client_mlt->aml_risk_classification('high');
-    $client_mlt->save;
-
-    $rpc_ct->call_ok('cashier', $params)
-        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
-        'MLT client with High risk should have completed financial assessment')
-        ->error_message_is('Please complete the financial assessment form to lift your withdrawal and trading limits.',
-        'MLT client with High risk should have completed financial assessment');
-
-    $client_mlt->aml_risk_classification('low');
-    $client_mlt->save;
-
-    warning {
-        $rpc_ct->call_ok('cashier', $params)
-            ->has_no_system_error->has_error->error_code_is('CashierForwardError',
-            'MLT client deposit request was forwarded to cashier after AML had been changed to low')
-            ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
-            'Attempted to forward request to the cashier after validation');
-    };
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, 'test token1');
 
@@ -409,43 +324,12 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_TIN_INFORMATION', 'tax information is required for malatainvest')
         ->error_message_is('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
         'tax information is required for malatainvest');
-
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token2');
-
-    $client_mx->set_default_account('GBP');
-    $client_mx->residence('gb');
-    $client_mx->save;
-
-    $client_mx->aml_risk_classification('high');
-    $client_mx->save;
-
-    $rpc_ct->call_ok('cashier', $params)
-        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
-        'MX client have to complete financial assessment if they are categorized as high risk')->error_message_is(
-        'Please complete the financial assessment form to lift your withdrawal and trading limits.',
-        'MX client have to complete financial assessment if they are categorized as high risk'
-        );
-
-    $client_mx->aml_risk_classification('low');
-    $client_mx->save;
-
-    $rpc_ct->call_ok('cashier', $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
-        ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
-    $client_mx->status->set('ukgc_funds_protection', 'system', 'testing');
-    $rpc_ct->call_ok('cashier', $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
-        ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
-        'GB residence needs to set 30-Day turnover');
 };
 
 subtest 'all status are covered' => sub {
     # Flags that can affect cashier should be seen
-    my @can_affect_cashier = (
-        'age_verification',        'crs_tin_information',   'cashier_locked',             'disabled',
-        'financial_risk_approval', 'ukgc_funds_protection', 'max_turnover_limit_not_set', 'unwelcome',
-        'withdrawal_locked'
-    );
+    my @can_affect_cashier =
+        ('age_verification', 'crs_tin_information', 'cashier_locked', 'disabled', 'financial_risk_approval', 'unwelcome', 'withdrawal_locked');
     fail("missing status $_") for sort grep !exists $seen{$_}, @can_affect_cashier;
     pass("ok to prevent warning 'no tests run");
     done_testing();

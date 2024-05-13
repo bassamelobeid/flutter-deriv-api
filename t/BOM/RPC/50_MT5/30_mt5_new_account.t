@@ -641,131 +641,7 @@ subtest 'MF should be allowed' => sub {
     $test_client->save;
 };
 
-subtest 'MF to MLT account switching' => sub {
-    my $mf_switch_client = create_client('MF');
-    $mf_switch_client->set_default_account('EUR');
-    $mf_switch_client->residence('at');
-    $mf_switch_client->account_opening_reason('speculative');
-
-    my $mlt_switch_client = create_client('MLT');
-    $mlt_switch_client->set_default_account('EUR');
-    $mlt_switch_client->residence('at');
-    $mlt_switch_client->account_opening_reason('speculative');
-
-    $mf_switch_client->financial_assessment({data => encode_json_utf8(\%financial_data_mf)});
-    $mf_switch_client->$_($basic_details{$_}) for keys %basic_details;
-
-    $mf_switch_client->save();
-    $mlt_switch_client->save();
-
-    my $switch_user = BOM::User->create(
-        email    => 'switch@binary.com',
-        password => 's3kr1t',
-    );
-    $switch_user->update_trading_password($details{password}{main});
-    $switch_user->add_client($mf_switch_client);
-
-    my $mf_switch_token = $m->create_token($mf_switch_client->loginid, 'test token');
-
-    # we should get an error if we are trying to open a gaming account
-
-    my $method = 'mt5_new_account';
-    my $params = {
-        language => 'EN',
-        token    => $mf_switch_token,
-        args     => {
-            account_type   => 'gaming',
-            country        => 'es',
-            email          => $details{email},
-            name           => $details{name},
-            investPassword => $details{password}{investor},
-            mainPassword   => $details{password}{main},
-            company        => 'maltainvest'
-        },
-    };
-
-    $c->call_ok($method, $params)->has_error('cannot create gaming account for MF only users')
-        ->error_code_is('MT5NotAllowed', 'error should be account not available');
-
-    # add MLT client
-    $switch_user->add_client($mlt_switch_client);
-
-    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
-        ->error_code_is('MT5NotAllowed', 'error should be account not available');
-
-    # MF client should be allowed to open financial account as well
-    $params->{args}->{account_type}     = 'financial';
-    $params->{args}->{mt5_account_type} = 'financial';
-
-    $params->{args}->{company} = 'maltainvest';
-    $c->call_ok($method, $params)->has_no_error('financial account should be created');
-    is($c->result->{account_type}, 'financial', 'account type should be financial');
-};
-
-subtest 'MLT to MF account switching' => sub {
-    my $mf_switch_client = create_client('MF');
-    $mf_switch_client->set_default_account('EUR');
-    $mf_switch_client->residence('at');
-    $mf_switch_client->tax_residence('at');
-    $mf_switch_client->tax_identification_number('1234');
-    $mf_switch_client->account_opening_reason('speculative');
-    $mf_switch_client->phone('99121212');
-
-    my $mlt_switch_client = create_client('MLT');
-    $mlt_switch_client->set_default_account('EUR');
-    $mlt_switch_client->residence('at');
-
-    $mf_switch_client->financial_assessment({data => encode_json_utf8(\%financial_data_mf)});
-    $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
-
-    $mf_switch_client->save();
-    $mlt_switch_client->save();
-
-    my $switch_user = BOM::User->create(
-        email    => 'switch2@binary.com',
-        password => 's3kr1t',
-    );
-
-    $switch_user->add_client($mlt_switch_client);
-    $switch_user->update_trading_password($details{password}{main});
-    my $mlt_switch_token = $m->create_token($mlt_switch_client->loginid, 'test token');
-
-    # we should get an error if we are trying to open a financial account
-
-    my $method = 'mt5_new_account';
-    my $params = {
-        language => 'EN',
-        token    => $mlt_switch_token,
-        args     => {
-            account_type     => 'financial',
-            mt5_account_type => 'financial',
-            country          => 'es',
-            email            => $details{email},
-            name             => $details{name},
-            investPassword   => $details{password}{investor},
-            mainPassword     => $details{password}{main},
-            company          => 'maltainvest'
-        },
-    };
-
-    $c->call_ok($method, $params)->has_error('cannot create financial account for MLT only users')
-        ->error_code_is('FinancialAccountMissing', 'error should be financial account missing');
-
-    # add MF client
-    $switch_user->add_client($mf_switch_client);
-
-    $c->call_ok($method, $params)->has_no_error('financial account should be created');
-    is($c->result->{account_type}, 'financial', 'account type should be financial');
-
-    # MLT client should be allowed to open gaming account as well
-    $params->{args}->{account_type}     = 'gaming';
-    $params->{args}->{mt5_account_type} = undef;
-
-    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
-        ->error_code_is('MT5NotAllowed', 'error should be account not available');
-};
-
-subtest 'VRTC to MLT and MF account switching' => sub {
+subtest 'VRTC to MF account switching' => sub {
     my $mf_switch_client = create_client('MF');
     $mf_switch_client->set_default_account('GBP');
     $mf_switch_client->residence('at');
@@ -773,19 +649,14 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     $mf_switch_client->tax_identification_number('1234');
     $mf_switch_client->account_opening_reason('speculative');
 
-    my $mlt_switch_client = create_client('MLT');
-    $mlt_switch_client->set_default_account('EUR');
-    $mlt_switch_client->residence('at');
-
     my $vr_switch_client = create_client('VRTC');
     $vr_switch_client->set_default_account('USD');
     $vr_switch_client->residence('at');
 
     $mf_switch_client->financial_assessment({data => encode_json_utf8(\%financial_data_mf)});
-    $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
-    $mlt_switch_client->save();
+
     $vr_switch_client->save();
 
     my $switch_user = BOM::User->create(
@@ -826,7 +697,7 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     $params->{args}->{dry_run} = 0;
 };
 
-subtest 'CR to MLT and MF account switching' => sub {
+subtest 'CR to MF account switching' => sub {
     my $mock_user = Test::MockModule->new('BOM::User');
     my $add_loginid_attributes;
     $mock_user->mock(
@@ -842,19 +713,14 @@ subtest 'CR to MLT and MF account switching' => sub {
     $mf_switch_client->tax_identification_number('1234');
     $mf_switch_client->account_opening_reason('speculative');
 
-    my $mlt_switch_client = create_client('MLT');
-    $mlt_switch_client->set_default_account('EUR');
-    $mlt_switch_client->residence('at');
-
     my $cr_switch_client = create_client('CR');
     $cr_switch_client->set_default_account('USD');
     $cr_switch_client->residence('at');
 
     $mf_switch_client->financial_assessment({data => encode_json_utf8(\%financial_data_mf)});
-    $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
-    $mlt_switch_client->save();
+
     $cr_switch_client->save();
 
     my $switch_user = BOM::User->create(
@@ -872,28 +738,6 @@ subtest 'CR to MLT and MF account switching' => sub {
         language => 'EN',
         token    => $cr_switch_token,
         args     => {
-            account_type   => 'gaming',
-            country        => 'es',
-            email          => $details{email},
-            name           => $details{name},
-            investPassword => $details{password}{investor},
-            mainPassword   => $details{password}{main},
-            company        => 'maltainvest'
-        },
-    };
-
-    $switch_user->add_client($mlt_switch_client);
-
-    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
-        ->error_code_is('MT5NotAllowed', 'error should be account not available');
-
-    # we should get an error if we are trying to open a financial account
-
-    $method = 'mt5_new_account';
-    $params = {
-        language => 'EN',
-        token    => $cr_switch_token,
-        args     => {
             account_type     => 'financial',
             mt5_account_type => 'financial',
             country          => 'es',
@@ -904,10 +748,6 @@ subtest 'CR to MLT and MF account switching' => sub {
             company          => 'maltainvest'
         },
     };
-
-    $c->call_ok($method, $params)->has_error('cannot create financial account for MLT only users')
-        ->error_code_is('FinancialAccountMissing', 'error should be permission denied');
-
     # add MF client
     $switch_user->add_client($mf_switch_client);
 

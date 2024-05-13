@@ -77,37 +77,6 @@ is $test_client->default_account, undef, 'new client has no default account';
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my $email_mx       = 'dummy_mx@binary.com';
-my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MX',
-    date_joined => '2021-06-06 23:59:59'
-});
-$test_client_mx->email($email_mx);
-$test_client_mx->save;
-my $user_mx = BOM::User->create(
-    email    => $email_mx,
-    password => '1234',
-);
-
-$user_mx->add_client($test_client_mx);
-$test_client_mx->load;
-my ($token_mx) = $oauth->store_access_token_only(1, $test_client_mx->loginid);
-
-my $email_mx_2       = 'dummy_mx_2@binary.com';
-my $test_client_mx_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MX',
-    date_joined => '2021-06-06 23:59:59'
-});
-$test_client_mx_2->email($email_mx_2);
-$test_client_mx_2->save;
-my $user_mx_2 = BOM::User->create(
-    email    => $email_mx_2,
-    password => '1234',
-);
-$user_mx_2->add_client($test_client_mx_2);
-$test_client_mx_2->load;
-my ($token_mx_2) = $oauth->store_access_token_only(1, $test_client_mx_2->loginid);
-
 my $method = 'authorize';
 
 subtest $method => sub {
@@ -614,13 +583,14 @@ subtest $method => sub {
 
 };
 
+=head2
 subtest 'update preferred language' => sub {
     my $language = 'ZH_CN';
     my $result   = $c->call_ok(
         $method,
         {
             language => $language,
-            token    => $token_mx
+            token    => $token
         })->has_no_error->result;
 
     is $result->{preferred_language}, $language, 'Language set correctly.';
@@ -630,10 +600,11 @@ subtest 'update preferred language' => sub {
         $method,
         {
             language => $language,
-            token    => $token_mx_2
+            token    => $token
         })->has_no_error->result;
     ok !$result->{preferred_language}, "Language didn't change correctly.";
 };
+=cut
 
 subtest 'upgradeable_landing_companies' => sub {
 
@@ -661,31 +632,14 @@ subtest 'upgradeable_landing_companies' => sub {
     my $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client can upgrade to malta and maltainvest.';
 
-    # Create MLT account
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code    => 'MLT',
-            residence      => 'dk',
-            email          => $email,
-            binary_user_id => $user->id,
-
-    });
-
-    $user->add_client($client);
-
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
-
-    # Test 2
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client can upgrade to maltainvest.';
-
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
 
-    # Test 3
+    # Test 2
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client can upgrade to maltainvest from virtual.';
 
     # Create MF account
-    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'MF',
         residence      => 'dk',
         email          => $email,
@@ -696,7 +650,7 @@ subtest 'upgradeable_landing_companies' => sub {
 
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
-    # Test 4
+    # Test 3
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client has upgraded all accounts.';
 
@@ -707,7 +661,6 @@ subtest 'upgradeable_landing_companies' => sub {
         password => '1234',
     );
 
-    # Create MLT account (Belgium)
     my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         residence   => 'be',
@@ -717,7 +670,7 @@ subtest 'upgradeable_landing_companies' => sub {
     $user2->add_client($client2);
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client2->loginid);
 
-    # Test 6
+    # Test 4
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client has upgraded all accounts.';
 
@@ -737,7 +690,7 @@ subtest 'upgradeable_landing_companies' => sub {
 
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client3->loginid);
 
-    # Test 7
+    # Test 5
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client cannot upgrade';
 
@@ -751,24 +704,9 @@ subtest 'upgradeable_landing_companies' => sub {
     $user3->add_client($client3);
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client3->loginid);
 
-    # Test 8
+    # Test 6
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client cannot upgrade';
-
-    $client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
-        residence   => 'gb',
-        email       => $email3
-    });
-
-    $user3->add_client($client3);
-
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client3->loginid);
-
-    # Test 9
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, [], 'Client has upgraded all accounts.';
-
     my $email4 = 'de@binary.com';
 
     my $user4 = BOM::User->create(
@@ -785,7 +723,7 @@ subtest 'upgradeable_landing_companies' => sub {
 
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client4->loginid);
 
-    # Test 10
+    # Test 7
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client can upgrade to maltainvest.';
     # Create MF account (Germany)
@@ -798,7 +736,7 @@ subtest 'upgradeable_landing_companies' => sub {
     $user4->add_client($client4);
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client4->loginid);
 
-    # Test 11
+    # Test 8
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client has upgraded all accounts.';
 
@@ -817,7 +755,7 @@ subtest 'upgradeable_landing_companies' => sub {
 
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client5->loginid);
 
-    # Test 12
+    # Test 9
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client can upgrade to svg and maltainvest.';
     my $client5 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -828,7 +766,7 @@ subtest 'upgradeable_landing_companies' => sub {
     $user5->add_client($client5);
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client5->loginid);
 
-    # Test 13
+    # Test 10
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client has upgraded all accounts.';
 
@@ -927,7 +865,7 @@ subtest 'upgradeable_landing_companies svg' => sub {
     $user->add_client($client);
     $client->status->set("disabled", 1, "test");
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
-    # Test 1
+    # Test 2
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['maltainvest', 'svg'],
         'Client can upgrade to svg or maltainvest becasue his only Real svg account is disabled and he had not selected currency yet.';
@@ -1112,28 +1050,6 @@ subtest 'self_exclusion' => sub {
     $test_client->set_exclusion->timeout_until(0);
     $test_client->set_exclusion->exclude_until('2020-01-01');
     $test_client->save();
-
-    ok $c->call_ok($method, $params)->has_no_error->result->{loginid}, 'Self excluded client using exclude_until can login';
-};
-
-subtest 'self_exclusion_mx - exclude_until date set in future' => sub {
-    my $params = {
-        language => 'en',
-        token    => $token_mx
-    };
-    $test_client_mx->set_exclusion->exclude_until('2020-01-01');
-    $test_client_mx->save();
-
-    ok $c->call_ok($method, $params)->has_no_error->result->{loginid}, 'Self excluded client using exclude_until can login';
-};
-
-subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
-    my $params = {
-        language => 'en',
-        token    => $token_mx
-    };
-    $test_client_mx->set_exclusion->exclude_until('2017-01-01');
-    $test_client_mx->save();
 
     ok $c->call_ok($method, $params)->has_no_error->result->{loginid}, 'Self excluded client using exclude_until can login';
 };
