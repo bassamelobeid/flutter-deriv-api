@@ -272,8 +272,7 @@ rule 'transfers.same_landing_companies' => {
         return 1 if $lc_from->short eq $lc_to->short;
         # Transfers between wallet and trading app are allowed
         return 1 if $client_from->is_wallet or $client_to->is_wallet;
-        # Transfers  between malta  and maltainvest are fine
-        return 1 if ($lc_from->short =~ /^(?:malta|maltainvest)$/ and $lc_to->short =~ /^(?:malta|maltainvest)$/);
+
         $self->fail('IncompatibleLandingCompanies');
     },
 };

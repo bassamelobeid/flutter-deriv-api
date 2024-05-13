@@ -42,13 +42,9 @@ set_settings:
     - type: conditional
       on: landing_company
       rules_per_value:
-        malta:
-          - profile.no_pobox_in_address
         maltainvest:
           - profile.no_pobox_in_address
           - profile.tax_information_is_mandatory
-        iom:
-          - profile.no_pobox_in_address
     - type: conditional
       on: residence
       rules_per_value:

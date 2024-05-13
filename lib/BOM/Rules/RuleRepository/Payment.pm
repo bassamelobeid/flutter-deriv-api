@@ -255,15 +255,6 @@ rule 'withdrawal.landing_company_limits' => {
             my $wd_left = financialrounding('amount', $currency, convert_currency($wd_left_min, $lc_currency, $currency));
 
             if (financialrounding('amount', $currency, $absamt) > $wd_left) {
-                # lock cashier and unwelcome if its MX (as per compliance, check with compliance if you want to remove it)
-                if ($lc->short eq 'iom') {
-                    # TODO: we've got to find an elegant way to move this block out of rule engine.
-                    $client->status->multi_set_clear({
-                        set        => ['cashier_locked', 'unwelcome'],
-                        staff_name => 'system',
-                        reason     => 'Exceeds withdrawal limit',
-                    });
-                }
                 $self->fail('WithdrawalLimit', params => [$wd_left, $currency]);
             }
         }

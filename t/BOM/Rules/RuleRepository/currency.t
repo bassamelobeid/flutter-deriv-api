@@ -180,7 +180,7 @@ subtest $rule_name => sub {
         %args = (
             loginid         => $client_cr_usd->loginid,
             account_type    => 'binary',
-            landing_company => 'malta',
+            landing_company => 'maltainvest',
             currency        => 'USD'
         );
         lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'No problem in a diffrent landing company';
@@ -563,8 +563,8 @@ subtest $rule_name => sub {
 subtest 'rule currency.account_currency_is_legal' => sub {
     my $rule_name = 'currency.account_currency_is_legal';
 
-    my $client_MX = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+    my $client_MF = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
     });
 
     my $client_CR = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -574,14 +574,14 @@ subtest 'rule currency.account_currency_is_legal' => sub {
         email    => 'not+legal+currency@test.deriv',
         password => 'TRADING PASS',
     );
-    $client_MX->account('EUR');
+    $client_MF->account('AUD');
     $client_CR->account('USD');
 
-    $user->add_client($client_MX);
+    $user->add_client($client_MF);
     $user->add_client($client_CR);
 
-    my $params      = {loginid => $client_MX->loginid};
-    my $rule_engine = BOM::Rules::Engine->new(client => [$client_MX]);
+    my $params      = {loginid => $client_MF->loginid};
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_MF]);
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
         {

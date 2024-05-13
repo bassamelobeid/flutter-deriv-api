@@ -655,33 +655,6 @@ subtest 'rule transfers.same_landing_companies' => sub {
 
     ok $rule_engine->apply_rules($rule_name, %$params), 'no error when same landing company';
 
-    my $client_from_MX = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
-    });
-
-    $client_from_MX->account('USD');
-    $user->add_client($client_from_MX);
-
-    $params = {
-        loginid_to   => $client_from_MX->loginid,
-        loginid_from => $client_to->loginid
-    };
-
-    $rule_engine = BOM::Rules::Engine->new(client => [$client_to, $client_from_MX]);
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-        {
-        error_code => 'IncompatibleLandingCompanies',
-        rule       => $rule_name
-        },
-        "Landing companies are not the same.";
-
-    my $client_from_MLT = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
-    });
-    $client_from_MLT->account('GBP');
-    $user->add_client($client_from_MLT);
-
     my $client_from_MF = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
@@ -689,14 +662,19 @@ subtest 'rule transfers.same_landing_companies' => sub {
     $client_from_MF->account('EUR');
     $user->add_client($client_from_MF);
 
-    $rule_engine = BOM::Rules::Engine->new(client => [$client_from_MF, $client_from_MLT]);
-
     $params = {
         loginid_to   => $client_from_MF->loginid,
-        loginid_from => $client_from_MLT->loginid
+        loginid_from => $client_to->loginid
     };
 
-    ok $rule_engine->apply_rules($rule_name, %$params), 'Landing companies are malta|maltainvest.';
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_to, $client_from_MF]);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        {
+        error_code => 'IncompatibleLandingCompanies',
+        rule       => $rule_name
+        },
+        "Landing companies are not the same.";
 
     my $wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CRW',

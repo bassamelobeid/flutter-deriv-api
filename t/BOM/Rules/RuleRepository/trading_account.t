@@ -92,19 +92,15 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
     };
 
-    subtest 'MX/MF' => sub {
+    subtest 'MF-dxtrade' => sub {
+
         my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'gb',
+            broker_code => 'MF',
         });
         my $user = BOM::User->create(
             email    => 'test+gb@test.deriv',
             password => 'TRADING PASS',
         );
-        $user->add_client($client);
-
-        $client->residence('gb');
-        $client->save;
 
         my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
@@ -116,18 +112,6 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
-
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-            {
-            error_code => 'TradingAccountNotAllowed',
-            params     => ['Deriv X'],
-            rule       => $rule_name
-            },
-            'not available for MX';
-
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
 
         $client->residence('at');
         $client->save;
@@ -143,56 +127,6 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
             'not available for MF';
     };
 
-    subtest 'MLT/MF' => sub {
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MLT',
-            residence   => 'at',
-        });
-        my $user = BOM::User->create(
-            email    => 'test+mlt@test.deriv',
-            password => 'TRADING PASS',
-        );
-        $user->add_client($client);
-
-        $client->residence('at');
-        $client->save;
-        my $rule_engine = BOM::Rules::Engine->new(client => $client);
-
-        my $params = {
-            trading_platform_new_account => 1,
-            loginid                      => $client->loginid,
-            account_type                 => 'demo',
-            market_type                  => 'all',
-            password                     => 'C0rrect_p4ssword',
-            platform                     => 'dxtrade',
-        };
-
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-            {
-            error_code => 'TradingAccountNotAllowed',
-            params     => ['Deriv X'],
-            rule       => $rule_name
-            },
-            'not available for MLT';
-
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-
-        $client->residence('at');
-        $client->save;
-
-        $user->add_client($client);
-
-        $rule_engine = BOM::Rules::Engine->new(client => $client);
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params, loginid => $client->loginid) },
-            {
-            error_code => 'TradingAccountNotAllowed',
-            params     => ['Deriv X'],
-            rule       => $rule_name
-            },
-            'not available for MF';
-    };
 };
 
 subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
@@ -279,18 +213,16 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
 
     };
 
-    subtest 'MX/MF' => sub {
+    subtest 'MF' => sub {
         my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'gb',
+            broker_code => 'MF',
+            residence   => 'at',
         });
         my $user = BOM::User->create(
             email    => 'test+gb+ct@test.deriv',
             password => 'TRADING PASS',
         );
         $user->add_client($client);
-
-        $client->residence('gb');
         $client->save;
 
         my $rule_engine = BOM::Rules::Engine->new(client => $client);
@@ -310,76 +242,9 @@ subtest 'rule trading_account.should_match_landing_company ctrader' => sub {
             params     => ['cTrader'],
             rule       => $rule_name
             },
-            'not available for MX';
-
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-
-        $client->residence('at');
-        $client->save;
-
-        $user->add_client($client);
-
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-            {
-            error_code => 'TradingAccountNotAllowed',
-            params     => ['cTrader'],
-            rule       => $rule_name
-            },
             'not available for MF';
     };
 
-    subtest 'MLT/MF' => sub {
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MLT',
-            residence   => 'at',
-        });
-        my $user = BOM::User->create(
-            email    => 'test+mlt+ct@test.deriv',
-            password => 'TRADING PASS',
-        );
-        $user->add_client($client);
-
-        $client->residence('at');
-        $client->save;
-        my $rule_engine = BOM::Rules::Engine->new(client => $client);
-
-        my $params = {
-            trading_platform_new_account => 1,
-            loginid                      => $client->loginid,
-            account_type                 => 'demo',
-            market_type                  => 'all',
-            password                     => 'C0rrect_p4ssword',
-            platform                     => 'ctrader',
-        };
-
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-            {
-            error_code => 'TradingAccountNotAllowed',
-            params     => ['cTrader'],
-            rule       => $rule_name
-            },
-            'not available for MLT';
-
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-
-        $client->residence('at');
-        $client->save;
-
-        $user->add_client($client);
-
-        $rule_engine = BOM::Rules::Engine->new(client => $client);
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params, loginid => $client->loginid) },
-            {
-            error_code => 'TradingAccountNotAllowed',
-            params     => ['cTrader'],
-            rule       => $rule_name
-            },
-            'not available for MF';
-    };
 };
 
 subtest 'rule trading_account.should_be_age_verified' => sub {
@@ -407,11 +272,11 @@ subtest 'rule trading_account.should_be_age_verified' => sub {
 
     ok $rule_engine->apply_rules($rule_name, %$args), 'Test passes as this residence does not need age verification';
     # Redidence needs age verification
-    $residence = 'gb';
+    $residence = 'at';
     $country_config->{trading_age_verification} = 1;
 
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+        broker_code => 'MF',
         residence   => $residence,
     });
     $rule_engine = BOM::Rules::Engine->new(client => $client);
@@ -448,7 +313,7 @@ subtest 'rule trading_account.should_be_age_verified' => sub {
 
     # Give real account
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+        broker_code => 'MF',
         residence   => $residence,
     });
     $user->add_client($client);

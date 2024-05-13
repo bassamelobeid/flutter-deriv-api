@@ -28,14 +28,11 @@ new_wallet:
     - type: conditional
       on: landing_company
       rules_per_value:
-        malta: &from_eu
-          - profile.no_pobox_in_address
         maltainvest:
           - profile.no_pobox_in_address
           - financial_asssessment.account_opening_validation
           - financial_asssessment.appropriateness_test
           - profile.tax_information_is_mandatory
-        iom: *from_eu
     - type: conditional
       on: residence
       rules_per_value:
@@ -81,12 +78,9 @@ activate_wallet:
           - type: conditional
             on: landing_company
             rules_per_value:
-              malta: &from_eu
-                - profile.no_pobox_in_address
               maltainvest: 
                 - profile.no_pobox_in_address
                 - profile.tax_information_is_mandatory
-              iom: *from_eu
           - type: conditional
             on: residence
             rules_per_value:

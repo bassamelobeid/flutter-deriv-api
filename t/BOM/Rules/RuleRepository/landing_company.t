@@ -29,6 +29,7 @@ $client_vr->save;
 my $rule_engine    = BOM::Rules::Engine->new(client => $client);
 my $rule_engine_vr = BOM::Rules::Engine->new(client => $client_vr);
 
+# Keeping this one test with MLT (to check for no validation when MLT is removed from client ymls)
 subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     my $rule_name = 'landing_company.accounts_limit_not_reached';
 
@@ -65,9 +66,11 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
+    $args{loginid} = $client_mf->loginid;
     $user->add_client($client_mf);
     $user->add_client($client_vr);
-    $engine = BOM::Rules::Engine->new(client => [$client_mlt, $client_mf, $client_vr]);
+    $engine = BOM::Rules::Engine->new(client => [$client_mf, $client_mlt, $client_vr]);
+
     is_deeply exception { $engine->apply_rules($rule_name, %args) },
         {
         error_code  => 'FinancialAccountExists',

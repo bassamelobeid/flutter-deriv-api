@@ -10,4 +10,4 @@ demo_group:
     - type: conditional
       on: landing_company
       rules_per_value:
-        malta: currency.account_is_not_crypto
+        maltainvest: currency.account_is_not_crypto
