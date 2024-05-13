@@ -8,7 +8,7 @@ sub BOM::Transaction::CompanyLimits::fake_it { 0 }
 
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 9;
+use Test::More tests => 8;
 use Test::Warnings;
 use Test::Exception;
 use JSON::MaybeXS;
@@ -444,53 +444,6 @@ subtest 'Different barrier tests', sub {
     $key   = 'tn,R_50,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 3, 'buying contract with barrier (n) increases count from 1 to 3';
-
-    reset_all_loss_hashes();
-};
-
-subtest 'Different landing companies test', sub {
-
-    top_up my $cr_cl = create_client('CR'), 'USD', 5000;
-    top_up my $mx_cl = create_client('MX'), 'USD', 5000;
-
-    my ($error, $contract_info_svg, $contract_info_mx, $contract);
-
-    $contract = create_contract(
-        payout     => 6,
-        underlying => 'R_50',
-        bet_type   => 'CALL',
-        duration   => '5t',
-        barrier    => 'S0P'
-    );
-
-    ($error, $contract_info_svg) = buy_contract(
-        client    => $cr_cl,
-        buy_price => 2,
-        contract  => $contract,
-    );
-
-    my $key = 'ta,R_50,+,callput';
-
-    my $redis_cr = BOM::Config::RedisTransactionLimits::redis_limits_write($cr_cl->landing_company);
-    my $redis_mx = BOM::Config::RedisTransactionLimits::redis_limits_write($mx_cl->landing_company);
-
-    my $svg_total = $redis_cr->hget('svg:potential_loss', $key);
-    my $mx_total  = $redis_mx->hget('iom:potential_loss', $key) // 0;
-
-    cmp_ok $svg_total, '==', 4, 'buying contract with CR client adds potential loss to svg';
-    cmp_ok $mx_total,  '==', 0, 'buying contract with CR client does not affect mx potential_loss';
-
-    ($error, $contract_info_mx) = buy_contract(
-        client    => $mx_cl,
-        buy_price => 2,
-        contract  => $contract,
-    );
-
-    $svg_total = $redis_cr->hget('svg:potential_loss', $key);
-    $mx_total  = $redis_mx->hget('iom:potential_loss', $key);
-
-    cmp_ok $svg_total, '==', 4, 'buying contract with MX client does not add potential loss to svg';
-    cmp_ok $mx_total,  '==', 4, 'buying contract with MX client affects mx potential_loss';
 
     reset_all_loss_hashes();
 };

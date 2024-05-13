@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 11;
+use Test::Most tests => 10;
 use File::Spec;
 use YAML::XS qw(LoadFile);
 use Test::Warnings;
@@ -106,63 +106,6 @@ my $contract = produce_contract({
 });
 
 my $mock_call = Test::MockModule->new('BOM::Product::Contract::Call');
-subtest 'IOM withdrawal limit' => sub {
-    my $withdraw_limit = Business::Config::LandingCompany->new()->payment_limit()->{withdrawal_limits}->{iom}->{limit_for_days};
-
-    $client->payment_free_gift(
-        currency     => 'GBP',
-        amount       => $withdraw_limit + 2000,
-        remark       => 'here is money',
-        payment_type => 'free_gift'
-    );
-
-    $client->payment_free_gift(
-        currency     => 'GBP',
-        amount       => -1 * ($withdraw_limit / 2),
-        remark       => 'here is money',
-        payment_type => 'free_gift'
-    );
-
-    my $error;
-    lives_ok {
-        my $transaction = BOM::Transaction->new({
-            client        => $client,
-            contract      => $contract,
-            purchase_date => Date::Utility->new(),
-        });
-        $error = BOM::Transaction::Validation->new({
-                transaction => $transaction,
-                clients     => [$client]})->_validate_iom_withdrawal_limit($client);
-    }
-    'validate withdrawal limit';
-    is($error, undef, 'pass withdrawal limit check');
-
-    $client->payment_free_gift(
-        currency     => 'GBP',
-        amount       => -1 * ($withdraw_limit / 2 + 1000),
-        remark       => 'here is money',
-        payment_type => 'free_gift'
-    );
-
-    lives_ok {
-        my $transaction = BOM::Transaction->new({
-            client        => $client,
-            contract      => $contract,
-            purchase_date => Date::Utility->new(),
-        });
-        $error = BOM::Transaction::Validation->new({
-                transaction => $transaction,
-                clients     => [$client]})->_validate_iom_withdrawal_limit($client);
-    }
-    'validate withdrawal limit';
-
-    is($error->get_type, 'iomWithdrawalLimit', 'unauthenticated IOM client - withdrawal has exceeded limit');
-    like(
-        $error->{-message_to_client},
-        qr/Due to regulatory requirements, you are required to authenticate your account in order to continue trading/,
-        'iom client exceeded withdrawal limit msg'
-    );
-};
 
 subtest 'Is contract valid to buy' => sub {
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
@@ -381,7 +324,7 @@ subtest 'valid currency test' => sub {
 };
 
 subtest 'Purchase Sell Contract' => sub {
-    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
     BOM::User->create(
         email    => 'tset' . $$ . '@test.com',
         password => 'xxx'
@@ -400,31 +343,31 @@ subtest 'Purchase Sell Contract' => sub {
     my $expiry = $now->plus_time_interval('1d');
     $expiry = $expiry->truncate_to_day->plus_time_interval('23h59m59s');
 
-    my $bet_type = 'CALL';
     $contract = produce_contract({
-        underlying   => 'R_50',
-        bet_type     => $bet_type,
-        currency     => $currency,
-        payout       => 100,
-        date_start   => Date::Utility->new($now->epoch),
-        date_pricing => $now->epoch,
-        date_expiry  => $expiry,
-        entry_tick   => $random_tick,
+        underlying   => 'R_100',
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 10,
+        amount       => 100,
+        amount_type  => 'stake',
         current_tick => $random_tick,
-        barrier      => 'S0P',
+        cancellation => '1h',
     });
 
     my $bpt = BOM::Transaction->new({
         client        => $client,
         contract      => $contract,
-        price         => $contract->ask_price,
-        amount_type   => 'payout',
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
         purchase_date => $contract->date_start,
     });
 
     my $error = $bpt->buy;
     like($error, qr/ASK_TNC_APPROVAL/, 'TNC validation failed');
-
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine(is_financial_assessment_complete => 1);
     my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
     $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
@@ -437,7 +380,7 @@ subtest 'Purchase Sell Contract' => sub {
         check_client_professional => sub { note "mocked Transaction::Validation->check_client_professional returning nothing"; undef });
 
     $error = $bpt->buy;
-    ok $error, 'error thrown when trying to buy contract with malta';
+    ok $error, 'error thrown when trying to buy contract with maltainvest';
     is($error->{'-mesg'},              'Invalid underlying symbol',              'Invalid underlying symbol');
     is($error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'message to client - Trading is not offered for this asset.');
 };

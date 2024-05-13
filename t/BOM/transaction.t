@@ -1858,7 +1858,6 @@ subtest 'transaction slippage' => sub {
             for (
             qw/
             _validate_buy_transaction_rate
-            _validate_iom_withdrawal_limit
             _validate_currency
             _validate_jurisdictional_restrictions
             _validate_client_status
@@ -1924,7 +1923,6 @@ subtest 'transaction slippage' => sub {
             for (
             qw/
             _validate_sell_transaction_rate
-            _validate_iom_withdrawal_limit
             _is_valid_to_sell
             _validate_currency
             _validate_date_pricing/

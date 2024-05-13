@@ -371,7 +371,6 @@ subtest 'update take profit' => sub {
             for (
             qw/
             _validate_sell_transaction_rate
-            _validate_iom_withdrawal_limit
             _is_valid_to_sell
             _validate_currency
             _validate_date_pricing/

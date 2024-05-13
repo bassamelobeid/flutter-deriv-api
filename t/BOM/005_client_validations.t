@@ -116,7 +116,7 @@ ok(ref $validation_obj->_validate_client_status($client) eq 'Error::Base', "no_w
 $client->status->clear_no_withdrawal_or_trading;
 
 my $client_details = {
-    broker_code              => 'MX',
+    broker_code              => 'MF',
     residence                => 'au',
     client_password          => 'x',
     last_name                => 'shuwnyuan',
@@ -137,7 +137,8 @@ my %deposit = (
     remark       => 'here is money',
     payment_type => 'free_gift'
 );
-
+my $mock_client = Test::MockModule->new('BOM::User::Client');
+$mock_client->redefine(is_financial_assessment_complete => 1);
 my $client_new = $user->create_client(%$client_details);
 $client_new->set_default_account('USD');
 
@@ -164,6 +165,7 @@ my $txn = BOM::Transaction->new({
     purchase_date => $contract->date_start,
 });
 my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
+$mocked_validator->mock('check_tax_information',              sub { });
 $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
 $mocked_validator->mock('validate_tnc',                       sub { });
 my $mock_contract = Test::MockModule->new('BOM::Product::Contract::Call');
@@ -201,5 +203,5 @@ subtest 'bank_wire payment exists for client - no flag set - dont allow for paym
     my $allow_withdraw = $client->allow_paymentagent_withdrawal_legacy;
     is $allow_withdraw, 1, 'bank_wire payment exist,no flag set, dont allow for payment agent withdrawal';
 };
-
+$mock_client->unmock_all();
 done_testing();

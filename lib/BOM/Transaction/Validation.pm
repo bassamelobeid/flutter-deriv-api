@@ -555,53 +555,6 @@ sub _validate_date_pricing {
     return undef;
 }
 
-=head2 $self->_validate_iom_withdrawal_limit
-
-Validate the withdrawal limit for IOM region
-
-=cut
-
-sub _validate_iom_withdrawal_limit {
-    my $self   = shift;
-    my $client = shift;
-
-    my $withdrawal_limits_config = Business::Config::LandingCompany->new()->payment_limit()->{withdrawal_limits}->{'iom'};
-    my $numdays                  = $withdrawal_limits_config->{for_days};
-    my $numdayslimit             = $withdrawal_limits_config->{limit_for_days};
-    my $lifetimelimit            = $withdrawal_limits_config->{lifetime_limit};
-
-    if ($client->fully_authenticated) {
-        $numdayslimit  = $withdrawal_limits_config->{limit_for_days_for_authenticated};
-        $lifetimelimit = $withdrawal_limits_config->{lifetime_limit_for_authenticated};
-    }
-
-    # withdrawal since $numdays
-    my $payment_mapper     = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
-    my $withdrawal_in_days = $payment_mapper->get_total_withdrawal({
-        start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
-        exclude    => ['currency_conversion_transfer', 'account_transfer'],
-    });
-    $withdrawal_in_days = financialrounding('amount', 'EUR', convert_currency($withdrawal_in_days, $client->currency, 'EUR'));
-
-    # withdrawal since inception
-    my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer', 'account_transfer']});
-    $withdrawal_since_inception = financialrounding('amount', 'EUR', convert_currency($withdrawal_since_inception, $client->currency, 'EUR'));
-
-    my $remaining_withdrawal_eur =
-        financialrounding('amount', 'EUR', min(($numdayslimit - $withdrawal_in_days), ($lifetimelimit - $withdrawal_since_inception)));
-
-    if ($remaining_withdrawal_eur <= 0) {
-        return Error::Base->cuss(
-            -quiet             => 1,
-            -type              => 'iomWithdrawalLimit',
-            -mesg              => $client->loginid . ' caught in IOM withdrawal limit check',
-            -message_to_client =>
-                localize("Due to regulatory requirements, you are required to authenticate your account in order to continue trading."),
-        );
-    }
-    return undef;
-}
-
 # This validation should always come after _validate_trade_pricing_adjustment
 # because we recompute the price and that's the price that we going to transact with!
 sub _validate_stake_limit {
@@ -896,7 +849,7 @@ sub check_client_can_trade {
 
 Check if client is age verified for
 
-- MLT, MX and MF without confirmed age after the first deposit
+- MF without confirmed age after the first deposit
 - MF without fully_authentication
 
 =cut

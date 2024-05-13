@@ -47,7 +47,7 @@ subtest 'Batch buy sell', sub {
     # Set manager_client as binary_user_id = 1
     ($manager_client, @client_list) = @client_list;
 
-    my ($svg_contract, $error, $multiple, $svg_fmb, $mx_contract, $mx_trx, $mx_fmb);
+    my ($svg_contract, $error, $multiple, $svg_fmb);
 
     $svg_contract = create_contract(
         payout     => 6,
@@ -106,7 +106,7 @@ subtest 'Batch buy on error must revert', sub {
     # Set manager_client as binary_user_id = 1
     ($manager_client, @client_list) = @client_list;
 
-    my ($svg_contract, $error, $multiple, $svg_fmb, $mx_contract, $mx_trx, $mx_fmb);
+    my ($svg_contract, $error, $multiple, $svg_fmb);
 
     $svg_contract = create_contract(
         payout     => 10,
