@@ -38,6 +38,7 @@
                                     "type": "object",
                                     "additionalProperties": false,
                                     "required": [
+                                        "description",
                                         "display_name"
                                     ],
                                     "properties": {
@@ -46,7 +47,7 @@
                                             "type": "string"
                                         },
                                         "display_name": {
-                                            "description": "[Optional] Display name of the Platform",
+                                            "description": "Display name of the Platform",
                                             "type": "string"
                                         },
                                         "legacy": {
@@ -66,11 +67,16 @@
                                     "type": "object",
                                     "additionalProperties": false,
                                     "required": [
-                                        "description"
+                                        "description",
+                                        "display_name"
                                     ],
                                     "properties": {
                                         "description": {
                                             "description": "Market description",
+                                            "type": "string"
+                                        },
+                                        "display_name": {
+                                            "description": "Display name of this Market",
                                             "type": "string"
                                         }
                                     }
@@ -86,11 +92,12 @@
                                     "type": "object",
                                     "additionalProperties": false,
                                     "required": [
-                                        "display_name"
+                                        "display_name",
+                                        "supported_platforms"
                                     ],
                                     "properties": {
                                         "description": {
-                                            "description": "[Optional] Description of the Product",
+                                            "description": "[Optional] Product description",
                                             "type": "string"
                                         },
                                         "display_name": {
