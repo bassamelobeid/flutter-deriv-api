@@ -814,7 +814,7 @@ subtest 'disabled countries' => sub {
     my $result   = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
     my @disabled = map { ($_->{disabled} ? $_->{value} : ()) } $result->@*;
 
-    cmp_bag [@disabled], [qw/ae an as be by ca cu gb gg gu hk im ir je jo kp ky mm mp mt my pr py rw sg sy um us vi vu/],
+    cmp_bag [@disabled], [qw/ae an as be by ca cu gb gg gu hk im ir je jo kp ky mm mp mt my pr py rw sg sn sy um us vi vu/],
         'Expected disabled countries';
 };
 
