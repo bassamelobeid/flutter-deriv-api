@@ -683,18 +683,16 @@ subtest 'test update preferred language' => sub {
 };
 
 subtest 'is_region_eu' => sub {
-    my ($client_vr, $client_mlt, $client_mx, $client_cr);
+    my ($client_vr, $client_mf, $client_cr);
 
     lives_ok {
         $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRTC',
         });
-        $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MLT',
+        $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
         });
-        $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-        });
+
         $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
@@ -711,9 +709,8 @@ subtest 'is_region_eu' => sub {
 
     is $client_vr->is_region_eu, 1, 'is_region_eu TRUE for virtual gb client';
 
-    is $client_mlt->is_region_eu, 1, 'is_region_eu TRUE for MLT client';
-    is $client_mx->is_region_eu,  1, 'is_region_eu TRUE for MX client';
-    is $client_mx->is_region_eu,  1, 'is_region_eu FALSE for CR client';
+    is $client_mf->is_region_eu, 1, 'is_region_eu TRUE for MF client';
+    is $client_cr->is_region_eu, 0, 'is_region_eu FALSE for CR client';
 
 };
 
@@ -811,31 +808,20 @@ subtest 'fail if mt5 api return empty login' => sub {
 };
 
 subtest 'test get_financial_assessment' => sub {
-    my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
     });
-    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
-    });
-
-    ok !$client_mx->get_financial_assessment,  'No financial assessment for client MX';
-    ok !$client_mlt->get_financial_assessment, 'No financial assessment for client MLT';
-
-    ok !$client_mx->get_financial_assessment('jibbabi'),     'No financial assessment for client MX';
-    ok !$client_mlt->get_financial_assessment('net_income'), 'No financial assessment for client MLT';
+    ok !$client_mf->get_financial_assessment,               'No financial assessment for client MF';
+    ok !$client_mf->get_financial_assessment('net_income'), 'No financial assessment for client MF';
 
     my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
-    $client_mx->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8($data)});
-    $client_mx->save;
 
-    $client_mlt->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8($data)});
-    $client_mlt->save;
+    $client_mf->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8($data)});
+    $client_mf->save;
 
-    ok $client_mx->get_financial_assessment,  'Financial assessment for client MX exists (returned whole object)';
-    ok $client_mlt->get_financial_assessment, 'Financial assessment for client MLT exists (returned whole object)';
+    ok $client_mf->get_financial_assessment, 'Financial assessment for client MF exists (returned whole object)';
 
-    ok !$client_mx->get_financial_assessment('jibbabi'),    'Field does not exist for financial assessment for client MX';
-    ok $client_mlt->get_financial_assessment('net_income'), 'Field exists for financial assessment for client MLT';
+    ok $client_mf->get_financial_assessment('net_income'), 'Field exists for financial assessment for client MF';
 
 };
 

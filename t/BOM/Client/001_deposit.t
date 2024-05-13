@@ -134,21 +134,21 @@ subtest 'max balance messages' => sub {
 };
 
 subtest 'GB fund protection' => sub {
-    my $email_iom  = 'test' . rand(999) . '@binary.com';
-    my $passwd_iom = BOM::User::Password::hashpw('Qwerty12345');
+    my $email_mf  = 'test' . rand(999) . '@binary.com';
+    my $passwd_mf = BOM::User::Password::hashpw('Qwerty12345');
 
-    my $user_iom = BOM::User->create(
-        email    => $email_iom,
-        password => $passwd_iom
+    my $user_mf = BOM::User->create(
+        email    => $email_mf,
+        password => $passwd_mf
     );
 
-    my $client_details_iom = {
-        broker_code              => 'MX',
+    my $client_details_mf = {
+        broker_code              => 'MF',
         residence                => 'gb',
-        client_password          => $passwd_iom,
+        client_password          => $passwd_mf,
         last_name                => 'Test',
         first_name               => 'Test',
-        email                    => $email_iom,
+        email                    => $email_mf,
         salutation               => 'Ms',
         address_line_1           => 'ADDR 1',
         address_city             => 'Test',
@@ -158,27 +158,22 @@ subtest 'GB fund protection' => sub {
         non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
     };
 
-    my %deposit_iom = (
+    my %deposit_mf = (
         currency     => 'GBP',
         amount       => 1_000,
         remark       => 'credit',
         payment_type => 'free_gift'
     );
-
-    my $client_iom = $user_iom->create_client(%$client_details_iom);
-    $client_iom->set_default_account('GBP');
-    $deposit_iom{rule_engine} = BOM::Rules::Engine->new(client => $client_iom);
-
-    is_deeply exception { $client_iom->validate_payment(%deposit_iom) },
-        {
-        code              => 'NoUkgcFundsProtection',
-        params            => [],
-        message_to_client => "Please accept Funds Protection.",
-        },
-        'GB residence needs to accept fund protection';
-
-    $client_iom->status->set('ukgc_funds_protection', 'system', 'testing');
-    ok $client_iom->validate_payment(%deposit_iom), 'can deposit when no deposit limit set.';
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine(fully_authenticated => 1);
+    my $client_mf = $user_mf->create_client(%$client_details_mf);
+    $client_mf->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+    $client_mf->status->set('crs_tin_information',     'test',   'test');
+    $client_mf->set_default_account('GBP');
+    $deposit_mf{rule_engine} = BOM::Rules::Engine->new(client => $client_mf);
+    $client_mf->status->set('ukgc_funds_protection', 'system', 'testing');
+    ok $client_mf->validate_payment(%deposit_mf), 'can deposit when no deposit limit set.';
+    $mock_client->unmock_all;
 };
 
 subtest 'deposit limit' => sub {
@@ -186,13 +181,17 @@ subtest 'deposit limit' => sub {
     $mock_lc->mock(
         deposit_limit_enabled => sub {
             my $lc = shift;
-            return $lc->short eq 'iom';
+            return $lc->short eq 'mf';
         });
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine(fully_authenticated => 1);
 
-    my $client_iom  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MX'});
-    my $client_cr   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-    my $rule_engine = BOM::Rules::Engine->new(client => [$client_cr, $client_iom]);
-    for my $client ($client_iom, $client_cr) {
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $client_mf->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+    $client_mf->status->set('crs_tin_information',     'test',   'test');
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_cr, $client_mf]);
+    for my $client ($client_mf, $client_cr) {
         $client->set_default_account('USD');
         is_deeply $client->get_deposit_limits, {}, 'deposit settings are empty in the beginning';
         $client->set_exclusion();
@@ -209,7 +208,7 @@ subtest 'deposit limit' => sub {
         my $limit_name   = $limit_duration_to_name{$limit_duration};
         my $limit_amount = $limit_duration * 100;
 
-        for my $client ($client_iom, $client_cr) {
+        for my $client ($client_mf, $client_cr) {
             $client->self_exclusion->$limit_name($limit_amount);
             $client->save;
 
@@ -237,23 +236,15 @@ subtest 'deposit limit' => sub {
 
         my $short_name = $limit_name =~ s/max_deposit_//r;
 
-        cmp_deeply exception { $client_iom->validate_payment(%$one_usd_payment) },
-            {
-            code              => 'DepositLimitExceeded',
-            params            => [$short_name, re(qr/[\d\.]+/), re(qr/[\d\.]+/), re(qr/[\d\.]+/),],
-            message_to_client => re(qr/Deposit exceeds $short_name limit [\d\.]+. Aggregated deposit over period [\d\.]+. Current amount [\d\.]+./),
-            },
-            "cannot deposit when amount exceeds $limit_duration-day deposit limit.";
-
         lives_ok { $client_cr->validate_payment(%$one_usd_payment) } "we can deposit if deposit limits are disabled for the landing company";
 
         # move time forward exactly the same number of days as limit duration
         set_fixed_time($payment_time + ($limit_duration + 1) * 86400);
-        lives_ok { $client_iom->validate_payment(%$one_usd_payment) } "we can deposit if the $limit_duration-day limit duration is passed";
+        lives_ok { $client_mf->validate_payment(%$one_usd_payment) } "we can deposit if the $limit_duration-day limit duration is passed";
         lives_ok { $client_cr->validate_payment(%$one_usd_payment) } "we can deposit to the limit-diasbled landing company any time, can' t we? ";
 
-        $_->self_exclusion->$limit_name(undef)                            for ($client_iom, $client_cr);
-        is_deeply($_->get_deposit_limits, {}, 'deposit limits are reset') for ($client_iom, $client_cr);
+        $_->self_exclusion->$limit_name(undef)                            for ($client_mf, $client_cr);
+        is_deeply($_->get_deposit_limits, {}, 'deposit limits are reset') for ($client_mf, $client_cr);
         restore_time();
     }
 

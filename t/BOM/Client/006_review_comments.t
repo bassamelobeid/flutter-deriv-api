@@ -97,7 +97,7 @@ subtest 'Update comment' => sub {
 };
 
 subtest 'Fetch comments from all siblings' => sub {
-    my $client = create_client_with_user_and_siblings('CR', 'CR', 'CR', 'MX', 'MF', 'MLT', 'VRTC');
+    my $client = create_client_with_user_and_siblings('CR', 'CR', 'CR', 'MF', 'VRTC');
     my $total  = 0;
 
     my $timestamp  = time;
@@ -134,7 +134,7 @@ subtest 'Fetch comments from all siblings' => sub {
     my $comments = [map { $_->{client_loginid} } $client->get_all_comments()->@*];
 
     is scalar @$comments, $total, 'Expected number of comments';
-    is $db_hits,          5,      'Only 5 DB hits (same broker code siblings shared the db hit)';
+    is $db_hits,          3,      'Only 3 DB hits (same broker code siblings shared the db hit)';
     cmp_deeply $comments, $expected, 'Got the expected order';
 
     $client_mock->unmock_all;

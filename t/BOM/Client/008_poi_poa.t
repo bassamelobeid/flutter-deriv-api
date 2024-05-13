@@ -1721,58 +1721,13 @@ subtest 'payment agent' => sub {
 };
 
 subtest 'First Deposit' => sub {
-    subtest 'MLT' => sub {
-        my $test_client = BOM::User::Client->rnew(
-            password    => "hello",
-            broker_code => 'MLT',
-            residence   => 'de',
-            citizen     => 'de',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'MLT235711'
-        );
-        my $user = BOM::User->create(
-            email          => 'nowthatsan@email.com',
-            password       => BOM::User::Password::hashpw('asdf12345'),
-            email_verified => 1,
-        );
-        $user->add_client($test_client);
-        $test_client->binary_user_id($user->id);
-
-        my $mocked_client = Test::MockModule->new(ref($test_client));
-        $mocked_client->mock('has_deposits', sub { return 1 });
-        $uploaded = {};
-
-        $mocked_client->mock('get_poi_status', sub { return 'none' });
-        $mocked_client->mock('user',           sub { bless {}, 'BOM::User' });
-
-        my $mocked_user = Test::MockModule->new('BOM::User');
-        $mocked_user->mock('has_mt5_regulated_account', sub { return 0 });
-
-        ok !$test_client->status->shared_payment_method, 'Not SPM';
-        ok !$test_client->status->age_verification,      'Not age verified';
-        ok !$test_client->fully_authenticated,           'Not fully authenticated';
-        ok $test_client->is_verification_required(check_authentication_status => 1),
-            'Verification required due to deposits on an unauthenticated MLT account';
-        ok $test_client->needs_poi_verification, 'POI is needed for unauthenticated MLT account after first deposit';
-        ok $test_client->needs_poa_verification, 'POA is needed for unauthenticated MLT account after first deposit';
-
-        $mocked_client->mock('has_deposits', sub { return 0 });
-        ok !$test_client->is_verification_required(check_authentication_status => 1),
-            'Verification not required for an unauthenticated MLT account without deposits';
-        ok !$test_client->needs_poi_verification, 'POI is not needed for unauthenticated MLT account without deposits';
-        ok !$test_client->needs_poa_verification, 'POA is not needed for unauthenticated MLT account without deposits';
-
-        $mocked_client->unmock_all;
-        $mocked_user->unmock_all;
-    };
-
     subtest 'MF' => sub {
         my $test_client = BOM::User::Client->rnew(
             broker_code => 'MF',
             residence   => 'de',
             citizen     => 'de',
             email       => 'nowthatsan@email.com',
-            loginid     => 'MLT235711'
+            loginid     => 'MF235711'
         );
         my $user = BOM::User->create(
             email          => 'nowthatsan2@email.com',
@@ -1797,44 +1752,17 @@ subtest 'First Deposit' => sub {
         ok !$test_client->fully_authenticated,           'Not fully authenticated';
         ok $test_client->is_verification_required(check_authentication_status => 1),
             'Verification required due to deposits on an unauthenticated MF account';
-        ok $test_client->needs_poi_verification, 'POI is needed for unauthenticated MLT account after first deposit';
-        ok $test_client->needs_poa_verification, 'POA is needed for unauthenticated MLT account after first deposit';
+        ok $test_client->needs_poi_verification, 'POI is needed for unauthenticated MF account after first deposit';
+        ok $test_client->needs_poa_verification, 'POA is needed for unauthenticated MF account after first deposit';
 
         $mocked_client->mock('has_deposits', sub { return 0 });
         ok !$test_client->is_verification_required(check_authentication_status => 1),
             'Verification not required for an unauthenticated MF account without deposits';
-        ok !$test_client->needs_poi_verification, 'POI is not needed for unauthenticated MLT account without deposits';
-        ok !$test_client->needs_poa_verification, 'POA is not needed for unauthenticated MLT account without deposits';
+        ok !$test_client->needs_poi_verification, 'POI is not needed for unauthenticated MF account without deposits';
+        ok !$test_client->needs_poa_verification, 'POA is not needed for unauthenticated MF account without deposits';
 
         $mocked_client->unmock_all;
         $mocked_user->unmock_all;
-    };
-};
-
-subtest 'Sign up' => sub {
-    subtest 'MX' => sub {
-        my $test_client = BOM::User::Client->rnew(
-            broker_code     => 'MX',
-            residence       => 'gb',
-            citizen         => 'gb',
-            email           => 'nowthatsan@email.com',
-            loginid         => 'MX235711',
-            client_password => BOM::User::Password::hashpw('asdf12345'),
-        );
-        my $user = BOM::User->create(
-            email          => 'nowthatsan3@email.com',
-            password       => BOM::User::Password::hashpw('asdf12345'),
-            email_verified => 1,
-        );
-        $user->add_client($test_client);
-        $test_client->binary_user_id($user->id);
-
-        $uploaded = {};
-        ok !$test_client->status->age_verification,                                  'Not age verified';
-        ok !$test_client->fully_authenticated,                                       'Not fully authenticated';
-        ok $test_client->is_verification_required(check_authentication_status => 1), 'Unauthenticated MX account needs verification';
-        ok $test_client->needs_poi_verification,                                     'POI is needed for unauthenticated MX account without deposits';
-        ok $test_client->needs_poa_verification,                                     'POA is needed for unauthenticated MX account without deposits';
     };
 };
 

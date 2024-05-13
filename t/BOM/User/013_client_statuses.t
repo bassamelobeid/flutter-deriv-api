@@ -367,11 +367,11 @@ subtest 'Propagate' => sub {
     $client_cr->email($email);
     $client_cr->save;
 
-    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
     });
-    $client_mlt->email($email);
-    $client_mlt->save;
+    $client_mf->email($email);
+    $client_mf->save;
 
     my $test_user = BOM::User->create(
         email          => $email,
@@ -381,13 +381,13 @@ subtest 'Propagate' => sub {
 
     $test_user->add_client($client_vr);
     $test_user->add_client($client_cr);
-    $test_user->add_client($client_mlt);
+    $test_user->add_client($client_mf);
 
-    my $clients = [$client_mlt, $client_cr, $client_vr];
+    my $clients = [$client_mf, $client_cr, $client_vr];
 
     my $cases = [{
             status  => 'allow_poi_resubmission',
-            settler => $client_mlt,
+            settler => $client_mf,
             staff   => 'alice',
             reason  => 'alices reason'
         },
@@ -448,11 +448,11 @@ subtest 'Propagate Clear' => sub {
     $client_cr->email($email);
     $client_cr->save;
 
-    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
     });
-    $client_mlt->email($email);
-    $client_mlt->save;
+    $client_mf->email($email);
+    $client_mf->save;
 
     my $test_user = BOM::User->create(
         email          => $email,
@@ -462,13 +462,13 @@ subtest 'Propagate Clear' => sub {
 
     $test_user->add_client($client_vr);
     $test_user->add_client($client_cr);
-    $test_user->add_client($client_mlt);
+    $test_user->add_client($client_mf);
 
-    my $clients = [$client_mlt, $client_cr, $client_vr];
+    my $clients = [$client_mf, $client_cr, $client_vr];
 
     my $cases = [{
             status  => 'allow_poi_resubmission',
-            remover => $client_mlt,
+            remover => $client_mf,
         },
         {
             status  => 'allow_document_upload',

@@ -63,11 +63,11 @@ subtest 'Australian SVG Account' => sub {
 
     subtest 'Australian Non-SVG Account' => sub {
         $test_client_au = BOM::User::Client->rnew(
-            broker_code => 'MLT',
+            broker_code => 'MF',
             residence   => 'au',
             citizen     => 'au',
             email       => 'nowthatsan@email.com',
-            loginid     => 'MLT235711'
+            loginid     => 'MF235711'
         );
 
         ok $test_client_au->landing_company->short ne 'svg', 'We got a non-SVG account';
@@ -75,32 +75,6 @@ subtest 'Australian SVG Account' => sub {
             'Australian non-svg account default currency is the LC default currency';
     };
 
-};
-
-subtest 'GB Account' => sub {
-    my $broker_code = 'MX';
-
-    my $test_client_gb = BOM::User::Client->rnew(
-        broker_code => $broker_code,
-        residence   => 'gb',
-        citizen     => 'gb',
-        email       => 'nowthatsan@email.com',
-        loginid     => $broker_code . '235711'
-    );
-
-    is $test_client_gb->currency, 'GBP', $broker_code . ' gb account default currency is GBP.';
-
-    $broker_code = 'MF';
-
-    $test_client_gb = BOM::User::Client->rnew(
-        broker_code => $broker_code,
-        residence   => 'gb',
-        citizen     => 'gb',
-        email       => 'nowthatsan@email.com',
-        loginid     => $broker_code . '235711'
-    );
-
-    is $test_client_gb->currency, 'EUR', $broker_code . ' gb account default currency is EUR since GBP is not allowed';
 };
 
 done_testing();

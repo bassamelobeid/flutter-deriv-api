@@ -62,22 +62,6 @@ my @loginids = ({
         loginid => 'MF002',
     },
     {
-        loginid      => 'MLT001',
-        platform     => 'dtrade',
-        account_type => 'real',
-    },
-    {
-        loginid => 'MLT002',
-    },
-    {
-        loginid      => 'MX001',
-        platform     => 'dtrade',
-        account_type => 'real',
-    },
-    {
-        loginid => 'MX002',
-    },
-    {
         loginid      => 'JP001',
         platform     => 'dtrade',
         account_type => 'real',
@@ -254,7 +238,7 @@ cmp_deeply(
     [$user->bom_loginids],
     bag(
         qw(VRTC001 VRTC002 VRTC003 VRTJ001 VRTJ002 VRTU001 VRTU002
-            CR001 CR002 CR003 MF001 MF002 MLT001 MLT002 MX001 MX002 JP001 JP002 AFF001 AFF002
+            CR001 CR002 CR003 MF001 MF002 JP001 JP002 AFF001 AFF002
             VRW001 VRW002 CRW001 CRW002 CRA001 CRA002 MFW001 MFW002)
     ),
     'bom_loginids'
@@ -263,7 +247,7 @@ cmp_deeply(
 cmp_deeply(
     [$user->bom_real_loginids],
     bag(
-        qw(CR001 CR002 CR003 MF001 MF002 MLT001 MLT002 MX001 MX002 JP001 JP002 AFF001 AFF002
+        qw(CR001 CR002 CR003 MF001 MF002 JP001 JP002 AFF001 AFF002
             CRW001 CRW002 CRA001 CRA002 MFW001 MFW002)
     ),
     'bom_real_loginids'
