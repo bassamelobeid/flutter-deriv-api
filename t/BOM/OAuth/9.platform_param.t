@@ -47,6 +47,14 @@ $mock_config->mock(
         };
     });
 
+#mock config for rudderstack FE key
+$mock_config->mock(
+    rudderstack_config => sub {
+        return {
+            rudderstack => fe_write_key => 'dummy',
+        };
+    });
+
 my $tests = [{
         platform        => 'p2p',
         official        => 1,

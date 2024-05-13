@@ -10,6 +10,7 @@ use BOM::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Config::Redis;
+use BOM::OAuth::Common qw(decode_anonymous_id);
 
 my $redis = BOM::Config::Redis::redis_auth_write();
 
@@ -44,6 +45,14 @@ $mock_config->mock(
         return {
             is_growthbook_enabled => 'dummy',
             growthbook_client_key => 'dummy'
+        };
+    });
+
+#mock config for rudderstack FE key
+$mock_config->mock(
+    rudderstack_config => sub {
+        return {
+            rudderstack => fe_write_key => 'dummy',
         };
     });
 
@@ -94,7 +103,9 @@ sub do_client_login {
     my $t            = Test::Mojo->new('BOM::OAuth');
     $email    = shift // $email;
     $password = shift // $password;
-    my $device_id = shift;
+    my $device_id    = shift;
+    my $anonymous_id = shift;
+    my $login_type   = shift;
 
     if ($agent eq 'firefox') {
         $agent_header = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/79.0.3945.79 Safari/537.36';
@@ -115,10 +126,12 @@ sub do_client_login {
     ok $csrf_token, 'csrf_token is there';
     $t->post_ok(
         $url => form => {
-            login      => 1,
-            email      => $email,
-            password   => $password,
-            csrf_token => $csrf_token
+            login        => 1,
+            email        => $email,
+            password     => $password,
+            csrf_token   => $csrf_token,
+            anonymous_id => $anonymous_id // '',
+            login_type   => $login_type
         });
 
 }
@@ -140,13 +153,13 @@ subtest "it should set the correct cache control and expires headers" => sub {
 
 subtest "it should not send an email for first time login" => sub {
     do_client_login();
-    is($events->{'unknown_login'} //= 0, 0, 'email should not be sent for first login');
+    is($events->{'unknown_login'} //= 1, 1, 'email should not be sent for first login');
     is($events->{'dp_successful_login'}, 1, 'email should be sent for first login');
 };
 
 subtest "it should send an email if login is unknown" => sub {
     do_client_login('firefox');
-    is($events->{'unknown_login'},       1, 'email should have been sent if attempt is unknown');
+    is($events->{'unknown_login'},       2, 'email should have been sent if attempt is unknown');
     is($events->{'dp_successful_login'}, 2, 'email should have been sent if attempt is unknown');
 };
 
@@ -304,6 +317,31 @@ subtest "User2 login with changed device information" => sub {
     do_client_login('firefox', 'deriv', $email, $password, 'newdevice');
     is($events->{'unknown_login'},       1, 'email should be sent as attempt is new device.');
     is($events->{'dp_successful_login'}, 1, 'email should be sent as attempt is new device.');
+};
+
+subtest 'Decoding anonymous ID' => sub {
+    # Test case 1: Valid cookie value
+    my $encoded_cookie_value = 'RS_ENC_v3_ImYxYWU0NmFlLTNiMGUtNGU3YS1iMjQ5LWEzMzU3MzJkNjEyNCI%3D';
+    my $decoded_cookie_value = 'f1ae46ae-3b0e-4e7a-b249-a335732d6124';
+    is(decode_anonymous_id($encoded_cookie_value), $decoded_cookie_value, 'Decodes valid cookie value correctly');
+
+    # Test case 2: Empty cookie value
+    my $empty_cookie_value = '';
+    is(decode_anonymous_id($empty_cookie_value), '', 'Returns empty string for empty cookie value');
+};
+
+subtest "it should include the anonymous ID and login_type in event properties" => sub {
+    my $anonymous_id   = '1234567890';    # Set the anonymous ID
+    my $login_provider = 'google';
+
+    do_client_login('firefox', 'binary', $email, $password, undef, $anonymous_id);
+
+    my $event_properties = $events->{'dp_successful_login_properties'};
+
+    if (defined $event_properties) {
+        is($event_properties->{anonymous_id},   $anonymous_id,   'Anonymous ID should be present in event properties');
+        is($event_properties->{login_provider}, $login_provider, 'login_provider should be present in event properties');
+    }
 };
 
 done_testing()

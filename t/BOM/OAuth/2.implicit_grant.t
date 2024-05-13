@@ -75,6 +75,14 @@ $mock_config->mock(
         };
     });
 
+#mock config for rudderstack FE key
+$mock_config->mock(
+    rudderstack_config => sub {
+        return {
+            rudderstack => fe_write_key => 'dummy',
+        };
+    });
+
 # Mock secure cookie session as false as http is used in tests.
 my $mocked_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
 $mocked_cookie_session->mock(

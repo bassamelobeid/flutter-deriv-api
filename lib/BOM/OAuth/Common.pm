@@ -12,7 +12,10 @@ use List::Util qw( first min none any);
 use Log::Any   qw($log);
 use Syntax::Keyword::Try;
 use Text::Trim;
-use Digest::MD5 qw( md5_hex );
+use Digest::MD5  qw( md5_hex );
+use MIME::Base64 qw(decode_base64);
+use Exporter     qw(import);
+our @EXPORT_OK = qw(decode_anonymous_id);
 
 use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
@@ -154,6 +157,24 @@ sub validate_login {
     };
 }
 
+=head2 decode_anonymous_id
+
+This subroutine takes the cookie value sent by notify login and extracts the anonymous_id
+by removing "" from the string and other unwanted string characters.
+
+=cut
+
+sub decode_anonymous_id {
+    my ($cookie_value) = @_;
+    # Remove prefix "RS_ENC_v3_ and the suffix from %"
+    $cookie_value =~ s/^RS_ENC_v3_|%.*//g;
+    my $decoded_value = decode_base64($cookie_value);
+    # Remove any leading or trailing whitespace, including quotes
+    $decoded_value =~ s/"//g;
+    # return decoded string without quotes
+    return $decoded_value;
+}
+
 =head2 notify_login
 
 Tracks the login event and notifies client about successful login form a new (unknown) location.
@@ -163,12 +184,14 @@ Tracks the login event and notifies client about successful login form a new (un
 sub notify_login {
     my ($c, $client, $unknown_location, $app) = @_;
 
-    my $bd           = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
-    my $country_code = uc($c->stash('request')->country_code // '');
-    my $brand        = $c->stash('brand');
-    my $request      = $c->stash('request');
-    my $ip           = $request->client_ip || '';
-    my $time         = time();
+    my $anonymous_id_cookie = $c->req->cookie('rl_anonymous_id');
+    my $anonymous_id        = $anonymous_id_cookie ? decode_anonymous_id($anonymous_id_cookie->value) : undef;
+    my $bd                  = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
+    my $country_code        = uc($c->stash('request')->country_code // '');
+    my $brand               = $c->stash('brand');
+    my $request             = $c->stash('request');
+    my $ip                  = $request->client_ip || '';
+    my $time                = time();
 
     if (!$c->session('_is_social_signup')) {
         BOM::Platform::Event::Emitter::emit(
@@ -217,7 +240,10 @@ sub notify_login {
         {
             loginid    => $client->loginid,
             properties => {
-                timestamp => $time,
+                timestamp      => $time,
+                anonymous_id   => $anonymous_id,
+                login_provider => $c->stash('login_provider'),
+                app_id         => $app->{id},
             },
         });
 }

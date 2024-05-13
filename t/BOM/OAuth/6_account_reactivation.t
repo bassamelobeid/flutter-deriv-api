@@ -53,6 +53,14 @@ $mock_config->mock(
         };
     });
 
+#mock config for rudderstack FE key
+$mock_config->mock(
+    rudderstack_config => sub {
+        return {
+            rudderstack => fe_write_key => 'dummy',
+        };
+    });
+
 ## create test user to login
 my $email    = 'reactivate1@binary.com';
 my $password = 'jskjd8292922';

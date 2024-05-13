@@ -115,6 +115,7 @@ sub authorize {
         dd_rum_config             => _datadog_config(),
         signup_url                => build_signup_url($params_signup_url),
         firebase                  => BOM::Config::third_party()->{firebase},
+        fe_rudderstack_write_key  => BOM::Config::third_party()->{rudderstack},
     );
 
     try {
@@ -131,8 +132,8 @@ sub authorize {
 
         my ($client, $clients);
         my $login_type = $c->_get_login_type;
-        # try to retrieve client from session
         if ($login_type eq 'basic') {
+            $c->stash('login_provider' => 'email');
             my $login = $c->_login({app => $app, social_login_bypass => $social_login_bypass, params_signup_url => $params_signup_url}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
@@ -151,12 +152,15 @@ sub authorize {
             $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
         } elsif ($login_type eq 'social') {    #exact same logic as oneall
                                                # Get client from sls Social Login.
+            my $sls_provider = $c->session('sls_provider');
+            $c->stash('login_provider' => $sls_provider);
             my $sls_user_id = $c->session('_sls_user_id');
             my $login       = $c->_login({app => $app, oneall_user_id => $sls_user_id, params_signup_url => $params_signup_url}) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
             $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
         } elsif ($login_type eq 'passkeys') {
+            $c->stash('login_provider' => 'passkeys');
             my $login = $c->_passkeys_login($app, %template_params) or return;
             $clients = $login->{clients};
             $client  = $clients->[0];
@@ -574,6 +578,7 @@ sub _login {
             email_entered             => $email,
             signup_url                => build_signup_url($params_signup_url),
             firebase                  => BOM::Config::third_party()->{firebase},
+            fe_rudderstack_write_key  => BOM::Config::third_party()->{rudderstack},
             growthbook_request_data   => _get_growthbook_config(),
         );
 

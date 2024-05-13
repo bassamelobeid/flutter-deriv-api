@@ -41,6 +41,14 @@ $mock_config->mock(
         };
     });
 
+#mock config for rudderstack FE key
+$mock_config->mock(
+    rudderstack_config => sub {
+        return {
+            rudderstack => fe_write_key => 'dummy',
+        };
+    });
+
 my $tests = [{
         date       => Date::Utility->new->_minus_months(1)->date_yyyymmdd,
         test       => 'Date in the past should be stored in session',

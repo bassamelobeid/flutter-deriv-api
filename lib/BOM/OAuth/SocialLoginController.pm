@@ -171,6 +171,7 @@ sub _login {
     # login client to the system
     $c->session(_sls_user_id => $user->{id});
     stats_inc('login.social_login.success', {tags => [$c->_dd_brand_tag]});
+    $c->session(sls_provider => $c->stash('sls_provider'));
     return $c->redirect_to_auth_page;
 }
 

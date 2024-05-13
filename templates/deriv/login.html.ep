@@ -1,247 +1,306 @@
-<% if (!$login_method || stash('error') || stash('social_error')) {
-    # doing this because the frontend is sending the chinese language as
-    # zh_cn instead of zn-cn
-    my $language =   (lc $r->language ne 'en')?lc($r->language).'/':'';
-    $language    =~ s/_/-/;
-%>
-    <div id="container">
-        <h1 class="title-text" style="font-size: 2.4rem"><%= l('Welcome!') %></h1>
-        <p class="subtitle-text"><%= l('Log in to continue.') %></p>
-        <form novalidate id="frmLogin" method="POST">
-            <div class='input-group'>
-                <div class="input-wrapper <% if (stash('error')) { %>has_error<% } %>">
-                    <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" value="<%= stash('email_entered') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" <% if (stash('error')) { %>autofocus="autofocus"<% } %> />
-                    <label for="txtEmail"><%= l('Email') %></label>
-                    <span class="bar"></span>
-                </div>
-                <div class="input-error">
-                    <p class='hide error error_invalid'><%= l("That doesn't look like an email address.") %></p>
-                    <p class='hide error error_required'><%= l('Email is required.') %></p>
-                    <p class='hide error error_invalid_pass'><%= l("Your email and/or password is incorrect.") %></p>
-                    <% if (stash('error')) { %>
-                        <p class='error'><%= stash('error') %></p>
-                    <% } %>
-                </div>
-            </div>
-            <div class="input-group">
-                <div class="input-wrapper">
-                    <input type="password" id="txtPass" name="password" required autocomplete="off" />
-                    <label for="txtPass"><%= l('Password') %></label>
-                    <span class="bar"></span>
-                    <span id="btnToggle" class="input-button icon_hidden"></span>
-                </div>
-                <div class="input-error">
-                    <p class='hide error error_required'><%= l('Password is required.') %></p>
-                </div>
-            </div>
-            <div id="lost-password-container">
-                <% if ($is_reset_password_allowed) { %>
-                    <% if ($app->{id} == 36218) { %>
-                        <a target="_blank" rel="noopener noreferrer" id="lost-password" href="https://<%= $website_domain %>/<%= lc($language) %>reset-password"><%= l('Forgot password?') %></a>
-                    <%} else {%>
-                        <a id="lost-password" href="https://<%= $website_domain %>/<%= lc($language) %>reset-password"><%= l('Forgot password?') %></a>
-                    <% } %>
-                <% } %>
-                <button type="submit" class="button secondary" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button>
-            </div>
-            <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
-        </form>
-        <div class="separator" id="separatorId">
-                    <p class="center-text social-text">
-                        <%= stash('error') ? l('Perhaps you signed up with a social account?') : l('Or continue with') %>
-                    </p>
-        </div>
-        <div id="passkeysContainer">
-        </div>
-        <% if ($use_social_login) { %>
-            <%if ($use_oneall) {%> 
-                <div id="oa_social_login_container"></div>
-            <%}else {%>
-                %= include 'shared/_social_login'
-            <%}%>
-            <% if (stash('social_error')) { %>
-                <p class='error-oneall center-text'><%= stash('social_error') %></p>
-            <% } %>
-        <% } %>
-        <p id="signup-link" class="account-text">
-            <%== l('Don’t have an account yet? [_1]Create a new account[_2]', "<a class='account-link' href=$signup_url>", '</a>') %>
-        </p>
-    </div>
-<% } %>
-
 <script type="text/javascript">
-    var frmLogin, txtEmail, txtPass, btnToggle;
-    window.onload = function() {
-        frmLogin  = document.getElementById('frmLogin');
-        txtEmail  = document.getElementById('txtEmail');
-        txtPass   = document.getElementById('txtPass');
-        btnToggle = document.getElementById('btnToggle');
-
-        btnToggle.addEventListener('click', togglePasswordVisibility);
-
-        if (frmLogin) {
-            frmLogin.addEventListener('submit', function(e) {
+   !function(){"use strict";window.RudderSnippetVersion="3.0.3";var sdkBaseUrl="https://cdn.rudderlabs.com/v3"
+   ;var sdkName="rsa.min.js";var asyncScript=true;window.rudderAnalyticsBuildType="legacy",window.rudderanalytics=[]
+   ;var e=["setDefaultInstanceKey","load","ready","page","track","identify","alias","group","reset","setAnonymousId","startSession","endSession","consent"]
+   ;for(var n=0;n<e.length;n++){var t=e[n];window.rudderanalytics[t]=function(e){return function(){
+   window.rudderanalytics.push([e].concat(Array.prototype.slice.call(arguments)))}}(t)}try{
+   new Function('return import("")'),window.rudderAnalyticsBuildType="modern"}catch(a){}
+   if(window.rudderAnalyticsMount=function(){
+   "undefined"==typeof globalThis&&(Object.defineProperty(Object.prototype,"__globalThis_magic__",{get:function get(){
+   return this},configurable:true}),__globalThis_magic__.globalThis=__globalThis_magic__,
+   delete Object.prototype.__globalThis_magic__);var e=document.createElement("script")
+   ;e.src="".concat(sdkBaseUrl,"/").concat(window.rudderAnalyticsBuildType,"/").concat(sdkName),e.async=asyncScript,
+   document.head?document.head.appendChild(e):document.body.appendChild(e)
+   },"undefined"==typeof Promise||"undefined"==typeof globalThis){var d=document.createElement("script")
+   ;d.src="https://polyfill-fastly.io/v3/polyfill.min.js?version=3.111.0&features=Symbol%2CPromise&callback=rudderAnalyticsMount",
+   d.async=asyncScript,document.head?document.head.appendChild(d):document.body.appendChild(d)}else{
+   window.rudderAnalyticsMount()}window.rudderanalytics.load('<%= $fe_rudderstack_write_key->{fe_write_key} %>',"https://deriv-dataplane.rudderstack.com",{})}();
+</script>
+<script>   
+   function trackEvent(action, loginProvider, errorMessage) {
+       let appId = '<%= $app->{id} %>';
+       rudderanalytics.track("ce_login_form", {
+           action: action,
+           login_provider: loginProvider,
+           error_message: errorMessage,
+           app_id: appId,
+       });
+   }
+   
+</script>
+<% if (!$login_method || stash('error') || stash('social_error')) {
+   # doing this because the frontend is sending the chinese language as
+   # zh_cn instead of zn-cn
+   my $language =   (lc $r->language ne 'en')?lc($r->language).'/':'';
+   $language    =~ s/_/-/;
+   %>
+<div id="container">
+   <h1 class="title-text" style="font-size: 2.4rem"><%= l('Welcome!') %></h1>
+   <p class="subtitle-text"><%= l('Log in to continue.') %></p>
+   <form novalidate id="frmLogin" method="POST">
+      <div class='input-group'>
+         <div class="input-wrapper <% if (stash('error')) { %>has_error<% } %>">
+            <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" value="<%= stash('email_entered') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" <% if (stash('error')) { %>autofocus="autofocus"<% } %> />
+            <label for="txtEmail"><%= l('Email') %></label>
+            <span class="bar"></span>
+         </div>
+         <div class="input-error">
+            <p class='hide error error_invalid'><%= l("That doesn't look like an email address.") %></p>
+            <p class='hide error error_required'><%= l('Email is required.') %></p>
+            <p class='hide error error_invalid_pass'><%= l("Your email and/or password is incorrect.") %></p>
+            <% if (stash('error')) { %>
+            <p class='error'><%= stash('error') %></p>
+            <script>
+               trackEvent("login_flow_error", "email", '<%= stash('error') %>');
+            </script>
+            <% } %>
+         </div>
+      </div>
+      <div class="input-group">
+         <div class="input-wrapper">
+            <input type="password" id="txtPass" name="password" required autocomplete="off" />
+            <label for="txtPass"><%= l('Password') %></label>
+            <span class="bar"></span>
+            <span id="btnToggle" class="input-button icon_hidden"></span>
+         </div>
+         <div class="input-error">
+            <p class='hide error error_required'><%= l('Password is required.') %></p>
+         </div>
+      </div>
+      <div id="lost-password-container">
+         <% if ($is_reset_password_allowed) { %>
+            <% if ($app->{id} == 36218) { %>
+            <a target="_blank" rel="noopener noreferrer" id="lost-password" href="https://<%= $website_domain %>/<%= lc($language) %>reset-password"><%= l('Forgot password?') %></a>
+        <%} else {%>
+            <a id="lost-password" href="https://<%= $website_domain %>/<%= lc($language) %>reset-password"><%= l('Forgot password?') %></a>
+            <% } %>
+         <% } %>
+         <button type="submit" class="button secondary" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button>
+      </div>
+      <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+   </form>
+   <div class="separator" id="separatorId">
+      <p class="center-text social-text">
+         <%= stash('error') ? l('Perhaps you signed up with a social account?') : l('Or continue with') %>
+      </p>
+   </div>
+   <div id="passkeysContainer"></div>
+   <% if ($use_social_login) { %>
+   <% if ($use_oneall) { %>
+   <div id="oa_social_login_container"></div>
+   <% } else { %>
+   %= include 'shared/_social_login'
+   <% } %>
+   <% if (stash('social_error')) { %>
+   <script type="text/javascript">
+      document.addEventListener('DOMContentLoaded', function() {
+          addSocialLoginClickListener("login_flow_error", '<%= stash('social_error') %>');
+      });
+   </script>
+   <p class='error-oneall center-text'><%= stash('social_error') %></p>
+   <% } %>
+   <% } %>
+   <p id="signup-link" class="account-text">
+      <%== l('Don’t have an account yet? [_1]Create a new account[_2]', "<a class='account-link' href=$signup_url>", '</a>') %>
+   </p>
+</div>
+<% } %>
+<script type="text/javascript">
+   trackEvent("open", null, null);
+</script>
+<script>
+   function addSocialLoginClickListener(action, error) {
+      const socialLoginButtons = document.querySelectorAll('.provider');
+      socialLoginButtons.forEach(button => {
+          button.addEventListener('click', function() {
+              const provider = button.id.split('_')[1];
+              trackEvent(action, provider, error);
+          });
+      });
+   }
+   addSocialLoginClickListener("login_started", null);
+</script>
+<script type="text/javascript">
+   var frmLogin, txtEmail, txtPass, btnToggle;
+   window.onload = function() {
+       frmLogin  = document.getElementById('frmLogin');
+       txtEmail  = document.getElementById('txtEmail');
+       txtPass   = document.getElementById('txtPass');
+       btnToggle = document.getElementById('btnToggle');
+   
+       btnToggle.addEventListener('click', togglePasswordVisibility);
+   
+       if (frmLogin) {
+           frmLogin.addEventListener('submit', function(e) {
                 if (!validateAll()) {
-                    e.preventDefault();
-                    return false;
+                   trackEvent("login_flow_error", "email", "Input Validation Failed on the FE");
+                   e.preventDefault();
+                   return false;
+                } else {
+                   const email = txtEmail.value.trim();
+                   const pass = txtPass.value.trim();
+
+                   if (email !== '' && pass !== '') {
+                       trackEvent("login_started", "email", null);
+                    }
                 }
             });
         }
-
-        var fields = [
-            { element: txtEmail, validator: validateEmail },
-            { element: txtPass,  validator: validatePass },
-        ];
-        fields.forEach(function(field) {
-            if (field.element) {
-                ['change', 'blur'].forEach(function(event) {
-                    field.element.addEventListener(event, function(e) {
-                        field.validator();
-                    });
-                });
-            }
-        });
-    };
-
-    function validateAll() {
-        return validateEmail() && validatePass();
-    }
-
-    function validateEmail() {
-        return validateField(txtEmail, new RegExp(/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$/));
-    }
-
-    function validatePass() {
-        return validateField(txtPass, new RegExp(/^[ -~]{6,25}$/));
-    }
-
-    function validateField(element, regex) {
-        if (element) {
-            hideErrors(element);
-
-            var hasError = true;
-            var value = (element.value || '').trim();
-            element.value = value;
-            if (!value) {
-                showError(element, 'required');
-            } else if (!regex.test(value) || !element.checkValidity()) {
-                if (element === txtPass) {
-                    showError(txtEmail, 'invalid_pass');
-                } else {
-                    showError(element, 'invalid');
-                }
-                raiseLabel(element, 1);
-            } else {
-                hasError = false;
-                raiseLabel(element, !!value)
-            }
-
-            return !hasError;
-        }
-    }
-
-    function hideErrors(element) {
-        element.parentNode.classList.remove('has_error');
-        element.parentNode.parentNode.querySelectorAll('.input-error .error').forEach(function (el) {
-            el.classList.add('hide');
-        });
-    }
-
-    function showError(element, errorType) {
-        element.parentNode.classList.add('has_error');
-        var el = element.parentNode.parentNode.querySelector('.input-error .error_' + errorType);
-        if (el) {
-            el.classList.remove('hide');
-        }
-    }
-    function raiseLabel(element, should_raise) {
-        element.parentNode.querySelector('label').classList[should_raise ? 'add' : 'remove']('raised-label');
-    }
-
-    function scrollToErrorOneall() {
-        const element = document.querySelector('p.error-oneall');
-  
-        if (element) {
-        const offsetTop = element.offsetTop;
-        const offsetLeft = element.offsetLeft;
-    
-        window.scrollTo({
-        top: offsetTop,
-        left: offsetLeft,
-        behavior: 'smooth'
-        });
-        }
-    }
-
-    setTimeout(function() {
-	scrollToErrorOneall();
-    }, 1000);
-
-    function togglePasswordVisibility() {
-        if (txtPass.type === 'password') {
-            txtPass.type = 'text';
-            btnToggle.classList.remove('icon_hidden');
-            btnToggle.classList.add('icon_visible');
-        } else {
-            txtPass.type = 'password';
-            btnToggle.classList.remove('icon_visible');
-            btnToggle.classList.add('icon_hidden');
-        }
-    }
+   
+       var fields = [
+           { element: txtEmail, validator: validateEmail },
+           { element: txtPass,  validator: validatePass },
+       ];
+       fields.forEach(function(field) {
+           if (field.element) {
+               ['change', 'blur'].forEach(function(event) {
+                   field.element.addEventListener(event, function(e) {
+                       field.validator();
+                   });
+               });
+           }
+       });
+   };
+   
+   function validateAll() {
+       return validateEmail() && validatePass();
+   }
+   
+   function validateEmail() {
+       return validateField(txtEmail, new RegExp(/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$/));
+   }
+   
+   function validatePass() {
+       return validateField(txtPass, new RegExp(/^[ -~]{6,25}$/));
+   }
+   
+   function validateField(element, regex) {
+       if (element) {
+           hideErrors(element);
+   
+           var hasError = true;
+           var value = (element.value || '').trim();
+           element.value = value;
+           if (!value) {
+               showError(element, 'required');
+           } else if (!regex.test(value) || !element.checkValidity()) {
+               if (element === txtPass) {
+                   showError(txtEmail, 'invalid_pass');
+               } else {
+                   showError(element, 'invalid');
+               }
+               raiseLabel(element, 1);
+           } else {
+               hasError = false;
+               raiseLabel(element, !!value)
+           }
+   
+           return !hasError;
+       }
+   }
+   
+   function hideErrors(element) {
+       element.parentNode.classList.remove('has_error');
+       element.parentNode.parentNode.querySelectorAll('.input-error .error').forEach(function (el) {
+           el.classList.add('hide');
+       });
+   }
+   
+   function showError(element, errorType) {
+       element.parentNode.classList.add('has_error');
+       var el = element.parentNode.parentNode.querySelector('.input-error .error_' + errorType);
+       if (el) {
+           el.classList.remove('hide');
+       }
+   }
+   
+   function raiseLabel(element, should_raise) {
+       element.parentNode.querySelector('label').classList[should_raise ? 'add' : 'remove']('raised-label');
+   }
+   
+   function scrollToErrorOneall() {
+       const element = document.querySelector('p.error-oneall');
+   
+       if (element) {
+       const offsetTop = element.offsetTop;
+       const offsetLeft = element.offsetLeft;
+   
+       window.scrollTo({
+       top: offsetTop,
+       left: offsetLeft,
+       behavior: 'smooth'
+       });
+       }
+   }
+   
+   setTimeout(function() {
+   scrollToErrorOneall();
+   }, 1000);
+   
+   function togglePasswordVisibility() {
+       if (txtPass.type === 'password') {
+           txtPass.type = 'text';
+           btnToggle.classList.remove('icon_hidden');
+           btnToggle.classList.add('icon_visible');
+       } else {
+           txtPass.type = 'password';
+           btnToggle.classList.remove('icon_visible');
+           btnToggle.classList.add('icon_hidden');
+       }
+   }
 </script>
 <% if ($use_oneall) { %>
-    <script type="text/javascript">
-        var use_social_login = '<%== $use_social_login %>';
-        if (use_social_login) {
-            var separator = document.getElementById("separatorId");
-            if (separator) {
-                separator.style.display = "block";
-            }
-            var cb = '<%= $oneall_callback %>';
-            var login_method = '<%= $login_method %>';
-            var providers = <%== Mojo::JSON::encode_json($login_providers) %>;
-
-            /* Embeds the buttons into the container oa_social_login_container */
-            var _oneall = _oneall || [];
-            _oneall.push(['social_login', 'set_force_re_authentication', true]);
-            _oneall.push(['social_login', 'set_providers', providers]);
-            _oneall.push(['social_login', 'set_callback_uri', cb]);
-            _oneall.push(['social_login', 'set_popup_usage', 'never']);
-            /* push all configs before this as once rendered it not possible to hook*/
-            _oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
-            
-            if (login_method) {
-                _oneall.push(['social_login', 'do_login', login_method]);
-            }
-            if (document.getElementById('frmLogin')) {
-                document.getElementById('frmLogin').reset();
-            }
-        }
-    </script>
+<script type="text/javascript">
+   var use_social_login = '<%== $use_social_login %>';
+   if (use_social_login) {
+       var separator = document.getElementById("separatorId");
+       if (separator) {
+           separator.style.display = "block";
+       }
+       var cb = '<%= $oneall_callback %>';
+       var login_method = '<%= $login_method %>';
+       var providers = <%== Mojo::JSON::encode_json($login_providers) %>;
+   
+       /* Embeds the buttons into the container oa_social_login_container */
+       var _oneall = _oneall || [];
+       _oneall.push(['social_login', 'set_force_re_authentication', true]);
+       _oneall.push(['social_login', 'set_providers', providers]);
+       _oneall.push(['social_login', 'set_callback_uri', cb]);
+       _oneall.push(['social_login', 'set_popup_usage', 'never']);
+       /* push all configs before this as once rendered it not possible to hook*/
+       _oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
+       
+       if (login_method) {
+           _oneall.push(['social_login', 'do_login', login_method]);
+       }
+       if (document.getElementById('frmLogin')) {
+           document.getElementById('frmLogin').reset();
+       }
+   }
+</script>
 <%}%>
-
 <script src="https://www.datadoghq-browser-agent.com/us1/v4/datadog-rum.js" type="text/javascript"></script>
 <script>
-    var DD_APP_ID = '<%= $dd_rum_config->{APP_ID} %>';
-    var DD_CLIENT_TOKEN = '<%= $dd_rum_config->{CLIENT_TOKEN} %>';
-
-    if(window.DD_RUM && DD_APP_ID && DD_CLIENT_TOKEN) {
-        window.DD_RUM.init({
-            clientToken: DD_CLIENT_TOKEN,
-            applicationId: DD_APP_ID,
-            site: 'datadoghq.com',
-            service: '<%= $dd_rum_config->{SERVICE_NAME} %>',
-            env: '<%= $dd_rum_config->{ENV} %>',
-            version: '<%= $dd_rum_config->{VERSION} %>',
-            sessionSampleRate: <%= $dd_rum_config->{SESSION_SAMPLE_RATE} %>,
-            trackResources: true,
-            trackLongTasks: true,
-            trackUserInteractions: true,
-            trackFrustrations: true,
-            defaultPrivacyLevel: 'mask-user-input',
-            enableExperimentalFeatures: ['clickmap'],
-        })
-    }
+   var DD_APP_ID = '<%= $dd_rum_config->{APP_ID} %>';
+   var DD_CLIENT_TOKEN = '<%= $dd_rum_config->{CLIENT_TOKEN} %>';
+   
+   if(window.DD_RUM && DD_APP_ID && DD_CLIENT_TOKEN) {
+       window.DD_RUM.init({
+           clientToken: DD_CLIENT_TOKEN,
+           applicationId: DD_APP_ID,
+           site: 'datadoghq.com',
+           service: '<%= $dd_rum_config->{SERVICE_NAME} %>',
+           env: '<%= $dd_rum_config->{ENV} %>',
+           version: '<%= $dd_rum_config->{VERSION} %>',
+           sessionSampleRate: <%= $dd_rum_config->{SESSION_SAMPLE_RATE} %>,
+           trackResources: true,
+           trackLongTasks: true,
+           trackUserInteractions: true,
+           trackFrustrations: true,
+           defaultPrivacyLevel: 'mask-user-input',
+           enableExperimentalFeatures: ['clickmap'],
+       })
+   }
 </script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@growthbook/growthbook/dist/bundles/index.js"></script>
@@ -273,6 +332,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 function passkeyBtnClickEvent(){
     document.getElementById('btnPasskeys').addEventListener('click', async function () {
+    trackEvent("login_started", "passkeys", null);
     const optionsResponse =  await fetchOptionsFromServer();
     if(optionsResponse){
         const assertionResponse =  await startWebAuthentication(optionsResponse.publicKey);
@@ -323,6 +383,7 @@ function showErrorPopUp(errorMessage, errorTitle) {
         </div>
     `;
     document.getElementById('passkeysContainer').appendChild(errorDiv);
+    trackEvent("login_flow_error", "passkeys", errorMessage);
 }
 
 function clickOK() {
@@ -393,73 +454,66 @@ async function setAttributesAndCheckFeatureFlag(gb) {
 }
 
 </script>
-
 <script>
-    let passkeysError = "<%= stash('passkeys_error') %>";
-    if (passkeysError) {
-        let passkeysErrorTitle = '<%= stash("passkeys_error_title") %>';
-        showErrorPopUp(passkeysError, passkeysErrorTitle);
-    }
+   let passkeysError = "<%= stash('passkeys_error') %>";
+   if (passkeysError) {
+       let passkeysErrorTitle = '<%= stash("passkeys_error_title") %>';
+       showErrorPopUp(passkeysError, passkeysErrorTitle);
+   }
 </script>
-
-
 <script type="text/javascript">
-
-function update_separator (show) {
-    let separator = document.getElementById("separatorId");
-    if (show) {     
-        separator.classList.add("separator-show");
-    }
-    else{
-        separator.classList.remove("separator-show");
-    }
-}
-
+   function update_separator (show) {
+       let separator = document.getElementById("separatorId");
+       if (show) {     
+           separator.classList.add("separator-show");
+       }
+       else{
+           separator.classList.remove("separator-show");
+       }
+   }
+   
 </script>
-
 <script>
-
-//social login buttons visibility
-function update_social_buttons(config) {
-    let providers = document.getElementsByClassName('provider');
-    let hiddenCount = 0;
-    for(const providerBtn of providers){
-        hiddenCount += update_button(providerBtn, config);
-    }
-    update_separator(hiddenCount < providers.length);
-}
-
-function update_button (btn, config) {
-    let provider_name = btn.id.split('_')[1];
-    if (provider_name == 'facebook') {
-        provider_name = 'fb'; // coming like this from config.
-    }
-    if (config[`social_login_${provider_name}`]) {
-        btn.classList.remove('provider_hidden');
-        return 0;
-    }
-    btn.classList.add('provider_hidden');
-    return 1;
-}
+   //social login buttons visibility
+   function update_social_buttons(config) {
+       let providers = document.getElementsByClassName('provider');
+       let hiddenCount = 0;
+       for(const providerBtn of providers){
+           hiddenCount += update_button(providerBtn, config);
+       }
+       update_separator(hiddenCount < providers.length);
+   }
+   
+   function update_button (btn, config) {
+       let provider_name = btn.id.split('_')[1];
+       if (provider_name == 'facebook') {
+           provider_name = 'fb'; // coming like this from config.
+       }
+       if (config[`social_login_${provider_name}`]) {
+           btn.classList.remove('provider_hidden');
+           return 0;
+       }
+       btn.classList.add('provider_hidden');
+       return 1;
+   }
 </script>
-
 %= include 'shared/_oauth_config'
 <script type="module">
-    let fallbackTimeout = setTimeout(() => update_social_buttons(window.local_config), 2000);
-
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
-    import {getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-    const firebaseConfig = {
-        databaseURL: '<%= $firebase->{db_url} %>'
-    }
-    const app = initializeApp(firebaseConfig,'oauthConfig');
-    const db = getDatabase(app);
-    const oauthRef = ref(db, 'remote_config/oauth');
-    onValue(oauthRef, (snapshot) => {
-        clearTimeout(fallbackTimeout);
-        const data = snapshot.val();
-        update_social_buttons(data);
-    },
-    (error) => console.log(error)
-    );
+   let fallbackTimeout = setTimeout(() => update_social_buttons(window.local_config), 2000);
+   
+   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
+   import {getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+   const firebaseConfig = {
+       databaseURL: '<%= $firebase->{db_url} %>'
+   }
+   const app = initializeApp(firebaseConfig,'oauthConfig');
+   const db = getDatabase(app);
+   const oauthRef = ref(db, 'remote_config/oauth');
+   onValue(oauthRef, (snapshot) => {
+       clearTimeout(fallbackTimeout);
+       const data = snapshot.val();
+       update_social_buttons(data);
+   },
+   (error) => console.log(error)
+   );
 </script>
