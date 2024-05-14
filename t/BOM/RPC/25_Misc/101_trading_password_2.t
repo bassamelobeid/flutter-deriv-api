@@ -9,7 +9,6 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::Test::RPC::QueueClient;
-use BOM::Test::Helper::Client qw(create_client);
 use BOM::Test::Script::DevExperts;
 use Test::BOM::RPC::Accounts;
 
@@ -28,12 +27,18 @@ BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(0);
 
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-BOM::User->create(
+my $user = BOM::User->create(
     email    => 'Pass1234@test.com',
     password => 'test'
-)->add_client($client);
+);
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
+});
 $client->account('USD');
+$client->save();
+$user->add_client($client);
+
 my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
 # prepare mock mt5 accounts

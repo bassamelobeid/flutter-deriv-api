@@ -16,20 +16,20 @@ use Data::Dumper;
 use Email::Stuffer::TestLinks;
 
 my $email = 'dummy@binary.com';
-
-my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-
-$test_client_cr->set_default_account('USD');
-
-$test_client_cr->email($email);
-$test_client_cr->save;
-my $user = BOM::User->create(
+my $user  = BOM::User->create(
     email    => $email,
     password => '1234',
 );
+my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    email          => $email,
+    binary_user_id => $user->id,
+});
+$test_client_cr->set_default_account('USD');
+$test_client_cr->save;
+
 $user->add_client($test_client_cr);
+
 my $oauth      = BOM::Database::Model::OAuth->new;
 my $c          = BOM::Test::RPC::QueueClient->new();
 my ($token_cr) = $oauth->store_access_token_only(1, $test_client_cr->loginid);

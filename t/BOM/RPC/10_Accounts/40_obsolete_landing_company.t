@@ -42,35 +42,37 @@ after which this file can be safely deleted.
 =cut
 
 my $method;
-my $email            = 'mxmlt@binary.com';
-my $token_gen        = BOM::Platform::Token::API->new;
-my $hash_pwd         = BOM::User::Password::hashpw('jskjd8292922');
-my $c                = BOM::Test::RPC::QueueClient->new();
+my $email     = 'mxmlt@binary.com';
+my $token_gen = BOM::Platform::Token::API->new;
+my $hash_pwd  = BOM::User::Password::hashpw('jskjd8292922');
+my $c         = BOM::Test::RPC::QueueClient->new();
+my $user_T    = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
 my $test_client_T_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MX',
-    residence   => 'gb',
-    citizen     => ''
+    broker_code    => 'MX',
+    residence      => 'gb',
+    citizen        => '',
+    binary_user_id => $user_T->id,
 });
 $test_client_T_mx->email($email);
 
 my $test_client_T_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    residence   => 'at',
+    broker_code    => 'MF',
+    residence      => 'at',
+    binary_user_id => $user_T->id,
 });
 $test_client_T_mf->email($email);
 
 my $test_client_T_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
-    residence   => 'at',
+    broker_code    => 'MLT',
+    residence      => 'at',
+    binary_user_id => $user_T->id,
 });
 $test_client_T_mlt->email($email);
 $test_client_T_mlt->set_default_account('EUR');
 $test_client_T_mlt->save;
-
-my $user_T = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
 
 $user_T->add_client($test_client_T_mlt);
 $user_T->add_client($test_client_T_mx);

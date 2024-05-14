@@ -27,7 +27,8 @@ subtest 'Not eligible state' => sub {
     );
 
     my $client_virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
+        broker_code    => 'VRTC',
+        binary_user_id => $user->id,
     });
 
     $client_virtual->set_default_account('USD');

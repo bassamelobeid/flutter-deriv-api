@@ -9,11 +9,16 @@ use BOM::User;
 use BOM::RPC::v3::Utility;
 use BOM::Config::Runtime;
 
-my $client = BOM::Test::Helper::Client::create_client();
-BOM::User->create(
-    email    => $client->email,
+my $user = BOM::User->create(
+    email    => 'test@deriv.com',
     password => 'test'
-)->add_client($client);
+);
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    email          => 'test@deriv.com',
+    binary_user_id => $user->id,
+});
+$user->add_client($client);
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 

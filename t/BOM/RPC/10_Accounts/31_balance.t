@@ -38,33 +38,37 @@ my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_cl
 
 $test_client_disabled->status->set('disabled', 1, 'test disabled');
 
+my $email_mf2 = 'mf@binary.com';
+my $user_mf2  = BOM::User->create(
+    email    => $email_mf2,
+    password => $hash_pwd
+);
+
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
+    broker_code    => 'VRTC',
+    email          => $email_mf2,
+    binary_user_id => $user_mf2->id,
 });
-$test_client_vr->email($email);
 $test_client_vr->set_default_account('USD');
 $test_client_vr->save;
 
-my $email_mf2       = 'mf@binary.com';
 my $test_client_mf2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    residence   => 'at',
+    broker_code    => 'MF',
+    residence      => 'at',
+    email          => $email_mf2,
+    binary_user_id => $user_mf2->id,
 });
-$test_client_mf2->email($email_mf2);
 $test_client_mf2->set_default_account('EUR');
 $test_client_mf2->save;
 
 my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    residence   => 'at',
+    broker_code    => 'MF',
+    residence      => 'at',
+    email          => $email_mf2,
+    binary_user_id => $user_mf2->id,
 });
-$test_client_mf->email($email_mf2);
 $test_client_mf->save;
 
-my $user_mf2 = BOM::User->create(
-    email    => $email_mf2,
-    password => $hash_pwd
-);
 $user_mf2->add_client($test_client_vr);
 $user_mf2->add_client($test_client_mf2);
 $user_mf2->add_client($test_client_mf);

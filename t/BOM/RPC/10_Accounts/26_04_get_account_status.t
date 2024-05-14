@@ -22,20 +22,25 @@ my $c = Test::BOM::RPC::QueueClient->new();
 my $m = BOM::Platform::Token::API->new;
 
 subtest 'check cryptocurrencies cashier' => sub {
-    my $client_UST = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my $client_USD = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my $client_BTC = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my $app_config = BOM::Config::Runtime->instance->app_config();
-    my $user       = BOM::User->create(
+    my $user = BOM::User->create(
         email    => 'test_ust_disabled@binary.com',
         password => 'Abcd1234'
     );
+
+    my $client_UST = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user->id,
+    });
+    my $client_USD = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user->id,
+    });
+    my $client_BTC = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user->id,
+    });
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+
     my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
     for my $client_obj ({
             client   => $client_UST,
@@ -50,8 +55,6 @@ subtest 'check cryptocurrencies cashier' => sub {
             currency => 'BTC'
         })
     {
-        $user->add_client($client_obj->{client});
-        $user->add_client($client_obj->{client});
         $user->add_client($client_obj->{client});
 
         $client_obj->{client}->set_authentication('ID_DOCUMENT', {status => 'pass'});

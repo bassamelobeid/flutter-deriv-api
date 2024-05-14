@@ -21,19 +21,25 @@ my $c = BOM::Test::RPC::QueueClient->new();
 my $m = BOM::Platform::Token::API->new;
 
 my $email = 'dummy@binary.com';
+my $user  = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
 
 my $test_client = create_client(
     'CR', undef,
     {
-        email       => $email,
-        date_joined => '2021-06-06 23:59:59'
+        email          => $email,
+        date_joined    => '2021-06-06 23:59:59',
+        binary_user_id => $user->id,
     });
 
 my $test_client_disabled = create_client(
     'CR', undef,
     {
-        email       => $email,
-        date_joined => '2021-06-06 23:59:59'
+        email          => $email,
+        date_joined    => '2021-06-06 23:59:59',
+        binary_user_id => $user->id,
     });
 $test_client_disabled->account('USD');
 $test_client_disabled->status->set('disabled', 'system', 'reason');
@@ -41,8 +47,9 @@ $test_client_disabled->status->set('disabled', 'system', 'reason');
 my $self_excluded_client = create_client(
     'CR', undef,
     {
-        email       => $email,
-        date_joined => '2021-06-06 23:59:59'
+        email          => $email,
+        date_joined    => '2021-06-06 23:59:59',
+        binary_user_id => $user->id,
     });
 my $exclude_until = Date::Utility->new->epoch + 2 * 86400;
 $self_excluded_client->set_exclusion->timeout_until($exclude_until);
@@ -51,15 +58,12 @@ $self_excluded_client->save;
 my $test_client_duplicated = create_client(
     'CR', undef,
     {
-        email       => $email,
-        date_joined => '2021-06-06 23:59:59'
+        email          => $email,
+        date_joined    => '2021-06-06 23:59:59',
+        binary_user_id => $user->id,
     });
 $test_client_duplicated->status->set('duplicate_account', 'system', 'reason');
 
-my $user = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
 $user->add_client($test_client);
 $user->add_client($self_excluded_client);
 $user->add_client($test_client_disabled);
@@ -80,32 +84,34 @@ my ($token_duplicated) = $oauth->store_access_token_only(1, $test_client_duplica
 
 is $test_client->default_account, undef, 'new client has no default account';
 
-my $email_mf       = 'dummy_mf@binary.com';
-my $test_client_mf = create_client(
-    'MF', undef,
-    {
-        email       => $email_mf,
-        date_joined => '2021-06-06 23:59:59'
-    });
-my $user_mf = BOM::User->create(
+my $email_mf = 'dummy_mf@binary.com';
+my $user_mf  = BOM::User->create(
     email    => $email_mf,
     password => '1234',
 );
+my $test_client_mf = create_client(
+    'MF', undef,
+    {
+        email          => $email_mf,
+        date_joined    => '2021-06-06 23:59:59',
+        binary_user_id => $user_mf->id,
+    });
 $user_mf->add_client($test_client_mf);
 $test_client_mf->load;
 my ($token_mf) = $oauth->store_access_token_only(1, $test_client_mf->loginid);
 
-my $email_mf_2       = 'dummy_mf_2@binary.com';
-my $test_client_mf_2 = create_client(
-    'MF', undef,
-    {
-        email       => $email_mf_2,
-        date_joined => '2021-06-06 23:59:59'
-    });
-my $user_mf_2 = BOM::User->create(
+my $email_mf_2 = 'dummy_mf_2@binary.com';
+my $user_mf_2  = BOM::User->create(
     email    => $email_mf_2,
     password => '1234',
 );
+my $test_client_mf_2 = create_client(
+    'MF', undef,
+    {
+        email          => $email_mf_2,
+        date_joined    => '2021-06-06 23:59:59',
+        binary_user_id => $user_mf_2->id,
+    });
 $user_mf_2->add_client($test_client_mf_2);
 $test_client_mf_2->load;
 my ($token_mf_2) = $oauth->store_access_token_only(1, $test_client_mf_2->loginid);

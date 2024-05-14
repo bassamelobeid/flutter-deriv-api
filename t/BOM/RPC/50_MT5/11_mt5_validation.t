@@ -173,21 +173,23 @@ $mock_auth_docs->mock(
 my $c = BOM::Test::RPC::QueueClient->new();
 
 subtest 'new account' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        email          => 'test1@binary.com',
-        broker_code    => 'CR',
-        citizen        => 'at',
-        place_of_birth => 'at',
-    });
-    $test_client->set_default_account('USD');
-    $test_client->save();
-
     my $password = 'UserPassAbcd33@!';
     my $hash_pwd = BOM::User::Password::hashpw($password);
     my $user     = BOM::User->create(
         email    => 'test.account@binary.com',
         password => $hash_pwd,
     );
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email          => 'test1@binary.com',
+        broker_code    => 'CR',
+        citizen        => 'at',
+        place_of_birth => 'at',
+        binary_user_id => $user->id,
+    });
+    $test_client->set_default_account('USD');
+    $test_client->save();
+
     $user->update_trading_password('Abcd33@!');
     $user->add_client($test_client);
 

@@ -13,9 +13,6 @@ use BOM::Platform::Token::API;
 use BOM::Config::AccountType;
 use BOM::Config::AccountType::Registry;
 
-my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
 my $email    = 'get_available_accounts@nowhere.com';
 my $password = 'Aer13';
 my $hash_pwd = BOM::User::Password::hashpw($password);
@@ -24,6 +21,12 @@ my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
+
+my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
+});
+
 $user->add_client($client_usd);
 my $token_usd = BOM::Platform::Token::API->new->create_token($client_usd->loginid, 'test token');
 

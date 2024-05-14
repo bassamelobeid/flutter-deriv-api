@@ -15,17 +15,25 @@ use utf8;
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
 
-my $email       = 'dummy@binary.com';
+my $email = 'dummy@binary.com';
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    date_joined => '2021-06-06 23:59:59'
+    broker_code    => 'CR',
+    date_joined    => '2021-06-06 23:59:59',
+    binary_user_id => $user->id,
 });
 $test_client->email($email);
 $test_client->save;
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    date_joined => '2021-06-06 23:59:59'
+    broker_code    => 'CR',
+    date_joined    => '2021-06-06 23:59:59',
+    binary_user_id => $user->id,
 });
 $test_client_disabled->email($email);
 $test_client_disabled->account('USD');
@@ -33,8 +41,9 @@ $test_client_disabled->status->set('disabled', 'system', 'reason');
 $test_client_disabled->save;
 
 my $self_excluded_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    date_joined => '2021-06-06 23:59:59'
+    broker_code    => 'CR',
+    date_joined    => '2021-06-06 23:59:59',
+    binary_user_id => $user->id,
 });
 $self_excluded_client->email($email);
 my $exclude_until = Date::Utility->new->epoch + 2 * 86400;
@@ -42,17 +51,14 @@ $self_excluded_client->set_exclusion->timeout_until($exclude_until);
 $self_excluded_client->save;
 
 my $test_client_duplicated = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    date_joined => '2021-06-06 23:59:59'
+    broker_code    => 'CR',
+    date_joined    => '2021-06-06 23:59:59',
+    binary_user_id => $user->id,
 });
 $test_client_duplicated->email($email);
 $test_client_duplicated->status->set('duplicate_account', 'system', 'reason');
 $test_client_duplicated->save;
 
-my $user = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
 $user->add_client($test_client);
 $user->add_client($self_excluded_client);
 $user->add_client($test_client_disabled);

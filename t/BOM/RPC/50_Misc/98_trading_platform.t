@@ -37,12 +37,16 @@ for my $currency (@all_currencies) {
 }
 
 subtest 'dxtrader accounts' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-
-    BOM::User->create(
+    my $user = BOM::User->create(
         email    => 'dxaccounts@test.com',
         password => 'test'
-    )->add_client($client);
+    );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user->id,
+    });
+
+    $user->add_client($client);
     $client->account('USD');
 
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');

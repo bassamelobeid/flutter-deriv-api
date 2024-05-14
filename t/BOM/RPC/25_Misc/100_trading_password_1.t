@@ -9,7 +9,6 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::Test::RPC::QueueClient;
-use BOM::Test::Helper::Client qw(create_client);
 
 use Test::BOM::RPC::Accounts;
 
@@ -39,12 +38,6 @@ BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
 my $method = 'trading_platform_password_change';
 
 subtest 'set new trading password - no mt5 or dxtrade accounts' => sub {
-    # create client
-    my $client = create_client('CR');
-    $client->email('Test1@binary.com');
-    $client->set_default_account('USD');
-    $client->save;
-
     # create user
     my $password = 'Hello123';
     my $hash_pwd = BOM::User::Password::hashpw($password);
@@ -52,6 +45,15 @@ subtest 'set new trading password - no mt5 or dxtrade accounts' => sub {
         email    => 'Test1@binary.com',
         password => $hash_pwd,
     );
+    # create client
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => 'Test1@binary.com',
+        binary_user_id => $user->id,
+    });
+    $client->set_default_account('USD');
+    $client->save;
+
     $user->add_client($client);
 
     my $token  = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
@@ -129,6 +131,7 @@ $user->update_trading_password($details{password}{main});
 # create client
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',
+    binary_user_id => $user->id,
     email          => $details{email},
     place_of_birth => 'id',
 });

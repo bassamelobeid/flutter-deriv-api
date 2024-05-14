@@ -19,25 +19,41 @@ my $c = BOM::Test::RPC::QueueClient->new();
 my $app_config  = BOM::Config::Runtime->instance->app_config;
 my $mock_client = Test::MockModule->new('BOM::User::Client');
 
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC', email => 'vr@test.com'});
-BOM::User->create(
-    email    => $client_vr->email,
+my $user_vr = BOM::User->create(
+    email    => 'vr@test.com',
     password => 'x'
-)->add_client($client_vr);
+);
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'VRTC',
+    email          => $user_vr->email,
+    binary_user_id => $user_vr->id,
+});
+$user_vr->add_client($client_vr);
+
 my ($token_vr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
 
-my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF', email => 'mf@test.com'});
-BOM::User->create(
-    email    => $client_mf->email,
+my $user_mf = BOM::User->create(
+    email    => 'mf@test.com',
     password => 'x'
-)->add_client($client_mf);
+);
+my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'MF',
+    email          => $user_mf->email,
+    binary_user_id => $user_mf->id,
+});
+$user_mf->add_client($client_mf);
 my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mf->loginid);
 
-my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', email => 'cr@test.com'});
-BOM::User->create(
-    email    => $client_cr->email,
+my $user_cr = BOM::User->create(
+    email    => 'cr@test.com',
     password => 'x'
-)->add_client($client_cr);
+);
+my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    email          => $user_cr->email,
+    binary_user_id => $user_cr->id,
+});
+$user_cr->add_client($client_cr);
 my ($token_cr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr->loginid);
 
 subtest 'Eligibility' => sub {

@@ -22,16 +22,23 @@ my $c = BOM::Test::RPC::QueueClient->new();
 # Set up clients
 
 my $email = 'dummy@binary.com';
+my $user  = BOM::User->create(
+    email    => $email,
+    password => 'Abcd1234'
+);
 
 my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
+    broker_code    => 'VRTC',
+    binary_user_id => $user->id,
+    email          => $email,
 });
-$virtual_client->email($email);
-$virtual_client->save;
+$user->add_client($virtual_client);
 
 my $real_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
 });
+$user->add_client($real_client);
 
 my $emit_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my @emissions;
@@ -41,15 +48,6 @@ $emit_mock->mock(
         push @emissions, {@_};
         return undef;
     });
-my $user = BOM::User->create(
-    email    => $real_client->loginid . '@binary.com',
-    password => 'Abcd1234'
-);
-
-$user->add_client($real_client);
-$real_client->binary_user_id($user->id);
-$real_client->user($user);
-$real_client->save;
 
 #########################################################
 ## Setup tokens

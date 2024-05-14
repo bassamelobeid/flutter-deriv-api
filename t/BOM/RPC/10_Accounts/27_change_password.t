@@ -16,20 +16,23 @@ use Test::BOM::RPC::Accounts;
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
 # init db
-my $email       = 'abc@binary.com';
-my $password    = 'Abcd33!@';
-my $hash_pwd    = BOM::User::Password::hashpw($password);
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-});
-
-$test_client->email($email);
-$test_client->save;
+my $email    = 'abc@binary.com';
+my $password = 'Abcd33!@';
+my $hash_pwd = BOM::User::Password::hashpw($password);
 
 my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
+
+my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'MF',
+    binary_user_id => $user->id,
+});
+
+$test_client->email($email);
+$test_client->save;
+
 $user->add_client($test_client);
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -51,87 +54,6 @@ $mock_emitter->mock('emit' => sub { push @emitted, [@_]; });
 my $method = 'change_password';
 subtest 'change password' => sub {
     my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
-    is(
-        BOM::RPC::v3::Utility::check_password({
-                old_password => 'old_password',
-                new_password => 'new_password',
-                user_pass    => '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ='
-            }
-        )->{error}->{message_to_client},
-        'That password is incorrect. Please try again.',
-        'That password is incorrect. Please try again.',
-    );
-    is(
-        BOM::RPC::v3::Utility::check_password({
-                old_password => 'old_password',
-                new_password => 'old_password',
-                user_pass    => $oldpass
-            }
-        )->{error}->{message_to_client},
-        'Current password and new password cannot be the same.',
-        'Current password and new password cannot be the same.',
-    );
-    is(
-        BOM::RPC::v3::Utility::check_password({
-                old_password => 'old_password',
-                new_password => 'water',
-                user_pass    => $oldpass
-            }
-        )->{error}->{message_to_client},
-        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-    );
-    is(
-        BOM::RPC::v3::Utility::check_password({
-                old_password => 'old_password',
-                new_password => 'New#_p$ssword',
-                user_pass    => $oldpass
-            }
-        )->{error}->{message_to_client},
-        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'no number.',
-    );
-    is(
-        BOM::RPC::v3::Utility::check_password({
-                old_password => 'old_password',
-                new_password => 'pa$5A',
-                user_pass    => $oldpass
-            }
-        )->{error}->{message_to_client},
-        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'too short.',
-    );
-    is(
-        BOM::RPC::v3::Utility::check_password({
-                old_password => 'old_password',
-                new_password => 'pass$5ss',
-                user_pass    => $oldpass
-            }
-        )->{error}->{message_to_client},
-        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'no upper case.',
-    );
-    is(
-        BOM::RPC::v3::Utility::check_password({
-                old_password => 'old_password',
-                new_password => 'PASS$5SS',
-                user_pass    => $oldpass
-            }
-        )->{error}->{message_to_client},
-        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'no lower case.',
-    );
-    is(
-        BOM::RPC::v3::Utility::check_password({
-                email        => 'abc1@binary.com',
-                old_password => 'old_password',
-                new_password => 'ABC1@binary.com',
-                user_pass    => $oldpass
-            }
-        )->{error}->{message_to_client},
-        'You cannot use your email address as your password.',
-        'password must not be the same as email',
-    );
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
     is(
         $c->tcall(
@@ -182,6 +104,7 @@ subtest 'change password' => sub {
     $params->{token_type} = 'hello';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'need token_type');
     $params->{token_type}         = 'oauth_token';
+    $params->{args}{new_password} = 'new_password';
     $params->{args}{old_password} = 'old_password';
     $params->{cs_email}           = 'cs@binary.com';
     $params->{client_ip}          = '127.0.0.1';

@@ -46,6 +46,7 @@ my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',
     email          => $email,
     place_of_birth => 'id',
+    binary_user_id => $user_client_cr->id,
 });
 $client_cr->set_default_account('USD');
 

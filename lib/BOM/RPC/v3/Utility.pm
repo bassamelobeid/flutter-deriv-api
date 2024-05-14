@@ -443,39 +443,6 @@ sub check_password_trading_platform {
     return undef;
 }
 
-sub check_password {
-    my $args = shift;
-
-    my $email        = $args->{email};
-    my $new_password = $args->{new_password};
-
-    if (exists $args->{old_password} && exists $args->{user_pass}) {
-        my $old_password = $args->{old_password};
-        my $user_pass    = $args->{user_pass};
-
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'PasswordError',
-                message_to_client => localize('That password is incorrect. Please try again.')}
-        ) if (not BOM::User::Password::checkpw($old_password, $user_pass));
-
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'PasswordError',
-                message_to_client => localize('Current password and new password cannot be the same.')}) if ($new_password eq $old_password);
-    }
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PasswordError',
-            message_to_client =>
-                localize('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.')}
-    ) if $new_password !~ REGEX_PASSWORD_VALIDATION;
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PasswordError',
-            message_to_client => localize('You cannot use your email address as your password.')}) if lc $new_password eq lc $email;
-
-    return undef;
-}
-
 =head2 notify_financial_assessment
 
 return true if a notification needs to be displayed for the client if Financial assessment was not completed.
@@ -1510,10 +1477,19 @@ sub set_trading_password_new_account {
     if (my $current_password = $client->user->dx_trading_password) {
         return validate_password_with_attempts($trading_password, $current_password, $client->loginid);
     } else {
-        my $error = check_password({
-            email        => $client->email,
-            new_password => $trading_password,
-        });
+        my $error;
+        if ($trading_password !~ REGEX_PASSWORD_VALIDATION) {
+            $error = BOM::RPC::v3::Utility::create_error({
+                    code              => 'PasswordError',
+                    message_to_client =>
+                        localize('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.')});
+        }
+        if (lc $trading_password eq lc $client->email) {
+            $error = BOM::RPC::v3::Utility::create_error({
+                    code              => 'PasswordError',
+                    message_to_client => localize('You cannot use your email address as your password.')});
+        }
+
         die $error->{error} if $error;
 
         $client->user->update_dx_trading_password($trading_password);

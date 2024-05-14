@@ -70,15 +70,16 @@ $transfer_config->limits->fiat_to_crypto(300);
 subtest 'CR - USD' => sub {
 
     # Initialise a CR test account and email and set USD as the currency
-    my $email  = 'test-cr-usd@binary.com';
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        place_of_birth => 'id',
-    });
-    my $user = BOM::User->create(
+    my $email = 'test-cr-usd@binary.com';
+    my $user  = BOM::User->create(
         email    => $email,
         password => 'dsd32e23ewef',
     );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        place_of_birth => 'id',
+        binary_user_id => $user->id,
+    });
     $client->set_default_account('USD');
 
     $client->email($email);

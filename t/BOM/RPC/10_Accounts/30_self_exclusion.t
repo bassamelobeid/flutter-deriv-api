@@ -19,11 +19,19 @@ BOM::Test::Helper::Token::cleanup_redis_tokens();
 
 my $mock_lc = Test::MockModule->new('LandingCompany');
 
-my $email       = 'abc@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::User::Password::hashpw($password);
+my $email    = 'abc@binary.com';
+my $password = 'jskjd8292922';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $user = BOM::User->create(
+    email         => $email,
+    password      => $hash_pwd,
+    email_consent => 1
+);
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
+    broker_code    => 'MF',
+    binary_user_id => $user->id,
 });
 
 $test_client->email($email);
@@ -31,18 +39,14 @@ $test_client->set_default_account('USD');
 $test_client->save;
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
+    broker_code    => 'VRTC',
+    binary_user_id => $user->id,
 });
 $test_client_vr->email($email);
 $test_client_vr->set_default_account('USD');
 $test_client_vr->save;
 
 my $test_loginid = $test_client->loginid;
-my $user         = BOM::User->create(
-    email         => $email,
-    password      => $hash_pwd,
-    email_consent => 1
-);
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
 

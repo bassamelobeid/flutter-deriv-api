@@ -35,16 +35,17 @@ my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 
 subtest 'frozen free gift' => sub {
 
-    my $email  = 'promotest@binary.com';
+    my $email = 'promotest@binary.com';
+    my $user  = BOM::User->create(
+        email    => $DETAILS{email},
+        password => 's3kr1t',
+    );
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $DETAILS{email},
         place_of_birth => 'id',
+        binary_user_id => $user->id,
     });
-    my $user = BOM::User->create(
-        email    => $DETAILS{email},
-        password => 's3kr1t',
-    );
     $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($client);
     $client->account('USD');
