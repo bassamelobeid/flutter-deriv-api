@@ -58,6 +58,7 @@ my $action_mapping = {
         store_mt5_transaction                       => \&BOM::Event::Actions::MT5::redis_record_mt5_transfer,
         new_mt5_signup                              => \&BOM::Event::Actions::MT5::new_mt5_signup,
         signup                                      => \&BOM::Event::Actions::Client::signup,
+        anti_fraud_investigation_email              => \&BOM::Event::Actions::Client::anti_fraud_investigation_email,
         mt5_inactive_account_closure_report         => \&BOM::Event::Actions::MT5::mt5_inactive_account_closure_report,
         anonymize_client                            => \&BOM::Event::Actions::Anonymization::anonymize_client,
         bulk_anonymization                          => \&BOM::Event::Actions::Anonymization::bulk_anonymization,
@@ -222,6 +223,7 @@ my $action_mapping = {
         derivez_inactive_account_closed                  => \&BOM::Event::Actions::DerivEZ::derivez_inactive_account_closed,
         derivez_inactive_notification                    => \&BOM::Event::Actions::DerivEZ::derivez_inactive_notification,
         duplicated_document_account_closed               => \&BOM::Event::Services::Track::duplicated_document_account_closed,
+        under_antifraud_investigation                    => \&BOM::Event::Services::Track::under_antifraud_investigation,
 
     },
     mt5_retryable => {

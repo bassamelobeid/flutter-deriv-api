@@ -141,6 +141,10 @@ use constant APPLICANT_CHECK_LOCK_TTL    => 30;
 use constant APPLICANT_ONFIDO_TIMING     => 'ONFIDO::APPLICANT::TIMING::';
 use constant APPLICANT_ONFIDO_TIMING_TTL => 86400;
 
+# under_antifraud_investigation rate limit check
+use constant UNDER_ANTIFRAUD_INVESTIGATION_COOLOFF_KEY => 'EMAIL::AF_INVESTIGATION::';
+use constant UNDER_ANTIFRAUD_INVESTIGATION_TTL         => 60 * 5;
+
 # template path
 use constant TEMPLATE_PREFIX_PATH => "/home/git/regentmarkets/bom-events/share/templates/email/";
 # Fraud Prevention constants
@@ -3699,6 +3703,86 @@ async sub check_duplicate_dob_phone {
 
 }
 
+=head2 anti_fraud_investigation_email
+
+Sends an email when client is under investigation from Anti-fraud
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=back
+
+=cut
+
+async sub anti_fraud_investigation_email {
+
+    my @args = @_;
+
+    my ($data) = @args;
+    my $loginid = $data->{loginid};
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die 'Could not instantiate client for login ID ' . $loginid;
+
+    my $client_email    = $client->email;
+    my $landing_company = $client->landing_company->short;
+
+    return unless await _antifraud_email_cooldown_completed($client_email, $landing_company);
+
+    BOM::Platform::Event::Emitter::emit(
+        'under_antifraud_investigation',
+        {
+            loginid    => $client->loginid,
+            properties => {
+                client_first_name      => $client->first_name,
+                client_last_name       => $client->last_name,
+                client_landing_company => $landing_company,
+                email                  => $client_email
+            }
+
+        });
+
+    return;
+
+}
+
+=head2 _antifraud_email_cooldown_completed
+
+Check if there already has been an email sent for the user based on the landing company and email, otherwise, update redis
+
+=over
+
+=item * C<email> - required. email of the user against the loginid.
+
+=item * C<landing_company> - required. landing company of the client.
+
+=back
+
+Returns 1 if there wasn't any cooloff set in redis after setting it, otherwise 0.
+
+=cut
+
+async sub _antifraud_email_cooldown_completed {
+    my ($email, $landing_company) = @_;
+
+    # Required parameters
+    return 0 unless $email && $landing_company;
+
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
+
+    my $key = UNDER_ANTIFRAUD_INVESTIGATION_COOLOFF_KEY . $email . '::' . $landing_company;
+
+    # Checking cooldown
+    return 0 if await $redis_events_write->get($key);
+
+    # Set cooldown and return 1, go ahead for sending client email event
+    await $redis_events_write->setex($key, UNDER_ANTIFRAUD_INVESTIGATION_TTL, 1);
+
+    return 1;
+}
+
 =head2 signup
 
 It is triggered for each B<signup> event emitted.
@@ -4696,6 +4780,7 @@ for my $func_name (
     payment_withdrawal
     professional_status_requested
     shared_payment_method_email_notification
+
     ))
 {
     no strict 'refs';    # allow symbol table manipulation
@@ -4871,7 +4956,12 @@ async sub bulk_client_status_update {
                     } else {
                         if (!$client->status->disabled) {
                             if ($client->status->can_execute($status_code, $user_groups, 'set')) {
-                                $client->status->upsert('disabled', $clerk, $reason);
+                                $client->status->upsert({
+                                    status_code     => 'disabled',
+                                    staff_name      => $clerk,
+                                    reason          => $reason,
+                                    trigger_actions => 1
+                                });
                             } else {
                                 $summary =
                                     "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$loginid $reason ($clerk)</b>&nbsp;&nbsp;has not been saved, missing required permissions</b>";
@@ -4896,14 +4986,24 @@ async sub bulk_client_status_update {
                     push @failed_update, "<tr><td>" . $summary . "</td></tr>";
                     next LOGIN;
                 }
-                $client->status->upsert($status_code, $clerk, $reason);
+                $client->status->upsert({
+                    status_code     => $status_code,
+                    staff_name      => $clerk,
+                    reason          => $reason,
+                    trigger_actions => 1
+                });
                 my $m = BOM::Platform::Token::API->new;
                 $m->remove_by_loginid($client->loginid);
 
             } else {
                 if ($operation =~ $add_regex) {
                     if ($client->status->can_execute($status_code, $user_groups, 'set')) {
-                        $client->status->upsert($status_code, $clerk, $reason);
+                        $client->status->upsert({
+                            status_code     => $status_code,
+                            staff_name      => $clerk,
+                            reason          => $reason,
+                            trigger_actions => 1
+                        });
                         if ($status_code eq 'allow_document_upload' && $reason eq 'Pending payout request') {
                             BOM::User::Utility::notify_submission_of_documents_for_pending_payout($client);
                         }

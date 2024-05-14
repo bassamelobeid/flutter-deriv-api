@@ -9205,6 +9205,68 @@ subtest 'account status remove event' => sub {
     ok !$client->status->_get('disabled'), 'Disabled status is removed';
 };
 
+subtest 'Antifraud email cooldown' => sub {
+
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed(undef, undef)->get(), 0, 'Invalid parameters - returns 0';
+
+    my $redis_key_prefix = BOM::Event::Actions::Client::UNDER_ANTIFRAUD_INVESTIGATION_COOLOFF_KEY;
+    my $redis            = BOM::Config::Redis::redis_events_write();
+
+    my $test_emails            = ['af_test@deriv.com', 'af_test1@deriv.com'];
+    my $test_landing_companies = ['svg',               'maltainvest'];
+
+    my $expected_keys = [
+        $redis_key_prefix . $test_emails->[0] . '::' . $test_landing_companies->[0],
+        $redis_key_prefix . $test_emails->[0] . '::' . $test_landing_companies->[1],
+        $redis_key_prefix . $test_emails->[1] . '::' . $test_landing_companies->[0],
+        $redis_key_prefix . $test_emails->[1] . '::' . $test_landing_companies->[1]];
+
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed($test_emails->[0], $test_landing_companies->[0])->get(), 1,
+        'Returns 1 on the first call';
+    is $redis->get($expected_keys->[0]), 1, 'Expected that the cooloff key is set';
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed($test_emails->[0], $test_landing_companies->[0])->get(), 0,
+        'Returns 0 on after the key is set';
+
+    # change the landing company
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed($test_emails->[0], $test_landing_companies->[1])->get(), 1,
+        'Returns 1 for the changed landing company first call';
+    is $redis->get($expected_keys->[1]), 1, 'Expected that the cooloff key is set for second landing company';
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed($test_emails->[0], $test_landing_companies->[1])->get(), 0,
+        'Returns 0 for the changed landing company second call';
+
+    # change email and repeat
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed($test_emails->[1], $test_landing_companies->[0])->get(), 1,
+        'Different email - Returns 1 on the first call';
+    is $redis->get($expected_keys->[2]), 1, 'Different email - Expected that the cooloff key is set';
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed($test_emails->[1], $test_landing_companies->[0])->get(), 0,
+        'Different email - Returns 0 after the key is set';
+
+    # with the second landing company
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed($test_emails->[1], $test_landing_companies->[1])->get(), 1,
+        'Different email - Returns 1 for the changed landing company first call';
+    is $redis->get($expected_keys->[3]), 1, 'Different email - Expected that the cooloff key is set for second landing company';
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed($test_emails->[1], $test_landing_companies->[1])->get(), 0,
+        'Different email - Returns 0 for the changed landing company second call';
+
+    cleanup_redis_keys($redis, $expected_keys);
+
+    is BOM::Event::Actions::Client::_antifraud_email_cooldown_completed($test_emails->[0], $test_landing_companies->[0])->get(), 1,
+        'Returns 1 after cleanup';
+    is $redis->get($expected_keys->[0]), 1, 'Expected that the cooloff key is set after cleanup';
+
+    cleanup_redis_keys($redis, [$expected_keys->[0]]);
+
+    is $redis->get($expected_keys->[0]), undef, 'Expected that the cooloff key no longer exists';
+};
+
+sub cleanup_redis_keys {
+    my ($redis, $keys) = @_;
+
+    foreach my $key (@$keys) {
+        $redis->del($key);
+    }
+}
+
 sub reset_onfido_check {
     my $check = shift;
 

@@ -187,7 +187,7 @@ my %EVENT_PROPERTIES = (
     document_expiring_today                  => [qw(authentication_url live_chat_url email)],
     document_expiring_soon                   => [qw(authentication_url live_chat_url expiration_date email)],
     duplicated_document_account_closed       => [qw(tnc_approval email)],
-);
+    under_antifraud_investigation            => [qw(client_first_name client_last_name client_landing_company email)]);
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
 
@@ -246,6 +246,7 @@ my @COMMON_EVENT_METHODS = qw(
     document_expiring_today
     document_expiring_soon
     shared_payment_method_email_notification
+    under_antifraud_investigation
     duplicated_document_account_closed
 );
 
@@ -299,6 +300,7 @@ my @TRANSACTIONAL_EVENTS = qw(
     confirm_change_email
     verify_change_email
     mt5_signup
+    under_antifraud_investigation
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1741,6 +1743,12 @@ It is triggered for each B<document_expiring_today> event emitted, delivering it
 =head2 shared_payment_method_email_notification
 
 It is triggered for each B<shared_payment_method_email_notification> event emitted, delivering it to Rudderstack.
+
+=cut
+
+=head2 under_antifraud_investigation
+
+It is triggered for each B<under_antifraud_investigation> event emitted, delivering it to Rudderstack.
 
 =cut
 

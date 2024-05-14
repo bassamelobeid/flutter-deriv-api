@@ -135,7 +135,7 @@ subtest 'process - generic jobs' => sub {
                 trigger_cio_broadcast crypto_cashier_transaction_updated
                 update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies mt5_deriv_auto_rescind mt5_archive_restore_sync sync_mt5_accounts_status
                 poa_updated poi_updated underage_client_detected mt5_archive_accounts mt5_svg_migration_requested ctrader_account_created nodejs_hello
-                withdrawal_estimated_fee_updated p2p_settings_updated onfido_check_completed poi_claim_ownership recheck_onfido_face_similarity/
+                withdrawal_estimated_fee_updated p2p_settings_updated onfido_check_completed poi_claim_ownership recheck_onfido_face_similarity anti_fraud_investigation_email/
         ),
         'Correct number of actions that can be emitted'
     );
@@ -244,7 +244,7 @@ subtest 'process - tracking jobs' => sub {
                 identity_verification_rejected p2p_advertiser_approved p2p_order_updated_handled
                 risk_disclaimer_resubmission unknown_login derivx_account_deactivated poa_verification_failed_reminder professional_status_requested dp_successful_login pa_first_time_approved shared_payment_method_email_notification
                 pa_transfer_confirm pa_withdraw_confirm derivez_inactive_notification derivez_inactive_account_closed document_expiring_soon document_expiring_today
-                duplicated_document_account_closed/
+                duplicated_document_account_closed under_antifraud_investigation/
         ),
         'Correct number of actions that can be emitted'
     );
