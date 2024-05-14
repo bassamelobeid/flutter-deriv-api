@@ -228,7 +228,6 @@ sub save {
         my $val = $self->$col // next;
         $self->$col(undef) if $val eq '';    # if we get here, it's defined.
     }
-
     $self->set_db('write');
     my $r = $self->SUPER::save(cascade => 1);    # Rose
     return $r;
@@ -1882,21 +1881,7 @@ sub is_tnc_approval_required {
     return 0 if $self->is_virtual;
     return 0 unless $self->landing_company->tnc_required;
     my $version = $self->user->current_tnc_version or return 0;
-    return $version ne $self->user->latest_tnc_version;
-}
-
-=head2 accepted_tnc_version
-
-Returns latest terms & conditions version accepted by user for current brand.
-Always empty for virtual landing company.
-
-=cut
-
-sub accepted_tnc_version {
-    my $self = shift;
-
-    return '' if $self->is_virtual;
-    return $self->user->latest_tnc_version;
+    return $version ne $self->user->accepted_tnc_version;
 }
 
 =head2 is_payout_freezing_funds_enabled
