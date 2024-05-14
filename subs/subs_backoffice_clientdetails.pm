@@ -54,6 +54,7 @@ use BOM::Rules::Engine;
 use BOM::Platform::Doughflow;
 use BOM::User::LexisNexis;
 use BOM::Config::Compliance;
+use BOM::Service;
 use Deriv::TradingPlatform::MT5::UserRights qw(to_hash);
 
 my $compliance_config = BOM::Config::Compliance->new;
@@ -1887,8 +1888,8 @@ sub get_client_details {
     # If the loginid correspond to a trading platform
     # show a loginid picker page.
     if ($loginid =~ /^(MT|DX|EZ|CT)[DR]?/) {
-        if (my $user = BOM::User->new(loginid => $loginid)) {
-            my $logins             = loginids($user);
+        if (my $user_id = BOM::Service::get_user_id_from_client_id($loginid)) {
+            my $logins             = loginids($user_id);
             my $mt_logins_ids      = $logins->{mt5};
             my $bom_logins         = $logins->{bom};
             my $dx_logins_ids      = $logins->{dx};
@@ -2017,7 +2018,9 @@ Returns a hashref.
 =cut
 
 sub loginids {
-    my ($user) = @_;
+    my ($user_id) = @_;
+
+    my $user = BOM::User->new(id => $user_id);
 
     my $details   = $user->loginid_details;
     my @mt_logins = $user->get_mt5_loginids(

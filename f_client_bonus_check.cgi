@@ -11,6 +11,8 @@ use BOM::Backoffice::Sysinit      ();
 use BOM::Database::ClientDB;
 use BOM::MyAffiliates;
 use BOM::Backoffice::PromoCodeEligibility;
+use BOM::Backoffice::UserService;
+use BOM::Service;
 use JSON::MaybeXS;
 BOM::Backoffice::Sysinit::init();
 
@@ -224,18 +226,24 @@ BOM::Backoffice::Request::template()->process(
 #
 
 Bar($user->{email} . " Login history");
-my $limit         = 200;
-my $login_history = $user->login_history(
-    order                    => 'desc',
-    show_impersonate_records => 1,
-    limit                    => $limit
+my $limit     = 200;
+my $user_data = BOM::Service::user(
+    context         => BOM::Backoffice::UserService::get_context(),
+    command         => 'get_login_history',
+    user_id         => $user->{email},
+    limit           => $limit,
+    show_backoffice => 1,
 );
+
+unless ($user_data->{status} eq 'ok') {
+    code_exit_BO("<p>" . $user_data->{message} . "</p>", "Error - Failed to read login history from user service");
+}
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/user_login_check.html.tt',
     {
         user    => $user,
-        history => $login_history,
+        history => $user_data->{login_history},
         limit   => $limit
     });
 
