@@ -1593,7 +1593,7 @@ sub pending_poi_bundle {
     my $stash = [
         sort { $b->id <=> $a->id }
             $client->documents->stash('uploaded', 'client',
-            ['national_identity_card', 'identification_number_document', 'driving_licence', 'passport', 'selfie_with_id'])->@*
+            ['national_identity_card', 'identification_number_document', 'service_id_card', 'driving_licence', 'passport', 'selfie_with_id'])->@*
     ];
 
     # having the stash of POI potential documents
@@ -1602,6 +1602,7 @@ sub pending_poi_bundle {
     #  - driving_licence (front and back) + selfie_with_id
     #  - national_identity_card (front and back) + selfie_with_id
     #  - identification_number_document (front and back) + selfie_with_id
+    #  - service_id_card (front and back) + selfie_with_id
 
     my $stack = {};
     my $selfie;

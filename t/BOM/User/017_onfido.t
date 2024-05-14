@@ -1788,7 +1788,7 @@ subtest 'candidate documents' => sub {
             cmp_deeply [@args],
                 [
                 ignore(), 'uploaded', 'client',
-                ['national_identity_card', 'identification_number_document', 'driving_licence', 'passport', 'selfie_with_id']
+                ['national_identity_card', 'identification_number_document', 'service_id_card', 'driving_licence', 'passport', 'selfie_with_id']
                 ],
                 'expected stash requested';
 
@@ -1811,7 +1811,7 @@ subtest 'candidate documents' => sub {
         is BOM::User::Onfido::candidate_documents($user), undef, 'No valid candidates return undef';
     };
 
-    my $two_sided = [qw/national_identity_card driving_licence identification_number_document/];
+    my $two_sided = [qw/national_identity_card driving_licence identification_number_document service_id_card/];
     my $sides     = [qw/front back/];
 
     subtest 'two sided documents' => sub {
@@ -1906,32 +1906,12 @@ subtest 'candidate documents' => sub {
                     is BOM::User::Onfido::candidate_documents($user), undef, 'No valid candidates return undef';
                 }
 
-                my @sides = $sides->@*;
-                push @sides, 'back';
-
-                $stash = [
-                    build_document({
-                            document_type   => 'selfie_with_id',
-                            issuing_country => 'br',
-                            file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                            id              => 1,
-                        }
-                    ),
-                    map {
-                        my $side = shift @sides;
-                        $i++;
-
-                        build_document({
-                                document_type   => $_,
-                                issuing_country => 'br',
-                                file_name       => "CR1.$_.$i\_$side.jpg",
-                                id              => $i,
-                            })
-                    } $two_sided->@*,
-                ];
-
-                @sides = reverse $sides->@*;
-                push @sides, 'back';
+                my @sides;
+                my $index = 0;
+                foreach my $item (@$two_sided) {
+                    push @sides, $sides->[$index];
+                    $index = ($index + 1) % scalar(@$sides);
+                }
 
                 $stash = [
                     build_document({

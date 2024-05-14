@@ -46,6 +46,14 @@ POI:
       date: expiration
       priority: 4
       sides: *two_sided
+    service_id_card:
+      preferred: 1
+      description: Service Identity Card
+      providers:
+        onfido: service_id_card
+      date: expiration
+      priority: 4
+      sides: *two_sided
     student_card:
       preferred: 1
       description: Student Card

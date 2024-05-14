@@ -19,24 +19,25 @@ my $categories = [{
         document_id_required => 1,
         documents_uploaded   => 'proof_of_identity',
         preferred            => [
-            qw/tax_photo_id pan_card nimc_slip passport driving_licence voter_card national_identity_card identification_number_document student_card poi_others proofid driverslicense selfie_with_id/
+            qw/tax_photo_id pan_card nimc_slip passport driving_licence voter_card national_identity_card identification_number_document service_id_card student_card poi_others proofid driverslicense selfie_with_id/
         ],
         date_expiration => [
-            qw/tax_photo_id nimc_slip passport driving_licence voter_card national_identity_card identification_number_document student_card driverslicense proofid/
+            qw/tax_photo_id nimc_slip passport driving_licence voter_card national_identity_card identification_number_document service_id_card student_card driverslicense proofid/
         ],
         date_issuance  => [],
         date_none      => [qw/birth_certificate pan_card poi_others vf_face_id photo live_photo selfie_with_id/],
         deprecated     => [qw/driverslicense proofid vf_face_id photo live_photo selfie_with_id selfie_with_id/],
         maybe_lifetime => [
-            qw/tax_photo_id nimc_slip passport driving_licence voter_card national_identity_card identification_number_document student_card proofid driverslicense/
+            qw/tax_photo_id nimc_slip passport driving_licence voter_card national_identity_card identification_number_document service_id_card student_card proofid driverslicense/
         ],
         two_sided => [
-            qw/poi_others passport driving_licence voter_card national_identity_card identification_number_document student_card nimc_slip pan_card tax_photo_id/
+            qw/poi_others passport driving_licence voter_card national_identity_card identification_number_document service_id_card student_card nimc_slip pan_card tax_photo_id/
         ],
         photo      => [qw/birth_certificate selfie_with_id/],
         numberless => [qw/birth_certificate/],
-        onfido     =>
-            [qw/passport driving_licence national_identity_card identification_number_document proofid vf_face_id selfie_with_id driverslicense/],
+        onfido     => [
+            qw/passport driving_licence national_identity_card identification_number_document service_id_card proofid vf_face_id selfie_with_id driverslicense/
+        ],
     },
     {
         category             => 'POA',
@@ -329,6 +330,7 @@ subtest 'POI document types' => sub {
             voter_card
             national_identity_card
             identification_number_document
+            service_id_card
             student_card
             poi_others
             proofid
@@ -348,7 +350,7 @@ subtest 'POI document types' => sub {
 subtest 'Preferred types' => sub {
     my $expected = [
         qw/
-            passport driving_licence voter_card national_identity_card identification_number_document student_card poi_others proofid driverslicense
+            passport driving_licence voter_card national_identity_card identification_number_document service_id_card student_card poi_others proofid driverslicense
             utility_bill bank_statement tax_receipt insurance_bill phone_bill poa_others proofaddress payslip bankstatement cardstatement vf_poa
             tax_return employment_contract edd_others brokerage_statement
             selfie video_verification doc_verification
@@ -429,6 +431,7 @@ subtest 'Expirable document types' => sub {
             voter_card
             national_identity_card
             identification_number_document
+            service_id_card
             proofid
             driverslicense
             nimc_slip
@@ -449,6 +452,7 @@ subtest 'Onfido mapping' => sub {
         driving_licence                => 'driving_licence',
         national_identity_card         => 'national_identity_card',
         identification_number_document => 'identification_number_document',
+        service_id_card                => 'service_id_card',
         proofid                        => 'national_identity_card',
         vf_face_id                     => 'live_photo',
         selfie_with_id                 => 'live_photo',
