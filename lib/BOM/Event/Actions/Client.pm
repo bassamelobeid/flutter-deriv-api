@@ -4608,6 +4608,16 @@ sub link_affiliate_client {
     }
 
     try {
+
+        # Notes on Copy Trading account (sub account) and affiliate.affiliate_client table.
+        #
+        # When triggering cms_add_affiliate_client event to link client's copy trading accounts (sub account) to the affiliate account of the client's main trading account,
+        # the info is stored in affiliate.affiliate_client table in CommissionDB (inserted via affiliate.add_new_affiliate_client function),
+        # this table stores information about affiliate clients. The "id" column generally corresponds to the value in users.loginid table.
+        # However, with the recent inclusion of copy trading accounts, data related to affiliates clients copy trading account is inserted into affiliate.affiliate_client table and inserted into the users.user_sub_account table, but not inserted to users.loginid table.
+        # Therefore, not all values in the "id" column exist in users.loginid, some only exist in users.user_sub_account.
+        # If you are unable to find a specific ID in affiliate.affiliate_client at users.loginid, please check users.user_sub_account for further information.
+
         $commission_db->dbic->run(
             ping => sub {
                 $_->do('SELECT * FROM affiliate.add_new_affiliate_client(?,?,?,?)', undef, $loginid, $platform, $binary_user_id, $affiliate_id);
