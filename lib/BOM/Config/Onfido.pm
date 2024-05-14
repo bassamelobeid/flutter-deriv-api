@@ -21,6 +21,7 @@ use constant ONFIDO_SUPPORTED_DOCUMENTS_CODES => {
     PPO => 'Passport',
     NIC => 'National Identity Card',
     IND => 'Identification Number Document',
+    SIC => 'Service Identity Card',
     DLD => 'Driving Licence',
     REP => 'Residence Permit',
     VIS => 'Visa',
