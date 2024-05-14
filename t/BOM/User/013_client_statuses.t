@@ -10,6 +10,7 @@ use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
+use BOM::Test::Email;
 
 use BOM::User::Client;
 use BOM::User::Client::Status;
@@ -873,6 +874,105 @@ subtest 'Status Hierarchy' => sub {
     };
 
     $mock->unmock_all;
+
+};
+
+subtest 'Status Actions' => sub {
+    my $mock = Test::MockModule->new('BOM::User::Client::StatusActions');
+
+    my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $mock->redefine(
+        '_get_action_config',
+        sub {
+            return [{
+                    name         => 'test_action',
+                    default_args => ['client_loginid']}];
+        });
+
+    subtest 'Set and upsert' => sub {
+
+        our $count = 0;
+
+        sub test_method {
+            my $method          = shift;
+            my $trigger_actions = shift;
+            my $client          = shift;
+
+            $client->status->$method({
+                status_code     => 'unwelcome',
+                staff_name      => 'test_staff',
+                reason          => 'test_reason',
+                trigger_actions => $trigger_actions
+            });
+
+            if ($trigger_actions) {
+                ok $count == 1, 'Action is triggered if trigger_actions param is passed as true in ' . $method;
+            } else {
+                ok $count == 0, 'Action is not triggered if trigger_actions param is passed as false in ' . $method;
+            }
+
+            $count = 0;
+
+            $client->status->clear_unwelcome;
+        }
+
+        my $mock = Test::MockModule->new('BOM::User::Client::StatusActions');
+
+        $mock_emitter->redefine(
+            'emit',
+            sub {
+                $count++;
+            });
+
+        test_method('set',    1, $client);
+        test_method('upsert', 1, $client);
+        test_method('set',    0, $client);
+        test_method('upsert', 0, $client);
+
+    };
+
+    subtest 'Multi set and clear' => sub {
+
+        my $count = 0;
+
+        $mock_emitter->redefine(
+            'emit',
+            sub {
+                my $event_name = shift;
+                $count++;
+            });
+
+        $client->status->multi_set_clear({
+            set             => ['age_verification', 'professional_requested', 'professional'],
+            staff_name      => 'me',
+            reason          => 'because',
+            trigger_actions => 1
+        });
+
+        $client->status->clear_age_verification;
+        $client->status->clear_professional_requested;
+        $client->status->clear_professional;
+
+        ok $count == 3, 'Action is triggered for each status_code in multi_set_clear when trigger_actions is true';
+
+        $count = 0;
+
+        $client->status->multi_set_clear({
+            clear           => ['age_verification', 'professional_requested', 'professional'],
+            trigger_actions => 0
+        });
+
+        ok $count == 0, 'Action is triggered for no status_code in multi_set_clear when trigger_actions is false';
+
+    };
+
+    $mock->unmock_all;
+    $mock_emitter->unmock_all;
 
 };
 

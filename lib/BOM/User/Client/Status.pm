@@ -11,6 +11,7 @@ use Carp                     qw( croak );
 use Array::Utils             qw(array_minus);
 
 use Business::Config::Account;
+use BOM::User::Client::StatusActions;
 
 has client_loginid => (
     is       => 'ro',
@@ -36,9 +37,10 @@ use constant STATUS_CODES => qw(
     poi_name_mismatch crypto_auto_reject_disabled crypto_auto_approve_disabled potential_fraud
     deposit_attempt df_deposit_requires_poi smarty_streets_validated trading_hub poi_dob_mismatch
     allow_poinc_resubmission cooling_off_period poa_address_mismatch poi_poa_uploaded eligible_counterparty partner
-    allow_duplicate_signup poi_duplicated_documents selfie_pending selfie_verified selfie_rejected
+    allow_duplicate_signup poi_duplicated_documents selfie_pending selfie_verified selfie_rejected resident_self_declaration
     disabled_af_investigation cashier_locked_af_investigation no_withdrawal_or_trading_af_investigation
-    unwelcome_af_investigation no_trading_af_investigation resident_self_declaration sibling_transfers_blocked cfd_transfers_blocked per_se_professional
+    unwelcome_af_investigation no_trading_af_investigation per_se_professional disabled_af_notify cashier_locked_af_notify
+    no_withdrawal_or_trading_af_notify unwelcome_af_notify no_trading_af_notify sibling_transfers_blocked cfd_transfers_blocked
 );
 
 use constant STATUS_COPY_CONFIG   => Business::Config::Account->new()->statuses_copied_from_siblings();
@@ -158,13 +160,15 @@ for my $code (STATUS_CODES) {
 
 =head2 children
 
-Returns an array containing the client statuses that are children of the given status code
+Resolves the children of a given status code
 
 =over 4
 
-=item * status_code
+=item * C<status_code>
 
 =back
+
+Returns an array containing the client statuses that are children of the given status code
 
 =cut
 
@@ -176,13 +180,15 @@ sub children {
 
 =head2 parent
 
-Returns the status code that is the parent of the given status code
+Resolves the status parent of a given status code
 
 =over 4
 
-=item * status_code
+=item * C<status_code>
 
 =back
+
+Returns the parent status code or undef if the status code has no parent
 
 =cut
 
@@ -271,20 +277,42 @@ Takes four arguments:
 
 =over 4
 
-=item * status_code
+=item * C<status_code_or_hashref> - status code or hashref arguments to avoid signature overloading
+Contains the following arguments:
+- status_code
+- staff_name (optional)
+- reason (optional)
+- allow_existing (optional)
+- trigger_actions (optional): Triggers actions defined in BOM::User::Client::StatusActions if set to 1
+- action_args (optional): Additional arguments to be passed to the action triggers
 
-=item * staff_name (optional)
+=item * C<staff_name> (optional)
 
-=item * reason (optional)
+=item * C<reason> (optional)
 
-=item * set_if_not_exist_flag (optional)
+=item * C<allow_existing> (optional)
 
 =back
 
 =cut
 
 sub set {
-    my ($self, $status_code, $staff_name, $reason, $allow_existing) = @_;
+    my ($self, $status_code_or_hashref, $staff_name, $reason, $allow_existing) = @_;
+
+    my $status_code = $status_code_or_hashref;
+
+    my $trigger_actions;
+    my $action_args;
+
+    if (ref($status_code_or_hashref) eq 'HASH') {
+        $status_code     = $status_code_or_hashref->{status_code};
+        $staff_name      = $status_code_or_hashref->{staff_name};
+        $reason          = $status_code_or_hashref->{reason};
+        $allow_existing  = $status_code_or_hashref->{allow_existing};
+        $trigger_actions = $status_code_or_hashref->{trigger_actions};
+        $action_args     = $status_code_or_hashref->{action_args};
+    }
+
     my $loginid = $self->client_loginid;
     die 'status_code is required' unless $status_code;
 
@@ -306,9 +334,13 @@ sub set {
     my $result = $stmt->execute($loginid, \@statuses_to_apply, $staff_name, $reason, \@allow_existing);
 
     if ($result) {
-        foreach (@statuses_to_apply) {
-            delete $self->{$_};
+
+        # Actions are triggered only if the status code did not exist before
+        if ($trigger_actions && !$status_code_exists) {
+            BOM::User::Client::StatusActions->trigger($self->client_loginid, $status_code, $action_args);
         }
+
+        delete $self->{$_} for @statuses_to_apply;
 
         $self->_clear_composite_cache_elements();
         return !$status_code_exists;
@@ -325,11 +357,18 @@ Takes three arguments:
 
 =over 4
 
-=item * status_code
+=item * C<status_code_or_hashref> - status code or hashref arguments to avoid signature overloading
+Contains the following arguments:
+- status_code
+- staff_name (optional)
+- reason (optional)
+- allow_existing (optional)
+- trigger_actions (optional): Triggers actions defined in BOM::User::Client::StatusActions if set to 1
+- action_args (optional): Additional arguments to be passed to the action triggers
 
-=item * staff_name (optional)
+=item * C<staff_name> (optional)
 
-=item * reason (optional)
+=item * C<reason> (optional)
 
 =back
 
@@ -338,8 +377,11 @@ Returns L<BOM::User::Client::Status::set>
 =cut
 
 sub setnx {
-    my ($self, $status_code, $staff_name, $reason) = @_;
-    return $self->set($status_code, $staff_name, $reason, 1);
+    my ($self, $status_code_or_hashref, $staff_name, $reason) = @_;
+
+    $status_code_or_hashref->{allow_existing} = 1 if ref($status_code_or_hashref) eq 'HASH';
+
+    return $self->set($status_code_or_hashref, $staff_name, $reason, 1);
 }
 
 =head2 upsert
@@ -351,11 +393,18 @@ Takes three arguments:
 
 =over 4
 
-=item * status_code
+=item * C<status_code_or_hashref> - status code or hashref arguments to avoid signature overloading
+Contains the following arguments:
+- status_code
+- staff_name (optional)
+- reason (optional)
+- allow_existing (optional)
+- trigger_actions (optional): Triggers actions defined in BOM::User::Client::StatusActions if set to 1
+- action_args (optional): Additional arguments to be passed to the action triggers
 
-=item * staff_name (optional)
+=item * C<staff_name> (optional)
 
-=item * reason (optional)
+=item * C<reason> (optional)
 
 =back
 
@@ -364,7 +413,15 @@ Returns L<BOM::User::Client::Status::set>
 =cut
 
 sub upsert {
-    my ($self, $status_code, $staff_name, $reason) = @_;
+    my ($self, $status_code_or_hashref, $staff_name, $reason) = @_;
+
+    my $status_code = $status_code_or_hashref;
+
+    if (ref($status_code_or_hashref) eq 'HASH') {
+        $status_code = $status_code_or_hashref->{status_code};
+        $reason      = $status_code_or_hashref->{reason};
+    }
+
     my $current = $self->_get($status_code);
 
     # Need to clear the status if the reasons don't match
@@ -376,7 +433,7 @@ sub upsert {
     }
 
     # Note setnx has no effect if the status is already there
-    return $self->setnx($status_code, $staff_name, $reason);
+    return $self->setnx($status_code_or_hashref, $staff_name, $reason);
 }
 
 =head2 reason
@@ -429,10 +486,12 @@ Takes one argument, a hashref containing the following keys (all optional)
 
 sub multi_set_clear {
     my ($self, $args) = @_;
-    my $codes_to_set   = $args->{set}        // [];
-    my $codes_to_clear = $args->{clear}      // [];
-    my $staff_name     = $args->{staff_name} // '';
-    my $reason         = $args->{reason}     // '';
+    my $codes_to_set    = $args->{set}        // [];
+    my $codes_to_clear  = $args->{clear}      // [];
+    my $staff_name      = $args->{staff_name} // '';
+    my $reason          = $args->{reason}     // '';
+    my $trigger_actions = $args->{trigger_actions};
+    my $action_args     = $args->{action_args};
 
     my @all_codes = (@$codes_to_set, @$codes_to_clear);
     die 'status_codes are required' unless @all_codes;
@@ -440,7 +499,15 @@ sub multi_set_clear {
     $self->dbic->txn(
         sub {
             for my $status_code (@$codes_to_set) {
-                $self->set($status_code, $staff_name, $reason);
+                my $status_code_hashref = {
+                    status_code     => $status_code,
+                    staff_name      => $staff_name,
+                    reason          => $reason,
+                    trigger_actions => $trigger_actions,
+                    action_args     => $action_args,
+                };
+
+                $self->set($status_code_hashref);
             }
             for my $status_code (@$codes_to_clear) {
                 my $method = "clear_$status_code";
@@ -509,9 +576,7 @@ sub _clear {
     my $result = $stmt->execute($loginid, \@statuses_to_clear);
 
     if ($result) {
-        foreach (@statuses_to_clear) {
-            delete $self->{$_};
-        }
+        delete $self->{$_} for (@statuses_to_clear);
     }
 
     $self->_clear_composite_cache_elements();
