@@ -336,7 +336,12 @@ sub execute_set_status {
                 "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved, missing required permissions</b>"
                 unless $client->status->can_execute($status_code, $user_groups, 'set');
 
-            $client->status->upsert($status_code, $params->{clerk}, $params->{reason});
+            $client->status->upsert({
+                status_code     => $status_code,
+                staff_name      => $params->{clerk},
+                reason          => $params->{reason},
+                trigger_actions => 1
+            });
         }
 
         $params->{override}->() if $params->{override};

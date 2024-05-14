@@ -305,6 +305,36 @@ my $UNTRUSTED_STATUS = [{
         'show_reason' => 'yes',
     },
     {
+        'linktype'    => 'disabledafnotify',
+        'comments'    => 'Disabled - Anti Fraud - client notification',
+        'code'        => 'disabled_af_notify',
+        'show_reason' => 'yes',
+    },
+    {
+        'linktype'    => 'cashierlockedafnotify',
+        'comments'    => 'Cashier Locked - Anti Fraud - client notification',
+        'code'        => 'cashier_locked_af_notify',
+        'show_reason' => 'yes',
+    },
+    {
+        'linktype'    => 'nowithdrawalortradingafnotify',
+        'comments'    => 'Disable Withdrawal and Trading - Anti Fraud - client notification',
+        'code'        => 'no_withdrawal_or_trading_af_notify',
+        'show_reason' => 'yes',
+    },
+    {
+        'linktype'    => 'unwelcomeafnotify',
+        'comments'    => 'Unwelcome - Anti Fraud - client notification',
+        'code'        => 'unwelcome_af_notify',
+        'show_reason' => 'yes',
+    },
+    {
+        'linktype'    => 'notradingafnotify',
+        'comments'    => 'Disable Trading - Anti Fraud - client notification',
+        'code'        => 'no_trading_af_notify',
+        'show_reason' => 'yes',
+    },
+    {
         'linktype'    => 'siblingtransfersblocked',
         'comments'    => 'Transfer to Sibling account locked',
         'code'        => 'sibling_transfers_blocked',
