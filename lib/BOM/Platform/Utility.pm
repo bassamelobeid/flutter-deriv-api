@@ -12,6 +12,7 @@ use BOM::Platform::Context qw(request localize);
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use BOM::User::Client;
+use BOM::User::Client::StatusActions;
 use BOM::User::IdentityVerification;
 
 use base qw( Exporter );
@@ -806,6 +807,11 @@ sub status_op_processor {
         cashierlockedafinvestigation         => 'cashier_locked_af_investigation',
         nowithdrawalortradingafinvestigation => 'no_withdrawal_or_trading_af_investigation',
         notradingafinvestigation             => 'no_trading_af_investigation',
+        unwelcomeafnotify                    => 'unwelcome_af_notify',
+        disabledafnotify                     => 'disabled_af_notify',
+        cashierlockedafnotify                => 'cashier_locked_af_notify',
+        nowithdrawalortradingafnotify        => 'no_withdrawal_or_trading_af_notify',
+        notradingafnotify                    => 'no_trading_af_notify',
         siblingtransfersblocked              => 'sibling_transfers_blocked',
         cfdtransfersblocked                  => 'cfd_transfers_blocked',
     };
@@ -875,6 +881,9 @@ sub status_op_processor {
                 my $updated_client_loginids = [];
                 for my $status_to_copy (@$statuses_to_copy) {
                     my $login_ids = $client->copy_status_to_siblings($status_to_copy, $clerk, $status_op eq 'sync_accounts', $reason);
+
+                    # Trigger Actions for the status on which they are applicable for the logins where status is applied successfully
+                    BOM::User::Client::StatusActions->trigger_bulk($login_ids, $status);
                     @$updated_client_loginids = (@$updated_client_loginids, @$login_ids);
                 }
 

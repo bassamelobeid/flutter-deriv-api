@@ -134,7 +134,6 @@ sub emit {
 
         # Metrics to log emitted events tagged by event type and queue name
         stats_inc(lc "event_emitter.sent", {tags => ["type:$type", "queue:$stream_name"]});
-
         return 1;
     }
 
