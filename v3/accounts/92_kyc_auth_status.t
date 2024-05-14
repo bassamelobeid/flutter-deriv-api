@@ -25,7 +25,8 @@ subtest 'new client with no attempts' => sub {
     });
 
     my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
+        broker_code    => 'CR',
+        binary_user_id => $user->id,
     });
 
     $user->add_client($client_cr);

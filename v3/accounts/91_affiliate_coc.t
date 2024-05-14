@@ -27,7 +27,10 @@ my $user = BOM::User->create(
     password => $hash_pwd
 );
 
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
+});
 
 $client->email($email);
 $client->save;

@@ -56,18 +56,18 @@ $mock_http_backend->mock(
 my $email    = 'abcd@bincary.com';
 my $password = 'jskjd8292922';
 
+my $user = BOM::User->create(
+    email    => $email,
+    password => $password
+);
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
 });
 $client_cr->set_default_account('USD');
 $client_cr->email($email);
 $client_cr->save;
 my $cr_1 = $client_cr->loginid;
-
-my $user = BOM::User->create(
-    email    => $email,
-    password => $password
-);
 
 $user->add_client($client_cr);
 

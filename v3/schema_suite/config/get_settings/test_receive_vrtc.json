@@ -1,111 +1,222 @@
-   {
-   "$schema" : "http://json-schema.org/draft-04/schema#",
-   "description" : null,
-   "type" : "object",
-   "additionalProperties" : null,
-   "title" : null,
-   "required" : [
-      "msg_type",
-      "echo_req"
-   ],
-   "properties" : {
-      "get_settings" : {
-         "type" : "object",
-         "additionalProperties" : null,
-         "required" : [
-            "email_consent",
-            "country",
-            "email",
-            "country_code",
-            "user_hash",
-            "immutable_fields",
-            "preferred_language",
-            "trading_hub",
-            "phone_number_verification"
-         ],
-         "properties" : {
-            "email_consent" : {
-               "pattern" : "^(0|1)$",
-               "type" : "integer"
+{
+  "$schema" : "http://json-schema.org/draft-04/schema#",
+  "description" : null,
+  "type" : "object",
+  "additionalProperties" : null,
+  "title" : null,
+  "required" : [
+    "msg_type",
+    "echo_req"
+  ],
+  "properties" : {
+    "get_settings":{
+      "type": "object",
+      "additionalProperties": null,
+      "required" : [
+        "first_name",
+        "date_of_birth",
+        "country",
+        "account_opening_reason",
+        "address_city",
+        "address_state",
+        "country_code",
+        "phone",
+        "address_line_1",
+        "address_postcode",
+        "address_line_2",
+        "email_consent",
+        "email",
+        "last_name",
+        "salutation",
+        "is_authenticated_payment_agent",
+        "client_tnc_status",
+        "non_pep_declaration",
+        "preferred_language",
+        "trading_hub",
+        "phone_number_verification",
+        "allow_copiers",
+        "citizen",
+        "has_secret_answer",
+        "dxtrade_user_exception",
+        "feature_flag",
+        "place_of_birth",
+        "request_professional_status",
+        "residence",
+        "tax_identification_number",
+        "tax_residence",
+        "user_hash"
+      ],
+      "properties" : {
+        "date_of_birth" : {
+          "type" : ["integer", "null"]
+        },
+        "phone" : {
+          "type" : "string"
+        },
+        "address_city" : {
+          "type" : "string"
+        },
+        "stash" : {
+          "type" : "object"
+        },
+        "address_line_1" : {
+          "type" : "string"
+        },
+        "is_authenticated_payment_agent" : {
+          "enum" : [
+            0
+          ],
+          "type" : "integer"
+        },
+        "account_opening_reason" : {
+          "type" : ["string", "null"]
+        },
+        "address_postcode" : {
+          "type" : "string"
+        },
+        "first_name" : {
+          "type" : "string"
+        },
+        "country" : {
+          "pattern" : "^Indonesia$",
+          "type" : "string"
+        },
+        "email" : {
+          "pattern" : "test1@binary.com",
+          "type" : "string"
+        },
+        "address_line_2" : {
+          "type" : "string"
+        },
+        "client_tnc_status" : {
+          "type" : "string"
+        },
+        "country_code" : {
+          "type" : "string",
+          "pattern" : "^id$"
+        },
+        "last_name" : {
+          "type" : "string"
+        },
+        "email_consent" : {
+          "enum" : [
+            0,
+            1
+          ],
+          "type" : "integer"
+        },
+        "salutation" : {
+          "type" : "string"
+        },
+        "address_state" : {
+          "type" : "string"
+        },
+        "non_pep_declaration": {
+          "description": "Indicates client's self-declaration of not being a PEP/RCA (Politically Exposed Person/Relatives and Close Associates).",
+          "type": "integer",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "fatca_declaration": {
+          "description": "Indicates client's self-declaration of FATCA.",
+          "type": "integer",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "immutable_fields" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "preferred_language" : {
+          "type" : "string",
+          "pattern": "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+        },
+        "trading_hub" : {
+          "type" : "integer",
+          "enum" : [
+            0,
+            1
+          ]
+        },
+        "phone_number_verification": {
+          "type": "object",
+          "properties" : {
+            "verified" : {
+              "type" : "integer",
+              "enum" : [
+                0,
+                1
+              ]
             },
-            "country" : {
-               "type" : "string",
-               "pattern" : "^[_1]$"
-            },
-            "residence" : {
-               "type" : "string",
-               "pattern" : "^[_1]$"
-            },
-            "email" : {
-               "type" : "string"
-            },
-            "country_code" : {
-               "type" : "string",
-               "pattern" : "^[_2]$"
-            },
-            "user_hash": {
-               "type": "string"
-            },
-            "immutable_fields" : {
-               "type" : "array",
-               "items" : {
-                  "type" : "string"
-               }
-            },
-            "preferred_language" : {
-               "type" : "string",
-               "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
-            },
-            "feature_flag" : {
-               "type" : "object",
-               "properties": {
-                  "wallet": {
-                     "type": "integer",
-                     "enum": [
-                        0,
-                        1
-                     ]
-                  }
-               }
-            },
-            "cooling_off_expiration_date": {
-               "type": [
-                   "null",
-                   "integer"
-               ]
-           },
-            "trading_hub" : {
-               "type" : "integer",
-               "enum" : [
-                  0,
-                  1
-               ]
-            },
-            "phone_number_verification": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                    "verified"
-                ],
-                "properties": {
-                    "next_attempt": {
-                        "type": "integer"
-                    },
-                    "verified": {
-                        "type": "integer",
-                        "enum": [
-                            0,
-                            1
-                        ]
-                    }
-                }
+            "next_attempt" : {
+              "type" : "integer"
             }
-         }
-      },
-      "msg_type" : {
-         "pattern" : "^get_settings$",
-         "type" : "string"
-      },
-      "echo_req" : {}
-   }
+          }
+        },
+        "allow_copiers": {
+          "type" : "integer",
+          "enum" : [
+            0,
+            1
+          ]
+        },
+        "has_secret_answer" : {
+          "type" : "integer",
+          "enum" : [
+            0,
+            1
+          ]
+        },
+        "citizen" : {
+          "type" : "string"
+        },
+        "dxtrade_user_exception": {
+          "type" : "integer",
+          "enum" : [
+            0,
+            1
+          ]
+        },
+        "feature_flag" : {
+          "type" : "object"
+        },
+        "place_of_birth" : {
+          "type" : ["string", "null"]
+        },
+        "request_professional_status" : {
+          "type" : "integer",
+          "enum" : [
+            0,
+            1
+          ]
+        },
+        "residence" : {
+          "type" : "string"
+        },
+        "tax_identification_number" : {
+          "type" : ["string", "null"]
+        },
+        "tax_residence": {
+          "type" : ["string", "null"]
+        },
+        "user_hash" : {
+          "type" : "string"
+        }
+      }
+    },
+    "msg_type" : {
+      "pattern" : "^get_settings$",
+      "type" : "string"
+    },
+    "echo_req" : {}
+  }
 }
+
+
+

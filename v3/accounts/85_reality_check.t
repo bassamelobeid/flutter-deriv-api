@@ -24,18 +24,19 @@ my $response = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $response->{error}->{code},    'AuthorizationRequired';
 is $response->{error}->{message}, 'Please log in.';
 
-my $email       = 'test-binary' . rand(999) . '@binary.com';
+my $email = 'test-binary' . rand(999) . '@binary.com';
+my $user  = BOM::User->create(
+    email    => $email,
+    password => '1234',
+);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
+    broker_code    => 'MF',
+    binary_user_id => $user->id,
 });
 $test_client->email($email);
 $test_client->save;
 
 my $loginid = $test_client->loginid;
-my $user    = BOM::User->create(
-    email    => $email,
-    password => '1234',
-);
 $user->add_client($test_client);
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);

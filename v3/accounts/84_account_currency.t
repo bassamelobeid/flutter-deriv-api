@@ -18,18 +18,18 @@ use BOM::User::Password;
 
 my $email    = 'dummy@binary.com';
 my $password = 'jskjd8292922';
-
+my $user     = BOM::User->create(
+    email    => $email,
+    password => $password,
+);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
 });
 $test_client->email($email);
 $test_client->save;
 my $json = JSON::MaybeXS->new;
 
-my $user = BOM::User->create(
-    email    => $email,
-    password => $password,
-);
 $user->add_client($test_client);
 
 is $test_client->default_account, undef, 'new client has no default account';

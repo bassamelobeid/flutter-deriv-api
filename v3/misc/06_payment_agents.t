@@ -22,17 +22,18 @@ my $t = build_wsapi_test();
 subtest 'paymentagent create and info' => sub {
     my $email = 'pa@test.com';
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email,
-    });
-
-    $client->account('USD');
-
     my $user = BOM::User->create(
         email    => $email,
         password => 'x'
     );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->account('USD');
+
     $user->update_email_fields(email_verified => 't');
     $user->add_client($client);
 
@@ -86,14 +87,18 @@ subtest 'paymentagent create and info' => sub {
 
 subtest 'payment agent withdraw justification' => sub {
 
+    my $user = BOM::User->create(
+        email    => 'testing@forthewin.com',
+        password => 'x'
+    );
+
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
+        broker_code    => 'CR',
+        email          => $user->email,
+        binary_user_id => $user->id,
     });
 
-    BOM::User->create(
-        email    => $client->email,
-        password => 'x'
-    )->add_client($client);
+    $user->add_client($client);
 
     my $params = {
         paymentagent_withdraw_justification => 1,

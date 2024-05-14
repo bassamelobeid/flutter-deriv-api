@@ -30,9 +30,10 @@ my $user  = BOM::User->create(
 
 # Create client (UK - VRTC)
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-    residence   => 'gb',
-    email       => $email
+    broker_code    => 'VRTC',
+    residence      => 'gb',
+    email          => $email,
+    binary_user_id => $user->id,
 });
 
 $user->add_client($client);

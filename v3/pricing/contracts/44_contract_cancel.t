@@ -32,17 +32,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 # prepare client
-my $email  = 'test-binary@binary.com';
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-    email       => $email,
-});
-
-$client->deposit_virtual_funds;
-my $user = BOM::User->create(
+my $email = 'test-binary@binary.com';
+my $user  = BOM::User->create(
     email    => $email,
     password => '1234',
 );
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'VRTC',
+    email          => $email,
+    binary_user_id => $user->id,
+});
+
+$client->deposit_virtual_funds;
+
 $user->add_client($client);
 
 subtest 'attempt contract_update before authorized' => sub {
