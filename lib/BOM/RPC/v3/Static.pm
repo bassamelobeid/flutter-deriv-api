@@ -111,6 +111,12 @@ rpc residence_list => sub {
             $documents_supported->{national_identity_card} = {display_name => 'National Identity Card'};
         }
 
+        # Special case for Malaysia's national id
+        if ($documents_supported->{service_id_card}) {
+            delete $documents_supported->{service_id_card};
+            $documents_supported->{national_identity_card} = {display_name => 'National Identity Card'};
+        }
+
         my $has_tin_format = scalar $tin_format->@*;
 
         my $option = {
