@@ -1866,7 +1866,7 @@ async sub mt5_archive_accounts {
             }
 
         } catch ($e) {
-            $log->infof("MT5 archival for %s failed: [%s]", $loginid, $e);
+            $log->infof("MT5 archival for %s failed: [%s]", $loginid, pp $e);
             push @email_content, sprintf($archive_failed_row, 'Unknown', 'Fetching account failed');
             next;
         }
@@ -1876,7 +1876,7 @@ async sub mt5_archive_accounts {
             $open_orders    = await BOM::MT5::User::Async::get_open_orders_count($loginid);
             $open_positions = await BOM::MT5::User::Async::get_open_positions_count($loginid);
         } catch ($e) {
-            $log->errorf("MT5 archival for %s failed: [%s]", $loginid, $e);
+            $log->errorf("MT5 archival for %s failed: [%s]", $loginid, pp $e);
             my $error_message = "Can't check MT5 orders and positions";
             $error_message .= ", account doesn't exist on MT5" if (ref($e) eq 'HASH' and $e->{code} eq 'NotFound');
 
@@ -1975,7 +1975,7 @@ async sub mt5_archive_accounts {
             }
 
         } catch ($e) {
-            $log->errorf("MT5 archival for %s failed: [%s]", $loginid, $e);
+            $log->errorf("MT5 archival for %s failed: [%s]", $loginid, pp $e);
             push @email_content, sprintf($archive_failed_row, $group, 'Failed to check balance or to perform withdrawal');
             next;
         }
@@ -1987,7 +1987,7 @@ async sub mt5_archive_accounts {
                 next;
             }
         } catch ($e) {
-            $log->errorf("MT5 archival for %s failed: [%s]", $loginid, $e);
+            $log->errorf("MT5 archival for %s failed: [%s]", $loginid, pp $e);
             my $error_message =
                 ($withdrawal_result_message ? 'Performed withdrawal but failed to archive. ' . $withdrawal_result_message : 'Failed to archive');
             push @email_content, "<tr><td>$loginid</td><td>Not Archived</td><td>$group</td><td>$error_message</td></tr>";
