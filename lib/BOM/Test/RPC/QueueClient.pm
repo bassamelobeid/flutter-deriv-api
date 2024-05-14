@@ -3,9 +3,11 @@ package BOM::Test::RPC::QueueClient;
 use Test::MockObject;
 
 use BOM::RPC::Transport::Redis;
+use BOM::Service;
 
 use Moose;
 use namespace::autoclean;
+use Clone qw(clone);
 
 extends 'BOM::Test::RPC::Client';
 

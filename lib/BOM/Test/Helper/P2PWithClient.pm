@@ -53,12 +53,15 @@ sub create_advertiser {
     $param{is_approved} //= 1;
 
     $param{client_details}{email} //= 'p2p_' . (++$client_num) . '@binary.com';
+
+    my $user = BOM::User->create(
+        email    => $param{client_details}{email},
+        password => 'test'
+    );
+
     my $client = BOM::Test::Helper::Client::create_client(undef, undef, $param{client_details});
 
-    BOM::User->create(
-        email    => $client->email,
-        password => 'test'
-    )->add_client($client);
+    $user->add_client($client);
 
     $client->account($param{currency});
 
