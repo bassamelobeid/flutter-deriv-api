@@ -45,6 +45,7 @@
                 <option value='USD'>USD</option>
                 <option value='USDC'>USDC</option>
                 <option value='UST'>UST</option>
+                <option value='XRP'>XRP</option>
                 <option value='EUSDT'>EUSDT</option>
                 <option value='TUSDT'>TUSDT</option>
             </select>

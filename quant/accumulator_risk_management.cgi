@@ -78,7 +78,6 @@ sub _quants_config {
 }
 
 sub _get_risk_profile_definition {
-
     my $limit_defs = _get_default_risk_profile();
     my @currencies = sort keys %{$limit_defs->{low_risk}};
     my @stake_rows;
@@ -86,14 +85,14 @@ sub _get_risk_profile_definition {
     foreach my $risk_level (keys %$limit_defs) {
         my $max_stake = _quants_config->get_max_stake_per_risk_profile($risk_level);
         my @stake;
-        my @obsolete_currencies = ('USB', 'PAX', 'TUSD', 'DAI', 'USDK', 'BUSD', 'IDK', 'EURS');
 
-        foreach my $currency (sort keys %{$max_stake}) {
-            if (any { $_ eq $currency } @obsolete_currencies) {
-                next;
+        foreach my $currency (@currencies) {
+            my $currency_value = $max_stake->{$currency};
+            unless (defined $currency_value) {
+                $currency_value = $limit_defs->{$risk_level}->{$currency};
             }
 
-            push @stake, $max_stake->{$currency};
+            push @stake, $currency_value;
         }
 
         push @stake_rows, [$risk_level, @stake];

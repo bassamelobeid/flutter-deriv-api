@@ -36,8 +36,14 @@ sub _get_turbos_risk_profile_definition {
     foreach my $risk_level (keys %$limit_defs) {
         my $max_stake = $qc->get_max_stake_per_risk_profile($risk_level);
         my @stake;
-        foreach my $currency (sort keys %{$max_stake}) {
-            push @stake, $max_stake->{$currency};
+
+        foreach my $currency (@currencies) {
+            my $currency_value = $max_stake->{$currency};
+            unless (defined $currency_value) {
+                $currency_value = $limit_defs->{$risk_level}->{$currency};
+            }
+
+            push @stake, $currency_value;
         }
 
         push @stake_rows, [$risk_level, @stake];

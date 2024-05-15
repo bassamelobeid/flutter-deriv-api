@@ -19,9 +19,8 @@ BrokerPresentation('Vanilla Risk Management Tool');
 
 my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
-my $limit_defs = BOM::Config::quants()->{risk_profile};
-delete $limit_defs->{no_business};    # no_business should be set in product management tool
-my @currencies = sort keys %{$limit_defs->{low_risk}{multiplier}};
+my $limit_defs = _get_vanilla_default_risk_profile()->{quants}->{contains}->{vanilla}->{contains}->{risk_profile}->{contains};
+my @currencies = sort keys %{BOM::Config::quants()->{risk_profile}->{low_risk}{multiplier}};
 my @stake_rows;
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -53,14 +52,17 @@ our @symbols_financials = (@symbols_fx, @symbols_commodities);
 foreach my $risk_level (keys %$limit_defs) {
     my $s = decode_json_utf8($app_config->get("quants.vanilla.risk_profile.$risk_level"));
     my @stake;
-    my @obsolete_currencies = ('USB', 'PAX', 'TUSD', 'DAI', 'USDK', 'BUSD', 'IDK', 'EURS');
 
-    foreach my $ccy (sort keys %{$s}) {
-        if (any { $_ eq $ccy } @obsolete_currencies) {
-            next;
+    foreach my $ccy (@currencies) {
+        my $currency_value = $s->{$ccy};
+        unless (defined $currency_value) {
+            # If not found in Redis cache, retrieve from YAML file based on risk level
+            my $v = decode_json_utf8($limit_defs->{$risk_level}->{default});
+            $currency_value = $v->{$ccy};
         }
 
-        push @stake, $s->{$ccy};
+        push @stake, $currency_value;
+
     }
 
     push @stake_rows, [$risk_level, @stake];
@@ -310,6 +312,10 @@ sub _get_existing_vanilla_fx_spread_specific_time_config {
     }
 
     return \@table_data;
+}
+
+sub _get_vanilla_default_risk_profile {
+    return LoadFile('/home/git/regentmarkets/bom-config/share/app_config_definitions.yml');
 }
 
 code_exit_BO();
