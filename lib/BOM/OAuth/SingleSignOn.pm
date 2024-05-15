@@ -85,16 +85,22 @@ sub create {
 
     my $service = defang($c->stash('service'));
     my $app_id  = defang($c->param('app_id'));
+    my $token   = defang($c->param('token1'));
 
-    my $app = BOM::Database::Model::OAuth->new()->verify_app($app_id);
+    my $oauth_model            = BOM::Database::Model::OAuth->new;
+    my $token_extracted_app_id = $oauth_model->get_app_id_by_token($token);
+    my $app                    = $oauth_model->verify_app($token_extracted_app_id);
 
     if ($app && $app->{name} eq $service) {
 
         my $uri    = Mojo::URL->new($app->{verification_uri});
-        my %params = _sso_params($c, $app);
+        my %params = _sso_params($c, $app, $token);
         $uri->query(%params);
 
         $c->redirect_to($uri);
+    } else {
+        my $brand_uri = Mojo::URL->new($c->stash('brand')->default_url);
+        $c->redirect_to($brand_uri);
     }
 }
 
@@ -118,11 +124,9 @@ sub _verify_sso_request {
 }
 
 sub _sso_params {
-    my ($c, $app) = @_;
+    my ($c, $app, $token) = @_;
 
-    my $nonce = defang($c->param('nonce'));
-    my $token = defang($c->param('token1'));
-
+    my $nonce   = defang($c->param('nonce'));
     my $loginid = BOM::Database::Model::OAuth->new()->get_token_details($token)->{loginid};
 
     my $client = BOM::User::Client->new({

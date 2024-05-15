@@ -13,6 +13,8 @@ use BOM::Config;
 use Syntax::Keyword::Try;
 use Log::Any qw($log);
 
+use constant THINKIFIC_APP_ID => '37228';
+
 =head2 create
 
 Handles the creation of a Thinkific SSO URI for a given app and token.
@@ -38,15 +40,18 @@ sub create {
     my $token  = defang($c->param('token1'));
 
     try {
-        my $app     = BOM::Database::Model::OAuth->new()->verify_app($app_id);
-        my $loginid = BOM::Database::Model::OAuth->new()->get_token_details($token)->{loginid};
+        my $oauth_model            = BOM::Database::Model::OAuth->new;
+        my $app                    = $oauth_model->verify_app($app_id);
+        my $loginid                = $oauth_model->get_token_details($token)->{loginid};
+        my $token_extracted_app_id = $oauth_model->get_app_id_by_token($token);
+
         my $error_message;
 
         if (!$loginid) {
             $error_message = 'The request was missing a valid loginId';
             $log->error($error_message);
             $c->throw_error('invalid_request', 'The request was missing a valid loginId');
-        } elsif (!$app) {
+        } elsif (invalid_thinkific_app_id($app, $app_id, $token_extracted_app_id)) {
             $error_message = 'The request was missing a valid app_id';
             $log->error($error_message);
             $c->throw_error('invalid_request', 'The request was missing a valid app_id');
@@ -63,6 +68,30 @@ sub create {
         my $brand_uri = Mojo::URL->new($c->stash('brand')->default_url);
         $c->redirect_to($brand_uri);
     };
+}
+
+=head2 invalid_thinkific_app_id
+
+Checks if the given app and token have belong to the Thinkific app.
+
+=over
+
+=item * C<app> - The app.
+
+=item * C<app_id> - The app_id for the requested app.
+
+=item * C<token_extracted_app_id> - The app_id extracted from the token.
+
+=back
+
+Returns a boolean value indicating whether the app and token belong to the Thinkific app or not.
+
+=cut
+
+sub invalid_thinkific_app_id {
+    my ($app, $app_id, $token_extracted_app_id) = @_;
+
+    return !$app || $app_id ne $token_extracted_app_id || $app_id ne THINKIFIC_APP_ID;
 }
 
 =head2 _thinkific_uri_constructor
