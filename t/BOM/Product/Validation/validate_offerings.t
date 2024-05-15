@@ -1,18 +1,16 @@
 #!/etc/rmg/bin/perl
 
-use Test::More;
-use Test::Warnings;
-
-use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::MarketData               qw(create_underlying);
-use BOM::MarketData::Types;
-use Date::Utility;
-
 use BOM::Config::Runtime;
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Types;
+use BOM::Product::ContractFactory                qw(produce_contract);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use Date::Utility;
 use Test::MockModule;
+use Test::More;
+use Test::Warnings;
 
 my $now = Date::Utility->new('2016-03-15 01:00:00');
 
@@ -82,6 +80,46 @@ subtest 'custom suspend trading' => sub {
     $bet_params->{for_sale} = 1;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_sell, 'valid to sellback even daily forex callput is in no_business';
+
+    # Reset custom product profiles settings to test market and symbol risk profile
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles('{}');
+    $orig = BOM::Config::Runtime->instance->app_config->quants->custom_volume_limits(
+        '{"markets":{"forex":{"max_volume_positions":2,"risk_profile":"no_business"}}}');
+
+    $bet_params = {
+        amount       => 100,
+        basis        => 'stake',
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        current_tick => $tick,
+        date_pricing => $now,
+        date_start   => $now,
+        multiplier   => 30,
+        stake        => 100,
+        underlying   => 'frxAUDUSD',
+    };
+
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'cannot buy because forex risk_profile is no_business';
+    like($c->primary_validation_error->message, qr/manually disabled by quants/, 'throws error');
+
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy for non-forex symbol';
+
+    BOM::Config::Runtime->instance->app_config->quants->custom_volume_limits(
+        '{"symbols":{"1HZ10V":{"max_volume_positions":3,"risk_profile":"low_risk"},"1HZ150V":{"max_volume_positions":4,"risk_profile":"no_business"}}}'
+    );
+
+    $bet_params->{underlying} = '1HZ150V';
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'cannot buy because 1HZ150V risk_profile is no_business';
+    like($c->primary_validation_error->message, qr/manually disabled by quants/, 'throws error');
+
+    $bet_params->{underlying} = '1HZ10V';
+    $bet_params->{multiplier} = 100;
+    $c                        = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy because 1HZ10V is low_risk';
 };
 
 subtest 'suspend early sellback' => sub {

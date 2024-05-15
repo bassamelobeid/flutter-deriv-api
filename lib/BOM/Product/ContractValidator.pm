@@ -235,6 +235,9 @@ sub _validation_methods {
 sub _validate_offerings {
     my $self = shift;
 
+    my $market = $self->underlying->market->name;
+    my $symbol = $self->underlying->symbol;
+
     # validate if this contract is restricted from early sell back
     if ($self->for_sale and not $self->is_after_settlement) {
         my $quants_config = BOM::Config::Runtime->instance->app_config->quants;
@@ -264,7 +267,7 @@ sub _validate_offerings {
         }
 
         if (my @suspend_markets = @{$quants_config->markets->suspend_early_sellback // []}) {
-            if (any { $_ eq $self->underlying->market->name } @suspend_markets) {
+            if (any { $_ eq $market } @suspend_markets) {
                 return {
                     message           => 'early sellback disabled for market',
                     message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
@@ -273,7 +276,7 @@ sub _validate_offerings {
         }
 
         if (my @suspend_underlyings = @{$quants_config->underlyings->suspend_early_sellback // []}) {
-            if (any { $_ eq $self->underlying->symbol } @suspend_underlyings) {
+            if (any { $_ eq $symbol } @suspend_underlyings) {
                 return {
                     message           => 'early sellback disabled for underlying',
                     message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
@@ -282,11 +285,16 @@ sub _validate_offerings {
         }
     }
 
-    # NOTE: this check only validates the contract-specific risk profile.
-    # There may also be a client specific one which is validated in B:P::Transaction
-    # no_business should disable buying but not sell back existing positions
-    my $no_business_for_buy = (($self->risk_profile->get_risk_profile eq 'no_business') and (!$self->for_sale));
+    my $custom_volume_limits  = $self->risk_profile->raw_custom_volume_limits;
+    my $market_risk_profile   = $custom_volume_limits->{markets}{$market}{risk_profile};
+    my $symbol_risk_profile   = $custom_volume_limits->{symbols}{$symbol}{risk_profile};
+    my $client_risk_profile   = $self->risk_profile->get_risk_profile;
+    my $is_no_business_market = defined $market_risk_profile && $market_risk_profile eq 'no_business';
+    my $is_no_business_symbol = defined $symbol_risk_profile && $symbol_risk_profile eq 'no_business';
+    my $is_no_business_client = defined $client_risk_profile && $client_risk_profile eq 'no_business';
 
+    # no_business should disable buying but not sell back existing positions
+    my $no_business_for_buy = ($is_no_business_market || $is_no_business_symbol || $is_no_business_client) && !$self->for_sale;
     if ($no_business_for_buy) {
         return {
             message           => 'manually disabled by quants',
