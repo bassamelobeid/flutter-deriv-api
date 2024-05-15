@@ -45,8 +45,9 @@ subtest 'check legacy cfd_score' => sub {
         broker_code => 'MF',
     });
     my $user = BOM::User->create(
-        email    => 'test+legacy_cfd_score@binary.com',
-        password => 'Abcd1234'
+        email          => 'test+legacy_cfd_score@binary.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
     );
     $user->add_client($client);
 
@@ -268,8 +269,9 @@ subtest 'Fully Auth with IDV' => sub {
         broker_code => 'CR',
     });
     my $user = BOM::User->create(
-        email    => 'test+idvauth@binary.com',
-        password => 'Abcd1234'
+        email          => 'test+idvauth@binary.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
     );
     $user->add_client($client);
     $client->set_authentication_and_status('IDV_PHOTO', 'Sadwichito');
@@ -481,8 +483,9 @@ subtest 'poi/idv status rejected for diel acc check latest_poi_by' => sub {
         broker_code => 'MF',
     });
     my $user = BOM::User->create(
-        email    => 'test+idv+diel@deriv.com',
-        password => 'Abcd1234'
+        email          => 'test+idv+diel@deriv.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
     );
     $user->add_client($cr_client);
     $user->add_client($mf_client);
@@ -547,8 +550,10 @@ subtest 'expired docs account' => sub {
         broker_code => 'MF',
     });
     my $user = BOM::User->create(
-        email    => 'test+expired+docs@binary.com',
-        password => 'Abcd1234'
+        email          => 'test+expired+docs@binary.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
+
     );
     $user->add_client($client);
 
@@ -688,8 +693,9 @@ subtest 'poi soon to be expired' => sub {
         broker_code => 'MF',
     });
     my $user = BOM::User->create(
-        email    => 'poi+soon+to+be+expired@binary.com',
-        password => 'Abcd1234'
+        email          => 'poi+soon+to+be+expired@binary.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
     );
     $user->add_client($client);
 
@@ -804,8 +810,9 @@ subtest 'poa soon to be outdated' => sub {
         broker_code => 'MF',
     });
     my $user = BOM::User->create(
-        email    => 'poi+soon+to+be+outdated@binary.com',
-        password => 'Abcd1234'
+        email          => 'poi+soon+to+be+outdated@binary.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
     );
     $user->add_client($client);
 
@@ -905,8 +912,9 @@ subtest 'POA state machine' => sub {
         broker_code => 'CR',
     });
     my $user = BOM::User->create(
-        email    => 'test+poa+state+machine@binary.com',
-        password => 'Abcd1234'
+        email          => 'test+poa+state+machine@binary.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
     );
     $user->add_client($client);
     $client->set_default_account('EUR');
@@ -1099,8 +1107,9 @@ subtest 'Onfido duplicated document rejected reason' => sub {
         broker_code => 'CR',
     });
     my $user = BOM::User->create(
-        email    => 'test+dup_doc@binary.com',
-        password => 'Abcd1234'
+        email          => 'test+dup_doc@binary.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
     );
     $user->add_client($client);
     $client->set_default_account('EUR');
@@ -1159,8 +1168,9 @@ subtest "suspended onfido" => sub {
         broker_code => 'CR',
     });
     my $user = BOM::User->create(
-        email    => 'test+onfido+suspended@binary.com',
-        password => 'Abcd1234'
+        email          => 'test+onfido+suspended@binary.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
     );
     $user->add_client($client);
     $client->set_default_account('USD');

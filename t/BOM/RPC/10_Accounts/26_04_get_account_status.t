@@ -23,8 +23,9 @@ my $m = BOM::Platform::Token::API->new;
 
 subtest 'check cryptocurrencies cashier' => sub {
     my $user = BOM::User->create(
-        email    => 'test_ust_disabled@binary.com',
-        password => 'Abcd1234'
+        email          => 'test_ust_disabled@binary.com',
+        password       => 'Abcd1234',
+        email_verified => 1,
     );
 
     my $client_UST = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

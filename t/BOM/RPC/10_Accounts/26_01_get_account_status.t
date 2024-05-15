@@ -32,8 +32,9 @@ my $password     = 'jskjd8292922';
 my $hash_pwd     = BOM::User::Password::hashpw($password);
 
 my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
+    email          => $email,
+    password       => $hash_pwd,
+    email_verified => 1
 );
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -56,8 +57,9 @@ $user->add_client($test_client);
 $user->add_client($test_client_vr);
 
 my $user_cr = BOM::User->create(
-    email    => 'sample@binary.com',
-    password => $hash_pwd
+    email          => 'sample@binary.com',
+    password       => $hash_pwd,
+    email_verified => 1
 );
 
 my $test_client_cr_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -126,8 +128,9 @@ $test_client_mf->email($email_mf);
 $test_client_mf->save;
 
 my $user_mf = BOM::User->create(
-    email    => $email_mf,
-    password => $hash_pwd
+    email          => $email_mf,
+    password       => $hash_pwd,
+    email_verified => 1,
 );
 $user_mf->add_client($test_client_vr_2);
 $user_mf->add_client($test_client_mf);
@@ -2348,6 +2351,44 @@ subtest 'get account status' => sub {
                 );
             };
 
+            subtest "email not verified" => sub {
+                my $user = BOM::User->create(
+                    email          => 'test01@deriv.com',
+                    password       => $hash_pwd,
+                    email_verified => 0,
+                );
+
+                my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                    broker_code    => 'CR',
+                    binary_user_id => $user->id,
+                });
+
+                $test_client->email('test01@deriv.com');
+                $test_client->set_default_account('USD');
+                $test_client->save;
+
+                $user->add_client($test_client);
+
+                my $token  = $m->create_token($test_client->loginid, 'test token');
+                my $result = $c->tcall($method, {token => $token});
+
+                my $email_not_verified = scalar grep { $_ eq 'email_not_verified' } $result->{status}->@*;
+
+                ok $email_not_verified, 'Email not verified';
+
+                my $updated_email_fields = {
+                    email_verified => 1,
+                };
+                $user->update_email_fields($updated_email_fields->%*);
+
+                $token  = $m->create_token($test_client->loginid, 'test token');
+                $result = $c->tcall($method, {token => $token});
+
+                $email_not_verified = scalar grep { $_ eq 'email_not_verified' } $result->{status}->@*;
+
+                ok !$email_not_verified, 'Email verified so no status added';
+            };
+
             subtest "with expired documents" => sub {
                 $documents_uploaded = {
                     proof_of_address => {
@@ -3758,8 +3799,9 @@ subtest 'Empty country code scenario' => sub {
 
 subtest 'affiliate code of conduct' => sub {
     my $user = BOM::User->create(
-        email    => 'aff123@deriv.com',
-        password => 'cooltobeanaffiliate',
+        email          => 'aff123@deriv.com',
+        password       => 'cooltobeanaffiliate',
+        email_verified => 1,
     );
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});

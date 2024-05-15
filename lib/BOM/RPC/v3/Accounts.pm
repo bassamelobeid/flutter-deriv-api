@@ -1007,6 +1007,8 @@ rpc
     # if POA is soon to be outdated, report it so FE could show the upload UI
     push(@$status, 'poa_expiring_soon') if $client->documents->poa_outdated_look_ahead();
 
+    push(@$status, 'email_not_verified') unless $client->user->email_verified;
+
     my $age_verif_client = $duplicated // $client;
     # build the structure that details the authentication status for each mt5 jurisdiction
     my $lc = [map { $_->short } LandingCompany::Registry->get_all];
