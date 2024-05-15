@@ -2,6 +2,12 @@
 
 ## Status
 
+### 2024-05-12
+
+- We have a [dedicated space in Click Up](https://app.clickup.com/20696747/v/g/kqknb-686695) now
+- Work on offerings service is moving forward, we are working on a logic for querying available offerings at the moment
+- We did some work to improve performance of the current pricing daemon
+
 ### 2024-05-02
 
 We started working on phase one of the pricing service. See our plan in [the
@@ -19,6 +25,11 @@ and a roadmap for going forward.
 Still trying to separate the core repository (`bom-pricing`) from dependency on non-service-related code and data.
 
 ## Website
+
+### 2024-05-12
+
+- [The roadmap](../roadmap/index.md) document has been updated.
+- [The API](../api/index.md) document has been updated.
 
 ### 2024-05-02
 

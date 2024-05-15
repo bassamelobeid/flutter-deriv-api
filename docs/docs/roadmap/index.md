@@ -2,14 +2,9 @@
 
 ## Pricing Service Roadmap
 
-We have several tasks that we are planning to work on in the near future:
-
-### Assist Feed Team with Feed Service
-
-We depend on the existence of Feed Service providing the API that is needed
-by the pricing service. We are collaborating with Feed Business Service team on
-that and are prepared to provide assistance they need to get this API ready
-and running.
+Here is our roadmap for the mid-term future. The primary goal is to get to the
+point where all pricing is done by our independent code that is exposed to the
+rest of the Deriv backend over a well defined API.
 
 ### Phase 1. Implement Pricing Service Request Router
 
@@ -124,3 +119,16 @@ C4Container
   Rel(cRouter, cDaemon, "Send pricing requests", "HTTP")
   UpdateLayoutConfig($c4ShapeInRow="3")
 ```
+
+## Challenges
+
+The Pricing service needs certain external services in order to provide value.
+In particular, it requires:
+
+ - the Feed service to provide critical inputs, and
+ - the Contract service to consume its output.
+
+Hence, the development and success of the Pricing service are 
+dependent on the development of these other services. We are
+collaborating with the teams working on these services. We may 
+correct our roadmap and plans in line with their progress.

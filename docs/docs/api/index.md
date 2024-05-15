@@ -9,7 +9,25 @@ We have prepared a local [dataflow chart](dataflow.md) representing the current 
 ## Future plan
 
 We are planning to expose functionality of pricing service via gRPC or HTTP API
-in the future. Exact details of that are currently work in progress. Below is the proposed architecture:
+in the future. Exact details of the API are to be finalised during Phase two of the Pricing API [roadmap](../roadmap). The main idea is to have the following service exposed as described using protobuf:
+
+```protobuf
+// Pricer calculates prices for contracts.
+service Pricer {
+    // AskPrice call calculates and returns the price of the specified proposal
+    rpc AskPrice (AskPriceRequest) returns (AskPriceResponse) {}
+    // AskPriceStream is a streaming call that streamps price updates for the specified proposal whenever there is a market update
+    rpc AskPriceStream (AskPriceStreamRequest) returns (stream AskPriceStreamResponse) {}
+    // BidPrice call calculates and returns the price of the specified open contract
+    rpc BidPrice (BidPriceRequest) returns (BidPriceResponse) {}
+    // BidPriceStream call streams price updates for the specified open contract whenever there is a market update
+    rpc BidPriceStream (BidPriceStreamRequest) returns (stream BidPriceStreamResponse) {}
+}
+```
+
+More details are available in [pricing.proto](proto/pricing.proto).
+
+Below is the planned architecture of the Pricing service:
 
 ```mermaid
 C4Context
