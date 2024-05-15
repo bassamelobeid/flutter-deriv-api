@@ -11,6 +11,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
+use BOM::User::PhoneNumberVerification;
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
 use BOM::Config::Redis;
@@ -27,9 +28,24 @@ my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 
 $user->add_client($client_cr);
-
 my ($token_cr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr->loginid);
 $t->await::authorize({authorize => $token_cr});
+
+subtest 'attempted too many times' => sub {
+    $user->pnv->increase_attempts() for (1 .. 10);
+
+    my $res = $t->await::phone_number_challenge({phone_number_challenge => 1, carrier => 'sms'});
+    test_schema('phone_number_challenge', $res);
+
+    cmp_deeply $res->{error},
+        {
+        code    => 'NoAttemptsLeft',
+        message => 'Please wait for some time before requesting another OTP code'
+        },
+        'Expected error message';
+
+    $user->pnv->clear_attempts;
+};
 
 subtest 'generate an otp' => sub {
     my $expected_response_object = {phone_number_challenge => 1};
@@ -40,17 +56,15 @@ subtest 'generate an otp' => sub {
     cmp_deeply $res->{phone_number_challenge}, 1, 'Expected response object';
 };
 
-# ttl of the redis key is 10 minutes, if this test ever becomes flaky then our real problem would be the ci speed :)
-subtest 'too soon to generate another one' => sub {
+subtest 'existing otp' => sub {
+    my $redis = BOM::Config::Redis::redis_events_write();
+
+    $redis->del(+BOM::User::PhoneNumberVerification::PNV_NEXT_PREFIX . $user->id);
+
     my $res = $t->await::phone_number_challenge({phone_number_challenge => 1, carrier => 'sms'});
     test_schema('phone_number_challenge', $res);
 
-    cmp_deeply $res->{error},
-        {
-        code    => 'NoAttemptsLeft',
-        message => 'Please wait for some time before requesting another OTP code'
-        },
-        'Expected error message';
+    cmp_deeply $res->{phone_number_challenge}, 1, 'Expected response object';
 };
 
 subtest 'already verified accounts should not apply' => sub {
@@ -65,6 +79,59 @@ subtest 'already verified accounts should not apply' => sub {
         message => 'This account is already phone number verified'
         },
         'Expected error message';
+
+    $user->pnv->update(0);
+};
+
+subtest 'attempted to verify too many times' => sub {
+    $user->pnv->increase_verify_attempts() for (1 .. 10);
+
+    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => 'SOMEOTP'});
+    test_schema('phone_number_verify', $res);
+
+    cmp_deeply $res->{error},
+        {
+        code    => 'NoAttemptsLeft',
+        message => 'Please wait for some time before sending the OTP'
+        },
+        'Expected error message';
+
+    $user->pnv->clear_verify_attempts;
+};
+
+subtest 'submit invalid otp' => sub {
+    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => 'BADOTP'});
+    test_schema('phone_number_verify', $res);
+
+    cmp_deeply $res->{error},
+        {
+        code    => 'InvalidOTP',
+        message => 'The OTP is not valid'
+        },
+        'Expected error message';
+};
+
+subtest 'submit a valid otp' => sub {
+    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => $user->id . ''});
+    test_schema('phone_number_verify', $res);
+
+    cmp_deeply $res->{phone_number_verify}, 1, 'Expected response object';
+};
+
+subtest 'already verified accounts should not verify again' => sub {
+    $user->pnv->update(1);
+
+    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => $user->id . ''});
+    test_schema('phone_number_verify', $res);
+
+    cmp_deeply $res->{error},
+        {
+        code    => 'AlreadyVerified',
+        message => 'This account is already phone number verified'
+        },
+        'Expected error message';
+
+    $user->pnv->update(0);
 };
 
 sub create_vr_account {
@@ -74,8 +141,8 @@ sub create_vr_account {
                 email           => $args->{email},
                 client_password => $args->{client_password},
                 account_type    => 'binary',
-                residence       => 'br',
                 email_verified  => 1,
+                residence       => 'br',
             },
         });
 
