@@ -284,7 +284,7 @@ subtest 'get settings' => sub {
                 'has_secret_answer'              => 1,
                 'non_pep_declaration'            => 1,
                 'fatca_declaration'              => 1,
-                'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
+                'immutable_fields'               => ['residence', 'secret_answer', 'secret_question', 'phone'],
                 'preferred_language'             => 'FA',
                 'feature_flag'                   => {wallet => 0},
                 'trading_hub'                    => 0,

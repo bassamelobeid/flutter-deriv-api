@@ -43,13 +43,13 @@ rpc phone_number_challenge => sub {
     my $user = $client->user;
     my $pnv  = $user->pnv;
 
-    my $next_attempt = $pnv->next_attempt;
-
-    $pnv->increase_attempts();
-
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AlreadyVerified',
             message_to_client => localize('This account is already phone number verified')}) if $pnv->verified;
+
+    my $next_attempt = $pnv->next_attempt;
+
+    $pnv->increase_attempts();
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'NoAttemptsLeft',
@@ -59,7 +59,61 @@ rpc phone_number_challenge => sub {
     my $phone   = $client->phone;
     my $otp     = $pnv->generate_otp();
 
-    $log->debugf("Sending OTP %s to %s, via %s", $otp, $phone, $carrier);
+    $log->debugf("Sending OTP %s to %s, via %s, for user %d", $otp, $phone, $carrier, $user->id);
+
+    $pnv->clear_verify_attempts();
+
+    return 1;
+};
+
+=head2 phone_number_verify
+
+Attempts to verify the client's phone number by checking the OTP challenge.
+
+The mocked OTP is always the B<binary_user_id> of the client.
+
+=over 4
+
+=item * C<otp> - the OTP to check.
+
+=back
+
+Returns 1 if the procedure was successful. 
+
+=cut
+
+rpc phone_number_verify => sub {
+    my $params = shift;
+
+    my $args   = $params->{args};
+    my $client = $params->{client};
+
+    my $user = $client->user;
+    my $pnv  = $user->pnv;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'AlreadyVerified',
+            message_to_client => localize('This account is already phone number verified')}) if $pnv->verified;
+
+    my $otp = $args->{otp} // '';
+
+    $log->debugf("Verifying OTP %s, for user %d", $otp, $user->id);
+
+    $pnv->increase_verify_attempts();
+
+    my $verify_blocked = $pnv->verify_blocked;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoAttemptsLeft',
+            message_to_client => localize('Please wait for some time before sending the OTP')}) if $verify_blocked;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidOTP',
+            message_to_client => localize('The OTP is not valid')}) unless $pnv->verify_otp($otp);
+
+    $pnv->update(1);
+
+    $pnv->clear_verify_attempts();
 
     return 1;
 };
