@@ -9,6 +9,7 @@ common: &per_landing_company
       BTC: 0.5
       ETH: 8
       LTC: 100
+      XRP: 7280
       USDC: 10000
       UST: 10000
       eUSDT: 10000

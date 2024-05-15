@@ -18,6 +18,7 @@ default_stake:
   BTC: 10
   ETH: 10
   LTC: 10
+  XRP: 10
   USDC: 10
   UST: 10
   eUSDT: 10
@@ -34,6 +35,7 @@ bet_limits:
     BTC: 200
     ETH: 200
     LTC: 200
+    XRP: 200
     USDC: 200
     UST: 200
     eUSDT: 200
@@ -50,6 +52,7 @@ bet_limits:
           BTC: 0.01
           ETH:  0.01
           LTC:  0.01
+          XRP: 0.01
           USDC: 0.01
           UST: 0.01
           eUSDT: 0.01
@@ -62,6 +65,7 @@ bet_limits:
           BTC: 1
           ETH: 1
           LTC: 1
+          XRP: 1
           UST: 1
           USDC: 1
           eUSDT: 1
@@ -77,6 +81,7 @@ bet_limits:
           BTC: 50000
           ETH: 50000
           LTC: 50000
+          XRP: 50000
           USDC: 5000
           UST: 5000
           eUSDT: 5000
@@ -89,6 +94,7 @@ bet_limits:
           BTC: 10000
           ETH: 10000
           LTC: 10000
+          XRP: 10000
           USDC: 1000
           UST: 1000
           eUSDT: 1000
@@ -101,6 +107,7 @@ bet_limits:
           BTC: 30000
           ETH: 30000
           LTC: 30000
+          XRP: 30000
           USDC: 5000
           UST: 5000
           eUSDT: 5000
@@ -116,6 +123,7 @@ bet_limits:
           BTC: 0.5
           ETH: 0.5
           LTC: 0.5
+          XRP: 0.5
           USDC: 0.5
           UST: 0.5
           eUSDT: 0.5
@@ -128,6 +136,7 @@ bet_limits:
           BTC: 1
           ETH: 1
           LTC: 1
+          XRP: 1
           USDC: 1
           UST: 1
           eUSDT: 1
@@ -140,6 +149,7 @@ bet_limits:
           BTC: 1
           ETH: 1
           LTC: 1
+          XRP: 1
           USDC: 1
           UST: 1
           eUSDT: 1
@@ -153,6 +163,7 @@ bet_limits:
           BTC: 0.35
           ETH: 0.35
           LTC: 0.35
+          XRP: 0.35
           USDC: 0.35
           UST: 0.35
           eUSDT: 0.35
@@ -165,6 +176,7 @@ bet_limits:
           BTC: 1
           ETH: 1
           LTC: 1
+          XRP: 1
           USDC: 1
           UST: 1
           eUSDT: 1
@@ -177,6 +189,7 @@ bet_limits:
           BTC: 1
           ETH: 1
           LTC: 1
+          XRP: 1
           USDC: 1
           UST: 1
           eUSDT: 1
@@ -191,6 +204,7 @@ bet_limits:
           BTC: 5
           ETH: 5
           LTC: 5
+          XRP: 5
           USDC: 5
           UST: 5
           eUSDT: 5
@@ -206,6 +220,7 @@ bet_limits:
           BTC: 2000
           ETH: 2000
           LTC: 2000
+          XRP: 2000
           USDC: 2000
           UST: 2000
           eUSDT: 2000
@@ -218,6 +233,7 @@ bet_limits:
           BTC: 2000
           ETH: 2000
           LTC: 2000
+          XRP: 2000
           USDC: 2000
           UST: 2000
           eUSDT: 2000
@@ -231,6 +247,7 @@ bet_limits:
       BTC: 0.02
       ETH: 0.02
       LTC: 0.02
+      XRP: 0.02
       USDC: 0.02
       UST: 0.02
       eUSDT: 0.02
@@ -243,6 +260,7 @@ bet_limits:
       BTC: 0.05
       ETH: 0.05
       LTC: 0.05
+      XRP: 0.05
       UST: 0.05
       USDC: 0.05
       eUSDT: 0.05
@@ -255,6 +273,7 @@ bet_limits:
     BTC: 0.1
     ETH: 0.1
     LTC: 0.1
+    XRP: 0.1
     UST: 0.1
     USDC: 0.1
     eUSDT: 0.1
@@ -326,6 +345,7 @@ lookback_limits:
     BTC: 300
     ETH: 300
     LTC: 300
+    XRP: 300
     USDC: 300
     UST: 300
     eUSDT: 300
@@ -341,6 +361,7 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
+          XRP: 0
           USDC: 0
           UST: 0
           eUSDT: 0
@@ -353,6 +374,7 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
+          XRP: 0
           USDC: 0
           UST: 0
           eUSDT: 0
@@ -365,6 +387,7 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
+          XRP: 0
           USDC: 0
           UST: 0
           eUSDT: 0
@@ -378,6 +401,7 @@ risk_profile:
           BTC: 1000
           ETH: 1000
           LTC: 1000
+          XRP: 1000
           USDC: 1000
           UST: 1000
           eUSDT: 1000
@@ -390,6 +414,7 @@ risk_profile:
           BTC: 100
           ETH: 100
           LTC: 100
+          XRP: 100
           USDC: 100
           UST: 100
           eUSDT: 100
@@ -402,6 +427,7 @@ risk_profile:
           BTC: 50
           ETH: 50
           LTC: 50
+          XRP: 50
           USDC: 50
           UST: 50
           eUSDT: 50
@@ -415,6 +441,7 @@ risk_profile:
           BTC: 5000
           ETH: 5000
           LTC: 5000
+          XRP: 5000
           USDC: 5000
           UST: 5000
           eUSDT: 5000
@@ -427,6 +454,7 @@ risk_profile:
           BTC: 1000
           ETH: 1000
           LTC: 1000
+          XRP: 1000
           USDC: 1000
           UST: 1000
           eUSDT: 1000
@@ -439,6 +467,7 @@ risk_profile:
           BTC: 200
           ETH: 200
           LTC: 200
+          XRP: 200
           USDC: 200
           UST: 200
           eUSDT: 200
@@ -452,6 +481,7 @@ risk_profile:
           BTC: 50000
           ETH: 50000
           LTC: 50000
+          XRP: 50000
           USDC: 50000
           UST: 50000
           eUSDT: 50000
@@ -464,6 +494,7 @@ risk_profile:
           BTC: 5000
           ETH: 5000
           LTC: 5000
+          XRP: 5000
           USDC: 5000
           UST: 5000
           eUSDT: 5000
@@ -476,6 +507,7 @@ risk_profile:
           BTC: 500
           ETH: 500
           LTC: 500
+          XRP: 500
           USDC: 500
           UST: 500
           eUSDT: 500
@@ -489,6 +521,7 @@ risk_profile:
           BTC: 100000
           ETH: 100000
           LTC: 100000
+          XRP: 100000
           USDC: 100000
           UST: 100000
           eUSDT: 100000
@@ -501,6 +534,7 @@ risk_profile:
           BTC: 20000
           ETH: 20000
           LTC: 20000
+          XRP: 20000
           USDC: 20000
           UST: 20000
           eUSDT: 20000
@@ -513,6 +547,7 @@ risk_profile:
           BTC: 1000
           ETH: 1000
           LTC: 1000
+          XRP: 1000
           USDC: 1000
           UST: 1000
           eUSDT: 1000
@@ -526,6 +561,7 @@ risk_profile:
           BTC: 500000
           ETH: 500000
           LTC: 500000
+          XRP: 500000
           USDC: 500000
           UST: 500000
           eUSDT: 500000
@@ -538,6 +574,7 @@ risk_profile:
           BTC: 50000
           ETH: 50000
           LTC: 50000
+          XRP: 50000
           USDC: 50000
           UST: 50000
           eUSDT: 50000
@@ -550,6 +587,7 @@ risk_profile:
           BTC: 2000
           ETH: 2000
           LTC: 2000
+          XRP: 2000
           USDC: 2000
           UST: 2000
           eUSDT: 2000

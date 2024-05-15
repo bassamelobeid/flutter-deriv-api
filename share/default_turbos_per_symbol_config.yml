@@ -18,6 +18,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -30,6 +31,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -55,6 +57,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -67,6 +70,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -92,6 +96,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -104,6 +109,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -129,6 +135,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -141,6 +148,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -166,6 +174,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -178,6 +187,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -203,6 +213,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -215,6 +226,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -240,6 +252,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -252,6 +265,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -277,6 +291,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -289,6 +304,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -314,6 +330,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -326,6 +343,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -351,6 +369,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -363,6 +382,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -388,6 +408,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -400,6 +421,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
@@ -425,6 +447,7 @@ common:
       BTC: 0.03
       ETH: 0.5
       LTC: 9
+      XRP: 3640
       USDC: 2000
       UST: 2000
       eUSDT: 2000
@@ -437,6 +460,7 @@ common:
       BTC: 0.000015
       ETH: 0.00025
       LTC: 0.0045
+      XRP: 1.80
       USDC: 1
       UST: 1
       eUSDT: 1
