@@ -92,6 +92,11 @@ use constant Crypto_Results => ({
         currency        => "tUSDT",
         landing_company => "svg"
     },
+    {
+        account_type    => "crypto",
+        currency        => "XRP",
+        landing_company => "svg"
+    },
 );
 
 subtest 'validation' => sub {

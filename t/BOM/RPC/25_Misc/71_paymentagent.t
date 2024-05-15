@@ -132,7 +132,7 @@ $mock_events->mock('emit' => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
 # Mocking all of the necessary exchange rates in redis.
 my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
-my @all_currencies      = qw(EUR ETH AUD eUSDT tUSDT BTC LTC UST USDC USD GBP);
+my @all_currencies      = qw(EUR ETH AUD eUSDT tUSDT BTC LTC UST USDC USD GBP XRP);
 
 for my $currency (@all_currencies) {
     $redis_exchangerates->hmset(
