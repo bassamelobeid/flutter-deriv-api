@@ -239,8 +239,12 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
 
             is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is ProductSpecificTurnoverLimitExceeded';
 
-            is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_engine_turnover_limit',   'mesg';
+            like(
+                $error->{-message_to_client},
+                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
+                'message_to_client'
+            );
+            is $error->{-mesg}, 'Exceeds turnover limit on tick_expiry_engine_turnover_limit', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -367,8 +371,12 @@ subtest 'asian_daily_turnover_limit', sub {
 
             is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is ProductSpecificTurnoverLimitExceeded';
 
-            is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg},              'Exceeds turnover limit on asian_turnover_limit',                'mesg';
+            like(
+                $error->{-message_to_client},
+                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
+                'message_to_client'
+            );
+            is $error->{-mesg}, 'Exceeds turnover limit on asian_turnover_limit', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -505,7 +513,11 @@ subtest 'intraday_spot_index_turnover_limit', sub {
 
             is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is intraday_spot_index_turnover_limit';
 
-            is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
+            like(
+                $error->{-message_to_client},
+                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
+                'message_to_client'
+            );
             $error->{-mesg} =~ s/\n//g;
             is $error->{-mesg}, 'Exceeds turnover limit on intraday_spot_index_turnover_limit', 'mesg';
 
@@ -910,8 +922,12 @@ subtest 'non atm turnover checks' => sub {
 
             is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is ProductSpecificTurnoverLimitExceeded';
 
-            is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit',   'mesg';
+            like(
+                $error->{-message_to_client},
+                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
+                'message_to_client'
+            );
+            is $error->{-mesg}, 'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';

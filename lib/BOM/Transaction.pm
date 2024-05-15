@@ -779,7 +779,7 @@ sub prepare_bet_data_for_buy {
             -quiet             => 1,
             -type              => 'ContractAlreadyStarted',
             -mesg              => "buy at $d1 too late for $d2 contract",
-            -message_to_client => BOM::Platform::Context::localize("Start time is in the past."));
+            -message_to_client => localize("Start time is in the past."));
     }
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
@@ -890,9 +890,9 @@ sub prepare_bet_data_for_buy {
     } else {
         return Error::Base->cuss(
             -quiet             => 1,
-            -type              => 'UnsupportedBetClass',
-            -mesg              => "Unsupported bet class $bet_params->{bet_class}",
-            -message_to_client => BOM::Platform::Context::localize("Unsupported bet class [_1].", $bet_params->{bet_class}),
+            -type              => 'UnsupportedContractClass',
+            -mesg              => "Unsupported contract class $bet_params->{bet_class}",
+            -message_to_client => localize("Unsupported contract class [_1].", $bet_params->{bet_class}),
         );
     }
     my $quants_bet_variables;
@@ -937,7 +937,7 @@ sub prepare_batch_buy {
         }
         unless ($c) {
             $m->{code}  = 'InvalidLoginid';
-            $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
+            $m->{error} = localize('Invalid loginid');
             next;
         }
 
@@ -1124,7 +1124,7 @@ sub buy {
             -quiet             => 1,
             -type              => 'GeneralError',
             -mesg              => 'Cannot perform database action',
-            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+            -message_to_client => localize('A general error has occurred.'),
         )) if $error;
 
     $self->stats_stop($stats_data);
@@ -1282,7 +1282,7 @@ sub batch_buy {
         # this sorting is to prevent deadlocks in the database
         @$list = sort { $a->{loginid} cmp $b->{loginid} } @$list;
 
-        my @general_error = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
+        my @general_error = ('UnexpectedError', localize('An unexpected error occurred'));
 
         try {
             my $currency = $self->contract->currency;
@@ -1474,7 +1474,7 @@ sub prepare_sell {
             };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
-                $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
+                $m->{error} = localize('Invalid loginid');
                 next;
             }
 
@@ -1557,7 +1557,7 @@ sub sell {
                     -quiet             => 1,
                     -type              => 'GeneralError',
                     -mesg              => 'Resale of this contract is not offered',
-                    -message_to_client => BOM::Platform::Context::localize('Resale not available during rollover time.'),
+                    -message_to_client => localize('Resale not available during rollover time.'),
                 ));
         }
     }
@@ -1612,7 +1612,7 @@ sub sell {
             -quiet             => 1,
             -type              => 'GeneralError',
             -mesg              => 'Cannot perform database action',
-            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+            -message_to_client => localize('A general error has occurred.'),
         )) if $error;
 
     return $self->stats_stop(
@@ -1621,7 +1621,7 @@ sub sell {
             -quiet             => 1,
             -type              => 'NoOpenPosition',
             -mesg              => 'No such open contract.',
-            -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
+            -message_to_client => localize('This contract was not found among your open positions.'),
         )) unless defined $txn->{id} && defined $buy_txn_id;
 
     $self->stats_stop($stats_data);
@@ -1718,7 +1718,7 @@ sub sell_by_shortcode {
                         $r->{error}             = $error->{-message_to_client};
 
                     } else {
-                        @{$r}{qw/code error/} = ('UnexpectedError' . $ecode, BOM::Platform::Context::localize('An unexpected error occurred'));
+                        @{$r}{qw/code error/} = ('UnexpectedError' . $ecode, localize('An unexpected error occurred'));
                     }
                 } else {
                     $r->{tnx}       = $res_row->{txn};
@@ -1751,7 +1751,7 @@ sub sell_by_shortcode {
         } catch ($e) {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $e;    # log it
             for my $el (@$list) {
-                @{$el}{qw/code error/} = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'))
+                @{$el}{qw/code error/} = ('UnexpectedError', localize('An unexpected error occurred'))
                     unless $el->{code} or $el->{fmb};
             }
         }
@@ -1831,7 +1831,7 @@ sub cancel {
         Error::Base->cuss(
             -type              => 'GeneralError',
             -mesg              => 'Cannot perform database action',
-            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+            -message_to_client => localize('A general error has occurred.'),
         )) if $error;
 
     return $self->stats_stop(
@@ -1839,7 +1839,7 @@ sub cancel {
         Error::Base->cuss(
             -type              => 'NoOpenPosition',
             -mesg              => 'No such open contract.',
-            -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
+            -message_to_client => localize('This contract was not found among your open positions.'),
         )) unless defined $txn->{id} && defined $buy_txn_id;
 
     $self->stats_stop($stats_data);
@@ -1903,9 +1903,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $currency = $self->contract->currency;
         my $limit    = formatnumber('amount', $currency, $client->get_limit_for_daily_turnover);
 
-        my $error_message =
-            BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your daily turnover limit of [_1] [_2].',
-            $limit, $currency);
+        my $error_message = localize('Purchasing this contract will cause you to exceed your daily turnover limit of [_1] [_2].', $limit, $currency);
 
         return Error::Base->cuss(
             -quiet             => 1,
@@ -1923,7 +1921,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'OpenPositionLimit',
             -mesg              => "Client has reached the limit of $limit open positions.",
-            -message_to_client => BOM::Platform::Context::localize(
+            -message_to_client => localize(
                 'Sorry, you cannot hold more than [_1] contracts at a given time. Please wait until some contracts have closed and try again.',
                 $limit
             ),
@@ -1943,7 +1941,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'InsufficientBalance',
             -message           => 'Client\'s account balance was insufficient to buy bet.',
-            -message_to_client => BOM::Platform::Context::localize(
+            -message_to_client => localize(
                 'Your account balance ([_1] [_2]) is insufficient to buy this contract ([_3] [_2]).',
                 formatnumber('amount', $currency, $account->get_balance()),
                 $currency, formatnumber('price', $currency, $self->price)));
@@ -1968,7 +1966,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'AccountBalanceExceedsLimit',
             -mesg              => 'Client balance is above the allowed limits',
-            -message_to_client => BOM::Platform::Context::localize(
+            -message_to_client => localize(
                 'Sorry, your account cash balance is too high ([_1]). Your maximum account balance is [_2].',
                 "$balance $currency",
                 "$limit $currency"
@@ -1986,18 +1984,15 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'OpenPositionPayoutLimit',
             -mesg              => 'Client has reached maximum net payout for open positions',
-            -message_to_client => BOM::Platform::Context::localize(
-                'Sorry, the aggregate payouts of contracts on your account cannot exceed [_1] [_2].',
-                $limit, $currency
-            ),
+            -message_to_client => localize('Sorry, the aggregate payouts of contracts on your account cannot exceed [_1] [_2].', $limit, $currency),
         );
     },
     BI010 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'PromoCodeLimitExceeded',
         -mesg              => 'Client won more than 25 times of the promo code amount',
-        -message_to_client => BOM::Platform::Context::localize(
-            'Your account has exceeded the trading limit with free promo code, please deposit if you wish to continue trading.'),
+        -message_to_client =>
+            localize('Your account has exceeded the trading limit with free promo code, please deposit if you wish to continue trading.'),
     ),
     BI011 => sub {
         my $self   = shift;
@@ -2007,9 +2002,15 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $limit_name = 'Unknown';
         $msg =~ /^.+: ([^,]+)/ and $limit_name = $1;
 
-        my $error_msg = BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.');
-        $error_msg = BOM::Platform::Context::localize('This contract is unavailable on this account.')
-            if (not $self->contract->is_binary and $self->contract->apply_binary_limit);
+        # Limit for daily trading volume resets at server's midnight time. Server time is in UTC.
+        my $midnight_time = gmtime(time + 86400 - (time % 86400));
+        my ($day_of_week, $month, $day_of_month, $time, $year) = split(" ", $midnight_time);
+        $day_of_week = localize($day_of_week);
+        $month       = localize($month);
+
+        my $error_msg = localize(
+            "You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at [_1] [_2] [_3] [_4] [_5] UTC",
+            $day_of_week, $day_of_month, $month, $year, $time);
 
         return Error::Base->cuss(
             -quiet             => 1,
@@ -2025,7 +2026,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $currency = $self->contract->currency;
         my $limit    = formatnumber('amount', $currency, $client->get_limit_for_daily_losses);
 
-        my $error_message = BOM::Platform::Context::localize('You have exceeded your daily limit on losses of [_1] [_2].', $limit, $currency);
+        my $error_message = localize('You have exceeded your daily limit on losses of [_1] [_2].', $limit, $currency);
 
         return Error::Base->cuss(
             -quiet             => 1,
@@ -2041,9 +2042,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $currency = $self->contract->currency;
         my $limit    = formatnumber('amount', $currency, $client->get_limit_for_7day_turnover);
 
-        my $error_message =
-            BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 7-day turnover limit of [_1] [_2].',
-            $limit, $currency);
+        my $error_message = localize('Purchasing this contract will cause you to exceed your 7-day turnover limit of [_1] [_2].', $limit, $currency);
 
         return Error::Base->cuss(
             -quiet             => 1,
@@ -2059,7 +2058,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $currency = $self->contract->currency;
         my $limit    = formatnumber('amount', $currency, $client->get_limit_for_7day_losses);
 
-        my $error_message = BOM::Platform::Context::localize('You have exceeded your 7-day limit on losses of [_1] [_2].', $limit, $currency);
+        my $error_message = localize('You have exceeded your 7-day limit on losses of [_1] [_2].', $limit, $currency);
 
         return Error::Base->cuss(
             -quiet             => 1,
@@ -2076,9 +2075,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $currency = $self->contract->currency;
         my $limit    = formatnumber('amount', $currency, $client->get_limit_for_30day_turnover);
 
-        my $error_message =
-            BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 30-day turnover limit of [_1] [_2].',
-            $limit, $currency);
+        my $error_message = localize('Purchasing this contract will cause you to exceed your 30-day turnover limit of [_1] [_2].', $limit, $currency);
 
         return Error::Base->cuss(
             -quiet             => 1,
@@ -2094,7 +2091,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $currency = $self->contract->currency;
         my $limit    = formatnumber('amount', $currency, $client->get_limit_for_30day_losses);
 
-        my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1] [_2].', $limit, $currency);
+        my $error_message = localize('You have exceeded your 30-day limit on losses of [_1] [_2].', $limit, $currency);
 
         return Error::Base->cuss(
             -quiet             => 1,
@@ -2111,7 +2108,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'DailyProfitLimitExceeded',
             -mesg              => 'Exceeds daily profit limit',
-            -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
+            -message_to_client => localize('No further trading is allowed for the current trading session.'),
         );
     },
     BI019 => sub {
@@ -2126,7 +2123,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => $limit_name . 'Exceeded',
             -mesg              => 'Exceeds open position limit on ' . $limit_name,
-            -message_to_client => BOM::Platform::Context::localize('You have exceeded the open position limit for contracts of this type.'),
+            -message_to_client => localize('You have exceeded the open position limit for contracts of this type.'),
         );
     },
     BI050 => sub {
@@ -2138,7 +2135,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'NoOpenPosition',
             -mesg              => $msg,
-            -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
+            -message_to_client => localize('This contract was not found among your open positions.'),
         );
     },
     BI051 => sub {
@@ -2150,7 +2147,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'CompanyWideLimitExceeded',
             -mesg              => 'company-wide risk limit reached',
-            -message_to_client => BOM::Platform::Context::localize(
+            -message_to_client => localize(
                 'No further trading is allowed on this contract type for the current trading session For more info, refer to our terms and conditions.'
             ));
     },
@@ -2158,7 +2155,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -quiet             => 1,
         -type              => 'InsufficientBalance',
         -mesg              => 'Insufficient account balance',
-        -message_to_client => BOM::Platform::Context::localize('Your account balance is insufficient for this transaction.'),
+        -message_to_client => localize('Your account balance is insufficient for this transaction.'),
     ),
     BI104 => sub {
         my $msg = 'Transaction time is too old (check server time), ' . $_[2];
@@ -2169,7 +2166,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'TransactionTimeTooOld',
             -mesg              => $msg,
-            -message_to_client => BOM::Platform::Context::localize('Cannot create contract'),
+            -message_to_client => localize('Cannot create contract'),
         );
     },
     BI105 => sub {
@@ -2181,58 +2178,57 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'TransactionTimeTooYoung',
             -mesg              => $msg,
-            -message_to_client => BOM::Platform::Context::localize('Cannot create contract'),
+            -message_to_client => localize('Cannot create contract'),
         );
     },
     BI054 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'SymbolMissingInBetMarketTable',
         -mesg              => 'Symbol missing in bet.limits_market_mapper table',
-        -message_to_client => BOM::Platform::Context::localize('Trading is suspended for this instrument.'),
+        -message_to_client => localize('Trading is suspended for this instrument.'),
     ),
     BI103 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'RoundingExceedPermittedEpsilon',
         -mesg              => 'Rounding exceed permitted epsilon',
-        -message_to_client => BOM::Platform::Context::localize('Only a maximum of two decimal points are allowed for the amount.'),
+        -message_to_client => localize('Only a maximum of two decimal points are allowed for the amount.'),
     ),
     BI005 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'LookbackOpenPositionLimitExceeded',
         -mesg              => 'Lookback open positions limit exceeded',
-        -message_to_client => BOM::Platform::Context::localize('Lookback open positions limit exceeded.'),
+        -message_to_client => localize('Lookback open positions limit exceeded.'),
     ),
     BI020 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'PerUserPotentialLossLimitReached',
         -mesg              => 'per user potential loss limit reached',
-        -message_to_client => BOM::Platform::Context::localize('This contract is currently unavailable due to market conditions'),
+        -message_to_client => localize('This contract is currently unavailable due to market conditions'),
     ),
     BI022 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'PerUserRealizedLossLimitReached',
         -mesg              => 'per user realized loss limit reached',
-        -message_to_client => BOM::Platform::Context::localize('This contract is currently unavailable due to market conditions'),
+        -message_to_client => localize('This contract is currently unavailable due to market conditions'),
     ),
     BI023 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'SellFailureDueToUpdate',
         -mesg              => 'Contract is updated while attempting to sell',
-        -message_to_client => BOM::Platform::Context::localize('Sell failed because contract was updated.'),
+        -message_to_client => localize('Sell failed because contract was updated.'),
     ),
     BI024 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'ClientVolumeLimitReached',
         -mesg              => 'Client volume limit reached.',
-        -message_to_client => BOM::Platform::Context::localize(
-            'You will exceed the maximum exposure limit if you purchase this contract. Please close some of your positions and try again.',
-        ),
+        -message_to_client =>
+            localize('You will exceed the maximum exposure limit if you purchase this contract. Please close some of your positions and try again.',),
     ),
     BI025 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'ClientUnderlyingVolumeLimitReached',
         -mesg              => 'Client underlying volume limit reached',
-        -message_to_client => BOM::Platform::Context::localize(
+        -message_to_client => localize(
             'You will exceed the maximum exposure limit for this market if you purchase this contract. Please close some of your positions and try again.',
         ),
     ),
@@ -2240,19 +2236,19 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -quiet             => 1,
         -type              => 'OpenPositionLimitExceeded',
         -mesg              => 'Open positions limit exceeded',
-        -message_to_client => BOM::Platform::Context::localize('You have too many open positions for this contract type.'),
+        -message_to_client => localize('You have too many open positions for this contract type.'),
     ),
     BI027 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'ClientContractProfitLimitExceeded',
         -mesg              => 'Client contract profit limit exceeded',
-        -message_to_client => BOM::Platform::Context::localize('Maximum daily profit limit exceeded for this contract.'),
+        -message_to_client => localize('Maximum daily profit limit exceeded for this contract.'),
     ),
     BI030 => Error::Base->cuss(
         -quiet             => 1,
         -type              => 'MaxAggregateOpenStakeExceeded',
         -mesg              => 'maximum aggregate open stake limit exceeded for this contract',
-        -message_to_client => BOM::Platform::Context::localize(
+        -message_to_client => localize(
             'No further trading is allowed on this growth rate and instrument. Please try again later or alternatively try on other instrument or growth rate.',
         ),
     ),
@@ -2289,7 +2285,7 @@ sub format_error {
             -quiet             => 1,
             -type              => $type,
             -mesg              => $msg,
-            -message_to_client => BOM::Platform::Context::localize($msg_to_client),
+            -message_to_client => localize($msg_to_client),
         );
     }
 }

@@ -563,9 +563,12 @@ subtest 'max daily volume validation', sub {
         });
 
         $error = $txn->buy;
-        is $error->get_type,             'ProductSpecificTurnoverLimitExceeded',                          'correct error type';
-        is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'correct error message';
-
+        is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'correct error type';
+        like(
+            $error->{-message_to_client},
+            qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
+            'correct error message'
+        );
     }
 };
 
