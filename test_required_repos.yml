@@ -3,7 +3,7 @@
 ---
 - regentmarkets/bom-test
 - regentmarkets/cpan
-- regentmarkets/cpan_private
+- regentmarkets/cpan-private
 - regentmarkets/bom-websocket-tests
 - regentmarkets/bom-rpc
 
