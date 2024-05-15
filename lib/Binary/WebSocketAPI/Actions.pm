@@ -584,6 +584,7 @@ sub actions_config {
         ],
         ['payout_currencies', {stash_params => [qw/ token account_tokens landing_company_name /]}],
         ['phone_number_challenge'],
+        ['phone_number_verify'],
         ['ping', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
         ['portfolio'],
         ['profit_table'],
