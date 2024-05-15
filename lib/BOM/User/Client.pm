@@ -2560,6 +2560,7 @@ sub immutable_fields {
 
     my @immutable = grep { $self->$_ } PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH->@*;
     push @immutable, 'email' if $self->user->has_social_signup;
+    push @immutable, 'phone' if $self->user->pnv->verified;
 
     if (!$self->status->personal_details_locked) {
         # Allow first and last name edition when poi name mismatch (should not be locked though)

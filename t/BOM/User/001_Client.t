@@ -1298,6 +1298,32 @@ subtest 'test tin manual approval' => sub {
 
 };
 
+subtest 'Phone Number verification' => sub {
+    my $email  = 'pnv@test.com';
+    my $client = create_client('CR');
+    $client->email($email);
+    $client->save;
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => "hey you",
+        email_verified => 1,
+    );
+
+    $user->add_client($client);
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $client->save;
+
+    $user->pnv->update(1);
+
+    cmp_bag [$client->immutable_fields], ['residence', 'secret_answer', 'secret_question', 'phone'], 'Expected immutable fields for a PNV user';
+
+    $user->pnv->update(0);
+
+    cmp_bag [$client->immutable_fields], ['residence', 'secret_answer', 'secret_question'], 'Expected immutable fields for a non PNV user';
+};
+
 sub test_immutable_fields {
     my ($fields, $user, $message) = @_;
 
