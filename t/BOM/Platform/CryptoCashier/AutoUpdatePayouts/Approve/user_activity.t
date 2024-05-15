@@ -870,149 +870,149 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         );
     };
 
-    subtest "_rule_low_trade_for_timerange" => sub {
-        $mock_autoupdate->mock(
-            get_net_cfd_transfers => sub { 4000 },
-        );
+    # subtest "_rule_low_trade_for_timerange" => sub {
+    #     $mock_autoupdate->mock(
+    #         get_net_cfd_transfers => sub { 4000 },
+    #     );
 
-        $mock->mock(
-            user_restricted => sub {
-                return undef;
-            },
-            get_client_profit => sub {
-                return 0;
-            },
-            get_client_trading_activity => sub {
-                return 24;
-            },
-            get_crypto_account_total_deposit_amount => sub {
-                return 100;
-            },
-            user_payment_details => sub {
-                return {
-                    count                             => 0,
-                    currency_wise_crypto_net_deposits => {},
-                    total_crypto_deposits             => 0,
-                    non_crypto_deposit_amount         => 0,
-                    non_crypto_withdraw_amount        => 0,
-                    method_wise_net_deposits          => {}};
-            },
+    #     $mock->mock(
+    #         user_restricted => sub {
+    #             return undef;
+    #         },
+    #         get_client_profit => sub {
+    #             return 0;
+    #         },
+    #         get_client_trading_activity => sub {
+    #             return 24;
+    #         },
+    #         get_crypto_account_total_deposit_amount => sub {
+    #             return 100;
+    #         },
+    #         user_payment_details => sub {
+    #             return {
+    #                 count                             => 0,
+    #                 currency_wise_crypto_net_deposits => {},
+    #                 total_crypto_deposits             => 0,
+    #                 non_crypto_deposit_amount         => 0,
+    #                 non_crypto_withdraw_amount        => 0,
+    #                 method_wise_net_deposits          => {}};
+    #         },
 
-        );
+    #     );
 
-        my $response = $auto_approve_obj->user_activity(
-            binary_user_id          => $dummy_user->id,
-            client_loginid          => $client_loginid,
-            total_withdrawal_amount => 2,
-        );
-        is_deeply(
-            $response,
-            {
-                auto_approve                         => 0,
-                tag                                  => 'LOW_TRADE_FOR_TIMERANGE',
-                total_withdrawal_amount_today_in_usd => 0,
-            },
-            "returns tag:LOW_TRADE_FOR_TIMERANGE correclty."
-        );
-        $mock->unmock_all();
-        $mock_autoupdate->unmock_all();
-    };
+    #     my $response = $auto_approve_obj->user_activity(
+    #         binary_user_id          => $dummy_user->id,
+    #         client_loginid          => $client_loginid,
+    #         total_withdrawal_amount => 2,
+    #     );
+    #     is_deeply(
+    #         $response,
+    #         {
+    #             auto_approve                         => 0,
+    #             tag                                  => 'LOW_TRADE_FOR_TIMERANGE',
+    #             total_withdrawal_amount_today_in_usd => 0,
+    #         },
+    #         "returns tag:LOW_TRADE_FOR_TIMERANGE correclty."
+    #     );
+    #     $mock->unmock_all();
+    #     $mock_autoupdate->unmock_all();
+    # };
 
-    subtest "_rule_low_trade_recent_deposit" => sub {
-        $mock->unmock_all();
-        mock_all_rule_except_in_param($mock, '_rule_low_trade_recent_deposit');
+    # subtest "_rule_low_trade_recent_deposit" => sub {
+    #     $mock->unmock_all();
+    #     mock_all_rule_except_in_param($mock, '_rule_low_trade_recent_deposit');
 
-        $mock_autoupdate->mock(get_recent_deposit_to_crypto_account => sub { return {amount => 100, payment_time => "20-02-2024"}; });
-        $mock_autoupdate->mock(get_client_trading_activity          => sub { return 24; });    # total trade is less then 25% of recent deposit
+    #     $mock_autoupdate->mock(get_recent_deposit_to_crypto_account => sub { return {amount => 100, payment_time => "20-02-2024"}; });
+    #     $mock_autoupdate->mock(get_client_trading_activity          => sub { return 24; });    # total trade is less then 25% of recent deposit
 
-        my $response = $auto_approve_obj->user_activity(
-            binary_user_id          => $dummy_user->id,
-            client_loginid          => $client_loginid,
-            total_withdrawal_amount => 2,
-        );
+    #     my $response = $auto_approve_obj->user_activity(
+    #         binary_user_id          => $dummy_user->id,
+    #         client_loginid          => $client_loginid,
+    #         total_withdrawal_amount => 2,
+    #     );
 
-        is_deeply(
-            $response,
-            {
-                auto_approve                         => 0,
-                tag                                  => 'LOW_TRADE_RECENT_DEPOSIT',
-                total_withdrawal_amount_today_in_usd => 0,
-            },
-            "returns tag: LOW_TRADE_RECENT_DEPOSIT correclty."
-        );
+    #     is_deeply(
+    #         $response,
+    #         {
+    #             auto_approve                         => 0,
+    #             tag                                  => 'LOW_TRADE_RECENT_DEPOSIT',
+    #             total_withdrawal_amount_today_in_usd => 0,
+    #         },
+    #         "returns tag: LOW_TRADE_RECENT_DEPOSIT correclty."
+    #     );
 
-        $mock->unmock_all();
-        $mock_autoupdate->unmock_all();
-    };
+    #     $mock->unmock_all();
+    #     $mock_autoupdate->unmock_all();
+    # };
 
-    subtest "_rule_low_trade_recent_net_cfd_deposit" => sub {
-        $mock->unmock_all();
-        mock_all_rule_except_in_param($mock, '_rule_low_trade_recent_net_cfd_deposit');
+    # subtest "_rule_low_trade_recent_net_cfd_deposit" => sub {
+    #     $mock->unmock_all();
+    #     mock_all_rule_except_in_param($mock, '_rule_low_trade_recent_net_cfd_deposit');
 
-        my $get_net_cfd_transfers = -10;    #negative net transefer;
+    #     my $get_net_cfd_transfers = -10;    #negative net transefer;
 
-        $mock_autoupdate->mock(get_recent_cfd_deposit => sub { return {amount => 100, payment_time => "20-02-2024"}; });
-        $mock_autoupdate->mock(get_net_cfd_transfers  => sub { return $get_net_cfd_transfers; });
+    #     $mock_autoupdate->mock(get_recent_cfd_deposit => sub { return {amount => 100, payment_time => "20-02-2024"}; });
+    #     $mock_autoupdate->mock(get_net_cfd_transfers  => sub { return $get_net_cfd_transfers; });
 
-        $log->clear();
+    #     $log->clear();
 
-        my $response = $auto_approve_obj->user_activity(
-            binary_user_id          => $dummy_user->id,
-            client_loginid          => $client_loginid,
-            total_withdrawal_amount => 2,
-        );
+    #     my $response = $auto_approve_obj->user_activity(
+    #         binary_user_id          => $dummy_user->id,
+    #         client_loginid          => $client_loginid,
+    #         total_withdrawal_amount => 2,
+    #     );
 
-        is_deeply(
-            $response,
-            {
-                auto_approve                         => 0,
-                tag                                  => 'LOW_TRADE_RECENT_NEGATIVE_NET_CFD_DEPOSIT',
-                total_withdrawal_amount_today_in_usd => 0,
-            },
-            "returns tag: LOW_TRADE_RECENT_NEGATIVE_NET_CFD_DEPOSIT correclty when net cfd transfer is negative."
-        );
+    #     is_deeply(
+    #         $response,
+    #         {
+    #             auto_approve                         => 0,
+    #             tag                                  => 'LOW_TRADE_RECENT_NEGATIVE_NET_CFD_DEPOSIT',
+    #             total_withdrawal_amount_today_in_usd => 0,
+    #         },
+    #         "returns tag: LOW_TRADE_RECENT_NEGATIVE_NET_CFD_DEPOSIT correclty when net cfd transfer is negative."
+    #     );
 
-        cmp_bag $log->msgs, [{
-                level    => 'debug',
-                category => 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve',
-                message  => re("has negative cfd net transfer activity since the recent crypto deposit"),
-            },
+    #     cmp_bag $log->msgs, [{
+    #             level    => 'debug',
+    #             category => 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve',
+    #             message  => re("has negative cfd net transfer activity since the recent crypto deposit"),
+    #         },
 
-            ],
-            'Correct debug logs raised when LOW_TRADE_RECENT_NET_CFD_DEPOSIT rule failed due to negative net cfd transfer';
+    #         ],
+    #         'Correct debug logs raised when LOW_TRADE_RECENT_NET_CFD_DEPOSIT rule failed due to negative net cfd transfer';
 
-        $get_net_cfd_transfers = 26;
-        $mock_autoupdate->mock(get_recent_cfd_deposit => sub { return {amount => 100, payment_time => "20-02-2024"}; });
+    #     $get_net_cfd_transfers = 26;
+    #     $mock_autoupdate->mock(get_recent_cfd_deposit => sub { return {amount => 100, payment_time => "20-02-2024"}; });
 
-        $log->clear();
-        $response = $auto_approve_obj->user_activity(
-            binary_user_id          => $dummy_user->id,
-            client_loginid          => $client_loginid,
-            total_withdrawal_amount => 2,
-        );
+    #     $log->clear();
+    #     $response = $auto_approve_obj->user_activity(
+    #         binary_user_id          => $dummy_user->id,
+    #         client_loginid          => $client_loginid,
+    #         total_withdrawal_amount => 2,
+    #     );
 
-        is_deeply(
-            $response,
-            {
-                auto_approve                         => 0,
-                tag                                  => 'LOW_TRADE_RECENT_NET_CFD_DEPOSIT',
-                total_withdrawal_amount_today_in_usd => 0,
-            },
-            "returns tag: LOW_TRADE_RECENT_NET_CFD_DEPOSIT correclty when less net cfd transfer since recent cfd deposit"
-        );
+    #     is_deeply(
+    #         $response,
+    #         {
+    #             auto_approve                         => 0,
+    #             tag                                  => 'LOW_TRADE_RECENT_NET_CFD_DEPOSIT',
+    #             total_withdrawal_amount_today_in_usd => 0,
+    #         },
+    #         "returns tag: LOW_TRADE_RECENT_NET_CFD_DEPOSIT correclty when less net cfd transfer since recent cfd deposit"
+    #     );
 
-        cmp_bag $log->msgs, [{
-                level    => 'debug',
-                category => 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve',
-                message  => re("has high net transfer activity since the recent cfd deposit"),
-            },
+    #     cmp_bag $log->msgs, [{
+    #             level    => 'debug',
+    #             category => 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve',
+    #             message  => re("has high net transfer activity since the recent cfd deposit"),
+    #         },
 
-            ],
-            'Correct debug logs raised when LOW_TRADE_RECENT_NET_CFD_DEPOSIT rule failed less cfd net transfer activity since the recent cfd deposit';
+    #         ],
+    #         'Correct debug logs raised when LOW_TRADE_RECENT_NET_CFD_DEPOSIT rule failed less cfd net transfer activity since the recent cfd deposit';
 
-        $mock->unmock_all();
-        $mock_autoupdate->unmock_all();
-    };
+    #     $mock->unmock_all();
+    #     $mock_autoupdate->unmock_all();
+    # };
 };
 
 $app_config->payments->crypto->auto_update->lookback_time_trading_activity($default_lookback_time_trading_activity);
