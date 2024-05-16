@@ -575,7 +575,7 @@ Takes the following arguments
 
 =over 4
 
-=item * C<binary_user_id> - Binary User ID
+=item * C<client_loginid> - Client login id
 
 =back
 
@@ -588,7 +588,7 @@ Updates and returns the response hash if the rule is met, else returns undef.
 sub _rule_client_status_restricted {
     my ($self, $response, %args) = @_;
 
-    if (my $restricted_status = $self->user_restricted(binary_user_id => $args{binary_user_id})) {
+    if (my $restricted_status = $self->client_restricted(client_loginid => $args{client_loginid})) {
         $response->{tag}               = 'CLIENT_STATUS_RESTRICTED';
         $response->{auto_approve}      = 0;
         $response->{restricted_status} = $restricted_status->{status_code};

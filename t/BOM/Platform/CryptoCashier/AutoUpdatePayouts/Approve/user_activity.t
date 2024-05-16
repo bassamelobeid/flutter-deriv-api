@@ -103,7 +103,7 @@ sub mock_all_rule_except_in_param {
 subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity' => sub {
     subtest "ACCEPTABLE_NET_DEPOSIT" => sub {
         mock_rule($mock, ['_rule_low_trade_recent_deposit', '_rule_low_trade_recent_net_cfd_deposit']);
-        $mock->mock(user_restricted => sub { return undef });
+        $mock->mock(client_restricted => sub { return undef });
         $mock->mock(
             user_payment_details => sub {
                 return {};
@@ -132,7 +132,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
 
         for my $restricted_status (qw/cashier_locked disabled no_withdrawal_or_trading withdrawal_locked duplicate_account closed unwelcome/) {
             $mock->mock(
-                user_restricted => sub {
+                client_restricted => sub {
                     return {status_code => $restricted_status};
                 });
 
@@ -159,7 +159,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         mock_rule($mock, ['_rule_low_trade_recent_deposit', '_rule_low_trade_recent_net_cfd_deposit']);
 
         $mock->mock(
-            user_restricted => sub {
+            client_restricted => sub {
                 return undef;
             },
             get_client_profit => sub {
@@ -339,7 +339,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         mock_rule($mock, ['_rule_low_trade_recent_deposit', '_rule_low_trade_recent_net_cfd_deposit']);
 
         $mock->mock(
-            user_restricted => sub {
+            client_restricted => sub {
                 return undef;
             },
             get_client_profit => sub {
@@ -420,7 +420,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         mock_rule($mock, ['_rule_low_trade_recent_deposit', '_rule_low_trade_recent_net_cfd_deposit']);
 
         $mock->mock(
-            user_restricted                         => sub { return undef; },
+            client_restricted                       => sub { return undef; },
             get_client_profit                       => sub { return 0; },
             get_client_trading_activity             => sub { return 0 },
             get_crypto_account_total_deposit_amount => sub { return 0 });
@@ -489,7 +489,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         mock_rule($mock, ['_rule_low_trade_recent_deposit', '_rule_low_trade_recent_net_cfd_deposit']);
 
         $mock->mock(
-            user_restricted                         => sub { return undef; },
+            client_restricted                       => sub { return undef; },
             get_client_profit                       => sub { return 0; },
             get_client_trading_activity             => sub { return 0 },
             get_crypto_account_total_deposit_amount => sub { return 0 });
@@ -528,7 +528,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         mock_rule($mock, ['_rule_low_trade_recent_deposit', '_rule_low_trade_recent_net_cfd_deposit']);
 
         $mock->mock(
-            user_restricted                         => sub { return undef; },
+            client_restricted                       => sub { return undef; },
             get_client_profit                       => sub { return 0; },
             get_client_trading_activity             => sub { return 0 },
             get_crypto_account_total_deposit_amount => sub { return 0 });
@@ -585,7 +585,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         mock_rule($mock, ['_rule_low_trade_recent_deposit', '_rule_low_trade_recent_net_cfd_deposit']);
 
         $mock->mock(
-            user_restricted                         => sub { return undef; },
+            client_restricted                       => sub { return undef; },
             get_client_profit                       => sub { return 0; },
             get_client_trading_activity             => sub { return 0 },
             get_crypto_account_total_deposit_amount => sub { return 0 });
@@ -641,7 +641,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         mock_rule($mock, ['_rule_low_trade_recent_deposit', '_rule_low_trade_recent_net_cfd_deposit']);
 
         $mock->mock(
-            user_restricted                         => sub { return undef; },
+            client_restricted                       => sub { return undef; },
             get_client_profit                       => sub { return 0; },
             get_client_trading_activity             => sub { return 0 },
             get_crypto_account_total_deposit_amount => sub { return 0 });
@@ -815,7 +815,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         $mock_autoupdate->mock(get_net_cfd_transfers => sub { 6000 });
 
         $mock->mock(
-            user_restricted => sub {
+            client_restricted => sub {
                 return undef;
             },
             get_client_profit => sub {
@@ -876,7 +876,7 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
     #     );
 
     #     $mock->mock(
-    #         user_restricted => sub {
+    #         client_restricted => sub {
     #             return undef;
     #         },
     #         get_client_profit => sub {

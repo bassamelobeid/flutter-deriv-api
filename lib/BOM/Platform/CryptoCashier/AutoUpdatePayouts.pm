@@ -272,39 +272,6 @@ sub is_stable_payment_method {
     return 0;
 }
 
-=head2 user_status
-
-Get user status records from the database
-
-Takes the following arguments as named parameters
-
-=over 4
-
-=item * C<binary_user_id> - user unique identifier from database
-
-=back
-
-Returns all the user status records as array of hashes
-
-=cut
-
-sub user_status {
-    my ($self, %args) = @_;
-
-    my ($user_status) = $self->client_dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref(
-                q{SELECT distinct(cs.status_code)
-            FROM betonmarkets.client_status cs
-            JOIN betonmarkets.client c ON cs.client_loginid = c.loginid
-            WHERE c.binary_user_id = ?},
-                {Slice => {}},
-                $args{binary_user_id});
-        });
-
-    return $user_status // [];
-}
-
 =head2 client_status
 
 Get client status records from the database
@@ -386,26 +353,26 @@ sub user_payments {
         });
 }
 
-=head2 user_restricted
+=head2 client_restricted
 
-Check if user has one of the restricted status
+Check if client has one of the restricted status
 
 Takes the following arguments as named parameters
 
 =over 4
 
-=item * C<binary_user_id> - user unique identifier from database
+=item * C<client_loginid> - Client login id
 
 =back
 
-Returns status code if user has one of the restricted status else returns undef
+Returns status code if client has one of the restricted status else returns undef
 
 =cut
 
-sub user_restricted {
+sub client_restricted {
     my ($self, %args) = @_;
 
-    my ($status) = $self->user_status(%args);
+    my ($status) = $self->client_status(%args);
 
     return first { RESTRICTED_CLIENT_STATUS()->{$_->{status_code}} } @$status;
 }
