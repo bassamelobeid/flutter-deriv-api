@@ -300,6 +300,7 @@ my @TRANSACTIONAL_EVENTS = qw(
     confirm_change_email
     verify_change_email
     mt5_signup
+    account_closure
     under_antifraud_investigation
 );
 

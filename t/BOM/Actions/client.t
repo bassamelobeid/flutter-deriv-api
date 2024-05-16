@@ -4297,17 +4297,67 @@ subtest 'account closure track' => sub {
 
     undef @identify_args;
     undef @track_args;
+};
 
-    $req = BOM::Platform::Context::Request->new(
-        brand_name => 'binary',
-        language   => 'ID'
+subtest 'account closure - transactional' => sub {
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
     );
     request($req);
-    $result = $action_handler->($call_args)->get;
 
-    isnt $result,               undef, 'Empty result';
-    isnt scalar @identify_args, 0,     'No identify event is triggered when brand is binary';
-    isnt scalar @track_args,    0,     'No track event is triggered when brand is binary';
+    undef @identify_args;
+    undef @track_args;
+    undef @transactional_args;
+
+    my $loginid = $test_client->loginid;
+
+    my $call_args = {
+        closing_reason    => 'There is no reason',
+        loginid           => $loginid,
+        loginids_disabled => [$loginid],
+        loginids_failed   => [],
+        email_consent     => 0,
+        name              => $test_client->first_name,
+        new_campaign      => 1
+    };
+
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{account_closure};
+    my $result         = $action_handler->($call_args)->get;
+    ok $result,             'Success result';
+    ok @identify_args,      'Identify event is triggered';
+    ok @transactional_args, 'CIO transactional is invoked';
+
+    my ($customer, %args) = @track_args;
+    is_deeply \%args,
+        {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'EN'
+        },
+        event      => 'track_account_closure',
+        properties => {
+            closing_reason    => 'There is no reason',
+            name              => $test_client->first_name,
+            loginid           => $loginid,
+            loginids_disabled => [$loginid],
+            loginids_failed   => [],
+            email_consent     => 0,
+            brand             => 'deriv',
+            lang              => 'EN',
+            new_campaign      => 1
+        },
+        },
+        'track context and properties are correct.';
+
+    undef @identify_args;
+    undef @track_args;
+    undef @transactional_args;
+    BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);
 };
 
 subtest 'transfer between accounts event' => sub {
@@ -4464,17 +4514,7 @@ subtest 'api token create' => sub {
         },
         'track context and properties are correct.';
     undef @track_args;
-
-    $req = BOM::Platform::Context::Request->new(
-        brand_name => 'binary',
-        language   => 'ID'
-    );
-
-    request($req);
-    $result = $action_handler->($call_args)->get;
-    isnt $result,             undef, 'Empty result (not emitted)';
-    is scalar @identify_args, 0,     'No identify event is triggered when brand is binary';
-    isnt scalar @track_args,  0,     'No track event is triggered when brand is binary';
+    undef @identify_args;
 };
 
 subtest 'api token delete' => sub {
@@ -4519,16 +4559,7 @@ subtest 'api token delete' => sub {
         },
         'track context and properties are correct.';
     undef @track_args;
-
-    $req = BOM::Platform::Context::Request->new(
-        brand_name => 'binary',
-        language   => 'ID'
-    );
-    request($req);
-    $result = $action_handler->($call_args)->get;
-    isnt $result,             undef, 'Empty result (not emitted)';
-    is scalar @identify_args, 0,     'No identify event is triggered when brand is binary';
-    isnt scalar @track_args,  0,     'No track event is triggered when brand is binary';
+    undef @identify_args;
 };
 
 sub test_segment_customer {
