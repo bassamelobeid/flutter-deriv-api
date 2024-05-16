@@ -136,8 +136,6 @@ async sub verify_identity {
     die sprintf("No submissions left, IDV request has ignored for loginid: %s", $client->loginid)
         if $pending_lock <= 0 && $has_expired_chance;
 
-    die $log->errorf('Could not trigger IDV, microservice is not enabled.') unless BOM::Config::Services->is_enabled('identity_verification');
-
     my $document = $idv_model->get_standby_document();
 
     die 'No standby document found, IDV request skipped.' unless $document;
@@ -285,8 +283,6 @@ async sub verify_process {
         or die sprintf("Could not initiate client for loginid: %s", $loginid);
 
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
-
-    die $log->errorf('Could not trigger IDV, microservice is not enabled.') unless BOM::Config::Services->is_enabled('identity_verification');
 
     my $document = $idv_model->get_standby_document();
 

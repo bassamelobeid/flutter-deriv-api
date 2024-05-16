@@ -666,25 +666,6 @@ subtest 'testing the exceptions verify_identity' => sub {
     };
     ok $error=~ /No standby document found, IDV request skipped./, 'expected exception caught no documents added';
 
-    my $bom_config_mock = Test::MockModule->new('BOM::Config::Services');
-    my $idv_microservice;
-
-    $bom_config_mock->mock(
-        'is_enabled',
-        sub {
-            return $idv_microservice;
-        });
-
-    $idv_microservice = 0;
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $error = exception {
-        $idv_event_handler->($args)->get;
-    };
-    ok $error=~ /Could not trigger IDV, microservice is not enabled./, 'expected exception caught no idv';
-
-    $idv_microservice = 1;
-
     my $idv_model_mock = Test::MockModule->new('BOM::User::IdentityVerification');
 
     $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 0);
@@ -743,24 +724,6 @@ subtest 'testing the exceptions verify_process' => sub {
         $idv_proc_handler->($args)->get;
     };
     ok $error=~ /No standby document found, IDV request skipped./, 'expected exception caught no documents added';
-
-    my $bom_config_mock = Test::MockModule->new('BOM::Config::Services');
-    my $idv_microservice;
-
-    $bom_config_mock->mock(
-        'is_enabled',
-        sub {
-            return $idv_microservice;
-        });
-
-    $idv_microservice = 0;
-
-    $error = exception {
-        $idv_proc_handler->($args)->get;
-    };
-    ok $error=~ /Could not trigger IDV, microservice is not enabled./, 'expected exception caught no idv';
-
-    $idv_microservice = 1;
 
     my $idv_model_mock = Test::MockModule->new('BOM::User::IdentityVerification');
 

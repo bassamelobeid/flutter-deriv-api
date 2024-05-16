@@ -138,17 +138,6 @@ subtest 'disabled document type from a specific provider' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_document_types([qw( )]);
 };
 
-subtest 'microservice is disabled' => sub {
-    $args                = {loginid => $client->loginid};
-    $idv_service_enabled = 0;
-
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-    like exception { $idv_event_handler->($args)->get }, qr/microservice is not enabled/i,
-        'Exception thrown when microservice is disabled through configs';
-
-    $mock_config_service->unmock_all;
-};
-
 subtest 'get provider' => sub {
     $mock_qa->mock('on_qa' => 1);
     is BOM::Event::Actions::Client::IdentityVerification::_has_provider('qq', 'passport'), 1, 'Expected truthy for qq country';
