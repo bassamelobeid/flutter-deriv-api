@@ -38,7 +38,6 @@ use BOM::User::AuditLog;
 use URI::Escape;
 use BOM::OAuth::SocialLoginClient;
 use BOM::OAuth::Passkeys::PasskeysService;
-use BOM::OAuth::SessionStore;
 use constant CTRADER_APPID => 36218;
 
 sub authorize {
@@ -132,16 +131,8 @@ sub authorize {
         }
 
         my ($client, $clients);
-        my $is_official_app = $oauth_model->is_official_app($app_id);
-        my $login_type      = $c->_get_login_type($is_official_app);
-
-        # try to retrieve client from session
-        if ($login_type eq 'official_session' && $is_official_app) {
-            my $redirect_params = $c->validate_official_session($app_id);
-            if ($redirect_params->@*) {
-                return BOM::OAuth::Common::redirect_to($c, $app->{redirect_uri}, $redirect_params);
-            }
-        } elsif ($login_type eq 'basic') {
+        my $login_type = $c->_get_login_type;
+        if ($login_type eq 'basic') {
             $c->stash('login_provider' => 'email');
             my $login = $c->_login({app => $app, social_login_bypass => $social_login_bypass, params_signup_url => $params_signup_url}) or return;
             $clients = $login->{clients};
@@ -149,7 +140,7 @@ sub authorize {
             $c->set_logged_in_session($client->loginid, $login->{login_result}->{self_closed});
         } elsif ($login_type eq 'session') {
             # Get loginid from Mojo Session
-            $clients = $c->_get_client($c->session('_loginid'));
+            $clients = $c->_get_client($app_id);
             $client  = $clients->[0];
         } elsif ($login_type eq 'oneall') {
 
@@ -324,7 +315,7 @@ sub authorize {
         }
 
         my $loginid = $client->loginid;
-        $is_all_approved = 1 if $is_official_app;
+        $is_all_approved = 1 if $oauth_model->is_official_app($app_id);
         $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
 
         # show scope confirms if not yet approved
@@ -342,19 +333,33 @@ sub authorize {
             scopes_changed => 0
         ) unless $is_all_approved;
 
+        # setting up client ip
+        my $client_ip     = $c->client_ip;
         my $client_params = {
             clients => $clients,
-            ip      => $c->client_ip,
+            ip      => $client_ip,
             app_id  => $app_id,
         };
 
-        my @url_token_params = BOM::OAuth::Common::generate_url_token_params($c, $client_params);
-        if ($is_official_app) {
-            $c->stash('session_store')->set_session($app_id, \@url_token_params);
-            $c->stash('session_store')->store_session({is_new => 1});
+        my @params = BOM::OAuth::Common::generate_url_token_params($c, $client_params);
+
+        if (my $route = $c->param('route')) {
+            push @params, (route => format_route_param($route));
+        }
+        push @params, (state => $state)
+            if defined $state;
+
+        if (my $nonce = $c->session('_sso_nonce')) {
+            push @params, (nonce => $nonce);
         }
 
-        my $params = [@url_token_params, $c->_login_redirect_params];
+        if (my $platform = delete $c->session->{platform}) {
+            push @params, (platform => $platform);
+        }
+
+        if (my $lang = defang($c->param('l'))) {
+            push @params, (lang => uc($lang));
+        }
 
         stats_inc('login.authorizer.success', {tags => ["brand:$brand_name", "two_factor_auth:$is_verified"]});
 
@@ -366,48 +371,11 @@ sub authorize {
         delete $c->session->{_otp_verified};
 
         $c->session(expires => 1);
-        return BOM::OAuth::Common::redirect_to($c, $redirect_uri, $params);
+        return BOM::OAuth::Common::redirect_to($c, $redirect_uri, \@params);
     } catch {
         $template_params{error} = localize(get_message_mapping()->{invalid});
         return $c->render(%template_params);
     }
-}
-
-=head2 _login_redirect_params
-
-Get the login redirect parameters.
-
-=over 4
-
-=item C<$c> -The controller object.
-
-=back
-
-=cut
-
-sub _login_redirect_params {
-    my ($c) = @_;
-    my @params = ();
-    if (my $route = $c->param('route')) {
-        push @params, (route => format_route_param($route));
-    }
-
-    if (my $state = $c->param('state')) {
-        push @params, (state => $state);
-    }
-
-    if (my $nonce = $c->session('_sso_nonce')) {
-        push @params, (nonce => $nonce);
-    }
-
-    if (my $platform = delete $c->session->{platform}) {
-        push @params, (platform => $platform);
-    }
-
-    if (my $lang = defang($c->param('l'))) {
-        push @params, (lang => uc($lang));
-    }
-    return @params;
 }
 
 =head2 set_logged_in_session
@@ -668,10 +636,10 @@ sub _use_oneall_mobile {
 }
 
 sub _get_client {
-    my $c       = shift;
-    my $loginid = shift;
-    my $client  = BOM::User::Client->new({
-        loginid      => $loginid,
+    my $c = shift;
+
+    my $client = BOM::User::Client->new({
+        loginid      => $c->session('_loginid'),
         db_operation => 'replica'
     });
 
@@ -784,23 +752,6 @@ sub _is_valid_post_request {
 
 # a map of login types and their validation functions.
 my $login_types = {
-    official_session => sub {
-        my $c               = shift;
-        my $is_official_app = shift;
-
-        # The session store is only available for official apps.
-        if ($is_official_app) {
-            my $session_store = BOM::OAuth::SessionStore->new(c => $c);
-            $c->stash('session_store', $session_store);
-
-            # if it's POST request, this means the user already signing in.
-            if ($c->req->method ne 'GET' || $c->param('social_signup')) {
-                return undef;
-            }
-            return $session_store->has_session();
-        }
-        return undef;
-    },
     basic => sub {
         my $c = shift;
         return ($c->_is_valid_post_request && defang($c->param('login')));
@@ -837,61 +788,15 @@ Returns a string representing the login type. or an empty string if no valid log
 =cut
 
 sub _get_login_type {
-    my $c               = shift;
-    my $is_official_app = shift;
+    my $c = shift;
     # the order of login types to be checked.
-    my @login_types_order = ('official_session', 'basic', 'session', 'oneall', 'social', 'passkeys');
+    my @login_types_order = ('basic', 'session', 'oneall', 'social', 'passkeys');
     for my $type (@login_types_order) {
-        if ($login_types->{$type}->($c, $is_official_app)) {
+        if ($login_types->{$type}->($c)) {
             return $type;
         }
     }
     return '';
-}
-
-=head2 validate_official_session
-
-This function is to validate the official_session and checking if the client have performed a log out on another session.
-This funciton must be called with official app scope.
-1. If the session is valid, check if the session for the app is already authorized - all clients must have tokens, if not generate a new session.
-2. if the session is valid, and the app being authorized is not in the session, generate a new session for that app.
-2. If the session is not valid, clear the session (i.e. logout).
-
-Returns the url token params for the app if the session is valid, otherwise returns undef
-
-=over 4
-
-=item C<$c> -The controller object.
-
-=item C<$official_app_id> -The app id to be authorized.
-
-=back
-
-=cut
-
-sub validate_official_session {
-    my ($c, $official_app_id) = @_;
-    my $session_store = $c->stash('session_store');
-    # login
-    if ($session_store->is_valid_session()) {
-        my $clients          = $c->_get_client($session_store->get_loginid());
-        my @url_token_params = $session_store->get_session_for_app($official_app_id, $clients);
-        if (!@url_token_params) {
-            my $client_params = {
-                clients => $clients,
-                ip      => $c->client_ip,
-                app_id  => $official_app_id,
-            };
-            @url_token_params = BOM::OAuth::Common::generate_url_token_params($c, $client_params);
-            $session_store->set_session($official_app_id, \@url_token_params);
-            $session_store->store_session();
-        }
-        my $params = [@url_token_params, $c->_login_redirect_params];
-        return $params;
-    }
-    # logout
-    $session_store->clear_session();
-    return undef;
 }
 
 1;
