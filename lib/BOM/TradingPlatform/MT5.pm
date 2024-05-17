@@ -353,6 +353,7 @@ sub available_accounts {
                 sub_account_type           => $account->{sub_account_type},
                 market_type                => $account->{market_type},
                 linkable_landing_companies => $lc->mt5_require_deriv_account_at,
+                product                    => $account->{product} // '',
                 };
         }
     }
