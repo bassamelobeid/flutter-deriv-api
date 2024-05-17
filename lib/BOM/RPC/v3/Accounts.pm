@@ -1254,7 +1254,8 @@ sub _get_kyc_authentication {
             status             => 'none',
         },
         address => {
-            status => 'none',
+            status              => 'none',
+            supported_documents => [],
         },
     };
 
@@ -1271,7 +1272,7 @@ sub _get_kyc_authentication {
     $args->{client} = $duplicated // $client;
 
     $kyc_authentication_object->{identity} = _get_kyc_authentication_poi($args);
-    $kyc_authentication_object->{address}  = _get_authentication_poa($args);
+    $kyc_authentication_object->{address}  = _get_kyc_authentication_poa($args);
 
     return $kyc_authentication_object;
 }
@@ -1818,6 +1819,52 @@ sub _get_authentication_poa {
     # Return the document structure
     return {
         status => $client->get_poa_status($documents),
+    };
+}
+
+=head2 _get_kyc_authentication_poa
+
+Resolves the C<document> structure of the KYC authentication object.
+
+It takes the following named params:
+
+=over 4
+
+=item * L<BOM::User::Client> the client itself
+
+=item * C<documents> hashref containing the client documents by type
+
+=back
+
+Returns,
+    hashref containing the structure needed for C<document> at KYC authentication object.
+
+=cut
+
+sub _get_kyc_authentication_poa {
+    my $params = shift;
+    my ($client, $documents) = @{$params}{qw/client documents/};
+    my $country_code = $params->{country} // $client->residence;
+
+    my $lc_config  = $client->landing_company->know_your_customer;
+    my $basic_list = $lc_config->{authentication}->{address_verification}->{allowed_types} // [];
+
+    my $country_list   = Business::Config::Country->new()->list();
+    my $country_config = $country_list->{$country_code};
+    my $poa_config     = $country_config->{know_your_customer}->{authentication}->{address_verification};
+    my $countries_list = $poa_config->{supported_documents} // [];
+
+    my @valid_doc_list;
+    if (scalar @$countries_list > 0) {
+        @valid_doc_list = intersect(@$basic_list, @$countries_list);
+    } else {
+        @valid_doc_list = @$basic_list;
+    }
+
+    # Return the document structure
+    return {
+        status              => $client->get_poa_status($documents),
+        supported_documents => \@valid_doc_list,
     };
 }
 

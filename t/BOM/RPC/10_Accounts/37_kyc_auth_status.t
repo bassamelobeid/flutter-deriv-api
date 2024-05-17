@@ -127,7 +127,8 @@ subtest 'kyc authorization status' => sub {
                 status             => 'none',
             },
             address => {
-                status => 'none',
+                status              => 'none',
+                supported_documents => [],
             },
         };
 
@@ -308,7 +309,9 @@ subtest 'kyc authorization status' => sub {
                     status             => 'verified',
                 },
                 address => {
-                    status => 'verified',
+                    status              => 'verified',
+                    supported_documents =>
+                        ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
                 },
             };
 
@@ -1619,7 +1622,11 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                         last_rejected      => {},
                         available_services => ['idv', 'onfido', 'manual']
                     },
-                    address => {status => 'none'},
+                    address => {
+                        status              => 'none',
+                        supported_documents =>
+                            ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+                    }
                 },
                 maltainvest => {
                     identity => {
@@ -1628,7 +1635,11 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                         last_rejected      => {},
                         available_services => ['onfido', 'manual']
                     },
-                    address => {status => 'none'}}};
+                    address => {
+                        status              => 'none',
+                        supported_documents =>
+                            ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+                    }}};
 
             my $result = $c->tcall($method, $params);
             is $result->{error}, undef, 'call did not throw error for invalid arguments';
@@ -1663,7 +1674,9 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                     status             => 'none',
                 },
                 address => {
-                    status => 'none',
+                    status              => 'none',
+                    supported_documents =>
+                        ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
                 },
             };
 
@@ -1700,7 +1713,11 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                         last_rejected      => {},
                         available_services => ['idv', 'onfido', 'manual']
                     },
-                    address => {status => 'none'},
+                    address => {
+                        status              => 'none',
+                        supported_documents =>
+                            ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+                    }
                 },
                 virtual => {
                     identity => {
@@ -1709,7 +1726,10 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                         last_rejected      => {},
                         available_services => []
                     },
-                    address => {status => 'none'}}};
+                    address => {
+                        status              => 'none',
+                        supported_documents => [],
+                    }}};
 
             my $result = $c->tcall($method, $params);
             cmp_deeply($result, $expected_response, 'expected response object for repeated arguments');
@@ -1793,7 +1813,11 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                     last_rejected      => {},
                     available_services => ['idv', 'onfido', 'manual']
                 },
-                address => {status => 'none'},
+                address => {
+                    status              => 'none',
+                    supported_documents =>
+                        ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+                }
             },
             maltainvest => {
                 identity => {
@@ -1802,7 +1826,11 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                     last_rejected      => {},
                     available_services => ['onfido', 'manual']
                 },
-                address => {status => 'none'}}};
+                address => {
+                    status              => 'none',
+                    supported_documents =>
+                        ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+                }}};
 
         my $result = $c->tcall($method, $params);
         cmp_deeply($result, $expected_response, 'expected response object for virtual client with provided lc arguments');
@@ -1863,7 +1891,10 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                     last_rejected      => {},
                     available_services => []
                 },
-                address => {status => 'none'}
+                address => {
+                    status              => 'none',
+                    supported_documents => [],
+                }
             },
             svg => {
                 identity => {
@@ -1872,7 +1903,11 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                     last_rejected      => {},
                     available_services => ['manual']
                 },
-                address => {status => 'none'},
+                address => {
+                    status              => 'none',
+                    supported_documents =>
+                        ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+                },
             },
             labuan => {
                 identity => {
@@ -1881,7 +1916,11 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                     last_rejected      => {},
                     available_services => ['manual']
                 },
-                address => {status => 'none'},
+                address => {
+                    status              => 'none',
+                    supported_documents =>
+                        ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+                },
             },
             maltainvest => {
                 identity => {
@@ -1890,7 +1929,11 @@ subtest 'kyc authorization status, landing companies provided as argument' => su
                     last_rejected      => {rejected_reasons => ['DataComparisonName']},
                     available_services => ['onfido', 'manual']
                 },
-                address => {status => 'none'}}};
+                address => {
+                    status              => 'none',
+                    supported_documents =>
+                        ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+                }}};
 
         my $result = $c->tcall($method, $params);
         cmp_deeply $result, $expected_response, 'expected response object for many lcs as argument';
@@ -1954,7 +1997,10 @@ subtest 'kyc authorization status, country provided as argument' => sub {
                     last_rejected      => {},
                     available_services => []
                 },
-                address => {status => 'none'}};
+                address => {
+                    status              => 'none',
+                    supported_documents => [],
+                }};
 
             my $result = $c->tcall($method, $params);
             is $result->{error}, undef, 'call did not throw error for invalid arguments';
@@ -2078,7 +2124,11 @@ subtest 'kyc authorization status, country provided as argument' => sub {
         };
 
         my $expected_response = {
-            address  => {status => 'none'},
+            address => {
+                status              => 'none',
+                supported_documents =>
+                    ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+            },
             identity => {
                 service             => 'none',
                 supported_documents => {
@@ -2154,6 +2204,30 @@ subtest 'kyc authorization status, country and landing companies provided as arg
             }});
     $onfido_mock->mock(get_consider_reasons => ['data_comparison.first_name']);
 
+    my $country_mock = Test::MockModule->new('Business::Config::Country');
+
+    $country_mock->mock(
+        'list',
+        sub {
+            my $list = $country_mock->original('list')->(@_);
+
+            return +{
+                map {
+                    (
+                        $_ => +{
+                            $list->{$_}->%*,
+                            know_your_customer => {
+                                $list->{$_}->{know_your_customer}->%*,
+                                authentication => {
+                                    $list->{$_}->{know_your_customer}->{authentication}->%*,
+                                    address_verification => {
+                                        $list->{$_}->{know_your_customer}->{authentication}->{address_verification}->%*,
+                                        supported_documents => ['utility_bill', 'bank_statement', 'poa_others'],
+                                    }}}})
+                } keys $list->%*
+            };
+        });
+
     my $expected_response = {
         virtual => {
             identity => {
@@ -2162,7 +2236,10 @@ subtest 'kyc authorization status, country and landing companies provided as arg
                 last_rejected      => {},
                 available_services => []
             },
-            address => {status => 'none'}
+            address => {
+                status              => 'none',
+                supported_documents => [],
+            },
         },
         svg => {
             identity => {
@@ -2184,7 +2261,10 @@ subtest 'kyc authorization status, country and landing companies provided as arg
                 last_rejected      => {},
                 available_services => ['idv', 'onfido', 'manual']
             },
-            address => {status => 'none'},
+            address => {
+                status              => 'none',
+                supported_documents => ['utility_bill', 'bank_statement', 'poa_others'],
+            },
         },
         maltainvest => {
             identity => {
@@ -2200,13 +2280,17 @@ subtest 'kyc authorization status, country and landing companies provided as arg
                 last_rejected      => {rejected_reasons => ['DataComparisonName']},
                 available_services => ['onfido', 'manual']
             },
-            address => {status => 'none'}}};
+            address => {
+                status              => 'none',
+                supported_documents => ['utility_bill', 'bank_statement', 'poa_others'],
+            }}};
 
     my $result = $c->tcall($method, $params);
     cmp_deeply $result, $expected_response, 'expected response object for lcs and country as argument';
 
     $idv_mock->unmock_all;
     $onfido_mock->unmock_all;
+    $country_mock->unmock_all;
 
     subtest 'garbage inputs' => sub {
         my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -2234,7 +2318,10 @@ subtest 'kyc authorization status, country and landing companies provided as arg
         my $result            = $c->tcall($method, $params);
         my $expected_response = {
             maltainvest => {
-                address  => {status => 'none'},
+                address => {
+                    status              => 'none',
+                    supported_documents => [],
+                },
                 identity => {
                     available_services => [],
                     service            => 'none',
@@ -2249,7 +2336,10 @@ subtest 'kyc authorization status, country and landing companies provided as arg
                     service            => 'none',
                     available_services => []
                 },
-                address => {status => 'none'}}};
+                address => {
+                    status              => 'none',
+                    supported_documents => [],
+                }}};
 
         cmp_deeply $result, $expected_response, 'expected response object for garbage inputs';
     };
