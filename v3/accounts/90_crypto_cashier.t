@@ -162,6 +162,29 @@ subtest 'Crypto cashier calls' => sub {
     });
     test_schema(cashier_payments => $ws_response);
     cmp_deeply $ws_response->{cashier_payments}, $rpc_response, 'Expected response for cashier_payments received';
+
+    $rpc_response = {
+        crypto => [{
+                address_hash     => 'withdrawal_address_hash',
+                address_url      => 'https://blockchain.url/address/',
+                amount           => 0.002,
+                id               => 124,
+                status_code      => 'VERIFIED',
+                status_message   => 'withdrawal status message',
+                submit_date      => Date::Utility->new()->epoch,
+                transaction_type => 'withdrawal',
+                transaction_fee  => 0.00000001
+            }]};
+
+    $ws_response = $t->await::cashier_payments({
+        cashier_payments => 1,
+        provider         => 'crypto',
+        transaction_type => 'withdrawal'
+    });
+
+    test_schema(cashier_payments => $ws_response);
+    cmp_deeply $ws_response->{cashier_payments}, $rpc_response, 'Expected response for priority withdrawal transactions from cashier_payments';
+
 };
 
 subtest 'crypto_config call' => sub {
