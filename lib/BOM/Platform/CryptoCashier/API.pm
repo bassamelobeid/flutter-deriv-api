@@ -316,6 +316,8 @@ Returns pending transactions as an arrayref containing hashrefs with the followi
 
 =item * C<transaction_url> - [Optional] The URL of the transaction on blockchain
 
+=item * C<transaction_fee> - [Optional] Transaction fee associated with priority withdrawal. Present only in priority withdrawal transaction.
+
 =back
 
 =cut
