@@ -18,16 +18,10 @@ jobs:
     with:
       repository: ${{ github.repository }}
   core:
-    strategy:
-      fail-fast: false
-      matrix:
-        test_name: [json_schemas, accounts, misc, mt5, transaction, others]
-    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    uses: ./.github/workflows/base.yml
     secrets: inherit
     with:
-      test_name: ${{ matrix.test_name }}
-      repository: ${{ github.repository }}
-      env_vars: "RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis"
+      need_upload_result: true
   check_dependent_tests:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest

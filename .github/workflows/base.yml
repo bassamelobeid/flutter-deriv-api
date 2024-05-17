@@ -3,119 +3,30 @@ run-name: Repository tests
 on:
   workflow_call:
     inputs:
-      repository:
-        description: 'Repository name for running tests'
-        required: false
-        default: regentmarkets/bom-rpc
-        type: string
       debianci_image:
         description: 'Docker container used by the workflow'
         required: false
         default: ${{ vars.DEBIAN_CI }}
         type: string
+      need_upload_result:
+        description: 'Upload the test result'
+        required: false
+        default: false
+        type: boolean
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
+  group: ${{ github.workflow }}-${{ github.ref }}-regentmarkets/bom-rpc
   cancel-in-progress: true
 jobs:
-  schema:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
-      - name: json_schemas tests
-        run: |
-          make json_schemas
-  syntax_diff_unit:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          need_service: false
-          repository: ${{ inputs.repository }}
-      - name: Code Structure and syntax
-        run: make syntax_diff
-      - name : Unit tests
-        run: make unit
-  core1:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
-      - name: Run tests 
-        run: |
-          sudo touch /var/log/fixedodds/audit.log
-          sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          make test1
-  core2:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/${{ inputs.repository }}
-    env:
-      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: ${{ inputs.repository }}
-      - name: Run tests 
-        run: |
-          sudo touch /var/log/fixedodds/audit.log
-          sudo chown nobody:nogroup /var/log/fixedodds/audit.log
-          make test2
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        test_name: [json_schemas, accounts, misc, mt5, transaction, others]
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    secrets: inherit
+    with:
+      test_name: ${{ matrix.test_name }}
+      repository: regentmarkets/bom-rpc
+      env_vars: "RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis"
+      debianci_image: ${{ inputs.debianci_image }}
+      need_upload_result: ${{ inputs.need_upload_result }}
