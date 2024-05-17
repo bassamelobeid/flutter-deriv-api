@@ -13,11 +13,11 @@ my $date = Date::Utility->new->truncate_to_day->minus_time_interval('1d')->epoch
 
 =head1 NAME
 
-perl ./generate_cfd_reports.pl | This script generates and sends DerivX CSVs to myaffiliates
+perl ./generate_cfd_reports.pl | This script generates and sends DerivX and cTrader CSVs to myaffiliates
 
 =head1 SYNOPSIS
 
-./generate_and_send_derivx_csvs.pl -b 'brand_name'
+./generate_cfd_reports.pl -b 'brand_name'
 
 =head1 OPTIONS
 

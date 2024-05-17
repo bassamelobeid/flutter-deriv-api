@@ -8,8 +8,9 @@ class BOM::MyAffiliatesCFDReport {
     use BOM::Database::UserDB;
     use BOM::Database::ClientDB;
     use BOM::Database::CommissionDB;
-    use BOM::Platform::Event::Emitter;
+    use BOM::Platform::Email       qw(send_email);
     use DataDog::DogStatsd::Helper qw(stats_event);
+    use Format::Util::Numbers      qw(financialrounding);
     use Date::Utility;
     use Syntax::Keyword::Try;
     use YAML::XS qw(LoadFile);
@@ -30,7 +31,7 @@ class BOM::MyAffiliatesCFDReport {
     use constant BATCH_SIZE          => 1000;
     use constant WAIT_IN_SECONDS     => 30;
 
-    my ($db, $processing_date, $processing_date_yyyy_mm_dd, %config, $queries, %contract_size);
+    my ($db, $processing_date, $processing_date_yyyy_mm_dd, %config, $queries, %contract_size, %affiliate_cache, %loginids_userids);
 
     # In case of any error while generating the csv this flag becomes 1
     # Just to mention that there are errors to address to in the email without going into much detail
@@ -100,14 +101,14 @@ Initializes the database connections
                 db     => 'clientdb'
             },
             get_total_volume => {
-                sql => 'SELECT mapped_symbol, volume 
+                sql => 'SELECT affiliate_client_id, mapped_symbol, sum(volume), count(mapped_symbol)
                           FROM transaction.commission 
                          WHERE 
-                               affiliate_client_id = ? 
-                           AND provider = ?::affiliate.client_provider
+                               provider = ?::affiliate.client_provider
                            AND calculated_at >= ? 
-                           AND calculated_at < ?',
-                params => [qw(loginid platform start_processing_date end_processing_date)],
+                           AND calculated_at < ?
+                         GROUP BY affiliate_client_id, mapped_symbol',
+                params => [qw(platform start_processing_date end_processing_date)],
                 paging => 0,
                 db     => 'commissiondb'
             },
@@ -232,27 +233,27 @@ Main method to generate the csv files and send them via sftp
             "<li>"
                 . ($generation_error ? "There was a problem while generating the reports, please check the logs" : "Generated without any errors")
                 . "</li>",
-            "</ul>"
+            "</ul>",
+            "</body>",
+            "</html>"
         );
 
         my $brand = Brands->new();
-        BOM::Platform::Event::Emitter::emit(
-            'send_email',
-            {
-                from                  => $brand->emails('system'),
-                to                    => $brand->emails('trading_ops'),
-                subject               => $config{display_name} . ' daily reports sent to MyAffiliates ',
-                email_content_is_html => 1,
-                message               => \@html_lines,
-                attachment            => \@attachments
-            });
+        BOM::Platform::Email::send_email({
+            from                  => $brand->emails('no-reply'),
+            to                    => $brand->emails('trading_ops'),
+            subject               => $config{display_name} . ' daily reports sent to MyAffiliates ',
+            email_content_is_html => 1,
+            message               => \@html_lines,
+            attachment            => \@attachments
+        });
 
         $self->delete_old_csvs;
     }
 
 =head2 new_registration_csv
 
-Gathers the DerivX clients who have registered on the previous day
+Gathers the DerivX/cTrader clients who have registered on the previous day
 Checks if the gathered client have a myaffiliates token
 Generates the csv file contents for new registrations in one string
 
@@ -268,11 +269,13 @@ Generates the csv file contents for new registrations in one string
             try {
                 my ($creation_stamp, $loginid, $binary_user_id) = @$user;
 
-                my $affiliate_token_and_residence =
-                    $self->db_query('get_myaffiliate_token_and_residence', {binary_user_id => $binary_user_id})->[0] || [];
-                my ($token, $residence) = @$affiliate_token_and_residence;
-                next unless $token;
-                $registration_table .= join(',', ($processing_date_yyyy_mm_dd, $loginid, $token, uc($residence))) . "\n";
+                my $affiliate_token_and_residence = $self->get_myaffiliate_token_and_residence(undef, $binary_user_id);
+
+                if (defined $affiliate_token_and_residence) {
+                    my ($token, $residence) = @$affiliate_token_and_residence;
+                    next unless $token;
+                    $registration_table .= join(',', ($processing_date_yyyy_mm_dd, $loginid, $token, uc($residence))) . "\n";
+                }
             } catch ($e) {
                 $log->errorf('Error on new_registration_csv: [%s]', $e);
                 stats_event("MyAffiliatesCFDReport", "Error on new_registration_csv " . $user->[0] . ": [$e]", {alert_type => 'error'});
@@ -285,7 +288,7 @@ Generates the csv file contents for new registrations in one string
 
 =head2 trading_activity_csv
 
-Gathers the DerivX clients who have traded on the previous day,
+Gathers the DerivX/cTrader clients who have traded on the previous day,
 their sum of deposits and withdrawals, the first deposit amount and the first deposit date.
 Checks if the gathered client have a myaffiliates token to get only the relevant clients
 Generates the csv file contents for trading activity in one string
@@ -300,48 +303,75 @@ Generates the csv file contents for trading activity in one string
 
         # This gives the Daily amount of deposit and withdrawal, first deposit and first deposit date
         my $trading_activity = $self->db_query('get_daily_deposits', {});
-
+        my $loginids         = {};
         foreach my $row (@$trading_activity) {
             try {
                 my ($transaction_time, $loginid, $daily_amount) = @$row;
 
-                my $first_deposit_and_date = $self->db_query('get_first_deposit_and_date', {loginid => $loginid})->[0] || [];
+                my $affiliate_token_and_residence = $self->get_myaffiliate_token_and_residence($loginid, undef);
+                next unless defined $affiliate_token_and_residence && scalar(@$affiliate_token_and_residence);
+
+                my $first_deposit_and_date = $self->db_query('get_first_deposit_and_date', {loginid => $loginid});
+                unless (scalar(@$first_deposit_and_date)) {
+                    $log->warnf('No first deposit found for loginid %s', $loginid);
+                    stats_event("MyAffiliatesCFDReport", "No first deposit found for loginid " . $loginid, {alert_type => 'error'});
+
+                    # If there is no first deposit, then the first deposit is 0 and the first deposit date is just a dummy date
+                    $first_deposit_and_date = [0, $processing_date->minus_time_interval('1w')->db_timestamp];
+                } else {
+                    $first_deposit_and_date = $first_deposit_and_date->[0];
+                }
 
                 my ($first_deposit, $first_payment_date) = @$first_deposit_and_date;
                 $first_deposit = 0 unless Date::Utility->new($first_payment_date)->days_since_epoch eq $processing_date->days_since_epoch;
 
-                my $binary_user_id = $self->db_query('get_binary_user_id', {loginid => $loginid})->[0]->[0];
+                $loginids->{$loginid} = {
+                    daily_amount  => $daily_amount,
+                    first_deposit => $first_deposit
+                };
 
-                # Get the token and residence
-                my $affiliate_token_and_residence = $self->db_query('get_myaffiliate_token_and_residence', {binary_user_id => $binary_user_id});
-                my $myaffiliates_token            = $affiliate_token_and_residence->[0]->[0];
-
-                # Filter out clients who are not registered with myaffiliates
-                if (defined $myaffiliates_token) {
-
-                    # This gives the total volume and number of deals
-                    my $deals = $self->db_query('get_total_volume', {loginid => $loginid});
-
-                    my $count_of_deals = scalar @$deals;
-                    my $total_volume   = 0;
-
-                    # Lot size = volume / contract size
-                    foreach my $deal (@$deals) {
-                        my ($symbol, $volume) = @$deal;
-                        my $contract_size = $self->db_query('get_symbol_contract_size', {symbol => $symbol});
-                        $total_volume += $volume / $contract_size if $contract_size;
-                    }
-
-                    $trading_activity_table .=
-                        join(',', ($processing_date_yyyy_mm_dd, $loginid, $total_volume, $count_of_deals, $daily_amount, $first_deposit)) . "\n";
-                }
             } catch ($e) {
                 $log->errorf('Error on trading_activity_csv: [%s]', $e);
-                stats_event("MyAffiliatesCFDReport", "Error on trading_activity_csv " . $row->[0] . ": [$e]", {alert_type => 'error'});
+                stats_event("MyAffiliatesCFDReport", "Error on trading_activity_csv get daily deposits: [$e]", {alert_type => 'error'});
                 $generation_error = 1;
             }
         }
 
+        # This gives the deals done by the clients on a given day
+        my $deals = $self->db_query('get_total_volume', {});
+
+        # Lot size = volume / contract size
+        foreach my $deal (@$deals) {
+            my $lot_size;
+            my ($loginid, $symbol, $volume, $count_of_deals) = @$deal;
+
+            try {
+                my $contract_size = $self->db_query('get_symbol_contract_size', {symbol => $symbol});
+                # If there is no contract size or it's zero, we assume there is no commission rate for it so we skip that deals
+                next unless ($contract_size);
+
+                $lot_size = $volume / $contract_size;
+                $loginids->{$loginid}->{total_volume}   += $lot_size;
+                $loginids->{$loginid}->{count_of_deals} += $count_of_deals;
+            } catch ($e) {
+                $log->errorf('Error on trading_activity_csv: [%s]', $e);
+                stats_event("MyAffiliatesCFDReport", "Error on trading_activity_csv get total volume: [$e]", {alert_type => 'error'});
+                $generation_error = 1;
+            }
+        }
+
+        foreach my $loginid (keys %$loginids) {
+            $trading_activity_table .= join(
+                ',',
+                (
+                    $processing_date_yyyy_mm_dd,
+                    $loginid,
+                    $loginids->{$loginid}->{total_volume}   || 0,
+                    $loginids->{$loginid}->{count_of_deals} || 0,
+                    $loginids->{$loginid}->{daily_amount}   || 0,
+                    $loginids->{$loginid}->{first_deposit}  || 0
+                )) . "\n";
+        }
         return $trading_activity_table;
     }
 
@@ -361,7 +391,7 @@ Generates the csv file contents for commissions in one string
 
         foreach my $row (@$commissions) {
             my ($loginid, $commission) = @$row;
-            $commissions_table .= join(',', ($processing_date_yyyy_mm_dd, $loginid, $commission)) . "\n";
+            $commissions_table .= join(',', ($processing_date_yyyy_mm_dd, $loginid, financialrounding('amount', 'USD', $commission))) . "\n";
         }
 
         return $commissions_table;
@@ -394,8 +424,9 @@ Returns the result of the query
                         $_->selectrow_hashref(
                             'SELECT contract_size 
                                FROM affiliate.commission 
-                              WHERE mapped_symbol = ?',
-                            undef, $params->{symbol});
+                              WHERE mapped_symbol = ?
+                                AND provider = ?',
+                            undef, $params->{symbol}, $config{platform});
                     });
 
                 if (not defined $db_contract_size->{contract_size}) {
@@ -602,6 +633,73 @@ Deletes the csv files older than the number of days specified in DAYS_TO_STORE_C
         }
     }
 
+=head2 get_binary_user_id
+
+Gets the binary_user_id for a given loginid. To avoid multiple calls to the database, the loginid and binary_user_id are cached
+
+=over 4
+
+=item C<$loginid> - the loginid for which the binary_user_id is to be fetched
+
+=back
+
+Returns the binary_user_id
+
+=cut
+
+    method get_binary_user_id ($loginid) {
+        return $loginids_userids{$loginid} if $loginids_userids{$loginid};
+        my $binary_user_id = $self->db_query('get_binary_user_id', {loginid => $loginid})->[0]->[0];
+        $loginids_userids{$loginid} = $binary_user_id;
+        return $binary_user_id;
+    }
+
+=head2 get_myaffiliate_token_and_residence
+
+Gets the myaffiliates token and residence for a given loginid or binary_user_id 
+
+=over 4
+
+=item C<$loginid> - the loginid for which the token and residence is to be fetched
+
+=item C<$binary_user_id> - the binary_user_id for which the token and residence is to be fetched
+
+=back
+
+Returns the myaffiliates token and residence
+
+=cut
+
+    method get_myaffiliate_token_and_residence ($loginid, $binary_user_id) {
+        $binary_user_id = $self->get_binary_user_id($loginid) unless $binary_user_id;
+        return                                                unless $binary_user_id;
+
+        return $affiliate_cache{$binary_user_id} if ($affiliate_cache{$binary_user_id});
+        return                                   if (exists $affiliate_cache{$binary_user_id});
+
+        my $affiliate_token_and_residence = $self->db_query('get_myaffiliate_token_and_residence', {binary_user_id => $binary_user_id});
+
+        $affiliate_cache{$binary_user_id} = (defined $affiliate_token_and_residence ? $affiliate_token_and_residence->[0] : []);
+
+        return $affiliate_token_and_residence->[0];
+    }
+
+=head2 DESTROY
+
+Disconnects the database connections
+Drops the config, contract_size and affiliate_cache hashes
+
+=cut
+
+    method DESTROY {
+        $db->{userdb}->disconnect;
+        $db->{clientdb}->disconnect;
+        $db->{commissiondb}->disconnect;
+        %config           = ();
+        %contract_size    = ();
+        %affiliate_cache  = ();
+        %loginids_userids = ();
+    }
 }
 
 1;
