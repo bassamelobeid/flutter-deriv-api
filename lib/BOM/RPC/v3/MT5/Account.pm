@@ -159,7 +159,7 @@ async_rpc "mt5_login_list",
                     $_,
                     qw(account_type balance country currency display_balance email group landing_company landing_company_short),
                     qw(leverage login name market_type sub_account_type sub_account_category server server_info),
-                    qw(status webtrader_url rights),
+                    qw(status webtrader_url rights product),
                 )
             } @logins;
 
@@ -734,6 +734,7 @@ async_rpc "mt5_new_account",
     my $landing_company_short   = delete $args->{company};
     my $sub_account_category    = delete $args->{sub_account_category} // 'standard';
     my $migration_request       = delete $args->{migrate};
+    my $product                 = delete $args->{product} // '';
 
     my $trading_password = $args->{mainPassword};
 
@@ -1284,14 +1285,16 @@ async_rpc "mt5_new_account",
                                 if ref $group_details eq 'HASH' and $group_details->{error};
 
                             return Future->done({
-                                    login           => $mt5_login,
-                                    balance         => $balance,
-                                    display_balance => formatnumber('amount', $args->{currency}, $balance),
-                                    currency        => $args->{currency},
-                                    account_type    => $account_type,
-                                    agent           => $args->{agent},
-                                    ($mt5_account_category) ? (mt5_account_category => $mt5_account_category) : (),
-                                    ($mt5_account_type)     ? (mt5_account_type     => $mt5_account_type)     : ()});
+                                login           => $mt5_login,
+                                balance         => $balance,
+                                display_balance => formatnumber('amount', $args->{currency}, $balance),
+                                currency        => $args->{currency},
+                                account_type    => $account_type,
+                                agent           => $args->{agent},
+                                ($mt5_account_category) ? (mt5_account_category => $mt5_account_category) : (),
+                                ($mt5_account_type)     ? (mt5_account_type     => $mt5_account_type)     : (),
+                                product => $product,
+                            });
                         });
                 });
         })->catch($error_handler);
@@ -1515,7 +1518,7 @@ async_rpc "mt5_get_settings",
                 $settings,
                 qw/account_type address balance city company country currency display_balance email group/,
                 qw/landing_company_short leverage login market_type name phone phonePassword state sub_account_type/,
-                qw/sub_account_category zipCode server/,
+                qw/sub_account_category zipCode server product/,
             );
 
             return Future->done($settings);
@@ -1584,6 +1587,7 @@ sub set_mt5_account_settings {
     $settings->{account_type}          = $config->{account_type};
     $settings->{sub_account_type}      = $config->{sub_account_type};
     $settings->{sub_account_category}  = $config->{sub_account_category};
+    $settings->{product}               = $config->{product} // '';
 
     my %server_name_mapping = (
         'Deriv (SVG) LLC'                    => 'SVG',

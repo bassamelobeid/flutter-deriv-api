@@ -698,7 +698,7 @@ subtest 'trading_platform_available_accounts' => sub {
     my $result = $c->call_ok('trading_platform_available_accounts', $params)->has_no_system_error->has_no_error->result;
     ok ref $result eq 'ARRAY', 'result is an array reference';
 
-    my $expected_keys = [qw(market_type name requirements shortcode sub_account_type linkable_landing_companies)];
+    my $expected_keys = [qw(market_type name requirements shortcode sub_account_type linkable_landing_companies product)];
     foreach my $account ($result->@*) {
         cmp_bag([keys %$account], $expected_keys, 'response of trading_platform_accounts is as expected');
     }

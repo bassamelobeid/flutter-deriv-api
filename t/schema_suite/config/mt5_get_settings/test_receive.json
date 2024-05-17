@@ -153,6 +153,19 @@
                 "standard"
             ]
         },
+        "product": {
+            "description": "Product name that Deriv offer",
+            "type": "string",
+            "enum": [
+                "",
+                "synthetic",
+                "financial",
+                "swap_free",
+                "zero_spread",
+                "standard",
+                "stp"
+            ]
+        },
         "zipCode": {
             "description": "User's zip code.",
             "type": "string"

@@ -1467,6 +1467,7 @@ rpc transfer_between_accounts => sub {
                             transfers             => 'all',
                             sub_account_type      => $setting->{sub_account_type},
                             landing_company_short => $setting->{landing_company_short},
+                            product               => $setting->{product} // '',
                             }
                             unless $setting->{error};
                         return Future->done($resp);
@@ -2120,6 +2121,7 @@ sub _get_transferable_accounts {
                 transfers             => 'all',
                 sub_account_type      => $mt5_acc->{sub_account_type},
                 landing_company_short => $mt5_acc->{landing_company_short},
+                product               => $mt5_acc->{product} // '',
                 };
         }
     }

@@ -1688,6 +1688,7 @@ subtest 'MT5' => sub {
                     transfers             => 'all',
                     landing_company_short => 'svg',
                     sub_account_type      => 'financial',
+                    product               => '',
                 },
                 {
                     loginid               => $test_client->loginid,
@@ -1744,6 +1745,7 @@ subtest 'MT5' => sub {
                     transfers             => 'all',
                     landing_company_short => 'svg',
                     sub_account_type      => 'financial',
+                    product               => '',
                 },
                 {
                     loginid               => $test_client->loginid,
@@ -1978,6 +1980,7 @@ subtest 'MT5' => sub {
                         landing_company_short => 'svg',
                         market_type           => 'financial',
                         sub_account_type      => 'financial',
+                        product               => '',
                     },
                     {
                         loginid               => $test_wallet_vr->loginid,
@@ -2017,6 +2020,7 @@ subtest 'MT5' => sub {
                         landing_company_short => 'svg',
                         market_type           => 'financial',
                         sub_account_type      => 'financial',
+                        product               => '',
                     },
                     {
                         loginid               => $test_wallet_vr->loginid,
