@@ -83,6 +83,10 @@
                                 "description": "The epoch of the transaction date.",
                                 "type": "integer"
                             },
+                            "transaction_fee": {
+                                "description": "[Optional] The Transaction fee associated with priority withdrawal. Present only in priority withdrawal transaction.",
+                                "type": "number"
+                            },
                             "transaction_hash": {
                                 "description": "[Optional] The transaction hash when available.",
                                 "type": "string"
