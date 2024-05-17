@@ -42,7 +42,8 @@ subtest 'new client with no attempts' => sub {
             status             => 'none',
         },
         address => {
-            status => 'none',
+            status              => 'none',
+            supported_documents => ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
         },
     };
 
@@ -101,7 +102,8 @@ subtest 'IDV attempts' => sub {
             status             => 'rejected',
         },
         address => {
-            status => 'none',
+            status              => 'none',
+            supported_documents => ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
         },
     };
 
@@ -127,7 +129,8 @@ subtest 'IDV attempts' => sub {
                     passport               => {display_name => 'Passport'}}}
         },
         address => {
-            status => 'none',
+            status              => 'none',
+            supported_documents => ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
         },
     };
 
@@ -167,7 +170,8 @@ subtest 'IDV attempts' => sub {
             status             => 'verified',
         },
         address => {
-            status => 'none',
+            status              => 'none',
+            supported_documents => ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
         },
     };
 
@@ -229,7 +233,9 @@ subtest 'Landing Companies provided as arguments' => sub {
                 status             => 'rejected',
             },
             address => {
-                status => 'none',
+                status              => 'none',
+                supported_documents =>
+                    ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
             }
         },
         malta => {
@@ -240,9 +246,10 @@ subtest 'Landing Companies provided as arguments' => sub {
                 status             => 'none',
             },
             address => {
-                status => 'none',
-            },
-        }};
+                status              => 'none',
+                supported_documents =>
+                    ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
+            }}};
 
     my $res = $t->await::kyc_auth_status({kyc_auth_status => 1, landing_companies => ['svg', 'malta']});
     test_schema('kyc_auth_status', $res);

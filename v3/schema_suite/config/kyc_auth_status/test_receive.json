@@ -71,6 +71,16 @@
                                     }
                                  }
                               },
+                              "manual": {
+                                 "type": "object",
+                                 "additionalProperties": {
+                                    "properties": {
+                                       "display_name": {
+                                          "type": "string"
+                                       }
+                                    }
+                                 }
+                              },
                               "onfido": {
                                  "type": "object",
                                  "additionalProperties": {
@@ -106,7 +116,13 @@
                               "verified",
                               "expired"
                            ]
-                        }
+                        },
+                        "supported_documents": {
+                           "type": "array",
+                           "items": {
+                              "type": "string"
+                           }
+                       }
                      }
                   }
                }
@@ -177,6 +193,16 @@
                                        }
                                     }
                                  },
+                                 "manual": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                       "properties": {
+                                          "display_name": {
+                                             "type": "string"
+                                          }
+                                       }
+                                    }
+                                 },
                                  "onfido": {
                                     "type": "object",
                                     "additionalProperties": {
@@ -206,7 +232,13 @@
                                  "verified",
                                  "expired"
                               ]
-                           }
+                           },
+                           "supported_documents": {
+                              "type": "array",
+                              "items": {
+                                 "type": "string"
+                              }
+                          }
                         }
                      }
                   }
