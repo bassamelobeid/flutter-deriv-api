@@ -325,6 +325,7 @@ subtest 'trading_platform_available_accounts' => sub {
                 'signup'     => []
             },
             'linkable_landing_companies' => ['svg'],
+            'product'                    => '',
         },
         {
             'name'             => 'Deriv (SVG) LLC',
@@ -336,6 +337,7 @@ subtest 'trading_platform_available_accounts' => sub {
                 'signup'     => []
             },
             'linkable_landing_companies' => ['svg'],
+            'product'                    => '',
         },
         {
             'name'         => 'Deriv (BVI) Ltd',
@@ -350,6 +352,7 @@ subtest 'trading_platform_available_accounts' => sub {
             },
             'sub_account_type'           => 'standard',
             'linkable_landing_companies' => ['svg'],
+            'product'                    => '',
         },
         {
             'sub_account_type' => 'standard',
@@ -365,6 +368,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'market_type'                => 'financial',
             'name'                       => 'Deriv (V) Ltd',
             'linkable_landing_companies' => ['svg'],
+            'product'                    => '',
         },
         {
             'sub_account_type' => 'standard',
@@ -380,6 +384,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'market_type'                => 'gaming',
             'name'                       => 'Deriv (V) Ltd',
             'linkable_landing_companies' => ['svg'],
+            'product'                    => '',
         },
         {
             'requirements' => {
@@ -395,6 +400,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'market_type'                => 'financial',
             'name'                       => 'Deriv (FX) Ltd',
             'linkable_landing_companies' => ['svg'],
+            'product'                    => '',
         },
         {
             'requirements' => {
@@ -406,6 +412,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'market_type'                => 'gaming',
             'name'                       => 'Deriv (SVG) LLC',
             'linkable_landing_companies' => ['svg'],
+            'product'                    => '',
         },
         {
             'requirements' => {
@@ -421,6 +428,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'market_type'                => 'gaming',
             'name'                       => 'Deriv (BVI) Ltd',
             'linkable_landing_companies' => ['svg'],
+            'product'                    => '',
         },
         {
             'requirements' => {
@@ -434,6 +442,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'name'                       => 'Deriv Investments (Europe) Limited',
             'sub_account_type'           => 'standard',
             'linkable_landing_companies' => ['maltainvest'],
+            'product'                    => '',
         }];
 
     $resp = $t->await::trading_platform_available_accounts({
@@ -470,6 +479,7 @@ subtest 'trading_platform_available_accounts' => sub {
             'name'                       => 'Deriv Investments (Europe) Limited',
             'sub_account_type'           => 'standard',
             'linkable_landing_companies' => ['maltainvest'],
+            'product'                    => '',
         }];
     $resp = $t->await::trading_platform_available_accounts({
         trading_platform_available_accounts => 1,
