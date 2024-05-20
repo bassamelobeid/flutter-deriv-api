@@ -27,6 +27,14 @@
             "landing_company_shortcode" : {
                "pattern" : "^maltainvest$",
                "type" : "string"
+            },
+            "currency" : {
+               "type" : "string",
+               "pattern" : "^EUR$"
+            },
+            "currency_type" : {
+               "type" : "string",
+               "pattern" : "^fiat$"
             }
          },
          "required" : [

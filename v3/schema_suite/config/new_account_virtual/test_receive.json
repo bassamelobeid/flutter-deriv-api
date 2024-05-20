@@ -23,6 +23,10 @@
                "type" : "string",
                "pattern" : "^USD$"
             },
+            "currency_type" : {
+               "type" : "string",
+               "pattern" : "^fiat$"
+            },
             "balance" : {
                "type" : "number",
                "enum" : [

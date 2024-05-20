@@ -219,14 +219,15 @@ subtest 'new_real_account with currency provided' => sub {
     $details{salutation} = 'Mr';
 
     my $compiled_checks = sub {
-        my ($res, $details) = @_;
+        my ($res, $details, $currency_type) = @_;
         my $loginid = $res->{new_account_real}->{client_id};
 
         ok($res->{msg_type}, 'new_account_real');
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
         like($loginid, qr/^CR\d+$/, "got CR client $loginid");
-        is($res->{new_account_real}->{currency}, $details->{currency}, "currency set as per request");
+        is($res->{new_account_real}->{currency},      $details->{currency}, "currency set as per request");
+        is($res->{new_account_real}->{currency_type}, $currency_type,       "currency type set correctly per request");
     };
 
     # authorize
@@ -237,7 +238,7 @@ subtest 'new_real_account with currency provided' => sub {
     $details{last_name} = 'Torvalds';
     $details{phone}     = '+60321685007';
     my $res = $t->await::new_account_real(\%details);
-    $compiled_checks->($res, \%details);
+    $compiled_checks->($res, \%details, 'fiat');
 
     # now let's login as a real account and try to create more accounts
     $token = $res->{new_account_real}->{oauth_token};
@@ -249,11 +250,11 @@ subtest 'new_real_account with currency provided' => sub {
 
     $details{currency} = 'LTC';
     $res = $t->await::new_account_real(\%details);
-    $compiled_checks->($res, \%details);
+    $compiled_checks->($res, \%details, 'crypto');
 
     $details{currency} = 'ETH';
     $res = $t->await::new_account_real(\%details);
-    $compiled_checks->($res, \%details);
+    $compiled_checks->($res, \%details, 'crypto');
 
     $details{currency} = 'XXX';
     $res = $t->await::new_account_real(\%details);
