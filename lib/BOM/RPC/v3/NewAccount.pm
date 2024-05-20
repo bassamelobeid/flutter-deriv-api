@@ -293,7 +293,12 @@ rpc new_account_real => sub {
         landing_company           => $new_client->landing_company->name,
         landing_company_shortcode => $new_client->landing_company->short,
         oauth_token               => $response->{oauth_token},
-        $args->{currency} ? (currency => $new_client->currency) : (),
+        $args->{currency}
+        ? (
+            currency      => $new_client->currency,
+            currency_type => LandingCompany::Registry::get_currency_type($new_client->currency) // ''
+            )
+        : (),
     };
 };
 
@@ -396,6 +401,12 @@ rpc new_account_maltainvest => annotate_db_calls(
         landing_company           => $new_client->landing_company->name,
         landing_company_shortcode => $new_client->landing_company->short,
         oauth_token               => $response->{oauth_token},
+        $args->{currency}
+        ? (
+            currency      => $new_client->currency,
+            currency_type => LandingCompany::Registry::get_currency_type($new_client->currency) // ''
+            )
+        : (),
     };
 };
 
@@ -465,12 +476,13 @@ rpc "new_account_virtual",
         }
 
         return {
-            client_id   => $client->loginid,
-            email       => $client->email,
-            currency    => $account->currency_code(),
-            balance     => formatnumber('amount', $account->currency_code(), $account->balance),
-            oauth_token => _create_oauth_token($params->{source}, $client->loginid),
-            type        => $category,
+            client_id     => $client->loginid,
+            email         => $client->email,
+            currency      => $account->currency_code(),
+            currency_type => LandingCompany::Registry::get_currency_type($account->currency_code()) // '',
+            balance       => formatnumber('amount', $account->currency_code(), $account->balance),
+            oauth_token   => _create_oauth_token($params->{source}, $client->loginid),
+            type          => $category,
             $refresh_token ? (refresh_token => $refresh_token) : (),
         };
     } catch ($e) {
@@ -579,6 +591,7 @@ rpc new_account_wallet => sub {
         landing_company_shortcode => $landing_company->short,
         oauth_token               => _create_oauth_token($params->{source}, $new_client->loginid),
         currency                  => $new_client->currency,
+        currency_type             => LandingCompany::Registry::get_currency_type($new_client->currency) // '',
     };
 };
 

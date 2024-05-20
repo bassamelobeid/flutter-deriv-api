@@ -200,8 +200,9 @@ subtest $method => sub {
     )->token;
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-        ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-        ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+        ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+        ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+        ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
     my $new_loginid = $rpc_ct->result->{client_id};
 
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
@@ -255,8 +256,9 @@ subtest $method => sub {
 
         $params->{args}->{residence} = 'de';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
         is $dd_inc_metrics->{'bom_rpc.v_3.new_account_real_success.count'}, undef, "new account real count is not increased for virtual account";
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
@@ -340,8 +342,9 @@ subtest $method => sub {
         $params->{args}->{residence}     = 'de';
         $params->{args}->{email_consent} = 1;
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
@@ -361,8 +364,9 @@ subtest $method => sub {
         $params->{args}->{residence}     = 'de';
         $params->{args}->{email_consent} = 0;
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
@@ -383,8 +387,9 @@ subtest $method => sub {
         delete $params->{args}->{email_consent};
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
@@ -406,8 +411,9 @@ subtest $method => sub {
         $params->{args}->{utm_campaign} = 'camp$ign2';
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
@@ -438,8 +444,9 @@ subtest $method => sub {
         $params->{args}->{account_category} = 'trading';
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
 
     };
 
@@ -482,8 +489,9 @@ subtest $method => sub {
         $params->{args}->{email}             = $email;
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If email verification is suspended - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
 
         is %initial_emissions + 1, %emitted, 'new signup event emission made for successful signup';
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, 'signup event emitted';
@@ -724,7 +732,8 @@ subtest $method => sub {
         }
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create fiat currency account')
-            ->result_value_is(sub { shift->{currency} }, 'USD', 'fiat currency account currency is USD');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'fiat currency account currency is USD')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'fiat currency account currency type is fiat');
 
         my $cl_usd = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
 
@@ -804,8 +813,9 @@ subtest $method => sub {
 
         $rpc_ct->call_ok('new_account_virtual', $params)
             ->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
 
         my $client_cr = {
             first_name    => 'James' . rand(999),
@@ -821,7 +831,8 @@ subtest $method => sub {
         $params->{args}->{currency} = 'USD';
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create fiat currency account')
-            ->result_value_is(sub { shift->{currency} }, 'USD', 'fiat currency account currency is USD');
+            ->result_value_is(sub { shift->{currency} },      'USD',  'fiat currency account currency is USD')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'fiat currency account currency type is fiat');
 
         my $cl_usd = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
 
@@ -854,7 +865,8 @@ subtest $method => sub {
         $params->{args} = {'currency' => 'BTC'};
         $params->{args}->{affiliate_token} = 'second';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create crypto currency account, reusing info')
-            ->result_value_is(sub { shift->{currency} }, 'BTC', 'crypto account currency is BTC');
+            ->result_value_is(sub { shift->{currency} },      'BTC',    'crypto account currency is BTC')
+            ->result_value_is(sub { shift->{currency_type} }, 'crypto', 'crypto account currency type is crypto');
 
         sleep 2;
 
@@ -899,7 +911,8 @@ subtest $method => sub {
         delete $params->{args}->{place_of_birth};
         delete $params->{args}->{citizen};
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
-            ->result_value_is(sub { shift->{currency} }, 'LTC', 'crypto account currency is LTC');
+            ->result_value_is(sub { shift->{currency} },      'LTC',    'crypto account currency is LTC')
+            ->result_value_is(sub { shift->{currency_type} }, 'crypto', 'crypto account currency type is crypto');
 
         my $cl_ltc = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
 
@@ -1036,7 +1049,9 @@ subtest $method => sub {
             sub { shift->{landing_company} },
             'Deriv Investments (Europe) Limited',
             'It should return new account data'
-        )->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return new account data');
+        )->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return new account data')
+            ->result_value_is(sub { shift->{currency} },      'EUR',  'It should return new account data')
+            ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data');
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
@@ -1607,8 +1622,9 @@ subtest 'Duplicate accounts are not created in race condition' => sub {
     )->token;
 
     $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-        ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-        ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+        ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
+        ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
+        ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
 
     my $user = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}})->user;
 
@@ -2038,8 +2054,10 @@ subtest $method => sub {
 
         ## Wallet Created
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_no_error('If passed argumets are ok a new real MF wallet will be created successfully');
-        $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return wallet landing company');
+            ->has_no_system_error->has_no_error('If passed argumets are ok a new real MF wallet will be created successfully')
+            ->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return wallet landing company')
+            ->result_value_is(sub { shift->{currency} },                  'USD',         'It should return wallet currency')
+            ->result_value_is(sub { shift->{currency_type} },             'fiat',        'It should return wallet currency type');
 
         ## Same wallet duplicate error
         $rpc_ct->call_ok($method, $params)
@@ -2058,8 +2076,10 @@ subtest $method => sub {
         $params->{args}->{landing_company_short} = 'svg';
         $params->{args}->{currency}              = 'USD';
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_no_error('If passed argumets are ok a new real CR wallet will be created successfully');
-        $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return wallet landing company');
+            ->has_no_system_error->has_no_error('If passed argumets are ok a new real CR wallet will be created successfully')
+            ->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg',  'It should return wallet landing company')
+            ->result_value_is(sub { shift->{currency} },                  'USD',  'It should return wallet currency')
+            ->result_value_is(sub { shift->{currency_type} },             'fiat', 'It should return wallet currency type');
 
         ## Same wallet duplicate error
         $rpc_ct->call_ok($method, $params)

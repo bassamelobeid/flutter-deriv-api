@@ -32,6 +32,10 @@
          "pattern" : "^USD$",
          "type" : "string"
       },
+      "currency_type" : {
+         "pattern" : "^fiat$",
+         "type" : "string"
+      },
       "oauth_token" : {
          "type" : "string"
       },
