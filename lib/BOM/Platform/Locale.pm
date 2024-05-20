@@ -22,7 +22,7 @@ use Locale::SubCountry;
 
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(request localize);
-use Business::Config::Country;
+use Business::Config::Country::Registry;
 
 sub translate_salutation {
     my $provided = shift;
@@ -63,10 +63,10 @@ sub get_state_option {
     my $country_code = shift or return;
     $country_code = lc $country_code;
 
-    my $country_list = Business::Config::Country->new()->list();
+    my $country_list = Business::Config::Country::Registry->new()->list();
     return unless $country_list->{$country_code};
 
-    my @options = @{$country_list->{$country_code}->{subdivision}};
+    my @options = @{$country_list->{$country_code}->subdivision};
 
     # FE seems to have removed the constraint, but BE has NOT NULL constraint for state and tests fail when
     # we remove the default country. We will keep the localization as the countries are
