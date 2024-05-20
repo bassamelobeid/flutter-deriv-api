@@ -2263,7 +2263,8 @@ subtest 'kyc authorization status, country and landing companies provided as arg
             },
             address => {
                 status              => 'none',
-                supported_documents => ['utility_bill', 'bank_statement', 'poa_others'],
+                supported_documents =>
+                    ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
             },
         },
         maltainvest => {
@@ -2282,10 +2283,12 @@ subtest 'kyc authorization status, country and landing companies provided as arg
             },
             address => {
                 status              => 'none',
-                supported_documents => ['utility_bill', 'bank_statement', 'poa_others'],
+                supported_documents =>
+                    ['utility_bill', 'phone_bill', 'bank_statement', 'affidavit', 'official_letter', 'rental_agreement', 'poa_others'],
             }}};
 
     my $result = $c->tcall($method, $params);
+
     cmp_deeply $result, $expected_response, 'expected response object for lcs and country as argument';
 
     $idv_mock->unmock_all;

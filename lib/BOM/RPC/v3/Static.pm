@@ -47,7 +47,7 @@ use BOM::Config::P2P;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use LandingCompany::Registry;
-use Business::Config::Country;
+use Business::Config::Country::Registry;
 use Locale::Country::Extra;
 
 use constant WEBSITE_STATUS_KEY_NAMESPACE => 'WEBSITE_STATUS';
@@ -81,11 +81,11 @@ rpc residence_list => sub {
 
     my $countries = Locale::Country::Extra->new();
 
-    my $country_list = Business::Config::Country->new()->list();
+    my $country_list = Business::Config::Country::Registry->new()->list();
 
     my @sorted_list =
         sort { $a->{name} cmp $b->{name} }
-        map  { +{code => $_, name => $countries->localized_code2country($_, request()->language) // $country_list->{$_}->{name},} }
+        map  { +{code => $_, name => $countries->localized_code2country($_, request()->language) // $country_list->{$_}->name} }
         keys $country_list->%*;
 
     foreach my $country_data (@sorted_list) {
@@ -94,10 +94,10 @@ rpc residence_list => sub {
 
         my $country_name   = $country_data->{name};
         my $country_config = $country_list->{$country_code};
-        my $phone_idd      = $country_config->{phone_idd};
-        my $tin_format     = $country_config->{common_reporting_standard}->{tax}->{tin_format};
+        my $phone_idd      = $country_config->phone_idd;
+        my $tin_format     = $country_config->common_reporting_standard->{tax}->{tin_format};
 
-        my $poi_config        = $country_config->{know_your_customer}->{authentication}->{identity_verification};
+        my $poi_config        = $country_config->know_your_customer->{authentication}->{identity_verification};
         my $has_visual_sample = $poi_config->{provider}->{idv}->{has_visual_sample};
 
         my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -139,8 +139,8 @@ rpc residence_list => sub {
                 },
             }};
 
-        my $landing_company = $country_config->{landing_company};
-        my $signup_config   = $country_config->{signup};
+        my $landing_company = $country_config->landing_company;
+        my $signup_config   = $country_config->signup;
         my $allowed_country = $landing_company->{default} ne 'none';
         my $disabled        = !$allowed_country || (!$signup_config->{account} && !$signup_config->{partners});
 

@@ -30,7 +30,7 @@ use LandingCompany::Registry;
 use Format::Util::Numbers            qw/formatnumber financialrounding/;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 use Business::Config::Account;
-
+use Business::Config::Country::Registry;
 use BOM::RPC::Registry '-dsl';
 
 use BOM::RPC::v3::Utility qw(longcode log_exception get_verification_uri);
@@ -1849,9 +1849,9 @@ sub _get_kyc_authentication_poa {
     my $lc_config  = $client->landing_company->know_your_customer;
     my $basic_list = $lc_config->{authentication}->{address_verification}->{allowed_types} // [];
 
-    my $country_list   = Business::Config::Country->new()->list();
+    my $country_list   = Business::Config::Country::Registry->new()->list();
     my $country_config = $country_list->{$country_code};
-    my $poa_config     = $country_config->{know_your_customer}->{authentication}->{address_verification};
+    my $poa_config     = $country_config->know_your_customer->{authentication}->{address_verification};
     my $countries_list = $poa_config->{supported_documents} // [];
 
     my @valid_doc_list;

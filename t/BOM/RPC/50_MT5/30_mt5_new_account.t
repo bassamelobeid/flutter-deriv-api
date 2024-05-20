@@ -761,7 +761,7 @@ subtest 'CR to MF account switching' => sub {
 
 subtest 'new account on addtional trade server' => sub {
     my $mock_user = Test::MockModule->new('BOM::User');
-    my $mocked    = Test::MockModule->new('Business::Config::Country');
+    my $mocked    = Test::MockModule->new('Business::Config::Country::Registry');
     $mocked->mock(
         'platform_server_routing',
         sub {

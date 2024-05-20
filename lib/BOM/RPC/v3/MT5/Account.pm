@@ -22,7 +22,7 @@ use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 use Log::Any                         qw($log);
 use Locale::Country                  qw(country2code);
 use Brands::Countries;
-use Business::Config::Country;
+use Business::Config::Country::Registry;
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::MT5::Errors;
@@ -65,7 +65,7 @@ use constant SIX_MONTHS_IN_SECONDS => 6 * 30 * 24 * 60 * 60;
 # This is the default trading server key for
 # - demo account
 # - real financial and financial stp accounts
-# - countries that is not defined in Business::Config::Country->new()->platform_server_routing('mt5')
+# - countries that is not defined in Business::Config::Country::Registry->new()->platform_server_routing('mt5')
 my $DEFAULT_TRADING_SERVER_KEY = 'p01_ts01';
 
 my $error_registry = BOM::RPC::v3::MT5::Errors->new();
@@ -590,7 +590,7 @@ Returns a randomly selected trading server key in client's region
 sub _get_server_type {
     my ($account_type, $country, $market_type, $sub_account_category) = @_;
 
-    my $server_routing_config = Business::Config::Country->new()->platform_server_routing('mt5');
+    my $server_routing_config = Business::Config::Country::Registry->new()->platform_server_routing('mt5');
 
     # just in case we pass in the name of the country instead of the country code.
     if (length $country != 2) {
