@@ -18,7 +18,7 @@ It does not exports these functions by default.
 use Syntax::Keyword::Try;
 use List::Util qw(any);
 
-use Business::Config::Country;
+use Business::Config::Country::Registry;
 
 use BOM::Config::Runtime;
 use BOM::Config;
@@ -354,7 +354,7 @@ Returns the whole routing config by country
 =cut
 
 sub routing_config {
-    my $routing_config = Business::Config::Country->new()->platform_server_routing('mt5');
+    my $routing_config = Business::Config::Country::Registry->new()->platform_server_routing('mt5');
 
     die "Cannot load mt5 routing config." unless $routing_config;
 
