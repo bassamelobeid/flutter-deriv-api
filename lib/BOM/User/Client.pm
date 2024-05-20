@@ -38,7 +38,7 @@ use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 use P2P;
 use Business::Config::Account;
-use Business::Config::Country;
+use Business::Config::Country::Registry;
 use Business::Config::LandingCompany;
 use LandingCompany::Registry;
 
@@ -6550,7 +6550,7 @@ applies the conditions related to visa/reversible deposits
 
 sub apply_reversible_deposit_conditions {
     my $self                  = shift;
-    my $cft_blocked_countries = Business::Config::Country->new()->cft_blocked();
+    my $cft_blocked_countries = Business::Config::Country::Registry->new()->cft_blocked();
 
     return "PaymentAgentUseOtherMethod" if (exists $cft_blocked_countries->{lc $self->residence});
     return "PaymentAgentWithdrawSameMethod";
