@@ -135,7 +135,7 @@ subtest 'Force migration' => sub {
 
     is exception { $migration->process() }, undef, 'process() has no error';
 
-    is($migration->state, 'migrated', 'state is failed');
+    is($migration->state, 'migrated', 'state is complete');
 };
 
 subtest 'Wallet creation' => sub {
@@ -1516,8 +1516,7 @@ subtest 'Migrate KYC verified clients' => sub {
 
 subtest 'wallet_migration_state' => sub {
     my $mock_user = bless {}, 'BOM::User';
-
-    my @tests = ({
+    my @tests     = ({
             name     => 'Only VR client',
             loginids => {
                 VRTC1001 => {
@@ -1536,7 +1535,7 @@ subtest 'wallet_migration_state' => sub {
                     is_wallet => 1,
                 },
             },
-            expected => 'partial',
+            expected => 'failed',
         },
         {
             name     => 'Only VR client + virtual wallet linked',
@@ -1547,7 +1546,7 @@ subtest 'wallet_migration_state' => sub {
                 },
                 VRW1001 => {is_wallet => 1},
             },
-            expected => 'complete',
+            expected => 'migrated',
         },
         {
             name     => 'Virtual migrated + real money legacy',
@@ -1561,7 +1560,7 @@ subtest 'wallet_migration_state' => sub {
                     is_wallet => 0,
                 },
             },
-            expected => 'partial',
+            expected => 'failed',
         },
         {
             name     => 'Virtual migrated + real money not linked',
@@ -1578,7 +1577,7 @@ subtest 'wallet_migration_state' => sub {
                     is_wallet => 1,
                 },
             },
-            expected => 'partial',
+            expected => 'failed',
         },
         {
             name     => 'Virtual migrated + real money linked',
@@ -1596,7 +1595,7 @@ subtest 'wallet_migration_state' => sub {
                     is_wallet => 1,
                 },
             },
-            expected => 'complete',
+            expected => 'migrated',
         },
         {
             name     => 'Virtual migrated + real money linked and MT5 not linked',
@@ -1617,7 +1616,7 @@ subtest 'wallet_migration_state' => sub {
                     is_wallet => 0,
                 },
             },
-            expected => 'partial',
+            expected => 'failed',
         },
         {
             name     => 'Virtual migrated + real money linked and MT5 linked',
@@ -1639,12 +1638,13 @@ subtest 'wallet_migration_state' => sub {
                     wallet_loginid => 'CRW1001',
                 },
             },
-            expected => 'complete',
+            expected => 'migrated',
         },
     );
 
     for my $test (@tests) {
         $mock_user->{loginid_details} = $test->{loginids};
+        $mock_user->{id}              = 1;
 
         is(BOM::User::WalletMigration::accounts_state($mock_user), $test->{expected}, "Expected wallet migration state for $test->{name}");
     }

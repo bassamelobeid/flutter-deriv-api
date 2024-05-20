@@ -37,6 +37,12 @@ use constant {
         derivez => 1,
         ctrader => 1,
     },
+
+    STATE_PARTIAL     => 'failed',
+    STATE_COMPLETE    => 'migrated',
+    STATE_ELIGIBLE    => 'eligible',
+    STATE_INELIGIBLE  => 'ineligible',
+    STATE_IN_PROGRESS => 'in_progress',
 };
 
 class BOM::User::WalletMigration;
@@ -124,15 +130,11 @@ Returns the state of the migration.
 =cut
 
 method state (%args) {
-    return 'in_progress' if $self->redis->get(MIGRATION_KEY_PREFIX . $user->id);
-
     my $state = accounts_state($user);
-    return 'migrated' if $state eq 'complete';
-    return 'failed'   if $state eq 'partial';
+    return $state         if any { $_ eq $state } (STATE_PARTIAL, STATE_COMPLETE, STATE_IN_PROGRESS);
+    return STATE_ELIGIBLE if $self->is_eligible(%args);
 
-    return 'eligible' if $self->is_eligible(%args);
-
-    return 'ineligible';
+    return STATE_INELIGIBLE;
 }
 
 =head2 start
@@ -172,9 +174,9 @@ Thrown if the user is not eligible for migration.
 method start (%args) {
     my $state = $self->state(no_cache => 1);
 
-    die {error_code => 'MigrationAlreadyInProgress'}    if $state eq 'in_progress';
-    die {error_code => 'MigrationAlreadyFinished'}      if $state eq 'migrated';
-    die {error_code => 'UserIsNotEligibleForMigration'} if $state eq 'ineligible' && !$args{force};
+    die {error_code => 'MigrationAlreadyInProgress'}    if $state eq STATE_IN_PROGRESS;
+    die {error_code => 'MigrationAlreadyFinished'}      if $state eq STATE_COMPLETE;
+    die {error_code => 'UserIsNotEligibleForMigration'} if $state eq STATE_INELIGIBLE && !$args{force};
 
     my $is_success = $self->redis_rw->set(
         MIGRATION_KEY_PREFIX . $user->id, 1,
@@ -914,7 +916,13 @@ Returns one of the following values:
 =cut
 
 sub accounts_state {
-    my $user            = shift;
+    my $user = shift;
+
+    return 'none' if !$user || !$user->id;
+
+    my $redis = BOM::Config::Redis::redis_replicated_read();
+    return STATE_IN_PROGRESS if $redis->get(MIGRATION_KEY_PREFIX . $user->id);
+
     my $loginid_details = $user->loginid_details;
     my ($has_wallets, $has_unlinked_accounts) = (0, 0);
 
@@ -931,9 +939,9 @@ sub accounts_state {
         $has_unlinked_accounts = 1;
     }
 
-    return 'partial' if $has_wallets && $has_unlinked_accounts;
+    return STATE_PARTIAL if $has_wallets && $has_unlinked_accounts;
 
-    return 'complete' if $has_wallets;
+    return STATE_COMPLETE if $has_wallets;
 
     return 'none';
 }
