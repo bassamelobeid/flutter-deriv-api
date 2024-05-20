@@ -44,6 +44,7 @@ use BOM::Transaction::Validation;
 use BOM::User::Client;
 use Brands;
 use BOM::RPC::v3::Debug;
+use BOM::User::ExecutionContext;
 
 use constant REQUEST_ARGUMENTS_TO_BE_IGNORED => qw (req_id passthrough);
 use Log::Any qw($log);
@@ -52,6 +53,41 @@ BOM::RPC::Registry::register(longcode => \&BOM::RPC::v3::Utility::longcode);
 
 STDERR->autoflush(1);
 STDOUT->autoflush(1);
+
+use constant {
+    # Define api name which we need to block during wallet migration
+    BLOCK_API_LIST_FOR_WALLET_MIGRATION => +{
+        'new_account_real'             => 1,
+        'paymentagent_create'          => 1,
+        'paymentagent_withdraw'        => 1,
+        'p2p_advertiser_create'        => 1,
+        'paymentagent_transfer'        => 1,
+        'set_settings'                 => 1,
+        'account_closure'              => 1,
+        'trading_platform_new_account' => 1,
+        'mt5_new_account'              => 1,
+    },
+
+    # Define api name which you want to use caching
+    CONTEXT_CACHING_API_LIST => +{
+        'authorize'                    => 1,
+        'get_account_status'           => 1,
+        'new_account_real'             => 1,
+        'paymentagent_create'          => 1,
+        'paymentagent_withdraw'        => 1,
+        'p2p_advertiser_create'        => 1,
+        'paymentagent_transfer'        => 1,
+        'set_settings'                 => 1,
+        'account_closure'              => 1,
+        'trading_platform_new_account' => 1,
+        'mt5_new_account'              => 1,
+    },
+
+    BLOCK_MIGRATION_STATE_LIST => +{
+        'failed'      => 1,
+        'in_progress' => 1,
+    },
+};
 
 =head2 wrap_rpc_sub
 
@@ -266,7 +302,12 @@ sub _check_authorization {
             error  => BOM::RPC::v3::Utility::invalid_token_error()}
             unless $token_details and exists $token_details->{loginid};
 
-        $client = BOM::User::Client->get_client_instance($token_details->{loginid}, $db_operation);
+        if (CONTEXT_CACHING_API_LIST->{$def->name}) {
+            my $ctx = BOM::User::ExecutionContext->new;
+            $client = BOM::User::Client->get_client_instance($token_details->{loginid}, $db_operation, $ctx);
+        } else {
+            $client = BOM::User::Client->get_client_instance($token_details->{loginid}, $db_operation);
+        }
 
         if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
             return {
@@ -283,6 +324,19 @@ sub _check_authorization {
                     error  => BOM::RPC::v3::Utility::create_error({
                             code              => 'PermissionDenied',
                             message_to_client => localize('This resource cannot be accessed by this account type.')})};
+            }
+
+            # If migration is in progress, we block this api request from the client.
+            if (   BLOCK_API_LIST_FOR_WALLET_MIGRATION->{$def->name}
+                && BLOCK_MIGRATION_STATE_LIST->{BOM::User::WalletMigration::accounts_state($client->user)})
+            {
+                return {
+                    status => 0,
+                    error  => BOM::RPC::v3::Utility::create_error({
+                            code              => 'WalletMigrationInprogress',
+                            message_to_client => localize(
+                                'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.'
+                            )})};
             }
         }
 

@@ -56,6 +56,27 @@ my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $user_cr->add_client($client_cr);
 my ($token_cr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr->loginid);
 
+# Used it to enable wallet migration in progress
+sub _enable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(0);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->set(
+        "WALLET::MIGRATION::IN_PROGRESS::" . $user->id, 1,
+        EX => 30 * 60,
+        "NX"
+    );
+}
+# Used it to disable wallet migration
+sub _disable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(1);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->del("WALLET::MIGRATION::IN_PROGRESS::" . $user->id);
+}
+
 subtest 'Eligibility' => sub {
 
     my $params = {
@@ -279,6 +300,13 @@ subtest 'Application for PA' => sub {
             'code_of_conduct_approval'  => 1,
         },
     };
+
+    _enable_wallet_migration($client_cr->user);
+    $c->call_ok('paymentagent_create', $params)
+        ->has_no_system_error->has_error->error_code_is('WalletMigrationInprogress', 'The wallet migration is in progress.')
+        ->error_message_is(
+        'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.');
+    _disable_wallet_migration($client_cr->user);
 
     mailbox_clear();
 

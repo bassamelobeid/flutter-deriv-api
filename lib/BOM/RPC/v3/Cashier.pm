@@ -2086,7 +2086,7 @@ sub _get_transferable_accounts {
     my $kyc_status_config = BOM::Config::TradingPlatform::KycStatus->new();
 
     # skip wallets if the account is not fully migrated
-    if (BOM::User::WalletMigration::accounts_state($user) eq 'partial') {
+    if (any { $_ eq BOM::User::WalletMigration::accounts_state($user) } qw(failed in_progress)) {
         @accounts = grep { $_->{account_category} ne 'wallet' } @accounts;
     }
 

@@ -39,7 +39,6 @@ $mock_fees->redefine(
     transfer_between_accounts_fees => {
         USD => {BTC => 5},
         BTC => {USD => 5}});
-
 my $user = BOM::User->create(
     email    => rand(999) . '@deriv.com',
     password => 'x',

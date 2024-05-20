@@ -21,7 +21,6 @@ use BOM::User::TOTP;
 use BOM::Config::Runtime;
 use BOM::Config::AccountType::Registry;
 use JSON::WebToken qw(encode_jwt);
-use BOM::User::ExecutionContext;
 use BOM::User::WalletMigration;
 
 use LandingCompany::Registry;
@@ -42,8 +41,7 @@ rpc authorize => sub {
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
-    my $ctx    = BOM::User::ExecutionContext->new;
-    my $client = BOM::User::Client->get_client_instance($loginid, 'replica', $ctx);
+    my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
     my $user = $client->user;
@@ -94,7 +92,7 @@ rpc authorize => sub {
     my @upgradeable_companies = get_client_upgradeable_landing_companies($client);
 
     my $migration_state = BOM::User::WalletMigration::accounts_state($user);
-    my $account_links   = $migration_state eq 'complete' ? $user->get_accounts_links() : +{};
+    my $account_links   = $migration_state eq 'migrated' ? $user->get_accounts_links() : +{};
 
     return {
         fullname                      => $client->full_name,
@@ -628,14 +626,14 @@ sub _get_account_list {
     my ($clients, $user) = @_;
 
     my $migration_state = BOM::User::WalletMigration::accounts_state($user);
-    my $account_links   = $migration_state eq 'complete' ? $user->get_accounts_links() : +{};
+    my $account_links   = $migration_state eq 'migrated' ? $user->get_accounts_links() : +{};
 
     my @account_list;
     for my $cli ($clients->@*) {
         # Hide wallets if migration is not complete yet
         # this will be a way for FE to identify what flow will be used
         # to simplify the logic on FE side and not handle intermidiate state during migration
-        next if $migration_state ne 'complete' && $cli->is_wallet;
+        next if $migration_state ne 'migrated' && $cli->is_wallet;
 
         my $details = $cli->get_account_details;
         $details->{broker}    = $cli->broker;

@@ -36,6 +36,27 @@ for my $currency (@all_currencies) {
     );
 }
 
+# Used it to enable wallet migration in progress
+sub _enable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(0);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->set(
+        "WALLET::MIGRATION::IN_PROGRESS::" . $user->id, 1,
+        EX => 30 * 60,
+        "NX"
+    );
+}
+# Used it to disable wallet migration
+sub _disable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(1);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->del("WALLET::MIGRATION::IN_PROGRESS::" . $user->id);
+}
+
 subtest 'dxtrader accounts' => sub {
     my $user = BOM::User->create(
         email    => 'dxaccounts@test.com',
@@ -80,6 +101,13 @@ subtest 'dxtrader accounts' => sub {
         password     => 'Abcd1234',
         currency     => 'USD',
     };
+
+    _enable_wallet_migration($client->user);
+    $c->call_ok('trading_platform_new_account', $params)
+        ->has_no_system_error->has_error->error_code_is('WalletMigrationInprogress', 'The wallet migration is in progress.')
+        ->error_message_is(
+        'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.');
+    _disable_wallet_migration($client->user);
 
     my $acc = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error->result;
 

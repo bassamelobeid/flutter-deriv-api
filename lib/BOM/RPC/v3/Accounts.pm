@@ -73,7 +73,6 @@ use BOM::Rules::Engine;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::TradingPlatform::CTrader;
 use BOM::User::Client::AuthenticationDocuments;
-use BOM::User::ExecutionContext;
 use BOM::Service;
 
 use Locale::Country;
@@ -802,7 +801,7 @@ rpc balance => sub {
 
     # skip wallets if the account is not fully migrated
     my %loginid_details = $user->loginid_details->%*;
-    if (BOM::User::WalletMigration::accounts_state($user) eq 'partial') {
+    if (any { $_ eq BOM::User::WalletMigration::accounts_state($user) } qw(failed in_progress)) {
         @user_logins = grep { !$loginid_details{$_}{is_wallet} } @user_logins;
     }
     my $clients = $user->accounts_by_category(\@user_logins);
@@ -924,9 +923,7 @@ rpc
     sub {
     my $params = shift;
 
-    my $ctx    = BOM::User::ExecutionContext->new;
     my $client = $params->{client};
-    $client->set_context($ctx);
 
     my $risk_aml                   = $client->risk_level_aml;
     my $risk_sr                    = $client->risk_level_sr;

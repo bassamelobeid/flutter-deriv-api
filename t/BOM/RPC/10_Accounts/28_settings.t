@@ -130,6 +130,27 @@ $customer_client_disabled->get_client_object('MF')->status->set('disabled', 1, '
 
 my $c = Test::BOM::RPC::QueueClient->new();
 
+# Used it to enable wallet migration in progress
+sub _enable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(0);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->set(
+        "WALLET::MIGRATION::IN_PROGRESS::" . $user->id, 1,
+        EX => 30 * 60,
+        "NX"
+    );
+}
+# Used it to disable wallet migration
+sub _disable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(1);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->del("WALLET::MIGRATION::IN_PROGRESS::" . $user->id);
+}
+
 my $method = 'get_settings';
 subtest 'get settings' => sub {
     my $time = time;
@@ -1282,6 +1303,10 @@ subtest 'set_settings with empty phone' => sub {
         client_ip  => '127.0.0.1',
         user_agent => 'agent',
         args       => {email_consent => '0'}};
+    _enable_wallet_migration($test_client->user);
+    is $c->tcall('set_settings', $params)->{error}{code}, 'WalletMigrationInprogress',
+        'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.';
+    _disable_wallet_migration($test_client->user);
 
     cmp_deeply($c->tcall('set_settings', $params), {status => 1}, 'Set settings with empty phone changed successfully');
 };

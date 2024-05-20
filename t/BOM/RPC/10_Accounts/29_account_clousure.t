@@ -41,6 +41,27 @@ my $args   = {
     "reason"          => 'Financial concerns'
 };
 
+# Used it to enable wallet migration in progress
+sub _enable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(0);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->set(
+        "WALLET::MIGRATION::IN_PROGRESS::" . $user->id, 1,
+        EX => 30 * 60,
+        "NX"
+    );
+}
+# Used it to disable wallet migration
+sub _disable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(1);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->del("WALLET::MIGRATION::IN_PROGRESS::" . $user->id);
+}
+
 subtest 'account closure' => sub {
     my $email = 'def456@email.com';
 
@@ -89,7 +110,14 @@ subtest 'account closure' => sub {
     # Tokens
 
     my $token = $m->create_token($test_client->loginid, 'test token');
-
+    _enable_wallet_migration($user);
+    is $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        })->{error}{code}, 'WalletMigrationInprogress', 'The wallet migration is in progress.';
+    _disable_wallet_migration($user);
     my $res = $c->tcall(
         $method,
         {
@@ -463,6 +491,9 @@ subtest 'account_closure with mt5 API disabled' => sub {
         },
     };
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
+    _enable_wallet_migration($user);
+    is $c->tcall('mt5_new_account', $mt5_params)->{error}{code}, 'WalletMigrationInprogress', 'The wallet migration is in progress.';
+    _disable_wallet_migration($user);
     my $mt5_acc = $c->tcall('mt5_new_account', $mt5_params);
 
     ok $mt5_acc->{login}, 'mt5 account is created';

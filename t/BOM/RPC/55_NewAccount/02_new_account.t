@@ -103,6 +103,26 @@ $params = {
     country  => 'ru',
     args     => {},
 };
+# Used it to enable wallet migration in progress
+sub _enable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(0);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->set(
+        "WALLET::MIGRATION::IN_PROGRESS::" . $user->id, 1,
+        EX => 30 * 60,
+        "NX"
+    );
+}
+# Used it to disable wallet migration
+sub _disable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(1);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->del("WALLET::MIGRATION::IN_PROGRESS::" . $user->id);
+}
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -553,7 +573,6 @@ subtest $method => sub {
         @{$params->{args}}{keys %$client_details} = values %$client_details;
 
         $params->{args}{citizen} = "at";
-
         # These are here because our test helper function "create_client" creates a virtual client with details such as first name which never happens in production. This causes the new_account_real call to fail as it checks against some details can't be changed but is checked against the details of the virtual account
         # $params->{args}{first_name} = $vclient->first_name;
         # $params->{args}{last_name} = $vclient->last_name;
@@ -574,6 +593,14 @@ subtest $method => sub {
             );
 
         $params->{args}->{phone} = '1234256789';
+
+        # Added to check, it will not allow if we have any migration in progress
+        _enable_wallet_migration($user);
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('WalletMigrationInprogress', 'The wallet migration is in progress.')
+            ->error_message_is(
+            'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.');
+        _disable_wallet_migration($user);
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },

@@ -80,6 +80,27 @@ my $c = BOM::Test::RPC::QueueClient->new();
 my $params = {language => 'EN'};
 my $advert;
 
+# Used it to enable wallet migration in progress
+sub _enable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(0);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->set(
+        "WALLET::MIGRATION::IN_PROGRESS::" . $user->id, 1,
+        EX => 30 * 60,
+        "NX"
+    );
+}
+# Used it to disable wallet migration
+sub _disable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(1);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->del("WALLET::MIGRATION::IN_PROGRESS::" . $user->id);
+}
+
 subtest 'No token' => sub {
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'error code is InvalidToken');
 };
@@ -213,6 +234,14 @@ subtest 'Adverts' => sub {
             ->has_no_system_error->has_error->error_code_is('ServiceNotAllowedForPA', 'Payment agents cannot create orders.');
         $mock_client->unmock('get_payment_agent');
     };
+
+    # Added to check, it will not allow if we have any migration in progress
+    _enable_wallet_migration($client_advertiser->user);
+    $c->call_ok('p2p_advertiser_create', $params)
+        ->has_no_system_error->has_error->error_code_is('WalletMigrationInprogress', 'The wallet migration is in progress.')
+        ->error_message_is(
+        'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.');
+    _disable_wallet_migration($client_advertiser->user);
 
     my $res = $c->call_ok('p2p_advertiser_create', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'advertiser created';
