@@ -146,7 +146,7 @@ sub validate_login {
     notify_login($c, $client, $unknown_location, $app) unless $result->{self_closed};
 
     # If migration is in progress, we hide wallet accounts from the client.
-    if (BOM::User::WalletMigration::accounts_state($user) eq 'partial') {
+    if (any { $_ eq BOM::User::WalletMigration::accounts_state($user) } qw(failed in_progress)) {
         @clients = grep { !$_->is_wallet } @clients;
     }
 
