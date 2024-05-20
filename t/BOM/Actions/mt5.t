@@ -579,13 +579,21 @@ subtest 'mt5 track event' => sub {
 
         like exception { $action_handler->($args)->get; }, qr/Loginid is required/, 'correct exception when loginid is missing';
 
+        $args->{loginid} = 'MTD90000';
+        $args->{color}   = 16711680;
+
+        my $response =
+            index($action_handler->($args)->{failure}[0], 'Ignoring color change on demo account');
+
+        is $response, 0, 'correct exception when passed a demo MT5 account';
+
         $args->{loginid} = 'MT90000';
         $args->{color}   = 16711680;
 
         $mocked_mt5->mock('get_user', sub { Future->fail({code => "NotFound"}) });
         $mocked_user->mock('new', sub { bless {id => 1}, 'BOM::User' });
 
-        my $response =
+        $response =
             index($action_handler->($args)->{failure}[0], 'Account MT90000 not found among the active accounts, changed the status to archived');
 
         is $response, 0, 'correct exception when MT5 account is not found';
@@ -598,12 +606,12 @@ subtest 'mt5 track event' => sub {
 
         $mocked_mt5->mock('update_user', sub { Future->done({login => "MT90000", color => 16711680}) });
 
-        $mocked_user->mock('id', sub { 1 })->mock('accounts_by_category', sub { +{enabled => [bless {id => 1}, 'BOM::User::Client']} });
+        $mocked_user->mock('id', sub { 1 })->mock('bom_real_loginids', sub { ('CR90000', 'CR90001') });
         my $result = $action_handler->($args)->get;
         ok $result, 'Success mt5 color change result';
 
         $mocked_mt5->unmock('get_user');
-        $mocked_user->unmock('new')->unmock('id')->unmock('accounts_by_category');
+        $mocked_user->unmock('new')->unmock('id')->unmock('bom_real_loginids');
     };
 
     subtest 'mt5 color change removed rights' => sub {

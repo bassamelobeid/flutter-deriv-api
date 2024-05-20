@@ -271,37 +271,37 @@ Takes the following parameters:
 
 =over
 
-=item * C<args> - Hash which includes the loginid and the color values, both required.
+=item * C<args> - Hash which includes the MT5 loginid and the color values, both required.
 
 =back
 
 =cut
 
 async sub mt5_change_color {
-    my $args    = shift;
-    my $loginid = $args->{loginid};
-    my $color   = $args->{color};
+    my $args        = shift;
+    my $mt5_loginid = $args->{loginid};
+    my $color       = $args->{color};
 
-    die 'Loginid is required' unless $loginid;
+    die 'Loginid is required' unless $mt5_loginid;
     die 'Color is required'   unless defined $color;
+    die 'Ignoring color change on demo account' if $mt5_loginid =~ /MTD/;
 
     my $user_detail;
+    my $user = BOM::User->new(loginid => $mt5_loginid);
 
     try {
-        $user_detail = await BOM::MT5::User::Async::get_user($loginid);
+        $user_detail = await BOM::MT5::User::Async::get_user($mt5_loginid);
     } catch ($e) {
-        if ($e->{code} eq 'NotFound') {
-            my $user = BOM::User->new(loginid => $loginid);
+        if (ref $e eq 'HASH' and $e->{code} eq 'NotFound') {
             BOM::Platform::Event::Emitter::emit(
                 'update_loginid_status',
                 {
-                    loginid        => $loginid,
+                    loginid        => $mt5_loginid,
                     binary_user_id => $user->id,
                     status_code    => 'archived'
                 });
-            die "Account $loginid not found among the active accounts, changed the status to archived";
+            die "Account $mt5_loginid not found among the active accounts, changed the status to archived";
         }
-
         die pp($e);
     }
 
@@ -309,19 +309,14 @@ async sub mt5_change_color {
     $user_detail->{color} = $color;
     my $updated_user = await BOM::MT5::User::Async::update_user($user_detail);
 
-    die "Could not change client $loginid color to $color" if $updated_user->{color} != ($color == -1 ? 4294967295 : $color);
-    die $updated_user->{error}                             if $updated_user->{error};
+    die "Could not change client $mt5_loginid color to $color" if $updated_user->{color} != ($color == -1 ? 4294967295 : $color);
+    die $updated_user->{error}                                 if $updated_user->{error};
 
-    my $user        = BOM::User->new(email => $user_detail->{email});
-    my $cr_accounts = $user->accounts_by_category([$user->bom_real_loginids]);
-
-    # Consider any real CR account for tracking
-    my $available_account_category = first { defined($cr_accounts->{$_}->[0]) } ('enabled', 'disabled', 'duplicated', 'self_excluded');
-    die "No real CR account found for user with binary_user_id: " . $user->id unless $available_account_category;
+    my ($deriv_loginid) = $user->bom_real_loginids;
 
     return BOM::Event::Services::Track::mt5_change_color({
-        loginid     => $cr_accounts->{$available_account_category}->[0]->loginid,
-        mt5_loginid => $loginid,
+        loginid     => $deriv_loginid,
+        mt5_loginid => $mt5_loginid,
         color       => $color
     });
 }
