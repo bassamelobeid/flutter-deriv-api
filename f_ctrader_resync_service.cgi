@@ -11,12 +11,12 @@ use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Syntax::Keyword::Try;
 use Time::Moment;
-use YAML::XS qw(LoadFile);
 use RedisDB;
 use constant TRIGGER_RESYNC_STREAM_NAME => 'dx_resync_request';
 use HTTP::Tiny;
 use Data::Dump 'pp';
 use Date::Utility;
+use BOM::Config qw(redis_ctrader_config);
 
 use constant DEALS_HASH_RESULTS_NAME   => 'ctrader::deals::resync::results';
 use constant TRADERS_HASH_RESULTS_NAME => 'ctrader::traders::resync::results';
@@ -25,9 +25,10 @@ use constant TRADERS_SCRIPT_LOCK       => 'ctrader::traders::resync::lock';
 
 BOM::Backoffice::Sysinit::init();
 
-my $cgi   = CGI->new;
-my $input = request()->params;
-my $staff = BOM::Backoffice::Auth::get_staffname();
+my $cgi          = CGI->new;
+my $input        = request()->params;
+my $staff        = BOM::Backoffice::Auth::get_staffname();
+my $redis_config = BOM::Config::redis_ctrader_config;
 my @info_for_output;
 
 my (
@@ -37,8 +38,6 @@ my (
 );
 
 try {
-    my $redis_config = LoadFile('/etc/rmg/redis-ctrader-bridge.yml');
-
     $redis_cfds = RedisDB->new(
         host     => $redis_config->{write}{host},
         port     => $redis_config->{write}{port},
@@ -135,7 +134,7 @@ if ($input->{'resync-button'}) {
             my $http = HTTP::Tiny->new(timeout => 10);
 
             my $result = $http->post(
-                'http://localhost:' . $api_port . '/resync',
+                'http://' . $redis_config->{write}{host} . ':' . $api_port . '/resync',
                 {
                     headers => {'Content-Type' => 'application/json'},
                     content => encode_json($payload)});
