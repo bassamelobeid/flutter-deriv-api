@@ -103,7 +103,7 @@ sub update_campaigns_and_snippets {
 
         for my $id (keys %strings_by_id) {
             my $string = $strings_by_id{$id};
-            my ($new_snip, $new_warnings) = $self->generate_snippet($string, $campaign->{name});
+            my ($new_snip, $new_warnings) = $self->generate_snippet($string, $campaign->{name}, $id);
             $new_snip = $self->_integrate_transactional($new_snip);
             push @warnings, map { $campaign->{name} . ": " . $_ } @$new_warnings;
 
@@ -704,7 +704,7 @@ Generates snippet content with all the possible translations.
 =cut
 
 sub generate_snippet {
-    my ($self, $string, $campaign_name) = @_;
+    my ($self, $string, $campaign_name, $snippet_id) = @_;
 
     my $req = BOM::Platform::Context::Request->new(language => 'EN');
     request($req);
@@ -714,7 +714,8 @@ sub generate_snippet {
     try {
         $en_text = localize($string->{loc_text}, $string->{placeholders}->@*);
     } catch ($e) {
-        my $error_str = sprintf("Localize() failed for string '%s' in campaign '%s': %s", $string->{loc_text}, $campaign_name, $e);
+        my $error_str =
+            sprintf("Localize() failed for string '%s' in campaign '%s' snippet '%s': %s", $string->{loc_text}, $campaign_name, $snippet_id, $e);
         $log->warn($error_str);
         push @warnings, $error_str;
         # we can assume it's going to fail for the other languages too
@@ -728,8 +729,8 @@ sub generate_snippet {
 
         my $placeholder_error = check_localize_liquid_placeholders($string->{loc_text}, $lang, $string->{placeholders});
         if (defined($placeholder_error)) {
-            $log->warn($placeholder_error . " skipping $lang");
-            push @warnings, $placeholder_error . " skipping $lang";
+            $log->warn($placeholder_error . " skipping $lang in $campaign_name snippet $snippet_id");
+            push @warnings, $placeholder_error . " skipping $lang in $campaign_name snippet $snippet_id";
             next;
         }
 
@@ -740,7 +741,8 @@ sub generate_snippet {
         try {
             $tr = localize($string->{loc_text}, $string->{placeholders}->@*);
         } catch ($e) {
-            my $error_str = sprintf("Localize() failed for string '%s' in campaign '%s': %s", $string->{loc_text}, $campaign_name, $e);
+            my $error_str =
+                sprintf("Localize() failed for string '%s' in campaign '%s' snippet '%s': %s", $string->{loc_text}, $campaign_name, $snippet_id, $e);
             $log->warnf($error_str);
             push @warnings, $error_str;
         }
