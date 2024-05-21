@@ -108,10 +108,10 @@ subtest 'get_default_client' => sub {
 
             return unless $data;
 
-            my $client = bless {}, 'BOM::User::Client';    # Mock the client object
+            my $client = bless {blob => $data}, 'BOM::User::Client';
 
-            $mock_module->mock('loginid',                       sub { $data->{loginid} });
-            $mock_module->mock('get_self_exclusion_until_date', sub { $data->{client}->{get_self_exclusion_until_date} });
+            $mock_module->mock('loginid',                       sub { my ($self) = @_; $self->{blob}->{loginid} });
+            $mock_module->mock('get_self_exclusion_until_date', sub { my ($self) = @_; $self->{blob}{client}->{get_self_exclusion_until_date} });
 
             my $status_obj = bless {}, 'BOM::User::Client::Status';    # Mock the status object
             $status_obj->{disabled}          = $data->{client}->{status}->{disabled};
@@ -172,7 +172,7 @@ subtest 'get_default_client' => sub {
     $fake_data->{CRW1000}->{client}->{status}->{disabled}  = {'status_code' => 'disabled'};
     $fake_data->{VRTC1000}->{client}->{status}->{disabled} = {'status_code' => 'disabled'};
     is($user->get_default_client()->loginid,
-        'VRTC1000', 'Check order, if CRW1000, CR1000 & VRTC1000 are disabled, CR1001 should be the default client, self excluded');
+        'CR1001', 'Check order, if CRW1000, CR1000 & VRTC1000 are disabled, CR1001 should be the default client, self excluded');
     $fake_data->{CR1000}->{client}->{status}->{disabled}   = undef;
     $fake_data->{CRW1000}->{client}->{status}->{disabled}  = undef;
     $fake_data->{VRTC1000}->{client}->{status}->{disabled} = undef;
@@ -203,6 +203,7 @@ subtest 'get_default_client' => sub {
     $user = BOM::User->new;
     $user->{loginid_details} = $fake_data;
     $fake_data->{CR1000}->{client}->{status}->{duplicate_account} = {'status_code' => 'duplicate_account'};
+    $fake_data->{CR1001}->{client}->{status}->{duplicate_account} = {'status_code' => 'duplicate_account'};
     $fake_data->{CRW1000}->{client}->{status}->{disabled}         = {'status_code' => 'disabled'};
     $fake_data->{VRTC1000}->{client}->{status}->{disabled}        = {'status_code' => 'disabled'};
     is($user->get_default_client(include_disabled => 1)->loginid, 'CRW1000', 'CRW1000 is the default if disabled because CR1000 is a duplicate');

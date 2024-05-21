@@ -168,7 +168,10 @@ sub get_client_object {
     unless (defined $client) {
         my $user_object = get_user_object($user_identifier, $correlation_id);
         die "UserNotFound|::|Could not find a user object for '$user_identifier'" unless defined $user_object;
-        my $client_object = $user_object->get_default_client(db_operation => 'write');
+        my $client_object = $user_object->get_default_client(
+            db_operation     => 'write',
+            include_disabled => 1
+        );
         die "ClientNotFound|::|Could not find a default_client object for '$user_identifier'" unless defined $client_object;
         $client = {
             time   => [gettimeofday],

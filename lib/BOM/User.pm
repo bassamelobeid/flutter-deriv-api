@@ -1055,22 +1055,29 @@ sub get_default_client {
     #
     # Preference is enabled // [disabled] // virtual // self_excluded // [duplicated];
     #
-    my @prospective_clients = ();
+    my $prospective_client;
+    my $prospective_client_rank = 16;    # One above highest rank, ensures prospective is always set
     foreach my $loginid (@sorted_loginids) {
-        my $prospective_client = $self->get_client_instance($loginid, 'replica');
-        if (
-            $prospective_client
-            && (   ($args{include_disabled} || !$prospective_client->status->disabled)
-                && ($args{include_duplicated} || !$prospective_client->status->duplicate_account)))
-        {
-            # If its self excluded then we need to check if we have a better candidate
-            push(@prospective_clients, $prospective_client);
-            last unless $prospective_client->get_self_exclusion_until_date;
+        my $rank   = 0;
+        my $client = $self->get_client_instance($loginid, $args{db_operation});
+        next if (!$args{include_disabled}   && $client->status->disabled);
+        next if (!$args{include_duplicated} && $client->status->duplicate_account);
+        # Score the client if we're still here
+        $rank += 1 if $client->status->disabled;
+        $rank += 2 if $client->is_virtual;
+        $rank += 4 if $client->get_self_exclusion_until_date;
+        $rank += 8 if $client->status->duplicate_account;
+        # Otherwise we need to iterate again
+        if ($rank < $prospective_client_rank) {
+            $prospective_client_rank = $rank;
+            $prospective_client      = $client;
         }
+        # We can skip to the chase if its a perfect 0
+        last if ($rank == 0);
     }
 
     # Get the best prospective client
-    $self->{$cache_key} = pop(@prospective_clients);
+    $self->{$cache_key} = $prospective_client;
 
     return $self->{$cache_key};
 }
