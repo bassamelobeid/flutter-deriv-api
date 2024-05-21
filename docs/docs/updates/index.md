@@ -26,6 +26,10 @@ Still trying to separate the core repository (`bom-pricing`) from dependency on 
 
 ## Website
 
+### 2024-05-21
+
+- Added KPIs, Active projects, updated Roadmap
+
 ### 2024-05-12
 
 - [The roadmap](../roadmap/index.md) document has been updated.

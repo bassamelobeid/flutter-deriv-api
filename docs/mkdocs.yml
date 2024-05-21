@@ -1,4 +1,4 @@
-site_name: Pricing and Market Data Business Service
+site_name: Pricing Business Service
 
 # Repository
 repo_name: regentmarkets/bom-pricing
@@ -10,8 +10,12 @@ nav:
   - API:
       - api/index.md
       - api/dataflow.md
+  - KPIs:
+      - kpis/index.md
   - Roadmap:
       - roadmap/index.md
+  - Active Projects:
+      - activity/index.md
   - Resources:
       - resources/index.md
       - resources/lexicon.md
