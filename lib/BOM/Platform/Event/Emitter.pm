@@ -10,7 +10,7 @@ use JSON::MaybeUTF8            qw(:v1);
 use Log::Any                   qw($log);
 use RedisDB;
 use Syntax::Keyword::Try;
-use YAML::XS qw(LoadFile);
+use BOM::Config;
 
 use BOM::Platform::Context qw(request);
 use Log::Any               qw($log);
@@ -73,8 +73,6 @@ my %event_stream_mapping = (
     dynamic_works_binary_trade          => 'DYNAMIC_WORKS_BINARY_OPTIONS_STREAM',
     dynamic_works_cfd_trade             => 'DYNAMIC_WORKS_CFD_STREAM',
 );
-
-my $config = LoadFile('/etc/rmg/redis-events.yml');
 
 my $connections = {};
 
@@ -195,6 +193,8 @@ sub _read_connection {
 
 sub _get_connection_by_type {
     my $type = shift;
+
+    my $config = BOM::Config::redis_events_config();
 
     $connections->{$type} //= RedisDB->new(
         timeout => TIMEOUT,
