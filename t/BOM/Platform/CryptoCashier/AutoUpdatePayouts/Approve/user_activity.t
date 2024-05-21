@@ -862,11 +862,11 @@ subtest 'BOM::Platform::CryptoCashier::AutoUpdatePayouts::Approve->user_activity
         is_deeply(
             $response,
             {
-                auto_approve                         => 0,
-                tag                                  => 'NEGATIVE_NET_CFD_DEPOSIT_LOOKBACK_TIMERANGE',
+                auto_approve                         => 1,
+                tag                                  => 'NO_RECENT_PAYMENT',
                 total_withdrawal_amount_today_in_usd => 0,
             },
-            "returns tag: NEGATIVE_NET_CFD_DEPOSIT_LOOKBACK_TIMERANGE correclty."
+            "Do not skip auto approval for negative net cfd transfer"
         );
     };
 

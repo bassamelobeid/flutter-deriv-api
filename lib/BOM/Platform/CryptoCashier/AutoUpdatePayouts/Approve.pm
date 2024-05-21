@@ -1059,6 +1059,7 @@ sub _rule_cfd_net_transfers {
 
     my $lookback_time_cfd_net_transfer_days = $app_config->payments->crypto->auto_update->lookback_time_cfd_net_transfer;
     my $lookback_time_cfd_net_transfer      = Time::Moment->from_epoch(Time::Moment->now->epoch - ($lookback_time_cfd_net_transfer_days * 86400));
+    my $cfd_max_net_transfer_limit          = $app_config->payments->crypto->auto_update->max_cfd_net_transfer_limit;
 
     my $net_cfd_transfers = $self->get_net_cfd_transfers(
         binary_user_id => $args{binary_user_id},
@@ -1067,16 +1068,7 @@ sub _rule_cfd_net_transfers {
 
     $log->debugf('Net cfd transfers %s', $net_cfd_transfers);
 
-    if ($net_cfd_transfers < 0) {
-        $log->debugf('User %s has negative cfd net transfer activity since the recent crypto deposit', $args{client_loginid});
-        $response->{tag}          = 'NEGATIVE_NET_CFD_DEPOSIT_LOOKBACK_TIMERANGE';
-        $response->{auto_approve} = 0;
-        return $response;
-    }
-
-    my $cfd_max_net_transfer_limit = $app_config->payments->crypto->auto_update->max_cfd_net_transfer_limit;
-
-    if ($net_cfd_transfers > $cfd_max_net_transfer_limit) {
+    if ($net_cfd_transfers and $net_cfd_transfers > $cfd_max_net_transfer_limit) {
         $log->debugf('User %s has negative cfd net transfer activity since the recent crypto deposit', $args{client_loginid});
         $response->{tag}          = 'ABOVE_MAX_CFD_NET_TRANSFER_LIMIT';
         $response->{auto_approve} = 0;
