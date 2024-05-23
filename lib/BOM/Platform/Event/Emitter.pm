@@ -59,6 +59,7 @@ my %event_stream_mapping = (
     multiplier_near_expire_notification => 'CONTRACT_STREAM',
     multiplier_near_dc_notification     => 'CONTRACT_STREAM',
     bulk_authentication                 => 'BULK_EVENTS_STREAM',
+    bulk_client_status_update           => 'BULK_EVENTS_STREAM',
     mt5_inactive_account_closed         => 'BULK_EVENTS_STREAM',
     mt5_inactive_notification           => 'BULK_EVENTS_STREAM',
     derivx_account_deactivated          => 'BULK_EVENTS_STREAM',

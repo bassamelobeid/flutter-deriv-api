@@ -16,7 +16,37 @@ use BOM::User::Client::StatusActions;
 use BOM::User::IdentityVerification;
 
 use base qw( Exporter );
-our @EXPORT_OK = qw(error_map create_error verify_reactivation);
+
+use constant STATUS_MAP => {
+    disabledlogins                       => 'disabled',
+    lockcashierlogins                    => 'cashier_locked',
+    unwelcomelogins                      => 'unwelcome',
+    nowithdrawalortrading                => 'no_withdrawal_or_trading',
+    lockwithdrawal                       => 'withdrawal_locked',
+    lockmt5withdrawal                    => 'mt5_withdrawal_locked',
+    duplicateaccount                     => 'duplicate_account',
+    allowdocumentupload                  => 'allow_document_upload',
+    internalclient                       => 'internal_client',
+    notrading                            => 'no_trading',
+    sharedpaymentmethod                  => 'shared_payment_method',
+    cryptoautorejectdisabled             => 'crypto_auto_reject_disabled',
+    cryptoautoapprovedisabled            => 'crypto_auto_approve_disabled',
+    allowduplicatesignup                 => 'allow_duplicate_signup',
+    unwelcomeafinvestigation             => 'unwelcome_af_investigation',
+    disabledafinvestigation              => 'disabled_af_investigation',
+    cashierlockedafinvestigation         => 'cashier_locked_af_investigation',
+    nowithdrawalortradingafinvestigation => 'no_withdrawal_or_trading_af_investigation',
+    notradingafinvestigation             => 'no_trading_af_investigation',
+    unwelcomeafnotify                    => 'unwelcome_af_notify',
+    disabledafnotify                     => 'disabled_af_notify',
+    cashierlockedafnotify                => 'cashier_locked_af_notify',
+    nowithdrawalortradingafnotify        => 'no_withdrawal_or_trading_af_notify',
+    notradingafnotify                    => 'no_trading_af_notify',
+    siblingtransfersblocked              => 'sibling_transfers_blocked',
+    cfdtransfersblocked                  => 'cfd_transfers_blocked',
+};
+
+our @EXPORT_OK = qw(STATUS_MAP error_map create_error verify_reactivation);
 
 =head1 NAME
 
@@ -787,37 +817,9 @@ sub status_op_processor {
     my $reason             = $args->{reason};
     my $clerk              = $args->{clerk};
     my $user_groups        = $args->{user_groups};
-    my $status_map         = {
-        disabledlogins                       => 'disabled',
-        lockcashierlogins                    => 'cashier_locked',
-        unwelcomelogins                      => 'unwelcome',
-        nowithdrawalortrading                => 'no_withdrawal_or_trading',
-        lockwithdrawal                       => 'withdrawal_locked',
-        lockmt5withdrawal                    => 'mt5_withdrawal_locked',
-        duplicateaccount                     => 'duplicate_account',
-        allowdocumentupload                  => 'allow_document_upload',
-        internalclient                       => 'internal_client',
-        notrading                            => 'no_trading',
-        sharedpaymentmethod                  => 'shared_payment_method',
-        cryptoautorejectdisabled             => 'crypto_auto_reject_disabled',
-        cryptoautoapprovedisabled            => 'crypto_auto_approve_disabled',
-        allowduplicatesignup                 => 'allow_duplicate_signup',
-        unwelcomeafinvestigation             => 'unwelcome_af_investigation',
-        disabledafinvestigation              => 'disabled_af_investigation',
-        cashierlockedafinvestigation         => 'cashier_locked_af_investigation',
-        nowithdrawalortradingafinvestigation => 'no_withdrawal_or_trading_af_investigation',
-        notradingafinvestigation             => 'no_trading_af_investigation',
-        unwelcomeafnotify                    => 'unwelcome_af_notify',
-        disabledafnotify                     => 'disabled_af_notify',
-        cashierlockedafnotify                => 'cashier_locked_af_notify',
-        nowithdrawalortradingafnotify        => 'no_withdrawal_or_trading_af_notify',
-        notradingafnotify                    => 'no_trading_af_notify',
-        siblingtransfersblocked              => 'sibling_transfers_blocked',
-        cfdtransfersblocked                  => 'cfd_transfers_blocked',
-    };
 
-    if ($client_status_type && $status_map->{$client_status_type}) {
-        push(@$status_checked, $client_status_type);
+    if ($client_status_type && STATUS_MAP->{$client_status_type}) {
+        push(@$status_checked, STATUS_MAP->{$client_status_type});
     }
     @$status_checked = uniq @$status_checked;
     return undef unless $status_op;
@@ -869,8 +871,10 @@ sub status_op_processor {
                 }
 
             } elsif ($status_op eq 'sync' or $status_op eq 'sync_accounts') {
+
                 check_status_application($client, $status, $user_groups, 'set');
-                $status = $status_map->{$status}       ? $status_map->{$status}           : $status;
+                $status = STATUS_MAP->{$status} ? STATUS_MAP->{$status} : $status;
+
                 $reason = $reason =~ /SELECT A REASON/ ? $client->status->reason($status) : $reason;
 
                 my $statuses_to_copy = [$status];
