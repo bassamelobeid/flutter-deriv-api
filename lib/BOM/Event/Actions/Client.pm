@@ -5024,6 +5024,18 @@ async sub bulk_client_status_update {
                 }
             }
 
+            if ($operation eq 'remove') {
+                my $client_status = BOM::Platform::Utility::STATUS_MAP->{$client_status_type};
+                if ($client->status->$client_status) {
+                    unless ($client->status->$client_status->{reason} eq $reason) {
+                        my $client_bulk_reason = $client->status->$client_status->{reason};
+                        $summary =
+                            "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$loginid $reason does not match $client_bulk_reason ($clerk)</b>&nbsp;&nbsp;The client status reason should match for bulk operation to be performed</b>";
+                        push @failed_update, "<tr><td>" . $summary . "</td></tr>";
+                        next LOGIN;
+                    }
+                }
+            }
             if ($client->_p2p_advertiser_cached) {
                 delete $client->{_p2p_advertiser_cached};
                 if ($p2p_approved ne $client->_p2p_advertiser_cached->{is_approved}) {
@@ -5063,7 +5075,7 @@ async sub bulk_client_status_update {
                 }
 
             }
-            push @failed_update, "<tr><td>" . $summary . "</td></tr>";
+            push @failed_update, "<tr><td>" . $summary . "</td></tr>" unless $summary eq "";
         }
     }
     if (@invalid_logins) {
