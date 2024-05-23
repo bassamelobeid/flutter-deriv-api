@@ -21,6 +21,7 @@ use Log::Any      qw($log);
 use Future::Utils qw( fmap_void );
 use List::Util    qw( uniqstr );
 use Net::Async::HTTP;
+use constant max_lines => 10000;
 
 BOM::Backoffice::Sysinit::init();
 my $is_readonly = BOM::Backoffice::Auth::has_readonly_access();
@@ -56,7 +57,6 @@ $status_checked = [$status_checked] unless ref($status_checked);
 my $additional_info = request()->param('additional_info');
 my $p2p_approved    = request()->param('p2p_approved');
 my $add_regex       = qr/^add|^sync/;
-my $max_lines       = 2000;
 
 if (my $error_message = write_operation_error()) {
     print_error_and_exit($error_message);
@@ -84,8 +84,8 @@ if ($bulk_loginids) {
     }
 
     code_exit_BO(_get_display_error_message("ERROR: the given file is empty, please provide the required client_ids")) if (scalar($lines->@*) == 0);
-    code_exit_BO(_get_display_error_message("ERROR: the number of client_ids exceeds limit of $max_lines please reduce the number of entries"))
-        if scalar(@$lines) > $max_lines;
+    code_exit_BO(_get_display_error_message("ERROR: the number of client_ids exceeds limit of " . max_lines . " please reduce the number of entries"))
+        if scalar(@$lines) > max_lines;
     unless (BOM::Backoffice::Auth::has_authorisation(['AntiFraud'])) {
         code_exit_BO(_get_display_error_message("ERROR: dual control code is mandatory for bulk status update")) if $DCcode eq '';
         my $dcc_error = BOM::DualControl->new({
@@ -129,7 +129,7 @@ if (!$operation || $operation =~ /SELECT AN OPERATION/) {
 }
 
 # check invalid Operation
-if (!$status_checked->@* && $operation =~ /remove/) {
+if ((!$status_checked->@* && $client_status_type =~ /SELECT AN ACTION/) && $operation =~ /remove/) {
     print_error_and_exit("Status to be removed not specified. It should already exist.");
 }
 # check invalid Reason

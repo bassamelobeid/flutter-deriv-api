@@ -143,11 +143,9 @@
         <td>
             <select id="status_op" name="status_op">
                     <option  value=''>------------------- SELECT AN OPERATION -------------------</option>
-                    [% IF untrusted_statuses  %]
-                        <option  value='remove'> Remove From Current LoginId</option>
-                        <option  value='remove_siblings'> Remove From Current/Siblings Real Accounts </option>
-                        <option  value='remove_accounts'> Remove From Current/Siblings (Included Virtuals) </option>
-                    [% END %] 
+                    <option  value='remove'> Remove From Current LoginId</option>
+                    <option  value='remove_siblings'> Remove From Current/Siblings Real Accounts </option>
+                    <option  value='remove_accounts'> Remove From Current/Siblings (Included Virtuals) </option>
                     <option  value='add'> Apply On Current LoginId</option>
                     <option  value='sync'> Apply On Current/Siblings Real Accounts </option>
                     <option  value='sync_accounts'> Apply On Current/Siblings (Included Virtuals) </option>
