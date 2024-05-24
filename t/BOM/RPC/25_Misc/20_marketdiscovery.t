@@ -61,18 +61,45 @@ subtest "active_symbols - response keys" => sub {
     cmp_bag([keys $result->[0]->%*], $expected_keys, 'response keys matched');
 };
 
-subtest "active_symbols - contract type" => sub {
+subtest "active_symbols - contract_type" => sub {
     my $params = {
         language => 'EN',
         args     => {
             active_symbols => 'full',
-            contract_type  => ["RANGE"]}};
-    my $result        = $c->call_ok('active_symbols', $params)->has_no_system_error->result;
+            contract_type  => ["CALL", "PUT"]}};
+    test_active_symbols($c, $params, "active_symbols - contract_type");
+};
+
+subtest "active_symbols - barrier_category" => sub {
+    my $params = {
+        language => 'EN',
+        args     => {
+            active_symbols   => 'full',
+            barrier_category => ["euro_atm", "euro_non_atm"]}};
+    test_active_symbols($c, $params, "active_symbols - barrier_category");
+};
+
+subtest "active_symbols - contract_type - barrier_category" => sub {
+    my $params = {
+        language => 'EN',
+        args     => {
+            active_symbols   => 'full',
+            contract_type    => ["CALL",     "PUT"],
+            barrier_category => ["euro_atm", "euro_non_atm"]}};
+    test_active_symbols($c, $params, "active_symbols - contract_type - barrier_category");
+};
+
+sub test_active_symbols {
+    my ($c, $params, $test_name) = @_;
+
+    my $result = $c->call_ok('active_symbols', $params)->has_no_system_error->result;
+
     my $expected_keys = [
         qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age subgroup subgroup_display_name display_order spot_percentage_change)
     ];
-    cmp_bag([keys $result->[0]->%*], $expected_keys, 'response keys matched');
-};
+
+    cmp_bag([keys $result->[0]->%*], $expected_keys, "$test_name - response keys matched");
+}
 
 done_testing();
 

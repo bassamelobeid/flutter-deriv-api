@@ -16,8 +16,9 @@ rpc active_symbols => sub {
     my $params = shift;
 
     my $args = _extract_params($params);
-    $args->{type}          = $params->{args}->{active_symbols};
-    $args->{contract_type} = $params->{args}->{contract_type};
+    $args->{type}             = $params->{args}->{active_symbols};
+    $args->{contract_type}    = $params->{args}->{contract_type};
+    $args->{barrier_category} = $params->{args}->{barrier_category};
 
     my $res = get_symbols($args);
 
