@@ -52,7 +52,9 @@ use Locale::Country::Extra;
 
 use constant WEBSITE_STATUS_KEY_NAMESPACE => 'WEBSITE_STATUS';
 use constant WEBSITE_CONFIG_KEY_NAMESPACE => 'WEBSITE_CONFIG';
+use constant RESIDENCE_LIST_KEY_NAMESPACE => 'RESIDENCE_LIST';
 use constant STATIC_CACHE_TTL             => 10;
+use constant RESIDENCE_LIST_CACHE_TTL     => 60;
 
 =head2 residence_list
 
@@ -77,16 +79,31 @@ Returns an array of hashes, sorted by country name. Each contains the following:
 =cut
 
 rpc residence_list => sub {
-    my $residence_countries_list;
+    my $language = request()->language;
+
+    my $key                      = RESIDENCE_LIST_KEY_NAMESPACE . '::' . lc($language);
+    my $residence_countries_list = get_static_data($key);
+    return $residence_countries_list if (ref $residence_countries_list eq 'ARRAY' && scalar @$residence_countries_list > 0);
+    $residence_countries_list = [];
 
     my $countries = Locale::Country::Extra->new();
 
-    my $country_list = Business::Config::Country::Registry->new()->list();
+    my $country_list = Business::Config::Country::Registry->new()->countries;
 
     my @sorted_list =
         sort { $a->{name} cmp $b->{name} }
-        map  { +{code => $_, name => $countries->localized_code2country($_, request()->language) // $country_list->{$_}->name} }
+        map  { +{code => $_, name => $countries->localized_code2country($_, $language) // $country_list->{$_}->name,} }
         keys $country_list->%*;
+
+    # onfido suspend check
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update;
+    my $onfido_suspended = $app_config->system->suspend->onfido;
+
+    # precomputed lookup hashes
+    my $idv_supported_documents    = BOM::User::IdentityVerification::supported_documents_all_countries();
+    my $idv_all_countries          = BOM::Platform::Utility::has_idv_all_countries();
+    my $onfido_supported_documents = BOM::User::Onfido::supported_documents_all_countries();
 
     foreach my $country_data (@sorted_list) {
         my $country_code = $country_data->{code};
@@ -94,16 +111,13 @@ rpc residence_list => sub {
 
         my $country_name   = $country_data->{name};
         my $country_config = $country_list->{$country_code};
-        my $phone_idd      = $country_config->phone_idd;
-        my $tin_format     = $country_config->common_reporting_standard->{tax}->{tin_format};
+        my $phone_idd      = $country_config->phone_idd();
+        my $tin_format     = $country_config->common_reporting_standard()->{tax}->{tin_format};
 
-        my $poi_config        = $country_config->know_your_customer->{authentication}->{identity_verification};
+        my $poi_config        = $country_config->know_your_customer()->{authentication}->{identity_verification};
         my $has_visual_sample = $poi_config->{provider}->{idv}->{has_visual_sample};
 
-        my $app_config = BOM::Config::Runtime->instance->app_config;
-        $app_config->check_for_update;
-        my $onfido_suspended    = $app_config->system->suspend->onfido;
-        my $documents_supported = BOM::User::Onfido::supported_documents($country_code);
+        my $documents_supported = $onfido_supported_documents->{$country_code}->{supported_documents};
 
         # Special case for Nigeria's NIN
         if ($documents_supported->{identification_number_document}) {
@@ -128,19 +142,19 @@ rpc residence_list => sub {
             identity => {
                 services => {
                     idv => {
-                        documents_supported  => BOM::User::IdentityVerification::supported_documents($country_code),
-                        is_country_supported => BOM::Platform::Utility::has_idv(country => $country_code),
+                        documents_supported  => $idv_supported_documents->{$country_code},
+                        is_country_supported => $idv_all_countries->{$country_code},
                         has_visual_sample    => $has_visual_sample ? 1 : 0,
                     },
                     onfido => {
                         documents_supported  => $documents_supported,
-                        is_country_supported => (!$onfido_suspended && BOM::Config::Onfido::is_country_supported($country_code)) ? 1 : 0,
+                        is_country_supported => (!$onfido_suspended && $onfido_supported_documents->{$country_code}->{is_supported}) ? 1 : 0,
                     }
                 },
             }};
 
-        my $landing_company = $country_config->landing_company;
-        my $signup_config   = $country_config->signup;
+        my $landing_company = $country_config->landing_company();
+        my $signup_config   = $country_config->signup();
         my $allowed_country = $landing_company->{default} ne 'none';
         my $disabled        = !$allowed_country || (!$signup_config->{account} && !$signup_config->{partners});
 
@@ -151,6 +165,8 @@ rpc residence_list => sub {
         push @$residence_countries_list, $option;
     }
 
+    # cache this value for 60s
+    set_static_data($key, $residence_countries_list, __PACKAGE__->RESIDENCE_LIST_CACHE_TTL);
     return $residence_countries_list;
 };
 
@@ -513,10 +529,14 @@ Takes a C<$value>.
 =cut
 
 sub set_static_data {
-    my ($key, $value) = @_;
+    my ($key, $value, $ttl) = @_;
+
+    $ttl //= __PACKAGE__->STATIC_CACHE_TTL;
     # if condition is added to prevent warnings
     # and for test to update it to 0 to stop caching functionality
-    BOM::Config::Redis::redis_rpc_write()->set($key, encode_json_utf8($value), 'NX', 'EX', __PACKAGE__->STATIC_CACHE_TTL)
+    # even though we can get our own TTL, we will still use the STATIC_CACHE_TTL to check
+    # as we want the testing use case to still work
+    BOM::Config::Redis::redis_rpc_write()->set($key, encode_json_utf8($value), 'NX', 'EX', $ttl)
         if __PACKAGE__->STATIC_CACHE_TTL > 0;
     return undef;
 }

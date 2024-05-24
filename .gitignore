@@ -24,3 +24,5 @@ nytprof.out
 *.swp
 .DS_Store
 .idea
+nytprof/
+nytprof.zip
