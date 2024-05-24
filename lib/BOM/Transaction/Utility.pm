@@ -57,6 +57,8 @@ sub build_poc_parameters {
     my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
     $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
 
+    my $language = $client->user ? $client->user->preferred_language : 'EN';
+
     my $contract_parameters = {
         app_markup_percentage => 0,                                 # we charge app_markup on buy side only
         short_code            => $fmb->{short_code},
@@ -74,6 +76,7 @@ sub build_poc_parameters {
         symbol                => $fmb->{underlying_symbol},
         contract_type         => $fmb->{bet_type},
         country_code          => $client->residence,
+        language              => $language,
     };
 
     if ($fmb->{bet_class} =~ /\bmultiplier\b|\baccumulator\b|\bturbos\b/) {
