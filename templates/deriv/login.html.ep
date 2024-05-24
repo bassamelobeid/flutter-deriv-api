@@ -112,7 +112,11 @@
    function addSocialLoginClickListener(action, error) {
       const socialLoginButtons = document.querySelectorAll('.provider');
       socialLoginButtons.forEach(button => {
-          button.addEventListener('click', function() {
+          button.addEventListener('click', function() {       
+              suppressCredentialErrors([
+                    document.getElementById('txtEmail'),
+                    document.getElementById('txtPass')
+              ]);
               const provider = button.id.split('_')[1];
               trackEvent(action, provider, error);
           });
@@ -146,20 +150,6 @@
                 }
             });
         }
-   
-       var fields = [
-           { element: txtEmail, validator: validateEmail },
-           { element: txtPass,  validator: validatePass },
-       ];
-       fields.forEach(function(field) {
-           if (field.element) {
-               ['change', 'blur'].forEach(function(event) {
-                   field.element.addEventListener(event, function(e) {
-                       field.validator();
-                   });
-               });
-           }
-       });
    };
    
    function validateAll() {
@@ -205,7 +195,16 @@
            el.classList.add('hide');
        });
    }
-   
+
+   function suppressCredentialErrors(elements){
+        elements.forEach(function(element) {
+            if (element && element.parentNode) {
+                hideErrors(element);
+                element.value= "";
+            }
+        });
+   }
+
    function showError(element, errorType) {
        element.parentNode.classList.add('has_error');
        var el = element.parentNode.parentNode.querySelector('.input-error .error_' + errorType);
@@ -332,6 +331,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 function passkeyBtnClickEvent(){
     document.getElementById('btnPasskeys').addEventListener('click', async function () {
+    suppressCredentialErrors([
+                    document.getElementById('txtEmail'),
+                    document.getElementById('txtPass')
+    ]);
     trackEvent("login_started", "passkeys", null);
     const optionsResponse =  await fetchOptionsFromServer();
     if(optionsResponse){
