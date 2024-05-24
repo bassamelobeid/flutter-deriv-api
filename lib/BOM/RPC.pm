@@ -149,10 +149,13 @@ sub wrap_rpc_sub {
             return $verify_app_res if $verify_app_res->{error};
         }
 
-        my $result_auth = _check_authorization($def, $params);
-        return $result_auth->{error} if $result_auth->{status} == 0;
-        $params->{client} = $result_auth->{result}{client};
-        $params->{app_id} = $result_auth->{result}{app_id};
+        try {
+            _populate_client($def, $params);
+            _check_authorization($def, $params);
+            _check_wallets_migration($def, $params);
+        } catch ($e) {
+            return $e;
+        }
 
         # All RPCs need the user service context, even if not authenticated
         $params->{user_service_context} = {
@@ -257,11 +260,11 @@ sub set_current_context {
 
 =head2 _check_authorization
 
-    $result = _check_authorization($def, $params)
+    _check_authorization($def, $params)
 
-Checks if a client object is defined on params. If so, validate client object.
-When the client object is not defined, create a client instance, validate the client.
-On success return the client object and the app_id.
+Checks if a an RPC method requires client authorization,
+and if it is checks if a client has all required rights.
+On failure dies with an error.
 
 =over 4
 
@@ -271,86 +274,103 @@ On success return the client object and the app_id.
 
 =back
 
-
 =cut
 
 sub _check_authorization {
     my ($def, $params) = @_;
 
-    return {status => 1} if !($def->auth and $def->auth->@*);
+    return if !($def->auth && $def->auth->@*);
+    my @auth = $def->auth->@*;
+
+    my $client = $params->{client};
+
+    die BOM::RPC::v3::Utility::invalid_token_error() unless $params->{token_details};
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        die $auth_error;
+    }
+
+    die BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize('This resource cannot be accessed by this account type.')})
+        unless (BOM::Config::Runtime->instance->app_config->system->suspend->wallets
+        or ($client->can_trade and any { $_ eq 'trading' } @auth)
+        or ($client->is_wallet and any { $_ eq 'wallet' } @auth));
+
+    return;
+}
+
+=head2 _check_wallets_migration
+
+Checks if client is currently in migration. If it is -- dies with an error.
+
+=over 4
+
+=item * - C<def> - Service definition for the RPC method
+
+=item * - C<params> - Hashref of parameters passed to the RPC method
+
+=back
+
+=cut
+
+sub _check_wallets_migration {
+    my ($def, $params) = @_;
+
+    # If migration is in progress, we block this api request from the client.
+    if (  !BOM::Config::Runtime->instance->app_config->system->suspend->wallets
+        && BLOCK_API_LIST_FOR_WALLET_MIGRATION->{$def->name}
+        && BLOCK_MIGRATION_STATE_LIST->{BOM::User::WalletMigration::accounts_state($params->{client}->user)})
+    {
+        die BOM::RPC::v3::Utility::create_error({
+                code              => 'WalletMigrationInprogress',
+                message_to_client => localize(
+                    'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.')});
+    }
+}
+
+=head2 _populate_client
+
+    _populate_client($def, $params)
+
+Ensures $params->{client} of type C<BOM::User::Client> and $params->{app_id} exist
+in cases when they could be inferred from input params. Dies with an error if any.
+Return value is unspecified.
+
+=cut
+
+sub _populate_client {
+    my ($def, $params) = @_;
 
     my $db_operation = $def->is_readonly ? 'replica' : 'write';
 
-    my $client = $params->{client};
-    my $app_id = $params->{app_id};
-
-    if ($client) {
+    if (my $client = $params->{client}) {
         # If there is a $client object but is not a Valid BOM::User::Client we return an error
         unless (blessed $client && $client->isa('BOM::User::Client')) {
-            return {
-                status => 0,
-                error  => BOM::RPC::v3::Utility::create_error({
-                        code              => 'InvalidRequest',
-                        message_to_client => localize("Invalid request.")})};
+            die BOM::RPC::v3::Utility::create_error({
+                    code              => 'InvalidRequest',
+                    message_to_client => localize("Invalid request.")});
         }
         $client->set_db($db_operation);
-    } else {
-        # If there is no $client, we continue with our auth check
-        my $token_details = $params->{token_details};
-        return {
-            status => 0,
-            error  => BOM::RPC::v3::Utility::invalid_token_error()}
+        return;
+    }
+
+    if (my $token_details = $params->{token_details}) {
+        die BOM::RPC::v3::Utility::invalid_token_error()
             unless $token_details and exists $token_details->{loginid};
 
-        if (CONTEXT_CACHING_API_LIST->{$def->name}) {
-            my $ctx = BOM::User::ExecutionContext->new;
-            $client = BOM::User::Client->get_client_instance($token_details->{loginid}, $db_operation, $ctx);
-        } else {
-            $client = BOM::User::Client->get_client_instance($token_details->{loginid}, $db_operation);
-        }
+        my $client = BOM::User::Client->get_client_instance($token_details->{loginid},
+            $db_operation, (CONTEXT_CACHING_API_LIST->{$def->name} ? BOM::User::ExecutionContext->new : ()));
 
-        if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-            return {
-                status => 0,
-                error  => $auth_error
-            };
-        }
-
-        unless (BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
-            my @auth = $def->auth->@*;
-            unless (($client->can_trade and any { $_ eq 'trading' } @auth) or ($client->is_wallet and any { $_ eq 'wallet' } @auth)) {
-                return {
-                    status => 0,
-                    error  => BOM::RPC::v3::Utility::create_error({
-                            code              => 'PermissionDenied',
-                            message_to_client => localize('This resource cannot be accessed by this account type.')})};
-            }
-
-            # If migration is in progress, we block this api request from the client.
-            if (   BLOCK_API_LIST_FOR_WALLET_MIGRATION->{$def->name}
-                && BLOCK_MIGRATION_STATE_LIST->{BOM::User::WalletMigration::accounts_state($client->user)})
-            {
-                return {
-                    status => 0,
-                    error  => BOM::RPC::v3::Utility::create_error({
-                            code              => 'WalletMigrationInprogress',
-                            message_to_client => localize(
-                                'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.'
-                            )})};
-            }
-        }
-
-        $app_id = $token_details->{app_id};
+        $params->{client} = $client;
+        $params->{app_id} = $token_details->{app_id};
+        return;
     }
-    return {
-        status => 1,
-        result => {
-            client => $client,
-            app_id => $app_id
-        }};
+
+    # Add additional implementations here, if needed
 }
 
-=head2 _get_token_by_loginid {
+=head2 _get_token_by_loginid
 
     $token = _get_token_by_loginid($params)
 

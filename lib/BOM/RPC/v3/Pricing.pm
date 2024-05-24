@@ -20,6 +20,8 @@ rpc send_ask => sub {
     $params->{landing_company} = $params->{landing_company} ? $params->{landing_company} : "virtual";
 
     # TODO: clean up send_ask so it does not change it's arguments.
+    delete $params->{client};    # This field could be implicitly provided by `wrap_rpc_sub`, it is not used further,
+                                 # but breaks `dclone` on the next line -- thus we delete it
     my $args = dclone $params;
 
     my $response = BOM::Pricing::v3::Contract::send_ask($params);
