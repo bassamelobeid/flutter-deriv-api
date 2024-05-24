@@ -17,6 +17,7 @@ use Brands;
 use LandingCompany::Offerings;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
+use Test::BOM::ActiveSymbols;
 
 # since it's trading symbols, it's easier to mock the method rather
 # than creating all the ticks for each symbol
@@ -67,27 +68,6 @@ subtest 'error check' => sub {
 
     lives_ok {
         my $res = get_symbols({
-            contract_type        => ["RANGE"],
-            app_id               => 1004,
-            landing_company_name => undef,
-            country_code         => 'my'
-        });
-
-        # Remove "OTC_IBEX35" and "frxEURCAD" members from the $res->{symbols} array
-        # The reason for removing these two members is that the active_symbols list,
-        # when applied with the contract_type 'RANGE,' contains two additional members
-        # in the testing environment compared to the QA environment.
-
-        @{$res->{symbols}} = grep { $_->{symbol} ne "OTC_IBEX35" && $_->{symbol} ne "frxEURCAD" } @{$res->{symbols}};
-
-        ok !$res->{error},  'no error';
-        ok $res->{symbols}, 'returns symbol list';
-        is $res->{symbols}->@*, 39, '39 active symbols';
-    }
-    'invalid RANGE will not throw an error';
-
-    lives_ok {
-        my $res = get_symbols({
             contract_type        => ["ASIANU"],
             app_id               => 1004,
             landing_company_name => undef,
@@ -99,22 +79,89 @@ subtest 'error check' => sub {
         is $res->{symbols}->@*, 10, '10 active symbols';
     }
     'invalid ASIANU will not throw an error';
+};
 
-    lives_ok {
-        my $res = get_symbols({
+subtest 'error check - contract_type - barrier_category' => sub {
+    my @test_cases = ({
+            contract_type        => ["RANGE"],
+            app_id               => 1004,
+            landing_company_name => undef,
+            country_code         => 'my',
+            expected_count       => 39,
+            description          => 'invalid RANGE will not throw an error'
+        },
+        {
             contract_type        => ["RANGE", "ASIANU"],
             app_id               => 1004,
             landing_company_name => undef,
-            country_code         => 'my'
+            country_code         => 'my',
+            expected_count       => 39,
+            description          => 'invalid Union of RANGE, ASIANU will not throw an error'
+        },
+        {
+            contract_type        => ["CALL", "PUT"],
+            barrier_category     => ["euro_atm"],
+            app_id               => 1004,
+            landing_company_name => undef,
+            country_code         => 'my',
+            expected_count       => 67,
+            description          => 'invalid Union of ["CALL", "PUT"] and ["euro_atm"] will not throw an error'
+        },
+        {
+            contract_type        => ["CALL", "PUT"],
+            barrier_category     => ["euro_non_atm"],
+            app_id               => 1004,
+            landing_company_name => undef,
+            country_code         => 'my',
+            expected_count       => 39,
+            description          => 'invalid Union of ["CALL", "PUT"] and ["euro_non_atm"] will not throw an error'
+        },
+        {
+            contract_type        => ["CALL",     "PUT"],
+            barrier_category     => ["euro_atm", "euro_non_atm"],
+            app_id               => 1004,
+            landing_company_name => undef,
+            country_code         => 'my',
+            expected_count       => 67,
+            description          => 'invalid Union of ["CALL", "PUT"] and ["euro_atm", "euro_non_atm"] will not throw an error'
+        },
+        {
+            barrier_category     => ["euro_atm", "euro_non_atm"],
+            app_id               => 1004,
+            landing_company_name => undef,
+            country_code         => 'my',
+            expected_count       => 69,
+            description          => 'invalid Union of ["euro_atm", "euro_non_atm"] will not throw an error'
         });
 
-        @{$res->{symbols}} = grep { $_->{symbol} ne "OTC_IBEX35" && $_->{symbol} ne "frxEURCAD" } @{$res->{symbols}};
+    # Define the symbols to exclude as keys in a hash
+    # Remove "OTC_IBEX35" and "frxEURCAD" members from the $res->{symbols} array
+    # The reason for removing these two members is that the active_symbols list,
+    # when applied with the contract_type 'RANGE,' contains two additional members
+    # in the testing environment compared to the QA environment.
+    my %symbols_to_exclude     = map { $_ => 1 } qw(OTC_IBEX35 frxEURCAD);
+    my $excluded_symbols_count = scalar(keys %symbols_to_exclude);
 
-        ok !$res->{error},  'no error';
-        ok $res->{symbols}, 'returns symbol list';
-        is $res->{symbols}->@*, 39, '39 active symbols';
+    foreach my $test_case (@test_cases) {
+        lives_ok {
+            my $res = get_symbols({
+                    contract_type        => $test_case->{contract_type},
+                    barrier_category     => $test_case->{barrier_category},
+                    app_id               => $test_case->{app_id},
+                    landing_company_name => $test_case->{landing_company_name},
+                    country_code         => $test_case->{country_code}});
+
+            # Filter out symbols
+            @{$res->{symbols}} = grep { !$symbols_to_exclude{$_->{symbol}} } @{$res->{symbols}};
+            my $filtered_symbols_count = Test::BOM::ActiveSymbols::get_active_symbols($test_case->{contract_type}, $test_case->{barrier_category});
+            my $active_symbols         = $filtered_symbols_count - $excluded_symbols_count;
+
+            ok !$res->{error},  'no error';
+            ok $res->{symbols}, 'returns symbol list';
+            is $res->{symbols}->@*, $active_symbols, "$test_case->{expected_count} active symbols";
+        }
+        $test_case->{description};
     }
-    'invalid Union of RANGE, ASIANU will not throw an error';
 };
 
 subtest 'with invalid app id - 123' => sub {

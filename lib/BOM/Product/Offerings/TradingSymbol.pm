@@ -48,7 +48,8 @@ sub get_symbols {
     my $landing_company_name = $args->{landing_company_name} // 'virtual';
     my $type                 = $args->{type}                 // 'full';
     my $landing_company      = LandingCompany::Registry->by_name($landing_company_name);
-    my $contract_type        = $args->{contract_type} // [];
+    my $contract_type        = $args->{contract_type}    // [];
+    my $barrier_category     = $args->{barrier_category} // [];
 
     BOM::Product::Exception->throw(error_code => 'OfferingsInvalidLandingCompany') unless ($landing_company);
 
@@ -67,19 +68,24 @@ sub get_symbols {
         $offerings_obj = $landing_company->basic_offerings($runtime->get_offerings_config, $app_offerings);
     }
 
-    my ($namespace, $key) = ('trading_symbols', join('::', (sort(@$contract_type), $offerings_obj->name, $appconfig_revision, $app_offerings)));
+    my ($namespace, $key) = (
+        'trading_symbols', join('::', (sort(@$contract_type), sort(@$barrier_category), $offerings_obj->name, $appconfig_revision, $app_offerings)));
 
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
         my $leaderboard = _get_leaderboard($offerings_obj);
         my @all_active;
-        if (!defined $contract_type || scalar(@$contract_type) == 0) {
-            @all_active = $offerings_obj->values_for_key('underlying_symbol');
-        } else {
-            # Apply "contract_type" filter -- e.g ["MULTUP", "CALLE"] -- on active symbol
-            @all_active = $offerings_obj->query({contract_type => $contract_type}, ['underlying_symbol']);
+        my %query_params;
+
+        if (defined $contract_type && @$contract_type) {
+            $query_params{contract_type} = $contract_type;
         }
+        if (defined $barrier_category && @$barrier_category) {
+            $query_params{barrier_category} = $barrier_category;
+        }
+        @all_active = $offerings_obj->query(\%query_params, ['underlying_symbol']);
+
         # symbols would be active if we allow forward starting contracts on them.
         my %forward_starting = map { $_ => 1 } $offerings_obj->query({start_type => 'forward'}, ['underlying_symbol']);
         foreach my $symbol (@all_active) {
