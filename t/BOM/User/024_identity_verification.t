@@ -1410,8 +1410,13 @@ subtest 'supported documents' => sub {
         {
             title        => 'valid country code, no idv',
             country_code => 'ke',
-            has_idv      => 0,
-            expected     => {}
+            has_idv      => {
+                ke                   => 0,
+                "ke:national_id"     => 0,
+                "ke:passport"        => 0,
+                "ke:drivers_license" => 0
+            },
+            expected => {}
         },
         {
             title        => 'valid country code',
@@ -1419,8 +1424,14 @@ subtest 'supported documents' => sub {
             expected     => $expected_documents
         }];
 
+    my $has_idv_allow_all = {
+        ke                   => 1,
+        "ke:national_id"     => 1,
+        "ke:passport"        => 1,
+        "ke:drivers_license" => 1
+    };
     for my $test_case ($test_cases->@*) {
-        $utility_mock->mock(has_idv => $test_case->{has_idv} // 1);
+        $utility_mock->mock(has_idv_all_countries => $test_case->{has_idv} // $has_idv_allow_all);
         my $country_code = $test_case->{country_code};
         cmp_deeply BOM::User::IdentityVerification::supported_documents($country_code), $test_case->{expected}, $test_case->{title};
     }

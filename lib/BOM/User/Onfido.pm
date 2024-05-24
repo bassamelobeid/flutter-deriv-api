@@ -1253,6 +1253,28 @@ sub supported_documents {
     return {map { _onfido_doc_type($_) } BOM::Config::Onfido::supported_documents_for_country($country_code)->@*};
 }
 
+=head2 supported_documents_all_countries
+
+Get supported Onfido documents types for all countries.
+
+Returns a hashref of hashrefs containing the information for each document_type for each 2-letter country_code:
+
+=over 4
+
+=item * C<display_name> - document type display name.
+
+=back
+
+=cut
+
+sub supported_documents_all_countries {
+    my $all_countries = BOM::Config::Onfido::onfido_data_for_all_countries();
+    foreach my $key (keys $all_countries->%*) {
+        $all_countries->{$key}->{supported_documents} = {map { _onfido_doc_type($_) } $all_countries->{$key}->{supported_documents}->@*};
+    }
+    return $all_countries;
+}
+
 =head2 _onfido_doc_type
 
 Process the Onfido doc types given into the hash form expected by the api schema response,

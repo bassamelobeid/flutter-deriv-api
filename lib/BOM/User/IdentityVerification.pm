@@ -895,8 +895,35 @@ sub supported_documents {
 
     my $countries_instance = Brands::Countries->new();
     my $idv_config         = $countries_instance->get_idv_config($country_code) // {};
-    my $idv_docs_supported = $idv_config->{document_types}                      // {};
 
+    return _supported_documents_for_country_config($country_code, $idv_config);
+}
+
+=head2 _supported_documents_for_country_config
+Returns the IDV supported document types given a country from the provided idv_config. 
+It is merely to reuse the idv_config, instead of fetching it for every call.
+
+The parameters are:
+
+=over 4
+
+=item * C<country> 2-letter country code
+
+=item * C<idv_config> the idv_config data returned from Brands::Countries
+
+=back
+
+Returns the same information as L<supported_documents|/supported_documents>
+
+=cut
+
+sub _supported_documents_for_country_config {
+    my ($country_code, $idv_config, $lookup_has_idv) = @_;
+    $lookup_has_idv //= BOM::Platform::Utility::has_idv_all_countries(
+        country             => $country_code,
+        index_with_doc_type => 1
+    );
+    my $idv_docs_supported = $idv_config->{document_types} // {};
     return +{
         map {
             (
@@ -905,8 +932,35 @@ sub supported_documents {
                     format       => $idv_docs_supported->{$_}->{format},
                     $idv_docs_supported->{$_}->{additional} ? (additional => $idv_docs_supported->{$_}->{additional}) : (),
                 })
-        } grep { !$idv_docs_supported->{$_}->{disabled} && BOM::Platform::Utility::has_idv(country => $country_code, document_type => $_) }
+        } grep { !$idv_docs_supported->{$_}->{disabled} && $lookup_has_idv->{"$country_code:$_"} }
             keys $idv_docs_supported->%*
+    };
+}
+
+=head2 supported_documents_all_countries
+Returns the IDV supported document types for all countries. 
+
+Returns a hashref of hashrefs with the following information for each document type for each 2-letter country code:
+
+=over 4
+
+=item * C<display_name> - document type display name.
+
+=item * C<format> - document type number format.
+
+=item * C<additional> (optional) document type additional information.
+
+=back
+
+=cut
+
+sub supported_documents_all_countries {
+    my $countries_instance = Brands::Countries->new();
+    my $idv_config_all     = $countries_instance->get_idv_config() // {};
+    my $has_idv_lookup     = BOM::Platform::Utility::has_idv_all_countries(index_with_doc_type => 1);
+    return +{
+        map { ($_ => _supported_documents_for_country_config($_, $idv_config_all->{$_}, $has_idv_lookup)) }
+            keys $countries_instance->countries_list->%*
     };
 }
 
