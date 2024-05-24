@@ -58,7 +58,9 @@ rpc send_ask => sub {
 
     my $market = BOM::RPC::v3::Utility::get_market_by_symbol($args->{args}->{symbol});
 
-    $response->{longcode}             = localize($response->{longcode});
+    # localize the 'longcode' property and if the 'display_name' property exists, localize it as well
+    $response = BOM::Pricing::v3::Utility::localize_proposal_response($response);
+
     $response->{channel}              = $channel;
     $response->{subchannel}           = $subchannel;
     $response->{subscription_channel} = $subscription_channel;
