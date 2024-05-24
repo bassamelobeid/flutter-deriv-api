@@ -238,6 +238,25 @@ sub localize_bid_response {
     }
 }
 
+=head2 localize_proposal_response
+
+localizes display strings in proposal response
+
+=cut
+
+sub localize_proposal_response {
+    my $resp = shift;
+    if ($resp->{longcode}) {
+        $resp->{longcode} = localize($resp->{longcode});
+    }
+    if ($resp->{limit_order}) {
+        for (keys %{$resp->{limit_order}}) {
+            $resp->{limit_order}{$_}{display_name} = localize($resp->{limit_order}{$_}{display_name});
+        }
+    }
+    return $resp;
+}
+
 sub _localize_audit_details {
     my $details = shift;
     for my $key (keys %$details) {

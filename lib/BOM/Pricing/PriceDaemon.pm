@@ -273,9 +273,9 @@ sub run {
                 elsif (defined $response->{theo_probability}) {
                     $adjusted_response = BOM::Pricing::v3::Utility::binary_price_adjustment($contract_parameters, $adjusted_response);
                 }
-                if ($response->{longcode}) {
-                    $adjusted_response->{longcode} = localize($response->{longcode});
-                }
+
+                # localize the 'longcode' and 'display_name' properties if they exist
+                $adjusted_response = BOM::Pricing::v3::Utility::localize_proposal_response($adjusted_response);
 
                 my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($adjusted_response));
                 $total_subscribers += $subscribers_count;

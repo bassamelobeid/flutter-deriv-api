@@ -148,4 +148,31 @@ subtest 'localize bid response' => sub {
     cmp_deeply($input, $expect, 'bid response was localized');
 };
 
+subtest 'localize proposal response' => sub {
+    my $input = {
+        longcode    => ['longcode [_1]', 'localized'],
+        limit_order => {
+            take_profit => {
+                display_name => 'Take profit',
+            },
+            another_limit => {
+                display_name => ['limits [_1]', 'localized'],
+            },
+        },
+    };
+    my $expect = {
+        longcode    => 'longcode localized',
+        limit_order => {
+            take_profit => {
+                display_name => 'Take profit',
+            },
+            another_limit => {
+                display_name => 'limits localized',
+            },
+        },
+    };
+    BOM::Pricing::v3::Utility::localize_proposal_response($input);
+    cmp_deeply($input, $expect, 'proposal response was localized');
+};
+
 done_testing;
