@@ -168,6 +168,7 @@ requires "Math::BigFloat", "== 2.003002";
 requires "Math::BigInt", "== 2.003002";
 requires "Math::BigInt::Calc", "== 2.003002";
 requires "Math::BigInt::Lib", "== 2.003002";
+requires "Math::Cartesian::Product", "== 1.009";
 requires "Math::Util::CalculatedValue", "== 0.07";
 requires "Math::Util::CalculatedValue::Validatable", "== 0.07";
 requires "Method::Generate::Accessor", 0;
