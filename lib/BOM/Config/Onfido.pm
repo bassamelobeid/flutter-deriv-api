@@ -99,6 +99,50 @@ sub supported_documents_for_country {
     return $country_details->{$country_code}->{doc_types_list} // [];
 }
 
+=head2 onfido_data_for_all_countries
+
+Gets supported Onfido documents and that if Onfido is supported for all countries.
+
+Returns a hashref of the following structure for every 2-letter country_code.
+
+=over 4
+
+=item * C<supported_documents> - List of documents supported by Onfido for the country
+
+=item * C<is_supported> - 0 if the country not supported, 1 if supported.
+
+=back
+
+=cut
+
+sub onfido_data_for_all_countries {
+    my $onfido_disabled_countries = Business::Config->new()->onfido_disabled_countries();
+    my $countries_instance        = Brands::Countries->new();
+
+    my %hash            = ();
+    my $country_details = _get_country_details();
+    foreach my $country_code (keys $countries_instance->countries_list->%*) {
+        my $country_code_3chars = uc(country_code2code($country_code, 'alpha-2', 'alpha-3') // '');
+        if ($country_code_3chars) {
+            my @supported_documents = $country_details->{$country_code_3chars}->{doc_types_list} // [];
+            $hash{$country_code} = {
+                supported_documents => @supported_documents,
+                is_supported        => _check_is_country_supported(
+                    country_code              => $country_code,
+                    country_details           => $country_details,
+                    country_code_3chars       => $country_code_3chars,
+                    onfido_disabled_countries => $onfido_disabled_countries
+                )};
+        } else {
+            $hash{$country_code} = {
+                supported_documents => [],
+                is_supported        => 0
+            };
+        }
+    }
+    return \%hash;
+}
+
 =head2 is_country_supported
 
 Returns 1 if country is supported and 0 if it is not supported
@@ -106,18 +150,42 @@ Returns 1 if country is supported and 0 if it is not supported
 =cut
 
 sub is_country_supported {
-    my $country_code = shift;
+    return _check_is_country_supported(country_code => shift);
+}
 
-    return 0 if is_disabled_country($country_code);
+=head2 _check_is_country_supported
 
-    $country_code = uc(country_code2code($country_code, 'alpha-2', 'alpha-3') // '');
+Returns 1 if country is supported and 0 if it is not supported. It is better to call this one
+if precalculated values for the optional parameters are available as it saves Redis reads and 
+improves performance
 
-    my $country_details = _get_country_details();
+It takes the following parameters as a hash:
 
-    $country_details->{$country_code}->{doc_types_list} //= [];
+=over 4
 
-    my $has_documents = scalar $country_details->{$country_code}->{doc_types_list}->@*;
+=item * C<country_code> the 2-letter country code
 
+=item * C<onfido_disabled_countries> (optional) the data returned by Business::Config#onfido_disabled_countries
+
+=item * C<country_details> (optional) the data from Redis retrieved by L</_get_country_details>
+
+=item * C<country_code_3chars> (optional) the 3-letter country code corresponding to the 2-letter one passed in
+
+=back
+
+=cut
+
+sub _check_is_country_supported {
+    my %args    = @_;
+    my @arg_arr = @args{qw(country_code onfido_disabled_countries country_details country_code_3chars)};
+
+    my ($country_code, $onfido_disabled_countries, $country_details, $country_code_3chars) = @arg_arr;
+    return 0 if is_disabled_country($country_code, $onfido_disabled_countries);
+
+    $country_details                                           //= _get_country_details();
+    $country_code_3chars                                       //= uc(country_code2code($country_code, 'alpha-2', 'alpha-3') // '');
+    $country_details->{$country_code_3chars}->{doc_types_list} //= [];
+    my $has_documents = scalar $country_details->{$country_code_3chars}->{doc_types_list}->@*;
     return $has_documents ? 1 : 0;
 }
 
@@ -125,21 +193,27 @@ sub is_country_supported {
 
 Returns 1 if the country is disabled, 0 otherwise.
 
+It takes the following parameters:
+
+=over 4
+
+=item * C<country_code> the 2-letter country code
+
+=item * C<country_details> (optional) the data from Redis retrieved by L</_get_country_details>
+
+=back
+
 =cut
 
 sub is_disabled_country {
-    my $country_code = shift;
+    my ($country_code, $country_details) = @_;
 
     # in current implementation the yml might be overriden by the automatic update,
     # an so we need a different place to store disabled countries
-
-    my $country_details = Business::Config->new()->onfido_disabled_countries();
+    $country_details //= Business::Config->new()->onfido_disabled_countries();
 
     $country_details->{$country_code} //= 0;
-
-    my $is_disabled = $country_details->{$country_code};
-
-    return $is_disabled ? 1 : 0;
+    return $country_details->{$country_code} ? 1 : 0;
 }
 
 =head2 _get_country_details

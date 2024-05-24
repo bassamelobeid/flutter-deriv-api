@@ -63,6 +63,20 @@ subtest 'disabled countries' => sub {
     cmp_bag $disabled_countries, [@expected_disabled_countries], 'disabled countries full list';
 };
 
+subtest 'Ensure the data from the all countries data tallies with the data from the individual call' => sub {
+    my $countries_instance = Brands::Countries->new();
+    my $all_countries_data = BOM::Config::Onfido::onfido_data_for_all_countries();
+    foreach my $country_code (keys $countries_instance->countries_list->%*) {
+        subtest "country: $country_code" => sub {
+            my $supported_docs = BOM::Config::Onfido::supported_documents_for_country($country_code);
+            my $is_supported   = BOM::Config::Onfido::is_country_supported($country_code);
+            is_deeply($all_countries_data->{$country_code}->{supported_documents}, $supported_docs, 'The responses are different');
+            # this check is nearly redundant as it uses the same underlying method..
+            is $all_countries_data->{$country_code}->{is_supported}, $is_supported, 'The responses are different';
+        }
+    }
+};
+
 subtest 'Onfido supported documents updater' => sub {
     my $conf_mock   = Test::MockModule->new('BOM::Config::Onfido');
     my $stats_event = {};
