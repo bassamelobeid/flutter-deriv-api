@@ -93,6 +93,81 @@ subtest 'has idv' => sub {
     is(BOM::Platform::Utility::has_idv(%args), 0, 'Should return 0 if IDV is not disabled and not supported');
 };
 
+subtest 'has idv all countries' => sub {
+    my %args = (
+        country       => 'gh',
+        document_type => 'passport'
+    );
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{gh}, 0, 'Should return 0 if IDV is disabled and supported');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(0);
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{gh}, 1, 'Should return 1 if IDV is not disabled and supported');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw(smile_identity)]);
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{gh}, 1, 'Should return 1 if country, document_type pair has at least one provider');
+    BOM::Config::Redis::redis_events()->set(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'identity_pass', 1);
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{gh}, 0, 'Should return 0 if country, document_type pair has no provider');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw( )]);
+    BOM::Config::Redis::redis_events()->del(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'identity_pass');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw(smile_identity:gh:passport)]);
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{gh}, 1, 'Should return 1 if triplet has backup');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw(smile_identity:gh:passport identity_pass:gh:passport)]);
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{gh}, 0, 'Should return 0 if all triplets disabled');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw( )]);
+
+    $args{country} = 'xx';
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{xx}, 0, 'Should return 0 if IDV is disabled and not supported');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(0);
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{xx}, 0, 'Should return 0 if IDV is not disabled and not supported');
+
+    delete $args{'document_type'};
+    $args{country} = 'gh';
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{gh}, 1, 'Should return 1 if IDV is not disabled and supported');
+    $args{country} = 'xx';
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{xx}, 0, 'Should return 0 if IDV is not disabled and not supported');
+
+    my %result = %{BOM::Platform::Utility::has_idv_all_countries()};
+    is(scalar keys %result, scalar Brands::Countries->new->countries_list->%*, 'Should have resuls for all countries');
+    $args{country} = 'xx';
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{gh}, undef, 'Should not have values for other countries');
+
+    %args = (
+        country             => 'gh',
+        document_type       => 'passport',
+        index_with_doc_type => 1
+    );
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{"gh"},          1, 'Should return 1 as it is supported');
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{"gh:passport"}, 1, 'Should return 1 as index_with_doc_type is set');
+
+    %args = (
+        country       => 'gh',
+        document_type => 'passport'
+    );
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{"gh"},          1,     'Should return 1 as it is supported');
+    is(BOM::Platform::Utility::has_idv_all_countries(%args)->{"gh:passport"}, undef, 'Should return undef as index_with_doc_type is not set');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw(smile_identity:gh:passport identity_pass:gh:passport)]);
+    %args = (
+        country             => 'gh',
+        index_with_doc_type => 1
+    );
+    my $r = BOM::Platform::Utility::has_idv_all_countries(%args);
+    cmp_deeply(
+        $r,
+        {
+            "gh:drivers_license" => 1,
+            "gh:voter_id"        => 1,
+            gh                   => 1,
+            "gh:passport"        => 0,
+            "gh:ssnit"           => 1
+        },
+        'Should show passport as not supported for "gh"'
+    );
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw( )]);
+};
+
 subtest 'idv_configuration' => sub {
     subtest 'force check_for_update' => sub {
         my $forced;

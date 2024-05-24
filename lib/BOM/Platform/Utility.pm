@@ -408,30 +408,63 @@ Returns bool
 =cut
 
 sub has_idv {
-    my %args            = @_;
-    my $country_configs = Brands::Countries->new;
+    my %args = @_;
+    return (has_idv_all_countries(%args)->{$args{country}} // 0) if ($args{country});
+    return 0;
+}
 
-    return 0 unless $country_configs->is_idv_supported($args{country} // '');
+=head2 has_idv_all_countries
 
-    my $idv_countries = $country_configs->get_idv_config($args{country});
+Checks if IDV is enabled and supported for all countries. Can be filtered using
+country, provider and document_type.
 
-    if (defined $args{document_type}) {
-        foreach my $provider ($idv_countries->{'document_types'}->{$args{document_type}}->{'providers'}->@*) {
-            $args{provider} = $provider;
-            return 1 unless is_idv_disabled(%args);
-        }
-    } else {
-        my $country_doc_types = $idv_countries->{'document_types'};
-        foreach my $doc_type (keys %$country_doc_types) {
-            foreach my $provider ($country_doc_types->{$doc_type}->{'providers'}->@*) {
-                $args{document_type} = $doc_type;
-                $args{provider}      = $provider;
-                return 1 unless is_idv_disabled(%args);
+=over 4
+
+=item C<args>: hash containing country and document_type, with an option index_with_doc_type to index with document_type
+
+=back
+
+Returns hash of country_code => bool and country_code:doc_type => bool if indexed with doc_type
+
+=cut
+
+sub has_idv_all_countries {
+    my %args                = @_;
+    my $country_configs     = Brands::Countries->new;
+    my $idv_country_configs = $country_configs->get_idv_config();
+    my @countries_list      = $args{country} ? ($args{country}) : keys $country_configs->countries_list->%*;
+
+    my %result = ();
+    COUNTRY: foreach my $country_code (@countries_list) {
+        $result{$country_code} = 0;
+        if ($country_configs->is_idv_supported($country_code)) {
+            my $country_doc_types =
+                $args{document_type}
+                ? {$args{document_type} => $idv_country_configs->{$country_code}->{'document_types'}->{$args{document_type}}}
+                : $idv_country_configs->{$country_code}->{'document_types'};
+            DOCTYPE: foreach my $doc_type (keys %$country_doc_types) {
+                $result{"$country_code:$doc_type"} = 0 if ($args{index_with_doc_type});
+                foreach my $provider ($country_doc_types->{$doc_type}->{'providers'}->@*) {
+                    my %new_args = (
+                        %args,
+                        document_type => $doc_type,
+                        provider      => $provider,
+                        country       => $country_code
+                    );
+                    if (!is_idv_disabled(%new_args)) {
+                        $result{$country_code} = 1;
+                        if ($args{index_with_doc_type}) {
+                            $result{"$country_code:$doc_type"} = 1;
+                            next DOCTYPE;
+                        } else {
+                            next COUNTRY;
+                        }
+                    }
+                }
             }
         }
     }
-
-    return 0;
+    return \%result;
 }
 
 =head2 idv_configuration
