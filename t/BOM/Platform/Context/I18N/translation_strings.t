@@ -1,4 +1,4 @@
-use Test::Most 0.22 (tests => 21);
+use Test::Most 0.22 (tests => 22);
 use Test::Warn;
 use Test::MockModule;
 use Test::Warnings;
@@ -15,7 +15,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Context::I18N;
 use BOM::Config::Runtime;
 
-my @languages = qw(EN DE ES FR ID PL PT RU ZH_CN VI ZH_TW IT TH TR KO AR BN SI);
+my @languages = qw(EN DE ES FR ID PL PT RU ZH_CN VI ZH_TW IT TH TR KO AR BN SI SW);
 
 is @{BOM::Config::Runtime->instance->app_config->cgi->supported_languages}, @languages, "correct number of languages";
 
