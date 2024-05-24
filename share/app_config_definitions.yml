@@ -51,6 +51,7 @@ cgi:
         - AR
         - BN
         - SI
+        - SW
     rtl_languages:
       description: "Contains languages that need right to left support"
       isa: ArrayRef
