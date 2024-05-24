@@ -14,6 +14,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use Guard;
+use Data::Dumper;
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
@@ -294,28 +295,8 @@ subtest 'generate token' => sub {
     );
 };
 
-subtest 'trading_platform_available_accounts' => sub {
-    # indonesia
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'za'
-    });
-    my $user = BOM::User->create(
-        email    => 'tradingplatform_test@binary.com',
-        password => 'test'
-    );
-    $user->add_client($client);
-
-    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
-
-    $t->await::authorize({authorize => $token});
-
-    my $resp = $t->await::trading_platform_available_accounts({trading_platform_available_accounts => 1});
-    ok $resp->{error}, 'throws error without authorisation';
-    is $resp->{error}{message}, 'Input validation failed: platform', 'message is Input validation failed: platform';
-    is $resp->{error}{code},    'InputValidationFailed',             'code is InputValidationFailed';
-
-    my $expected_resp = [{
+my $AVAILABLE_ACCOUNTS = {
+    za => [{
             'name'             => 'Deriv (SVG) LLC',
             'market_type'      => 'all',
             'shortcode'        => 'svg',
@@ -443,7 +424,46 @@ subtest 'trading_platform_available_accounts' => sub {
             'sub_account_type'           => 'standard',
             'linkable_landing_companies' => ['maltainvest'],
             'product'                    => '',
-        }];
+        }
+    ],
+    at => [{
+            'requirements' => {
+                'signup'     => ['tax_residence', 'tax_identification_number', 'account_opening_reason'],
+                'compliance' => {'mt5' => ['fully_authenticated', 'expiration_check']}
+            },
+            'market_type'                => 'financial',
+            'shortcode'                  => 'maltainvest',
+            'name'                       => 'Deriv Investments (Europe) Limited',
+            'sub_account_type'           => 'standard',
+            'linkable_landing_companies' => ['maltainvest'],
+            'product'                    => '',
+        }
+    ],
+    my => [],
+};
+
+subtest 'trading_platform_available_accounts authenticated case' => sub {
+    # indonesia
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'za'
+    });
+    my $user = BOM::User->create(
+        email    => 'tradingplatform_test@binary.com',
+        password => 'test'
+    );
+    $user->add_client($client);
+
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
+    my $resp;
+    my $expected_resp;
+
+    $t->await::authorize({authorize => $token});
+
+    $resp = $t->await::trading_platform_available_accounts({trading_platform_available_accounts => 1});
+    ok $resp->{error}, 'throws error for incomplete input';
+    is $resp->{error}{message}, 'Input validation failed: platform', 'message is Input validation failed: platform';
+    is $resp->{error}{code},    'InputValidationFailed',             'code is InputValidationFailed';
 
     $resp = $t->await::trading_platform_available_accounts({
         trading_platform_available_accounts => 1,
@@ -451,8 +471,8 @@ subtest 'trading_platform_available_accounts' => sub {
     });
 
     $resp->{trading_platform_available_accounts}->@* = sort { $a->{name} cmp $b->{name} } $resp->{trading_platform_available_accounts}->@*;
-    $expected_resp->@* = sort { $a->{name} cmp $b->{name} } $expected_resp->@*;
-
+    $expected_resp = [sort { $a->{name} cmp $b->{name} } $AVAILABLE_ACCOUNTS->{za}->@*];
+    is Dumper($resp->{error}), "\$VAR1 = undef;\n", 'no error in response';
     cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for South Africa with CR and MF accounts');
 
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -469,23 +489,12 @@ subtest 'trading_platform_available_accounts' => sub {
     $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
     $t->await::authorize({authorize => $token});
 
-    $expected_resp = [{
-            'requirements' => {
-                'signup'     => ['tax_residence', 'tax_identification_number', 'account_opening_reason'],
-                'compliance' => {'mt5' => ['fully_authenticated', 'expiration_check']}
-            },
-            'market_type'                => 'financial',
-            'shortcode'                  => 'maltainvest',
-            'name'                       => 'Deriv Investments (Europe) Limited',
-            'sub_account_type'           => 'standard',
-            'linkable_landing_companies' => ['maltainvest'],
-            'product'                    => '',
-        }];
-    $resp = $t->await::trading_platform_available_accounts({
+    $expected_resp = $AVAILABLE_ACCOUNTS->{at};
+    $resp          = $t->await::trading_platform_available_accounts({
         trading_platform_available_accounts => 1,
         platform                            => 'mt5'
     });
-
+    is Dumper($resp->{error}), "\$VAR1 = undef;\n", 'no error in response';
     cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for Austria');
 
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -502,8 +511,47 @@ subtest 'trading_platform_available_accounts' => sub {
         trading_platform_available_accounts => 1,
         platform                            => 'mt5'
     });
+    $expected_resp = $AVAILABLE_ACCOUNTS->{my};
+    is Dumper($resp->{error}), "\$VAR1 = undef;\n", 'no error in response';
+    cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for Malaysia');
+};
 
-    cmp_deeply($resp->{trading_platform_available_accounts}, [], 'response is correct for Malaysia');
+subtest 'trading_platform_available_accounts not authenticated case' => sub {
+    my $resp;
+    my $expected_resp;
+
+    $resp = $t->await::trading_platform_available_accounts({trading_platform_available_accounts => 1});
+    ok $resp->{error}, 'throws error for incomplete input';
+    is $resp->{error}{message}, 'Input validation failed: platform', 'message is Input validation failed: platform';
+    is $resp->{error}{code},    'InputValidationFailed',             'code is InputValidationFailed';
+
+    $resp = $t->await::trading_platform_available_accounts({
+        trading_platform_available_accounts => 1,
+        platform                            => 'mt5',
+        country_code                        => 'za',
+    });
+    $resp->{trading_platform_available_accounts}->@* = sort { $a->{name} cmp $b->{name} } $resp->{trading_platform_available_accounts}->@*;
+    $expected_resp = [sort { $a->{name} cmp $b->{name} } $AVAILABLE_ACCOUNTS->{za}->@*];
+    is Dumper($resp->{error}), "\$VAR1 = undef;\n", 'no error in response';
+    cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for South Africa with CR and MF accounts');
+
+    $resp = $t->await::trading_platform_available_accounts({
+        trading_platform_available_accounts => 1,
+        platform                            => 'mt5',
+        country_code                        => 'at',
+    });
+    $expected_resp = $AVAILABLE_ACCOUNTS->{at};
+    is Dumper($resp->{error}), "\$VAR1 = undef;\n", 'no error in response';
+    cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for Austria');
+
+    $resp = $t->await::trading_platform_available_accounts({
+        trading_platform_available_accounts => 1,
+        platform                            => 'mt5',
+        country_code                        => 'my',
+    });
+    $expected_resp = $AVAILABLE_ACCOUNTS->{my};
+    is Dumper($resp->{error}), "\$VAR1 = undef;\n", 'no error in response';
+    cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for Malaysia');
 };
 $t->finish_ok;
 
