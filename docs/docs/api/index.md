@@ -9,7 +9,7 @@ We have prepared a local [dataflow chart](dataflow.md) representing the current 
 ## Future plan
 
 We are planning to expose functionality of pricing service via gRPC or HTTP API
-in the future. Exact details of the API are to be finalised during Phase two of the Pricing API [roadmap](../roadmap). The main idea is to have the following service exposed as described using protobuf:
+in the future. Exact details of the API are to be finalised during Phase two of the Pricing API [roadmap](../roadmap/index.md). The main idea is to have the following service exposed as described using protobuf:
 
 ```protobuf
 // Pricer calculates prices for contracts.
