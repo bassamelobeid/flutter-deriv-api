@@ -67,4 +67,6 @@ is($Binary::WebSocketAPI::RPC_THROTTLE->{throttle},      1234, 'check throttle i
 is(scalar @$Binary::WebSocketAPI::RPC_TIMEOUT_EXTENSION, 2,    'check timeout extensions as set in redis after start');
 cmp_deeply($data, $Binary::WebSocketAPI::RPC_TIMEOUT_EXTENSION, 'check timeout extension data is as set in redis after start');
 
+$redis->set('rpc::throttle' => 0);    # Turn off throttling incase this test is being run on a QA box as it is very confusing to leave it on
+
 done_testing();

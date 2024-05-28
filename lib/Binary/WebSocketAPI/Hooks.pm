@@ -920,10 +920,11 @@ Returns nothing.
 =cut
 
 sub rpc_throttling {
-    if (int(rand(100)) < $Binary::WebSocketAPI::RPC_THROTTLE->{throttle}) {
+    my $throttle = $Binary::WebSocketAPI::RPC_THROTTLE->{throttle};
+    if (int(rand(100)) < $throttle) {
         $Binary::WebSocketAPI::RPC_THROTTLE->{requests_dropped}++;
-        $log->debug("rpc_throttling hook dropped message due to throttling");
-        die "Message dropped due to throttling";
+        $log->debug("rpc_throttling hook dropped message due to throttling: $throttle%");
+        die "Message dropped due to throttling: $throttle%";
     } else {
         $Binary::WebSocketAPI::RPC_THROTTLE->{requests_passed}++;
     }
