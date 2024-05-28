@@ -74,8 +74,7 @@ sub check_syntax_on_diff {
     my $result = _run_command("git fetch --no-tags origin master");
     diag($result) if $result;
 
-    my @check_files = _run_command("git diff --diff-filter=ACMRT --name-only origin/master | grep -v -E '^docs' ");
-
+    my @check_files = _run_command("git diff --diff-filter=ACMRT --relative --name-only origin/master | grep -v -E '^docs' ");
     if (scalar @check_files) {
         pass "file change detected";
         diag($_) for @check_files;
