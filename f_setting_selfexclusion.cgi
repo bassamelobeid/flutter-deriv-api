@@ -137,24 +137,19 @@ if (request()->http_method eq 'POST') {
     $client->set_exclusion->max_balance(looks_like_number($v) && $v ? $v : undef);
     $v = request()->param('SESSIONDURATION');
     $client->set_exclusion->session_duration_limit(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('DAILYLOSSLIMIT');
+    $client->set_exclusion->max_losses(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('7DAYLOSSLIMIT');
+    $client->set_exclusion->max_7day_losses(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('30DAYLOSSLIMIT');
+    $client->set_exclusion->max_30day_losses(looks_like_number($v) && $v ? $v : undef);
 
-    unless ($regulated_lc) {
-        $v = request()->param('DAILYLOSSLIMIT');
-        $client->set_exclusion->max_losses(looks_like_number($v) && $v ? $v : undef);
-        $v = request()->param('7DAYLOSSLIMIT');
-        $client->set_exclusion->max_7day_losses(looks_like_number($v) && $v ? $v : undef);
-        $v = request()->param('30DAYLOSSLIMIT');
-        $client->set_exclusion->max_30day_losses(looks_like_number($v) && $v ? $v : undef);
-    }
-
-    if ($deposit_limit_enabled) {
-        $v = request()->param('DAILYDEPOSITLIMIT');
-        $client->set_exclusion->max_deposit_daily(looks_like_number($v) && $v ? $v : undef);
-        $v = request()->param('7DAYDEPOSITLIMIT');
-        $client->set_exclusion->max_deposit_7day(looks_like_number($v) && $v ? $v : undef);
-        $v = request()->param('30DAYDEPOSITLIMIT');
-        $client->set_exclusion->max_deposit_30day(looks_like_number($v) && $v ? $v : undef);
-    }
+    $v = request()->param('DAILYDEPOSITLIMIT');
+    $client->set_exclusion->max_deposit_daily(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('7DAYDEPOSITLIMIT');
+    $client->set_exclusion->max_deposit_7day(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('30DAYDEPOSITLIMIT');
+    $client->set_exclusion->max_deposit_30day(looks_like_number($v) && $v ? $v : undef);
 
     my $form_exclusion_until_date = request()->param('EXCLUDEUNTIL') || undef;
 

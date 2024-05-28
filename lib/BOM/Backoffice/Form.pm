@@ -23,7 +23,6 @@ sub get_self_exclusion_form {
     my $client          = $arg_ref->{client};
     my $restricted_only = $arg_ref->{restricted_only};
 
-    my $regulated             = $client->landing_company->is_eu;
     my $deposit_limit_enabled = $client->landing_company->deposit_limit_enabled;
     my $loginID               = $client->loginid;
 
@@ -541,9 +540,6 @@ sub get_self_exclusion_form {
     if ($restricted_only) {
         $fieldset->add_field($_) for @restricted_fields;
     } else {
-        if ($regulated) {
-            $_->{input}->{readonly} = 1 for @restricted_fields;
-        }
 
         $fieldset->add_field($input_field_maximum_account_cash_balance);
         $fieldset->add_field($input_field_daily_turnover_limit);

@@ -138,7 +138,7 @@ if ($self_exclusion) {
         $audit->{max_deposit_30day}->{changed_stamp},
         $audit->{max_deposit_30day}->{prev_value},
         $audit->{max_deposit_30day}->{changed_by}) if $deposit_limit_enabled and exists $audit->{max_deposit_30day};
-    update_self_exclusion_time_settings($client);
+    BOM::Backoffice::Utility::update_self_exclusion_time_settings($client);
 
     if ($info) {
         $page .=
