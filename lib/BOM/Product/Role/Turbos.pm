@@ -1,22 +1,20 @@
 package BOM::Product::Role::Turbos;
 
 use Moose::Role;
-use Time::Duration::Concise;
-use Format::Util::Numbers qw/financialrounding roundcommon/;
-use Scalar::Util::Numeric qw(isint);
-use List::Util            qw/min max/;
-use YAML::XS              qw(LoadFile);
-use POSIX                 qw(ceil floor);
-use Machine::Epsilon;
-
-use BOM::Config::Redis;
-use BOM::Product::Exception;
-use BOM::Product::Static;
-use BOM::Product::Contract::Strike::Turbos;
-use BOM::Product::Utils qw(rounddown);
-use BOM::Config::Quants qw(minimum_stake_limit);
 with 'BOM::Product::Role::AmericanExpiry' => {-excludes => ['_build_hit_tick', '_build_close_tick']};
 with 'BOM::Product::Role::SingleBarrier'  => {-excludes => '_validate_barrier'};
+
+use BOM::Config::Quants qw(minimum_stake_limit);
+use BOM::Config::Redis;
+use BOM::Product::Contract::Strike::Turbos;
+use BOM::Product::Exception;
+use BOM::Product::Static;
+use BOM::Product::Utils   qw(rounddown);
+use Format::Util::Numbers qw(financialrounding roundcommon);
+use List::Util            qw(min max);
+use Machine::Epsilon;
+use Scalar::Util::Numeric qw(isint);
+use YAML::XS              qw(LoadFile);
 
 =head2 ADDED_CURRENCY_PRECISION
 
@@ -343,8 +341,23 @@ commission charged when client sells a contract. this value is charged only when
 sub sell_commission {
     my $self = shift;
 
-    return 0 if $self->is_expired && !$self->_hit_take_profit;
-    return $self->number_of_contracts * $self->current_spot * $self->bid_spread;
+    if ($self->is_expired) {
+        # No commission if contract is expired and take profit is not breached
+        return 0 if $self->hit_type && $self->hit_type ne 'take_profit';
+        return 0 if !$self->hit_type;
+
+        # No commission if take profit is breached at expiry time
+        return 0 if $self->hit_type && $self->hit_type eq 'take_profit' && $self->hit_tick && $self->hit_tick->{epoch} == $self->date_expiry->epoch;
+    }
+
+    # Commission at hit tick if take profit is breached
+    return $self->number_of_contracts * $self->bid_spread * $self->hit_tick->{quote} if $self->hit_type && $self->hit_type eq 'take_profit';
+
+    # Commission at close tick if client sell manually before expiry time
+    return $self->number_of_contracts * $self->bid_spread * $self->close_tick->{quote} if $self->sell_price && !$self->tick_expiry;
+
+    # Default commission based on current spot
+    return $self->number_of_contracts * $self->bid_spread * $self->current_spot;
 }
 
 =head2 base_commission
@@ -663,10 +676,40 @@ sub _build_hit_tick {
     my $self = shift;
 
     return undef unless $self->entry_tick;
-    return $self->_hit_barrier     if $self->_hit_barrier;
-    return $self->_hit_take_profit if $self->_hit_take_profit;
+
+    my $stop_out_tick    = $self->_hit_barrier;
+    my $take_profit_tick = $self->_hit_take_profit;
+
+    # There's a possibility contract hits both stop out and take profit barriers if there's delay in sell
+    if ($stop_out_tick && $take_profit_tick) {
+        if ($stop_out_tick->epoch < $take_profit_tick->epoch) {
+            $self->hit_type('stop_out');
+            return $stop_out_tick;
+        } else {
+            $self->hit_type('take_profit');
+            return $take_profit_tick;
+        }
+    } elsif ($stop_out_tick) {
+        $self->hit_type('stop_out');
+        return $stop_out_tick;
+    } elsif ($take_profit_tick) {
+        $self->hit_type('take_profit');
+        return $take_profit_tick;
+    }
+
     return undef;
 }
+
+=head2 hit_type
+
+Type indicator whether the C<$hit_tick> hits 'stop_out' or 'take_profit' condition
+
+=cut
+
+has hit_type => (
+    is       => 'rw',
+    init_arg => undef,
+);
 
 =head2 _hit_barrier
 

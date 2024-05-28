@@ -5,8 +5,8 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Turbos';
 
 use BOM::Product::Exception;
-use Format::Util::Numbers qw/financialrounding formatnumber/;
 use BOM::Product::Utils   qw(roundup);
+use Format::Util::Numbers qw(financialrounding);
 
 =head1 DESCRIPTION
 
@@ -149,19 +149,33 @@ sub take_profit_side {
     return 'higher';
 }
 
-=head2 take_profit_barrier_value
+=head2 take_profit_barrier_value($take_profit_amount)
 
 The corresponding barrier/strike value to close the contract with the predefined take profit amount
+
+=over 4
+
+=item C<$take_profit_amount> => numeric
+
+Optional parameter used to calculate new take profit barrier.
+Default to $self->take_profit->{amount} if no argument is provided.
+
+=back
 
 =cut
 
 sub take_profit_barrier_value {
-    my $self = shift;
+    my ($self, $take_profit_amount) = @_;
+    $take_profit_amount //= $self->take_profit->{amount};
 
-    my $value =
-        ((($self->ask_price + $self->take_profit->{amount}) / $self->number_of_contracts) + $self->barrier->as_absolute) / (1 - $self->bid_spread);
+    if ($take_profit_amount) {
+        my $take_profit_barrier =
+            ((($self->ask_price + $take_profit_amount) / $self->number_of_contracts) + $self->barrier->as_absolute) / (1 - $self->bid_spread);
 
-    return roundup($value, $self->underlying->pip_size);
+        return roundup($take_profit_barrier, $self->underlying->pip_size);
+    }
+
+    return undef;
 }
 
 no Moose;

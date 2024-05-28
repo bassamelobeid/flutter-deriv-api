@@ -47,8 +47,16 @@ my $args = {
 };
 
 my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Turboslong');
-$mocked_contract->mock('strike_price_choices', sub { return ['-73.00', '-85.00', '-100.00'] }, '_max_allowable_take_profit',
-    sub { return '1000.00' });
+$mocked_contract->mock(
+    _max_allowable_take_profit => sub { return '1000.00' },
+    strike_price_choices       => sub { return ['-73.00', '-85.00', '-100.00'] },
+    take_profit_barrier_value  => sub {
+        my $self = shift;
+
+        return $args->{amount} + $self->take_profit->{amount} if $self->take_profit && $self->take_profit->{amount};
+        return undef;
+    },
+);
 
 subtest 'config' => sub {
     my $c = eval { produce_contract($args); };
@@ -89,15 +97,16 @@ subtest 'number of contracts' => sub {
     cmp_ok sprintf("%.6f", $c->number_of_contracts), '==', '1.362405', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
-    is $c->bid_price,       '122.07',          'has bid price';
-    is $c->sell_commission, 0.549642662788687, 'sell commission when contract is not expired';
+    is $c->bid_price,       '122.07',                                        'has bid price';
+    is $c->sell_commission, $c->number_of_contracts * $c->bid_spread * 1780, 'sell commission when contract is not expired and not sold';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
     cmp_ok sprintf("%.6f", $c->number_of_contracts), '==', '1.362405', 'correct number of contracts';
     ok !$c->pricing_new, 'contract is new';
     ok !$c->is_expired,  'not expired';
-    is $c->bid_price, '364.52', 'has bid price, and higher because spot is higher now';
+    is $c->bid_price,       '364.52',                                        'has bid price, and higher because spot is higher now';
+    is $c->sell_commission, $c->number_of_contracts * $c->bid_spread * 1958, 'sell commission when contract is not expired and not sold';
 
     $args->{date_pricing} = $now->plus_time_interval('3s');
     $c = produce_contract($args);
@@ -112,9 +121,10 @@ subtest 'take_profit' => sub {
     $args->{date_pricing} = $now;
 
     my $c = produce_contract($args);
-    is $c->take_profit, undef, 'take_profit is undef';
+    is $c->take_profit,               undef, 'take_profit is undef';
+    is $c->take_profit_barrier_value, undef, 'take_profit_barrier_value is undef';
 
-    subtest 'mininum allowed amount' => sub {
+    subtest 'minimum allowed amount' => sub {
         $args->{limit_order} = {
             take_profit => '0',
         };
@@ -155,15 +165,19 @@ subtest 'take_profit' => sub {
         };
         $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->take_profit->{amount},      '26.97';
+        is $c->take_profit->{amount}, $args->{limit_order}{take_profit}, "take_profit is $args->{limit_order}{take_profit}";
         is $c->take_profit->{date}->epoch, $c->date_pricing->epoch;
+        is $c->take_profit_barrier_value, $args->{amount} + $args->{limit_order}{take_profit},
+            "take_profit is $args->{amount} + $args->{limit_order}{take_profit}";
 
         $args->{limit_order} = {
             take_profit => '50',
         };
         $c = produce_contract($args);
-        is $c->take_profit->{amount},      '50';
+        is $c->take_profit->{amount}, $args->{limit_order}{take_profit}, "take_profit is $args->{limit_order}{take_profit}";
         is $c->take_profit->{date}->epoch, $c->date_pricing->epoch;
+        is $c->take_profit_barrier_value, $args->{amount} + $args->{limit_order}{take_profit},
+            "take_profit is $args->{amount} + $args->{limit_order}{take_profit}";
     };
 
     subtest 'non-pricing new' => sub {
@@ -176,8 +190,11 @@ subtest 'take_profit' => sub {
             }};
         $c = produce_contract($args);
         ok !$c->pricing_new, 'non pricing_new';
-        is $c->take_profit->{amount},      '5.11';
+        is $c->take_profit->{amount}, $args->{limit_order}{take_profit}{order_amount},
+            "take_profit is $args->{limit_order}{take_profit}{order_amount}";
         is $c->take_profit->{date}->epoch, $now->epoch;
+        is $c->take_profit_barrier_value, $args->{amount} + $args->{limit_order}{take_profit}{order_amount},
+            "take_profit is $args->{amount} + $args->{limit_order}{take_profit}{order_amount}";
 
         delete $args->{limit_order};
     };
@@ -196,12 +213,16 @@ subtest 'take_profit' => sub {
             }};
         $args->{date_pricing} = $now->epoch + 30;
         $c = produce_contract($args);
-        ok $c->take_profit,            'take profit is defined';
-        ok !$c->take_profit->{amount}, 'take profit amount is undef';
-        ok !$c->is_expired,            'not expired';
+        ok $c->take_profit,                'take profit is defined';
+        ok !$c->take_profit->{amount},     'take profit amount is undef';
+        ok !$c->is_expired,                'not expired';
+        ok !$c->take_profit_barrier_value, "take_profit_barrier_value is undef";
     };
 
     subtest 'take profit lookup date' => sub {
+        # Need to unmock take_profit_barrier_value here so the contract can expires once breaching the take profit barrier
+        $mocked_contract->unmock('take_profit_barrier_value');
+
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
             [1763.00, $epoch,     $symbol],
             [1772.00, $epoch + 1, $symbol],    # this would have hit the barrier with 10 take profit
@@ -216,7 +237,8 @@ subtest 'take_profit' => sub {
         $args->{date_pricing} = $now->epoch + 30;
         $c = produce_contract($args);
         ok $c->take_profit, 'take profit is defined';
-        is $c->take_profit->{amount},     10,      'take profit amount is 10';
+        is $c->take_profit->{amount}, $args->{limit_order}{take_profit}{order_amount},
+            "take profit amount is $args->{limit_order}{take_profit}{order_amount}";
         is $c->take_profit_barrier_value, 1771.15, 'take profit barrier value is 1771.15';
         ok $c->is_expired, 'expired when take profit is set at ' . $epoch;
 
@@ -227,7 +249,8 @@ subtest 'take_profit' => sub {
             }};
         $c = produce_contract($args);
         ok $c->take_profit, 'take profit is defined';
-        is $c->take_profit->{amount},     10,      'take profit amount is 10';
+        is $c->take_profit->{amount}, $args->{limit_order}{take_profit}{order_amount},
+            "take profit amount is $args->{limit_order}{take_profit}{order_amount}";
         is $c->take_profit_barrier_value, 1771.15, 'take profit barrier value is 1771.15';
         ok !$c->is_expired, 'not expired when take profit is set at ' . $c->take_profit->{date}->epoch;
 
@@ -453,40 +476,125 @@ subtest 'consistent sell tick' => sub {
 
 };
 
-subtest 'special test for take profit discrepancies' => sub {
-    my $epoch_date_start   = 1699519419;
-    my $epoch_date_pricing = 1699519608;
-    my $epoch_date_expiry  = 1699551819;
-    my $special_args       = {
-        bet_type            => 'TURBOSLONG',
-        underlying          => $symbol,
-        date_start          => $epoch_date_start,
-        date_pricing        => $epoch_date_pricing,
-        duration            => '9h',
-        currency            => 'USD',
-        amount_type         => 'stake',
-        amount              => 500,
-        number_of_contracts => 71.56449,
-        bid_spread          => 0.000165607364228642,
-        barrier             => 2156.68,
-    };
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-        [2163.32, $epoch_date_start,   $symbol],
-        [2165.43, $epoch_date_pricing, $symbol],
-        [2166.71, $epoch_date_expiry,  $symbol],
-    );
-    $special_args->{limit_order} = {
-        take_profit => {
-            order_amount => 100,
-            order_date   => $epoch_date_start,
-        }};
+subtest 'sell_commission' => sub {
+    $mocked_contract->mock(
+        take_profit_barrier_value => sub {
+            my $self = shift;
 
-    my $c = produce_contract($special_args);
-    ok $c->take_profit, 'take profit is defined';
-    is $c->take_profit->{amount},     100,              'take profit amount is 100';
-    is $c->hit_tick->{quote},         2165.43,          'hit tick at 2165.43';
-    is $c->take_profit_barrier_value, 2165.43,          'take profit barrier value is 2165.43';
-    is $c->sell_commission,           25.6638243959644, 'bid_spread charged on take_profit_hit';
+            return '1800.00' if $self->take_profit && $self->take_profit->{amount};
+            return undef;
+        },
+    );
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [1763.00, $epoch,     $symbol],
+        [1780.00, $epoch + 1, $symbol],
+        [1958.00, $epoch + 2, $symbol],    # take_profit barrier is breached at this tick
+        [1890.00, $epoch + 3, $symbol],
+        [1750.00, $epoch + 4, $symbol],
+        [1355.00, $epoch + 5, $symbol],    # stop_out barrier is breached at this tick
+        [1300.00, $epoch + 6, $symbol],
+        [1320.00, $epoch + 7, $symbol],
+    );
+
+    $args = {
+        amount              => 100,
+        amount_type         => 'stake',
+        barrier             => '-73.00',
+        bet_type            => 'TURBOSLONG',
+        bid_spread          => 0.000165607364228642,
+        currency            => 'USD',
+        date_start          => $epoch,
+        date_pricing        => $epoch + 7,
+        duration            => '7d',
+        number_of_contracts => 71.56449,
+        underlying          => $symbol,
+        limit_order         => {
+            take_profit => {
+                order_amount => 100,
+                order_date   => $epoch,
+            },
+        },
+    };
+
+    subtest 'contract breached both take profit and stop out' => sub {
+        my $c = produce_contract($args);
+        ok $c->take_profit, 'take_profit is defined';
+        is $c->take_profit->{amount}, $args->{limit_order}{take_profit}{order_amount},
+            "take_profit amount is $args->{limit_order}{take_profit}{order_amount}";
+        is $c->take_profit_barrier_value, '1800.00',                                                        'take_profit_barrier_value is 1800.00';
+        is $c->hit_tick->{quote},         1958,                                                             'hit_tick at 1958';
+        is $c->hit_tick->{epoch},         $epoch + 2,                                                       'hit_tick is third tick';
+        is $c->hit_type,                  'take_profit',                                                    'hit_type is take_profit';
+        is $c->barrier->as_absolute,      '1690.00',                                                        'barrier is 1690.00';
+        is $c->sell_commission, $c->hit_tick->{quote} * $args->{number_of_contracts} * $args->{bid_spread}, 'bid_spread charged on take_profit_hit';
+    };
+
+    delete $args->{limit_order};
+
+    subtest 'contract breached stop out' => sub {
+        my $c = produce_contract($args);
+        ok !$c->take_profit, 'take_profit is not defined';
+        is $c->take_profit_barrier_value, undef,      'take_profit_barrier_value is undef';
+        is $c->hit_tick->{quote},         1355,       'hit_tick at 1355';
+        is $c->hit_tick->{epoch},         $epoch + 5, 'hit_tick is sixth tick';
+        is $c->hit_type,                  'stop_out', 'hit_type is stop_out';
+        is $c->barrier->as_absolute,      '1690.00',  'barrier is 1690.00';
+        is $c->sell_commission,           0,          'bid_spread is not charged on stop_out_hit';
+    };
+
+    subtest 'contract is sold manually before expiry' => sub {
+        $args->{is_sold}      = 1;
+        $args->{sell_price}   = 120;
+        $args->{sell_time}    = $epoch + 3;
+        $args->{date_pricing} = $epoch + 4;
+
+        my $c = produce_contract($args);
+        ok $c->close_tick, 'close_tick is defined';
+        is $c->close_tick->{epoch}, $args->{sell_time}, 'close epoch is at sell time';
+        is $c->close_tick->{quote}, 1890,               'close quote is 1890';
+        ok !$c->hit_tick, 'hit_tick is undef';
+        ok !$c->hit_type, 'hit_type is undef';
+        is $c->take_profit_barrier_value, undef,     'take_profit_barrier_value is undef';
+        is $c->barrier->as_absolute,      '1690.00', 'barrier is 1690.00';
+        is $c->sell_commission, $c->close_tick->{quote} * $args->{number_of_contracts} * $args->{bid_spread},
+            'bid_spread is charged for selling early';
+    };
+
+    subtest 'contract hit take profit at expiry time' => sub {
+        my $expiry_time = $epoch + 10;
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [1763.00, $epoch,       $symbol],
+            [1780.00, $epoch + 1,   $symbol],
+            [1795.00, $epoch + 2,   $symbol],
+            [1799.99, $epoch + 3,   $symbol],
+            [1798.10, $epoch + 4,   $symbol],
+            [1800.20, $expiry_time, $symbol],    # take_profit barrier will be breached at expiry tick
+        );
+
+        $args->{date_pricing} = $expiry_time;
+        $args->{duration}     = '5t',
+            $args->{limit_order} = {
+            take_profit => {
+                order_amount => 100,
+                order_date   => $epoch,
+            },
+            };
+
+        my $c = produce_contract($args);
+        is $c->date_expiry->epoch, $expiry_time, "expiry time is $expiry_time";
+        ok $c->take_profit, 'take_profit is defined';
+        is $c->take_profit->{amount}, $args->{limit_order}{take_profit}{order_amount},
+            "take_profit amount is $args->{limit_order}{take_profit}{order_amount}";
+        is $c->take_profit_barrier_value, '1800.00', 'take_profit_barrier_value is 1800.00';
+        ok $c->hit_tick, 'hit_tick is defined';
+        is $c->hit_tick->{quote},    1800.2,        'hit_tick at 1800.2';
+        is $c->hit_tick->{epoch},    $expiry_time,  'hit_tick is at expiry time';
+        is $c->hit_type,             'take_profit', 'hit_type is take_profit';
+        is $c->barrier->as_absolute, '1690.00',     'barrier is 1690.00';
+        is $c->sell_commission,      0,             'bid_spread is not charged on expiry even if it hits take profit';
+    }
 };
 
 done_testing();
