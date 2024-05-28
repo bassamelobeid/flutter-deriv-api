@@ -2,21 +2,19 @@ package BOM::Transaction::ContractUpdate;
 
 use Moo;
 
-use BOM::Platform::Context qw(localize);
-use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Database::Helper::FinancialMarketBet;
-
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
-use Date::Utility;
-use Scalar::Util qw(looks_like_number);
-use BOM::Transaction::Utility;
-use Finance::Contract::Longcode   qw(shortcode_to_parameters);
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::Helper::FinancialMarketBet;
+use BOM::Platform::Context        qw(localize);
 use BOM::Product::ContractFactory qw(produce_contract);
-use Syntax::Keyword::Try;
+use BOM::Product::Utils           qw(rounddown roundup);
+use BOM::Transaction::Utility;
 use ExpiryQueue;
-use Log::Any   qw($log);
-use List::Util qw(min);
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use List::Util                  qw(min);
+use Scalar::Util                qw(looks_like_number);
+use Syntax::Keyword::Try;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -471,6 +469,15 @@ sub _requeue_transaction {
             $value = min($value, $contract->ticks_for_payout($contract->_user_input_stake + $self->{take_profit}{amount}));
         }
         $expiry_queue_params->{$key} = $value;
+        $in = $expiryq->enqueue_open_contract($expiry_queue_params) // 0;
+    } elsif ($fmb->{bet_class} eq 'turbos') {
+        my $take_profit_barrier_side = $contract->sentiment eq 'up' ? 'up_level' : 'down_level';
+        $expiry_queue_params->{$take_profit_barrier_side} = $contract->take_profit_barrier_value if $contract->take_profit;
+        $out = $expiryq->dequeue_open_contract($expiry_queue_params) // 0;
+
+        delete $expiry_queue_params->{$take_profit_barrier_side};
+        $expiry_queue_params->{$take_profit_barrier_side} = $contract->take_profit_barrier_value($self->{take_profit}{amount})
+            if $self->{take_profit} && $self->{take_profit}{amount};
         $in = $expiryq->enqueue_open_contract($expiry_queue_params) // 0;
     }
 
