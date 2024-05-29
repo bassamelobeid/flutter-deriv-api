@@ -34,7 +34,7 @@
    my $language =   (lc $r->language ne 'en')?lc($r->language).'/':'';
    $language    =~ s/_/-/;
    %>
-<div id="container">
+<div id="container" class="<% if(lc($r->language) eq 'ar') { %>rtl<% } %>">
    <h1 class="title-text" style="font-size: 2.4rem"><%= l('Welcome!') %></h1>
    <p class="subtitle-text"><%= l('Log in to continue.') %></p>
    <form novalidate id="frmLogin" method="POST">
