@@ -26,3 +26,4 @@ idv_mismatch_lookback:
     - idv.check_name_comparison
     - idv.check_dob_conformity
     - idv.check_age_legality
+    - idv.check_document_acceptability

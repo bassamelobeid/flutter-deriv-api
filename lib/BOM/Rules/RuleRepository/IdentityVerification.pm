@@ -188,10 +188,12 @@ rule 'idv.check_document_acceptability' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        $self->fail('ClientMissing')         unless my $client          = $context->client($args);
-        $self->fail('IssuingCountryMissing') unless my $issuing_country = $args->{issuing_country};
-        $self->fail('DocumentTypeMissing')   unless my $document_type   = $args->{document_type};
-        $self->fail('DocumentNumberMissing') unless my $document_number = $args->{document_number};
+        $self->fail('ClientMissing') unless my $client = $context->client($args);
+        $self->fail('IssuingCountryMissing')
+            unless my $issuing_country = $args->{result} ? $args->{document}->{issuing_country} : $args->{issuing_country};
+        $self->fail('DocumentTypeMissing') unless my $document_type = $args->{result} ? $args->{document}->{document_type} : $args->{document_type};
+        $self->fail('DocumentNumberMissing')
+            unless my $document_number = $args->{result} ? $args->{document}->{document_number} : $args->{document_number};
 
         my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
