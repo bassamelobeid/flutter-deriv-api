@@ -253,14 +253,6 @@ $loop->add(my $services = BOM::Event::Services->new);
     sub _redis_events_write {
         return $services->redis_events_write();
     }
-
-    sub _redis_replicated_write {
-        return $services->redis_replicated_write();
-    }
-
-    sub _redis_replicated_read {
-        return $services->redis_replicated_read();
-    }
 }
 
 =head2 document_upload
@@ -872,11 +864,6 @@ async sub ready_for_authentication {
             die 'We exceeded our Onfido authentication check request per day';
         }
 
-        my $redis_replicated_write = _redis_replicated_write();
-
-        await $redis_replicated_write->connect;
-        await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
-
         await $redis_events_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
         if ($resubmission_flag) {
@@ -889,16 +876,10 @@ async sub ready_for_authentication {
                 await $redis_events_write->del($email_blocker);
             }
 
-            # Deal with resubmission counter and context
-            await $redis_replicated_write->incr(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
-            await $redis_replicated_write->set(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
-            await $redis_replicated_write->expire(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id, ONFIDO_RESUBMISSION_COUNTER_TTL);
-
             await $redis_events_write->incr(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
             await $redis_events_write->set(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
             await $redis_events_write->expire(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id, ONFIDO_RESUBMISSION_COUNTER_TTL);
         } else {
-            await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
             await $redis_events_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
         }
 
@@ -1089,10 +1070,6 @@ async sub client_verification {
             }
 
             # Consume resubmission context
-            my $redis_replicated_write = _redis_replicated_write();
-            await $redis_replicated_write->connect;
-
-            await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
             await $redis_events_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
             try {
@@ -4173,13 +4150,6 @@ async sub _save_request_context {
         app_id     => $request->app_id,
     };
 
-    my $redis_replicated_write = _redis_replicated_write();
-    await $redis_replicated_write->connect;
-    await $redis_replicated_write->setex(
-        ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id,
-        TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER,
-        encode_json_utf8($context_req));
-
     my $redis_events_write = _redis_events_write();
     await $redis_events_write->connect;
     await $redis_events_write->setex(
@@ -4205,16 +4175,11 @@ Restore request by stored context.
 async sub _restore_request {
     my ($applicant_id, $tags) = @_;
 
-    my $redis_replicated_read = _redis_replicated_read();
-    await $redis_replicated_read->connect;
-
     my $redis_events_read = _redis_events_read();
     await $redis_events_read->connect;
 
     my $context_req = await $redis_events_read->get(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
-    $context_req //= await $redis_replicated_read->get(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
-
-    my $brand = first { $_ =~ qr/^brand:/ } grep { defined $_ } @$tags;
+    my $brand       = first { $_ =~ qr/^brand:/ } grep { defined $_ } @$tags;
     $brand =~ s/brand:// if $brand;
 
     if ($context_req) {
@@ -4247,10 +4212,6 @@ Clear stored context
 
 async sub _clear_cached_context {
     my $applicant_id = shift;
-
-    my $redis_replicated_write = _redis_replicated_write();
-    await $redis_replicated_write->connect;
-    await $redis_replicated_write->del(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
 
     my $redis_events_write = _redis_events_write();
     await $redis_events_write->connect;

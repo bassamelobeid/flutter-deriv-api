@@ -1257,8 +1257,7 @@ for my $client ($test_client, $test_client_mf) {
                 });
 
             $client->status->clear_age_verification;
-            my $redis        = $services->redis_events_write();
-            my $redis_r_read = $services->redis_replicated_read();
+            my $redis = $services->redis_events_write();
             $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->get;
 
             my $doc_ids = [map { $_ . $client->loginid } $client->is_face_similarity_required ? qw/aaa bbb selfie/ : qw/aaa bbb/];
@@ -1313,7 +1312,7 @@ for my $client ($test_client, $test_client_mf) {
             is($check_data->{id},     $check->{id},  'check data correct');
             is($check_data->{status}, 'in_progress', 'check status is in_progress');
 
-            my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+            my $applicant_context = $redis->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
             ok $applicant_context, 'request context of applicant is present in redis';
 
             subtest 'consecutive calls to ready_for_authentication' => sub {
@@ -3170,9 +3169,8 @@ subtest "time from ready to verified" => sub {
     $test_client->status->clear_age_verification;
 
     $loop->add(my $services = BOM::Event::Services->new);
-    my $redis_r_read  = $services->redis_replicated_read();
-    my $redis_r_write = $services->redis_replicated_write();
     my $redis_e_read  = $services->redis_events_read();
+    my $redis_e_write = $services->redis_events_write();
 
     my $db_check = BOM::Database::UserDB::rose_db()->dbic->run(
         fixup => sub {
@@ -3207,10 +3205,10 @@ subtest "time from ready to verified" => sub {
     $db_check = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $db_check->{applicant_id}, $db_check->{id});
     is $db_check->{status}, 'in_progress', 'check has not been completed';
 
-    my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    my $applicant_context = $redis_e_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id)->get;
     ok $applicant_context, 'request context of applicant is present in redis';
 
-    my $lapsed_time_redis = $redis_r_read->exists(APPLICANT_ONFIDO_TIMING . $test_client->binary_user_id);
+    my $lapsed_time_redis = $redis_e_read->exists(APPLICANT_ONFIDO_TIMING . $test_client->binary_user_id)->get;
     ok $lapsed_time_redis, 'lapsed time exists in redis';
 
     my $request_start = $redis_e_read->get(APPLICANT_ONFIDO_TIMING . $test_client->binary_user_id)->get;
@@ -3278,8 +3276,8 @@ subtest "time from ready to verified" => sub {
 
     request($another_req);
 
-    $redis_r_write->del(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
-    $redis_r_write->set(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, ']non json format[');
+    $redis_e_write->del(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    $redis_e_write->set(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, ']non json format[');
 
     $dog_mock->unmock_all;
 };
@@ -3306,8 +3304,7 @@ subtest "document upload request context" => sub {
     $test_client->status->clear_age_verification;
 
     $loop->add(my $services = BOM::Event::Services->new);
-    my $redis_r_read  = $services->redis_replicated_read();
-    my $redis_r_write = $services->redis_replicated_write();
+    my $redis_e_read  = $services->redis_replicated_read();
     my $redis_e_write = $services->redis_events_write();
 
     lives_ok {
@@ -3329,7 +3326,7 @@ subtest "document upload request context" => sub {
     }
     "ready for authentication emitted without exception";
 
-    my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    my $applicant_context = $redis_e_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
     ok $applicant_context, 'request context of applicant is present in redis';
 
     my $another_context = {
@@ -3394,7 +3391,6 @@ subtest "document upload request context" => sub {
 
     request($another_req);
     $redis_e_write->set(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, ']non json format[');
-    $redis_r_write->set(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, ']non json format[');
 
     reset_onfido_check({
         id     => $db_check->{id},
@@ -4777,45 +4773,10 @@ subtest 'edd document upload' => sub {
     is $args{properties}->{uploaded_manually_by_staff}, 0,                 'uploaded_manually_by_staff is correct';
 };
 
-subtest 'onfido resubmission using redis replicated' => sub {
-    $loop->add($services = BOM::Event::Services->new);
-
-    onfido_resubmission_test($services->redis_replicated_write());
-};
-
 subtest 'onfido resubmission using redis events' => sub {
     $loop->add($services = BOM::Event::Services->new);
 
     onfido_resubmission_test($services->redis_events_write());
-};
-
-subtest 'onfido resubmission fallbacks into redis replicated' => sub {
-    $loop->add($services = BOM::Event::Services->new);
-
-    my $redis_mock  = Test::MockModule->new('Net::Async::Redis');
-    my $get_flipper = -1;
-
-    # the first get is from redis events
-    $redis_mock->mock(
-        'get',
-        sub {
-            my (undef, $key) = @_;
-
-            # for this tests some keys are more equal
-            my $my_keys = first { $key =~ qr/$_/ } ('ONFIDO::RESUBMISSION_COUNTER::ID::*', 'ONFIDO::IS_A_RESUBMISSION::ID::*',);
-
-            return $redis_mock->original('get')->(@_) unless $my_keys;
-
-            $get_flipper = $get_flipper * -1;
-
-            return Future->done(undef) if $get_flipper == 1;
-
-            return $redis_mock->original('get')->(@_);
-        });
-
-    onfido_resubmission_test($services->redis_replicated_write());
-
-    $redis_mock->unmock_all;
 };
 
 sub onfido_resubmission_test {

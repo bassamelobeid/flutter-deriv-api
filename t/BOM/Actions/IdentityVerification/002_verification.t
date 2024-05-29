@@ -2771,29 +2771,10 @@ subtest 'testing pending status (QA Provider special case)' => sub {
 };
 
 subtest 'IDV lookback' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
-    my $action_handler    = BOM::Event::Process->new(category => 'generic')->actions->{poi_check_rules};
-    my $test_client       = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'poicheckrulesidv@test.com',
-    });
-    my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => 'poicheckrulesidv@test.com',
-    });
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{poi_check_rules};
 
-    my $email = $test_client->email;
-    my $user  = BOM::User->create(
-        email          => $test_client->email,
-        password       => "hello",
-        email_verified => 1,
-    );
-
-    $user->add_client($test_client);
-    $user->add_client($vrtc_client);
-
-    my $test_client_mock = Test::MockModule->new('BOM::User::Client');
-    $test_client_mock->mock(
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    $client_mock->mock(
         'latest_poi_by',
         sub {
             return ('idv');
@@ -2829,6 +2810,10 @@ subtest 'IDV lookback' => sub {
         type            => 'dni',
     };
     $idv_model->add_document($document);
+
+    my $args = {
+        loginid => $client->loginid,
+    };
 
     @emissions = ();
     $client->residence('ar');
@@ -3085,7 +3070,7 @@ subtest 'IDV lookback' => sub {
                 birthdate => '1989-10-10'
             },
             request_body  => {request  => 'set'},
-            response_body => {resposne => 'get'},
+            response_body => {response => 'get'},
             id            => $client->loginid,
         })->get, 'the IDV response processed without error';
 
@@ -3110,7 +3095,7 @@ subtest 'IDV lookback' => sub {
             id                       => re('\d+'),
             is_checked               => 1
         },
-        response_body => {resposne => 'get'},
+        response_body => {response => 'get'},
         request_body  => {request  => 'set'},
         report        => {
             full_name => 'The Chosen One',
@@ -3177,7 +3162,7 @@ subtest 'IDV lookback' => sub {
 
     cmp_deeply $idv_document_check,
         {
-        'response'     => '{"resposne": "get"}',
+        'response'     => '{"response": "get"}',
         'id'           => re('\d+'),
         'provider'     => 'zaig',
         'photo_id'     => [],
@@ -3241,7 +3226,7 @@ subtest 'IDV lookback' => sub {
         'expected document data';
 
     cmp_deeply $idv_document_check, {
-        'response'     => '{"resposne": "get"}',
+        'response'     => '{"response": "get"}',
         'id'           => re('\d+'),
         'provider'     => 'zaig',
         'photo_id'     => [],
@@ -3273,13 +3258,84 @@ subtest 'IDV lookback' => sub {
         ],
         'Expected emissions for a refuted IDV callback';
 
-    # make name mismatch go away
-    @doggy_bag = ();
-    @emissions = ();
+    # fix name mismatch
     $client->first_name('The Chosen');
     $client->last_name('one');
     $client->save;
 
+    # case where client tries to fix mismatch of a doc already owned
+    @doggy_bag = ();
+    @emissions = ();
+    my $owner_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+    $owner_mock->mock(
+        'get_claimed_documents',
+        sub {
+            return [{status => 'verified'}];
+        });
+
+    ok !$action_handler->({
+            loginid => $client->loginid,
+        })->get, 'POI check rules attempted';
+
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+    ok !$client->status->poi_name_mismatch, 'name mismatch has gone away';
+    ok !$client->status->poi_dob_mismatch,  'dob mismatch has gone away';
+    ok !$client->status->age_verification,  'still not age verified!';
+
+    $idv_document       = $idv_model->get_last_updated_document();
+    $idv_document_check = $idv_model->get_document_check_detail($idv_document->{id});
+
+    cmp_deeply $idv_document,
+        {
+        'is_checked'               => 1,
+        'status'                   => 'refuted',
+        'document_type'            => 'dni',
+        'document_expiration_date' => undef,
+        'document_number'          => '123456788-3',
+        'id'                       => re('\d+'),
+        'status_messages'          => '[]',
+        'issuing_country'          => 'ar'
+        },
+        'expected document data';
+
+    cmp_deeply $idv_document_check, {
+        'response'     => '{"response": "get"}',
+        'id'           => re('\d+'),
+        'provider'     => 'zaig',
+        'photo_id'     => [],
+        'request'      => '{"request": "set"}',
+        'requested_at' => ignore(),
+        'responded_at' => ignore(),
+        'report'       => '{"birthdate": "1989-10-10", "full_name": "The Chosen One"}'
+
+        },
+        'expected document check data';
+
+    cmp_deeply [@emissions],
+        [{
+            identity_verification_rejected => {
+                loginid    => $client->loginid,
+                properties => {
+                    authentication_url => $authentication_url,
+                    live_chat_url      => $live_chat_url,
+                    title              => 'We were unable to verify your document details',
+                }}
+        },
+        {
+            sync_mt5_accounts_status => {
+                client_loginid => $client->loginid,
+                binary_user_id => $client->binary_user_id,
+            }}
+        ],
+        'Expected emissions for a refuted IDV callback';
+
+    cmp_deeply [@doggy_bag], [['event.idv.client_verification.result', {'tags' => undef}]], 'Expected dog calls';
+
+    $owner_mock->unmock_all;
+
+    # make name mismatch go away
+    @doggy_bag = ();
+    @emissions = ();
     ok !$action_handler->({
             loginid => $client->loginid,
         })->get, 'POI check rules attempted';
@@ -3306,7 +3362,7 @@ subtest 'IDV lookback' => sub {
         'expected document data';
 
     cmp_deeply $idv_document_check, {
-        'response'     => '{"resposne": "get"}',
+        'response'     => '{"response": "get"}',
         'id'           => re('\d+'),
         'provider'     => 'zaig',
         'photo_id'     => [],
@@ -3337,12 +3393,12 @@ subtest 'IDV lookback' => sub {
                 binary_user_id => $client->binary_user_id,
             }}
         ],
-        'Expected emissions for a refuted IDV callback';
+        'Expected emissions for a verified IDV callback';
 
     cmp_deeply [@doggy_bag], [['event.idv.client_verification.result', {'tags' => ['result:age_verified_corrected',]}]], 'Expected dog calls';
 
     $idv_mock->unmock_all;
-    $test_client_mock->unmock_all;
+    $client_mock->unmock_all;
     $dog_mock->unmock_all;
 };
 

@@ -101,7 +101,7 @@ subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
     $f->on_ready(
         sub {
             is $exceptions, 0, 'Exception counter is ZERO';
-            my $keys = [$redis_replicated->keys('*ONFIDO_UPLOAD_BAG*')->@*, $redis_events->keys('*ONFIDO_UPLOAD_BAG*')->@*];
+            my $keys = [$redis_events->keys('*ONFIDO_UPLOAD_BAG*')->@*];
             is scalar @$keys, 0, 'Lock released';
         });
 

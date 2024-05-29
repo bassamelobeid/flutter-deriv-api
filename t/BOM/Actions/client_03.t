@@ -257,9 +257,8 @@ subtest 'payops event email' => sub {
 };
 
 subtest 'onfido context unit testing' => sub {
-    my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
-    my $redis_events     = BOM::Config::Redis::redis_events_write();
-    my $key              = +BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY;
+    my $redis_events = BOM::Config::Redis::redis_events_write();
+    my $key          = +BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY;
 
     my $applicant_id = 'test';
     my $request      = request();
@@ -274,15 +273,12 @@ subtest 'onfido context unit testing' => sub {
         BOM::Event::Actions::Client::_save_request_context($applicant_id)->get;
 
         my $request = request();
-        cmp_deeply decode_json_utf8($redis_replicated->get($key . $applicant_id)), $context, 'Expected context from replicated redis';
 
         cmp_deeply decode_json_utf8($redis_events->get($key . $applicant_id)), $context, 'Expected context from events redis';
     };
 
     subtest '_clear_cached_context' => sub {
         BOM::Event::Actions::Client::_clear_cached_context($applicant_id)->get;
-
-        is $redis_replicated->get($key . $applicant_id), undef, 'Context cleared from replicated redis';
 
         is $redis_events->get($key . $applicant_id), undef, 'Context cleared from events redis';
     };
@@ -309,32 +305,17 @@ subtest 'onfido context unit testing' => sub {
 
         is $req2->brand_name, 'deriv', 'recovered brand deriv from current request';
 
-        subtest 'restore from replicated redis' => sub {
+        subtest 'restore from events redis' => sub {
             my $new_req = BOM::Platform::Context::Request->new(brand_name => 'binary');
             request($new_req);
 
             BOM::Event::Actions::Client::_save_request_context($applicant_id)->get;
-            $redis_events->del(+BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
 
             BOM::Event::Actions::Client::_restore_request($applicant_id)->get;
 
             my $req2 = request();
 
             is $req2->brand_name, 'binary', 'Expected brand';
-        };
-
-        subtest 'restore from events redis' => sub {
-            my $new_req = BOM::Platform::Context::Request->new(brand_name => 'deriv');
-            request($new_req);
-
-            BOM::Event::Actions::Client::_save_request_context($applicant_id)->get;
-            $redis_replicated->del(+BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
-
-            BOM::Event::Actions::Client::_restore_request($applicant_id)->get;
-
-            my $req2 = request();
-
-            is $req2->brand_name, 'deriv', 'Expected brand';
         };
     };
 };
