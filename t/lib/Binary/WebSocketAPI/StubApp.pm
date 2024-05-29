@@ -83,6 +83,17 @@ sub new {
         sub {
         });
 
+    $app->mock(
+        'routes',
+        sub {
+            my $routes = Test::MockObject->new();
+            $routes->mock(
+                'any',
+                sub {
+                });
+            return $routes;
+        });
+
     $self->{app} = $app;
     return $self;
 }

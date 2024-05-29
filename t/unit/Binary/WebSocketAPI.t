@@ -27,4 +27,46 @@ subtest check_balance_connections => sub {
     ok !Binary::WebSocketAPI::BalanceConnections::get_active_connections_count(), 'no active_connections_count';
 };
 
+subtest test_run_hooks_sync => sub {
+    my $test_var1 = 0;
+    my $test_var2 = 0;
+    my $test_var3 = 0;
+    my $ret       = Binary::WebSocketAPI::_run_hooks_sync(
+        'testHooks',
+        {},
+        {
+            'testHooks' => [
+                sub { my ($a, $b, $c, $d) = @_; $test_var1 += $c + $d; return; },
+                sub { my ($a, $b, $c, $d) = @_; $test_var2 += $c - $d; return; },
+                sub { my ($a, $b, $c, $d) = @_; $test_var3 += $d - $c; return; },
+            ]
+        },
+        3, 7
+    );
+    is $test_var1, 10;
+    is $test_var2, -4;
+    is $test_var3, 4;
+};
+
+subtest test_run_hooks_async => sub {
+    my $test_var1 = 0;
+    my $test_var2 = 0;
+    my $test_var3 = 0;
+    my $ret       = Binary::WebSocketAPI::_run_hooks_async(
+        'testHooks',
+        {},
+        {
+            'testHooks' => [
+                sub { my ($a, $b, $c, $d) = @_; $test_var1 += $c + $d; return; },
+                sub { my ($a, $b, $c, $d) = @_; $test_var2 += $c - $d; return; },
+                sub { my ($a, $b, $c, $d) = @_; $test_var3 += $d - $c; return; },
+            ]
+        },
+        3, 7
+    );
+    is $test_var1, 10;
+    is $test_var2, -4;
+    is $test_var3, 4;
+};
+
 done_testing;

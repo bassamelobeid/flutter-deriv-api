@@ -34,7 +34,9 @@ use YAML::XS qw(LoadFile);
 use URI;
 use List::Util qw( first any );
 use Syntax::Keyword::Try;
-use Log::Any qw($log);
+use Log::Any      qw($log);
+use Future::Utils qw(fmap);
+use Scalar::Util  qw(blessed);
 
 # Set up the event loop singleton so that any code we pull in uses the Mojo
 # version, rather than trying to set its own.
@@ -384,6 +386,33 @@ sub startup {
             queue_separation_enabled => 1,
         },
     };
+    my $app_hooks = {
+        before_forward => [
+            \&Binary::WebSocketAPI::Hooks::rpc_throttling,           \&Binary::WebSocketAPI::Hooks::start_timing,
+            \&Binary::WebSocketAPI::Hooks::start_timing_ws_total,    \&Binary::WebSocketAPI::Hooks::before_forward,
+            \&Binary::WebSocketAPI::Hooks::ignore_queue_separations, \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
+            \&Binary::WebSocketAPI::Hooks::assign_ws_backend,        \&Binary::WebSocketAPI::Hooks::check_app_id,
+            \&Binary::WebSocketAPI::Hooks::rpc_timeout_extension,    \&Binary::WebSocketAPI::Hooks::check_circuit_breaker,
+        ],
+        before_call => [
+            \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
+            \&Binary::WebSocketAPI::Hooks::add_log_config,                 \&Binary::WebSocketAPI::Hooks::add_brand,
+            \&Binary::WebSocketAPI::Hooks::start_timing
+        ],
+        before_get_rpc_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
+        after_got_rpc_response  => [
+            \&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::log_response_latency_timing,
+            \&Binary::WebSocketAPI::Hooks::error_check
+        ],
+        before_send_api_response => [
+            \&Binary::WebSocketAPI::Hooks::add_req_data,      \&Binary::WebSocketAPI::Hooks::start_timing,
+            \&Binary::WebSocketAPI::Hooks::output_validation, \&Binary::WebSocketAPI::Hooks::add_call_debug,
+            \&Binary::WebSocketAPI::Hooks::introspection_before_send_response
+        ],
+        after_sent_api_response =>
+            [\&Binary::WebSocketAPI::Hooks::log_call_timing_rpc_sent_and_totalws, \&Binary::WebSocketAPI::Hooks::close_bad_connection],
+        after_dispatch => [\&Binary::WebSocketAPI::Hooks::after_dispatch],
+    };
 
     my $json = JSON::MaybeXS->new;
     for my $action (@$actions) {
@@ -398,6 +427,9 @@ sub startup {
         push @{$action_options->{stash_params}}, qw(token account_tokens) if $schema_send->{auth_required};
 
         $WS_ACTIONS->{$action_name} = $action_options;
+        if ($action_options->{allow_rest}) {
+            $app->routes->any('/websockets/' . $action_name => sub { _rest_rpc($action_name, $app_hooks, @_) });
+        }
     }
 
     $app->helper(
@@ -440,32 +472,7 @@ sub startup {
         'web_socket_proxy' => {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
-            before_forward => [
-                \&Binary::WebSocketAPI::Hooks::rpc_throttling,           \&Binary::WebSocketAPI::Hooks::start_timing,
-                \&Binary::WebSocketAPI::Hooks::start_timing_ws_total,    \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::ignore_queue_separations, \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
-                \&Binary::WebSocketAPI::Hooks::assign_ws_backend,        \&Binary::WebSocketAPI::Hooks::check_app_id,
-                \&Binary::WebSocketAPI::Hooks::rpc_timeout_extension,    \&Binary::WebSocketAPI::Hooks::check_circuit_breaker,
-            ],
-            before_call => [
-                \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
-                \&Binary::WebSocketAPI::Hooks::add_log_config,                 \&Binary::WebSocketAPI::Hooks::add_brand,
-                \&Binary::WebSocketAPI::Hooks::start_timing
-            ],
-            before_get_rpc_response => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
-            after_got_rpc_response  => [
-                \&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::log_response_latency_timing,
-                \&Binary::WebSocketAPI::Hooks::error_check
-            ],
-            before_send_api_response => [
-                \&Binary::WebSocketAPI::Hooks::add_req_data,      \&Binary::WebSocketAPI::Hooks::start_timing,
-                \&Binary::WebSocketAPI::Hooks::output_validation, \&Binary::WebSocketAPI::Hooks::add_call_debug,
-                \&Binary::WebSocketAPI::Hooks::introspection_before_send_response
-            ],
-            after_sent_api_response =>
-                [\&Binary::WebSocketAPI::Hooks::log_call_timing_rpc_sent_and_totalws, \&Binary::WebSocketAPI::Hooks::close_bad_connection],
-            after_dispatch => [\&Binary::WebSocketAPI::Hooks::after_dispatch],
-
+            %$app_hooks,
             # main config
             base_path         => '/websockets/v3',
             stream_timeout    => 120,
@@ -527,6 +534,114 @@ sub startup {
     backend_setup($log);
 
     return;
+}
+
+=head2 _run_hooks_sync
+
+Given a hook type run the app hooks of that type (this is needed because rest_rpc skips some of the usual hooks).
+
+This is based on the code in cpan/local/lib/perl5/Mojo/WebSocketProxy/Dispatcher.pm for before_send_api response.
+
+=cut
+
+sub _run_hooks_sync {
+
+    my ($type, $c, $req_storage, @other_params) = @_;
+    return unless defined($req_storage->{$type});
+    my $hooks = $req_storage->{$type};
+    $_->($c, $req_storage, @other_params) for grep { $_ } (ref $hooks eq 'ARRAY' ? @{$hooks} : $hooks);
+}
+
+=head2 _run_hooks_async
+
+Given a hook type run the app hooks of that type in an async way (this is based on _run_hooks in cpan/local/lib/perl5/Mojo/WebSocketProxy/Dispatcher.pm)
+
+=cut
+
+sub _run_hooks_async {
+    my ($type, $c, $req_storage, @other_params) = @_;
+    return unless defined($req_storage->{$type});
+    my $hooks = $req_storage->{$type};
+    use Data::Dumper;
+
+    my $result_f = fmap {
+        my $hook   = shift;
+        my $result = $hook->($c, $req_storage, @other_params) or return Future->done;
+        return $result if blessed($result) && $result->isa('Future');
+        return Future->fail($result);
+    }
+    foreach        => [grep { defined } @$hooks],
+        concurrent => 1;
+    return $result_f->retain;
+}
+
+=head2 _rest_rpc
+
+This methdod is called to handle rest calls to our API endpoints.
+
+=cut
+
+sub _rest_rpc {
+    my ($method, $app_hooks, $c) = @_;
+    my $rest_consumer_group = $c->wsp_config->{backends}->{default};
+
+    my $args = $c->tx->req->json // {};               # Get the body from the POST request
+    if (defined($c->req->param('request_json'))) {    # We allow params in the URL too
+        my $more_args = decode_json($c->req->param('request_json'));
+        if (ref $more_args eq 'HASH') {
+            for my $key (keys %$more_args) { $args->{$key} = $more_args->{$key}; }
+        }
+    }
+
+    $args->{$method} = 1;                             #Even if this was passed as an arg, overwrite it to avoid inconsistencies
+
+    my $req_storage = {
+        method       => $method,
+        args         => $args,
+        stash_params => $WS_ACTIONS->{$method}->{stash_params},
+        name         => $WS_ACTIONS->{$method}->{name},
+        schema_send  => $WS_ACTIONS->{$method}->{schema_send},
+        # action hooks
+        %$app_hooks,
+
+    };
+
+    $req_storage->{rpc_failure_cb} = sub {
+        my ($error) = @_;
+        $c->render(
+            json => {error => $error},
+        );
+    };
+
+    $req_storage->{send_func} = sub {
+        my ($message) = @_;
+        my $api_response = $message->{'json'};
+        _run_hooks_sync('before_send_api_response', $c, $req_storage, $api_response);
+        $c->render(
+            json => $api_response,
+        );
+        _run_hooks_sync('after_sent_api_response', $c, $req_storage, $api_response);
+    };
+
+    #Call the RPC
+    try {
+        _run_hooks_async('before_forward', $c, $req_storage)->get();    #Wait for the before_forward hooks to run, and throw failure as exceptions
+    } catch ($e) {
+        $c->render(
+            json   => $e,
+            status => '400',
+        );
+        return;
+    }
+
+    $rest_consumer_group->call_rpc($c, $req_storage);
+    _run_hooks_async('after_dispatch', $c, $req_storage)->on_fail(
+        sub {
+            $c->app->log->error("An error occurred handling on_message. Error @_");
+        })->retain;
+
+    return;
+
 }
 
 =head2 update_apps_blocked_from_operation_domain

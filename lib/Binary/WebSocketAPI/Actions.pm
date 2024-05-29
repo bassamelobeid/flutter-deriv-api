@@ -194,9 +194,15 @@ sub actions_config {
             }
         ],
         ['economic_calendar'],
-        ['exchange_rates', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::exchange_rates}],
-        ['forget',         {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
-        ['forget_all',     {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget_all}],
+        [
+            'exchange_rates',
+            {
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::exchange_rates,
+                allow_rest         => 1
+            }
+        ],
+        ['forget',     {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
+        ['forget_all', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget_all}],
         [
             'get_account_status',
             {
@@ -615,7 +621,7 @@ sub actions_config {
                 category => 'account',
             }
         ],
-        ['residence_list'],
+        ['residence_list', {allow_rest => 1}],
         ['revoke_oauth_app'],
         [
             'sell',
@@ -791,7 +797,13 @@ sub actions_config {
                 category => 'account',
             }
         ],
-        ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
+        [
+            'website_status',
+            {
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status,
+                allow_rest         => 1
+            }
+        ],
     ];
 }
 
