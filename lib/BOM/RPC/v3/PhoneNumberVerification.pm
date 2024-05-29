@@ -15,6 +15,8 @@ use warnings;
 use Log::Any qw($log);
 use BOM::RPC::Registry '-dsl';
 use BOM::Platform::Context qw (localize);
+use BOM::Platform::Token;
+use BOM::RPC::v3::Utility;
 
 requires_auth('trading', 'wallet');
 
@@ -50,6 +52,11 @@ rpc phone_number_challenge => sub {
     my $next_attempt = $pnv->next_attempt;
 
     $pnv->increase_attempts();
+
+    my $verification_code     = $args->{email_code};
+    my $verification_response = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $client->email, 'phone_number_verification');
+
+    return $verification_response if $verification_response->{error};
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'NoAttemptsLeft',

@@ -67,11 +67,22 @@ Create new token based on email and type of verify_email RPC call
 
 sub create_token {
     my ($self) = @_;
-    $self->{code} = BOM::Platform::Token->new({
-            email       => $self->{email},
-            expires_in  => REQUEST_EMAIL_TOKEN_TTL,
-            created_for => $self->{type},
-        })->token;
+
+    my $params = {
+        email       => $self->{email},
+        expires_in  => REQUEST_EMAIL_TOKEN_TTL,
+        created_for => $self->{type},
+    };
+
+    my $type = $self->{args}->{type} // '';
+
+    if ($type eq 'phone_number_verification') {
+        $params->{alphabet} = [0 .. 9];
+        $params->{length}   = 6;
+    }
+
+    $self->{code} = BOM::Platform::Token->new($params)->token;
+
     return;
 }
 
@@ -648,6 +659,38 @@ sub trading_platform_investor_password_reset {
     return;
 }
 
+=head2 pre_validations
+
+Some actions might require extra checks before kicking-in.
+
+Returns the error structure if some validation has failed, otherwise C<undef>.
+
+=cut
+
+sub pre_validations {
+    my ($self) = @_;
+
+    my $type = $self->{args}->{type} // '';
+
+    if ($type eq 'phone_number_verification') {
+        my $user = $self->create_existing_user;
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'AlreadyVerified',
+                message_to_client => localize('This account is already phone number verified')}) if $user->pnv->verified;
+
+        my $is_email_blocked = $user->pnv->email_blocked();
+
+        $user->pnv->increase_email_attempts();
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'NoAttemptsLeft',
+                message_to_client => localize('Please wait for some time before requesting another link')}) if $is_email_blocked;
+    }
+
+    return undef;
+}
+
 =head2 do_verification
 
 This is main method of VerifyEmail that should call after new.
@@ -667,6 +710,9 @@ sub do_verification {
     my $error = BOM::RPC::v3::Utility::invalid_params($self->{args});
     return $error if $error;
 
+    $error = $self->pre_validations();
+    return $error if $error;
+
     $self->create_token();
     $self->create_email_verification_function();
     $self->create_existing_user();
@@ -676,6 +722,7 @@ sub do_verification {
     $self->create_loginid();
 
     my $response = $self->create_client();
+
     return $response unless $response eq "OK";
 
     my $type = $self->{type};
@@ -706,6 +753,49 @@ sub check_app_for_restricted_types {
         return 0 unless $oauth_model->is_official_app($self->{source});
     }
     return 1;
+}
+
+=head2 phone_number_verification
+
+Send the OTP link to the client's email in order to begin the phone number verification process.
+Cannot be requested while impersonating.
+
+Emits `phone_number_verification`.
+
+Returns C<undef>.
+
+=cut
+
+sub phone_number_verification {
+    my ($self) = @_;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'Permission Denied',
+            message_to_client => localize('You can not perform the phone number verification while impersonating an account')}
+    ) if BOM::RPC::v3::Utility::is_impersonating_client($self->{token});
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'AlreadyVerified',
+            message_to_client => localize('This account is already phone number verified')}) if $self->{client}->user->pnv->verified;
+
+    my $data = $self->{email_verification}->{phone_number_verification}->();
+
+    BOM::Platform::Event::Emitter::emit(
+        'phone_number_verification',
+        {
+            loginid    => $self->{client}->loginid,
+            properties => {
+                verification_url => $data->{verification_url} // '',
+                live_chat_url    => $data->{live_chat_url}    // '',
+                first_name       => $self->{client}->first_name,
+                code             => $data->{code} // '',
+                email            => $self->{email},
+                language         => $self->{language},
+                broker_code      => $self->{client}->broker_code,
+            },
+        });
+
+    return undef;
 }
 
 1;

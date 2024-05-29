@@ -311,6 +311,20 @@ sub email_verification {
                 },
             };
         },
+        phone_number_verification => sub {
+            return {
+                name          => $first_name,
+                title         => localize('Phone number verification'),
+                title_padding => 50,
+                brand_name    => ucfirst $brand->name,
+                (
+                    $verification_uri
+                    ? (verification_url => _build_verification_url('phone_number_verification', $args))
+                    : ()
+                ),
+                %common_args,
+            };
+        },
     };
 }
 

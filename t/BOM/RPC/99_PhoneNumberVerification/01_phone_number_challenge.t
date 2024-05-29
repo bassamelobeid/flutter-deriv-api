@@ -26,6 +26,7 @@ my $uid = $user->id;
 
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',
+    email          => 'example@binary.com',
     binary_user_id => $uid
 });
 
@@ -44,6 +45,7 @@ my $verified;
 my $increase_attempts;
 my $clear_attempts;
 my $clear_verify_attempts;
+my $email_code = 'nada';
 
 my $pnv_mock = Test::MockModule->new(ref($pnv));
 $pnv_mock->mock(
@@ -90,14 +92,48 @@ $pnv_mock->mock(
         return 1;
     });
 
+$pnv_mock->mock(
+    'email_blocked',
+    sub {
+        return undef;
+    });
+
 my $params = {
     token    => $token_cr,
     language => 'EN',
     args     => {
-        carrier => 'whastapp',
+        carrier    => 'whastapp',
+        email_code => $email_code,
     }};
 
+$pnv_mock->mock(
+    'clear_verify_attempts',
+    sub {
+        $clear_verify_attempts = 1;
+
+        return 1;
+    });
+
+$pnv_mock->mock(
+    'clear_attempts',
+    sub {
+        $clear_attempts = 1;
+
+        return 1;
+    });
+
+subtest 'Invalid Email Code' => sub {
+    $verified          = 0;
+    $next_attempt      = 0;
+    $increase_attempts = undef;
+    $c->call_ok('phone_number_challenge', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token!');
+
+    is $increase_attempts, 1, 'attempts increased';
+};
+
 subtest 'Already verified' => sub {
+    $verified = 0;
+    generate_email_code();
     $verified              = 1;
     $next_attempt          = 0;
     $clear_attempts        = undef;
@@ -113,9 +149,13 @@ subtest 'Already verified' => sub {
 };
 
 subtest 'No attempts left' => sub {
-    $verified              = 0;
-    $next_attempt          = time + 1000000;
-    $increase_attempts     = undef;
+    $verified = 0;
+    generate_email_code();
+
+    $next_attempt      = time + 1000000;
+    $increase_attempts = undef;
+    generate_email_code();
+
     $clear_attempts        = undef;
     $clear_verify_attempts = undef;
 
@@ -127,6 +167,9 @@ subtest 'No attempts left' => sub {
 };
 
 subtest 'Generate a valid OTP' => sub {
+    $verified = 0;
+    generate_email_code();
+
     $log->clear();
 
     $generate_otp = undef;
@@ -161,6 +204,9 @@ subtest 'Generate a valid OTP' => sub {
     is $clear_verify_attempts, 1,     'verify attempts cleared';
 
     subtest 'try to generate an OTP again' => sub {
+        $verified = 0;
+        generate_email_code();
+
         $log->clear();
 
         $generate_otp = undef;
@@ -195,5 +241,45 @@ subtest 'Generate a valid OTP' => sub {
 };
 
 $pnv_mock->unmock_all();
+
+sub generate_email_code {
+    my $redis = BOM::Config::Redis::redis_events_write();
+
+    $redis->del(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $user->id);
+
+    # create the token
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { push @emitted, @_ };
+
+    my $verify_email_params = {
+        token    => $token_cr,
+        language => 'EN',
+        args     => {
+            verify_email => $client_cr->email,
+            type         => 'phone_number_verification',
+            language     => 'EN',
+        }};
+
+    $c->call_ok('verify_email', $verify_email_params)->has_no_system_error->has_no_error->result_is_deeply({
+            stash => {
+                app_markup_percentage      => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0,
+                source_type                => 'official',
+            },
+            status => 1
+        },
+        "It always should return 1, so not to leak client's email"
+    );
+
+    my (undef, $emission_args) = @emitted;
+
+    $email_code = $emission_args->{properties}->{code};
+
+    ok $email_code, 'there is an email code';
+
+    $params->{args}->{email_code} = $email_code;
+}
 
 done_testing();

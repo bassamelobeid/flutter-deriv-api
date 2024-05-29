@@ -17,9 +17,7 @@ use BOM::User;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Test::Helper::Client;
 use BOM::RPC::v3::VerifyEmail::Functions;
-
 use BOM::Test::RPC::QueueClient;
-
 use utf8;
 
 $ENV{EMAIL_SENDER_TRANSPORT} = 'Test';
@@ -905,6 +903,154 @@ subtest 'Functions.pm' => sub {
         $user_mock->unmock_all;
     };
 
+};
+
+subtest 'Phone Number Verification' => sub {
+    my $expected_language;
+    my $expected_verification_url;
+    my $expected_live_chat_url;
+    my $expected_code;
+    my $increase_email_attempts;
+    my $no_attempts_left;
+    my $verified;
+
+    my $pnv_mock = Test::MockModule->new('BOM::User::PhoneNumberVerification');
+    $pnv_mock->mock(
+        'email_blocked',
+        sub {
+            return $no_attempts_left;
+        });
+    $pnv_mock->mock(
+        'verified',
+        sub {
+            return $verified;
+        });
+
+    $pnv_mock->mock(
+        'increase_email_attempts',
+        sub {
+            $increase_email_attempts = 1;
+            return $pnv_mock->original('increase_email_attempts')->(@_);
+        });
+
+    my $token_mock = Test::MockModule->new('BOM::Platform::Token');
+    $token_mock->mock(
+        'token',
+        sub {
+            $expected_code = $token_mock->original('token')->(@_);
+
+            return $expected_code;
+        });
+
+    my $password = 'jskjd8292922';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    $email = 'pnv+' . rand(999) . '@binary.com';
+
+    $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client->first_name('Beautiful Robot');
+    $client->account('USD');
+    $client->email($email);
+    $client->save;
+
+    $user->add_client($client);
+
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { push @emitted, @_ };
+    $params[1]->{args}->{verify_email}                 = $email;
+    $params[1]->{args}->{type}                         = 'phone_number_verification';
+    $params[1]->{args}->{url_parameters}->{utm_medium} = 'email';
+    $params[1]->{language}                             = 'EN';
+
+    delete $params[1]->{server_name};
+    delete $params[1]->{link};
+    delete $params[1]->{source};
+    delete $params[1]->{args}->{url_parameters};
+
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $params[1]->{token} = $token;
+    @emitted = ();
+
+    $rpc_ct->call_ok(@params)
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+
+    $expected_language = 'EN';
+    $expected_verification_url =
+        "https://www.binary.com/en/redirect.html?action=phone_number_verification&lang=$expected_language&code=$expected_code";
+    $expected_live_chat_url = 'https://www.binary.com/en/contact.html?is_livechat_open=true';
+    ok $expected_code =~ /\d{6}/, '6 digit code';
+
+    cmp_deeply [@emitted],
+        [
+        'phone_number_verification',
+        {
+            'loginid'    => $client->loginid,
+            'properties' => {
+                verification_url => $expected_verification_url,
+                language         => $expected_language,
+                live_chat_url    => $expected_live_chat_url,
+                code             => $expected_code,
+                email            => $client->email,
+                first_name       => $client->first_name,
+                broker_code      => $client->broker_code,
+            }
+        },
+        ],
+        'Expected emissions';
+
+    subtest 'no attempts left' => sub {
+        $no_attempts_left        = 1;
+        $increase_email_attempts = undef;
+        @emitted                 = ();
+        $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('NoAttemptsLeft', 'Cannot send emails this quickly!')
+            ->error_message_is('Please wait for some time before requesting another link');
+
+        cmp_deeply [@emitted], [], 'No emissions';
+        ok $increase_email_attempts, 'Increased email attempts';
+    };
+
+    subtest 'already verified' => sub {
+        $verified                = 1;
+        $increase_email_attempts = undef;
+        @emitted                 = ();
+        $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('AlreadyVerified', 'Already verified accounts need no apply!')
+            ->error_message_is('This account is already phone number verified');
+
+        cmp_deeply [@emitted], [], 'No emissions';
+        ok !$increase_email_attempts, 'Not increasaed email attempts';
+        $verified = undef;
+    };
+
+    subtest 'impersonating' => sub {
+        my $utility_mock = Test::MockModule->new('BOM::RPC::v3::Utility');
+        $utility_mock->mock(
+            'is_impersonating_client',
+            sub {
+                return 1;
+            });
+
+        $no_attempts_left        = undef;
+        $increase_email_attempts = undef;
+        @emitted                 = ();
+        $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('Permission Denied', 'Cannot use the feature while impersonating')
+            ->error_message_is('You can not perform the phone number verification while impersonating an account');
+
+        cmp_deeply [@emitted], [], 'No emissions';
+        ok $increase_email_attempts, 'Increased email attempts';
+
+        $utility_mock->unmock_all;
+    };
+
+    $pnv_mock->unmock_all;
+    $token_mock->unmock_all;
 };
 
 done_testing();
