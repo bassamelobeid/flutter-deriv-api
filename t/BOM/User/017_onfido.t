@@ -1979,7 +1979,7 @@ subtest 'candidate documents' => sub {
                                     document_type   => 'selfie_with_id',
                                     issuing_country => 'br',
                                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                                    id              => 1,
+                                    id              => 1000,
                                 }
                             ),
                             map {
@@ -2010,7 +2010,7 @@ subtest 'candidate documents' => sub {
                                     document_type   => 'selfie_with_id',
                                     issuing_country => 'br',
                                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                                    id              => 1,
+                                    id              => 1000,
                                 }
                             ),
                             map {
@@ -2051,7 +2051,7 @@ subtest 'candidate documents' => sub {
                                 document_type   => 'selfie_with_id',
                                 issuing_country => 'br',
                                 file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                                id              => 1,
+                                id              => 1000,
                             }
                         ),
                         build_document({
@@ -2082,7 +2082,7 @@ subtest 'candidate documents' => sub {
                     document_type   => 'selfie_with_id',
                     issuing_country => 'br',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                    id              => 1,
+                    id              => 1000,
                 }
             ),
             build_document({
@@ -2122,7 +2122,7 @@ subtest 'candidate documents' => sub {
                     document_type   => 'selfie_with_id',
                     issuing_country => 'br',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                    id              => 1,
+                    id              => 1000,
                 }
             ),
             build_document({

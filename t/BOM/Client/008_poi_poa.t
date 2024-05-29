@@ -40,6 +40,7 @@ subtest 'get_poa_status' => sub {
         $user->add_client($test_client_cr);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+
         subtest 'POA status none' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 0 });
             $uploaded = {
@@ -66,6 +67,27 @@ subtest 'get_poa_status' => sub {
                 }};
 
             is $test_client_cr->get_poa_status, 'pending', 'Client POA status is pending';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status pending due to near expiration flag' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            my $pending_key = BOM::User::Client::POA_RESUBMITTED_PREFIX . $test_client_cr->binary_user_id;
+            my $redis       = BOM::Config::Redis::redis_events();
+            $redis->set($pending_key, 1);
+
+            ok $redis->get($pending_key), 'redis key exists';
+
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            is $test_client_cr->get_poa_status, 'pending', 'Client POA status is pending';
+            $redis->del($pending_key);
             $mocked_client->unmock_all;
         };
 
@@ -417,7 +439,7 @@ subtest 'get_poi_status' => sub {
             };
         };
 
-        subtest 'POI status is pending' => sub {
+        subtest 'POI status is_pending' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock('latest_poi_by',       sub { return @latest_poi_by });
             @latest_poi_by = ('manual');
@@ -430,6 +452,28 @@ subtest 'get_poi_status' => sub {
 
             $onfido_document_status = undef;
             is $test_client_cr->get_poi_status, 'pending', 'Client POI status is pending';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POI status pending due to near expiration flag' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return @latest_poi_by });
+            @latest_poi_by = ('manual');
+            my $pending_key = BOM::User::Client::POI_RESUBMITTED_PREFIX . $test_client_cr->binary_user_id;
+            my $redis       = BOM::Config::Redis::redis_events();
+            $redis->set($pending_key, 1);
+
+            ok $redis->get($pending_key), 'redis key exists';
+
+            $uploaded = {
+                proof_of_identity => {
+                    is_pending => 0,
+                    documents  => {test => {}},
+                }};
+
+            $onfido_document_status = undef;
+            is $test_client_cr->get_poi_status, 'pending', 'Client POI status is pending';
+            $redis->del($pending_key);
             $mocked_client->unmock_all;
         };
 

@@ -18,6 +18,7 @@ use constant POA_ADDRESS_MISMATCH_KEY => 'POA_ADDRESS_MISMATCH::';
 use constant MAX_UPLOAD_TRIES_PER_DAY => 20;
 use constant MAX_UPLOADS_KEY          => 'MAX_UPLOADS_KEY::';
 
+use BOM::User::Client;
 use constant DOCUMENT_EXPIRING_SOON_DAYS_TO_LOOK_AHEAD => 90;
 use BOM::User::Client::AuthenticationDocuments::Config;
 
@@ -320,13 +321,19 @@ sub _build_uploaded {
         }
     }
 
+    my $redis                    = BOM::Config::Redis::redis_events();
+    my $pending_poi_resubmission = $redis->get(BOM::User::Client->POI_RESUBMITTED_PREFIX . $self->client->binary_user_id) // 0;
+    my $pending_poa_resubmission = $redis->get(BOM::User::Client->POA_RESUBMITTED_PREFIX . $self->client->binary_user_id) // 0;
+
     # remove POI is_pending flag under fully authenticated scenario
     if (scalar(keys %documents) and exists $documents{proof_of_identity}) {
-        $documents{proof_of_identity}{is_pending} = 0 if $fully_authenticated && !$documents{proof_of_identity}{is_expired};
+        $documents{proof_of_identity}{is_pending} = 0
+            if $fully_authenticated && !$documents{proof_of_identity}{is_expired} && $pending_poi_resubmission == 0;
     }
     # remove POA is_pending flag under fully authenticated scenario
     if (scalar(keys %documents) and exists $documents{proof_of_address}) {
-        $documents{proof_of_address}{is_pending} = 0 if $fully_authenticated && !$documents{proof_of_address}{is_outdated};
+        $documents{proof_of_address}{is_pending} = 0
+            if $fully_authenticated && !$documents{proof_of_address}{is_outdated} && $pending_poa_resubmission == 0;
     }
 
     return \%documents;
@@ -1621,28 +1628,40 @@ sub pending_poi_bundle {
         # index again (2nd dimension) by its side (front/back), as some document types are 2 sided
 
         $stack->{$index}->{$side} = $document unless $stack->{$index}->{$side};
-    }
 
-    return undef unless $selfie;
+        $stack->{$index}->{selfie} = $selfie if $selfie;
+
+        $selfie = undef;
+    }
 
     # observe the 2 dimensional stack built,
     # for passport we need 1 document
     # the rest of the documents types would require 2
-    # if some stack matches the criteria we just found our candidates, bravo!
+    # if some stack matches the criteria, we just found our candidates, bravo!
     my $documents;
     my $highest;
+    my $actual_selfie;
 
     for (keys $stack->%*) {
-        my $docs = $stack->{$_};
+        my $docs   = $stack->{$_};
+        my $selfie = delete $docs->{selfie};
+
+        next unless $selfie;
 
         my ($first, $second) = sort { $b->id <=> $a->id } values $docs->%*;
 
         my $type = $first->document_type;
 
         if ($type eq 'passport') {
-            $documents = [$first->id, $first] if $first && (!defined $highest || $first->id > $highest);
+            if ($first && (!defined $highest || $first->id > $highest)) {
+                $documents     = [$first->id, $first];
+                $actual_selfie = $selfie;
+            }
         } else {
-            $documents = [$first->id, $first, $second] if $first && $second && (!defined $highest || $first->id > $highest);
+            if ($first && $second && (!defined $highest || $first->id > $highest)) {
+                $documents     = [$first->id, $first, $second];
+                $actual_selfie = $selfie;
+            }
         }
 
         $highest = $documents->[0] if $documents;    # carry only the highest id found
@@ -1655,7 +1674,7 @@ sub pending_poi_bundle {
     shift @documents;
 
     return {
-        selfie    => $selfie,
+        selfie    => $actual_selfie,
         documents => [@documents],
     };
 }

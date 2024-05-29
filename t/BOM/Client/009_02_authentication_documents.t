@@ -2144,7 +2144,7 @@ subtest 'POI bundle' => sub {
                                     document_id     => '123',
                                     issuing_country => 'br',
                                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                                    id              => 1,
+                                    id              => 1000,
                                 }
                             ),
                             map {
@@ -2220,7 +2220,7 @@ subtest 'POI bundle' => sub {
                                 document_id     => '123',
                                 issuing_country => 'br',
                                 file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                                id              => 1,
+                                id              => 1000,
                             }
                         ),
                         build_document({
@@ -2256,7 +2256,7 @@ subtest 'POI bundle' => sub {
                                 document_id     => undef,
                                 issuing_country => undef,
                                 file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                                id              => 1,
+                                id              => 1000,
                             }
                         ),
                         build_document({
@@ -2289,7 +2289,7 @@ subtest 'POI bundle' => sub {
                     document_id     => '123',
                     issuing_country => 'br',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                    id              => 1,
+                    id              => 1000,
                 }
             ),
             build_document({
@@ -2333,7 +2333,7 @@ subtest 'POI bundle' => sub {
                     document_id     => '123',
                     issuing_country => 'br',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                    id              => 1,
+                    id              => 1000,
                 }
             ),
             build_document({
@@ -2379,7 +2379,7 @@ subtest 'POI bundle' => sub {
                     document_id     => '123',
                     issuing_country => 'ru',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                    id              => 1,
+                    id              => 1000,
                 }
             ),
             build_document({
@@ -2404,7 +2404,7 @@ subtest 'POI bundle' => sub {
                     document_id     => '123',
                     issuing_country => 'ru',
                     file_name       => 'CR1.selfie_with_id.1_photo.jpg',
-                    id              => 1,
+                    id              => 4,
                 }
             ),
             build_document({
@@ -2412,7 +2412,7 @@ subtest 'POI bundle' => sub {
                     document_id     => '123',
                     issuing_country => 'ru',
                     file_name       => "CR1.passport.2_front.jpg",
-                    id              => 2,
+                    id              => 3,
                 }
             ),
             build_document({
@@ -2420,7 +2420,7 @@ subtest 'POI bundle' => sub {
                     document_id     => '123',
                     issuing_country => 'co',
                     file_name       => 'CR1.selfie_with_id.3_photo.jpg',
-                    id              => 3,
+                    id              => 2,
                 }
             ),
             build_document({
@@ -2428,7 +2428,7 @@ subtest 'POI bundle' => sub {
                     document_id     => '123',
                     issuing_country => 'co',
                     file_name       => "CR1.passport.4_front.jpg",
-                    id              => 4,
+                    id              => 1,
                 }
             ),
         ];
