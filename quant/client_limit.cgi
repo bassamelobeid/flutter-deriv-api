@@ -31,6 +31,7 @@ my $json       = JSON::MaybeXS->new(
 my $http_req       = request();
 my $disabled_write = not BOM::Backoffice::Auth::has_quants_write_access();
 
+my $broker               = $http_req->broker_code;
 my $custom_client_limits = $json->decode($app_config->get('quants.custom_client_profiles'));
 
 if ($http_req->params->{deleteclientlimit}) {
@@ -69,8 +70,7 @@ if ($http_req->params->{deleteclientlimit}) {
 }
 
 my @users_limit = BOM::Database::Helper::UserSpecificLimit->new({db => $db})->select_user_specific_limit;
-
-my @output = get_limited_client_list($custom_client_limits, @users_limit);
+my @output      = get_limited_client_list($custom_client_limits, @users_limit);
 
 my $limit_types  = ['', uniq map { $_->{limit_type} } @output];
 my $market_types = ['', uniq map { $_->{market_type} } @output];
@@ -88,10 +88,13 @@ if ($http_req->params->{filterclientlimit}) {
     $limit_type_input  = $http_req->params->{limit_type_selection};
     $comment_input     = $http_req->params->{comment};
 
-    @output = grep { $_->{market_type} =~ /$market_type_input/ } @output if defined $market_type_input and $market_type_input ne '';
-    @output = grep { $_->{limit_type}  =~ /$limit_type_input/ } @output  if defined $limit_type_input  and $limit_type_input ne '';
-    @output = grep { $_->{comment}     =~ /$comment_input/ } @output     if defined $comment_input     and $comment_input ne '';
+    @output = grep { $_->{market_type}  =~ /$market_type_input/ } @output if defined $market_type_input and $market_type_input ne '';
+    @output = grep { $_->{limit_type}   =~ /$limit_type_input/ } @output  if defined $limit_type_input  and $limit_type_input ne '';
+    @output = grep { $_->{comment}      =~ /$comment_input/ } @output     if defined $comment_input     and $comment_input ne '';
+    @output = grep { $_->{client_id}[0] =~ /^$broker\d+$/ } @output;
 }
+
+@output = grep { $_->{client_id}[0] =~ /^$broker\d+$/ } @output if $broker;
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/existing_user_limit.html.tt',
@@ -104,6 +107,7 @@ BOM::Backoffice::Request::template()->process(
         market_types         => $market_types,
         market_type_selected => $market_type_input,
         limit_type_selected  => $limit_type_input,
+        broker               => $broker,
         comment_selected     => $comment_input
     }) || die BOM::Backoffice::Request::template()->error;
 

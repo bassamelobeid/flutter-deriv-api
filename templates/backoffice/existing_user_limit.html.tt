@@ -14,6 +14,8 @@
             [% END %]
     </select>
 
+<input type=hidden id="filter_broker" name="broker" type="text" size="10" value="[% broker %]" >
+
 
 <label>Comment:</label><input id="filter_comment" name="comment" type="text" size="10" value="[% comment_selected %]" >
 <input type="submit" class="btn btn--primary" name="filterclientlimit" value="FILTER"/>
