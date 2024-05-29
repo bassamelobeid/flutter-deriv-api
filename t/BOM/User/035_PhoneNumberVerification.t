@@ -261,4 +261,47 @@ subtest 'Clear verify attempts' => sub {
     ok !$redis->exists(+BOM::User::PhoneNumberVerification::PNV_VERIFY_PREFIX . $user->id), 'the verify attempts are no longer set';
 };
 
+subtest 'Increase email attempts' => sub {
+    my $redis      = BOM::Config::Redis::redis_events_write();
+    my $redis_mock = Test::MockModule->new(ref($redis));
+    my @set_calls;
+
+    $redis_mock->mock(
+        'set',
+        sub {
+            push @set_calls, [$_[3], $_[4]];
+
+            return $redis_mock->original('set')->(@_);
+        });
+
+    ok !$redis->exists(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $user->id), 'no email counter';
+
+    for (1 .. +BOM::User::PhoneNumberVerification::SPAM_TOO_MUCH) {
+        @set_calls = ();
+        $pnv->increase_email_attempts();
+
+        is $redis->get(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $user->id), $_, 'the counter has increased';
+
+        cmp_deeply [@set_calls], [['EX', '60']], 'Expected TTL applied';
+    }
+
+    @set_calls = ();
+    $pnv->increase_email_attempts();
+
+    my $i = +BOM::User::PhoneNumberVerification::SPAM_TOO_MUCH + 1;
+    is $redis->get(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $user->id), $i, 'the counter has increased';
+
+    cmp_deeply [@set_calls], [['EX', '3600']], 'Expected TTL applied (after spamming too much)';
+};
+
+subtest 'Email blocked' => sub {
+    my $redis = BOM::Config::Redis::redis_events_write();
+
+    ok $pnv->email_blocked, 'Email is blocked';
+
+    $redis->del(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $user->id);
+
+    ok !$pnv->email_blocked, 'Email is no longer blocked';
+};
+
 done_testing();

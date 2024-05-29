@@ -10,13 +10,14 @@ use strict;
 use warnings;
 use Moo;
 
-use constant PNV_VERIFY_PREFIX => 'PHONE::NUMBER::VERIFICATION::VERIFY::';
-use constant PNV_NEXT_PREFIX   => 'PHONE::NUMBER::VERIFICATION::NEXT::';
-use constant PNV_OTP_PREFIX    => 'PHONE::NUMBER::VERIFICATION::OTP::';
-use constant TEN_MINUTES       => 600;                                       # 10 minutes in seconds
-use constant ONE_MINUTE        => 60;                                        # 1 minute in seconds
-use constant ONE_HOUR          => 3600;                                      # 1 hour in seconds
-use constant SPAM_TOO_MUCH     => 3;
+use constant PNV_VERIFY_PREFIX     => 'PHONE::NUMBER::VERIFICATION::VERIFY::';
+use constant PNV_NEXT_PREFIX       => 'PHONE::NUMBER::VERIFICATION::NEXT::';
+use constant PNV_NEXT_EMAIL_PREFIX => 'PHONE::NUMBER::VERIFICATION::NEXT_EMAIL::';
+use constant PNV_OTP_PREFIX        => 'PHONE::NUMBER::VERIFICATION::OTP::';
+use constant TEN_MINUTES           => 600;                                           # 10 minutes in seconds
+use constant ONE_MINUTE            => 60;                                            # 1 minute in seconds
+use constant ONE_HOUR              => 3600;                                          # 1 hour in seconds
+use constant SPAM_TOO_MUCH         => 3;
 
 =head2 user
 
@@ -87,6 +88,22 @@ sub clear_attempts {
     my $redis = BOM::Config::Redis::redis_events_write();
 
     $redis->del(PNV_NEXT_PREFIX . $self->user->id);
+}
+
+=head2 email_blocked
+
+Blocks the email atttempt if the redis TTL has not yet passed.
+
+=cut
+
+sub email_blocked {
+    my ($self) = @_;
+
+    my $redis = BOM::Config::Redis::redis_events_write();
+
+    my $ttl = $redis->ttl(PNV_NEXT_EMAIL_PREFIX . $self->user->id) // 0;
+
+    return $ttl > 0;
 }
 
 =head2 verify_blocked
@@ -216,6 +233,31 @@ sub increase_attempts {
     $attempts++;
 
     $redis->set(PNV_NEXT_PREFIX . $self->user->id, $attempts, 'EX', $next_attempt);
+
+    return $attempts;
+}
+
+=head2 increase_email_attempts
+
+Increases the number of email attempts made by the current user.
+Adjust the next email attempt timestamp accordingly.
+
+=cut
+
+sub increase_email_attempts {
+    my ($self)   = @_;
+    my $redis    = BOM::Config::Redis::redis_events_write();
+    my $attempts = $redis->get(PNV_NEXT_EMAIL_PREFIX . $self->user->id) // 0;
+
+    # the next attempt will be unlocked as soon as the OTP expires
+    my $next_attempt = ONE_MINUTE;
+
+    $next_attempt = ONE_HOUR unless $attempts < SPAM_TOO_MUCH;
+
+    # unless the client spams too much
+    $attempts++;
+
+    $redis->set(PNV_NEXT_EMAIL_PREFIX . $self->user->id, $attempts, 'EX', $next_attempt);
 
     return $attempts;
 }
