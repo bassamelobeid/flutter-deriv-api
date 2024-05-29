@@ -618,4 +618,32 @@ subtest 'p2p_advertiser_temp_banned' => sub {
         'track event properties';
 };
 
+subtest 'phone_number_verification' => sub {
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{phone_number_verification};
+
+    undef @track_args;
+    my %args = (
+        loginid    => $client->loginid,
+        properties => {
+            live_chat_url    => 'http://live.chat',
+            verification_url => 'http://verify.me/testcode',
+            code             => 'testcode',
+            email            => 'user@test.com',
+            language         => 'EN',
+            first_name       => 'Dude',
+            broker_code      => 'MF',
+        },
+    );
+    $handler->(\%args)->get;
+
+    cmp_deeply $track_args[1]->{properties},
+        {
+        $args{properties}->%*,
+        loginid => $client->loginid,
+        brand   => ignore(),
+        lang    => ignore()
+        },
+        'track event properties';
+};
+
 done_testing()

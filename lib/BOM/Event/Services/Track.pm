@@ -187,7 +187,9 @@ my %EVENT_PROPERTIES = (
     document_expiring_today                  => [qw(authentication_url live_chat_url email)],
     document_expiring_soon                   => [qw(authentication_url live_chat_url expiration_date email)],
     duplicated_document_account_closed       => [qw(tnc_approval email)],
-    under_antifraud_investigation            => [qw(client_first_name client_last_name client_landing_company email)]);
+    phone_number_verification                => [qw(first_name verification_url code email language live_chat_url broker_code)],
+    under_antifraud_investigation            => [qw(client_first_name client_last_name client_landing_company email)],
+);
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
 
@@ -248,6 +250,7 @@ my @COMMON_EVENT_METHODS = qw(
     shared_payment_method_email_notification
     under_antifraud_investigation
     duplicated_document_account_closed
+    phone_number_verification
 );
 
 # list of events that will be forwarded directly to cio as transactional emails
@@ -1744,6 +1747,12 @@ It is triggered for each B<document_expiring_today> event emitted, delivering it
 =head2 shared_payment_method_email_notification
 
 It is triggered for each B<shared_payment_method_email_notification> event emitted, delivering it to Rudderstack.
+
+=cut
+
+=head2 phone_number_verification
+
+It is triggered for each B<phone_number_verification> event emitted, delivering it to Rudderstack.
 
 =cut
 

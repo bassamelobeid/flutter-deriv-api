@@ -223,6 +223,7 @@ my $action_mapping = {
         derivez_inactive_account_closed                  => \&BOM::Event::Actions::DerivEZ::derivez_inactive_account_closed,
         derivez_inactive_notification                    => \&BOM::Event::Actions::DerivEZ::derivez_inactive_notification,
         duplicated_document_account_closed               => \&BOM::Event::Services::Track::duplicated_document_account_closed,
+        phone_number_verification                        => \&BOM::Event::Services::Track::phone_number_verification,
         under_antifraud_investigation                    => \&BOM::Event::Services::Track::under_antifraud_investigation,
 
     },

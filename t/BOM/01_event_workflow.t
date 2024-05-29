@@ -244,7 +244,7 @@ subtest 'process - tracking jobs' => sub {
                 identity_verification_rejected p2p_advertiser_approved p2p_order_updated_handled
                 risk_disclaimer_resubmission unknown_login derivx_account_deactivated poa_verification_failed_reminder professional_status_requested dp_successful_login pa_first_time_approved shared_payment_method_email_notification
                 pa_transfer_confirm pa_withdraw_confirm derivez_inactive_notification derivez_inactive_account_closed document_expiring_soon document_expiring_today
-                duplicated_document_account_closed under_antifraud_investigation/
+                duplicated_document_account_closed phone_number_verification under_antifraud_investigation/
         ),
         'Correct number of actions that can be emitted'
     );
