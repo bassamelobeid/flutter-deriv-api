@@ -45,6 +45,10 @@ sub new {    ## no critic (RequireArgUnpack)
     my ($package) = shift;
 
     my $self = ref $_[0] ? $_[0] : {@_};
+
+    $self->{length}   //= 8;
+    $self->{alphabet} //= ['a' .. 'z', 'A' .. 'Z', '0' .. '9'];
+
     if ($self->{token}) {
         # the method 'decode' will emit a warn if the argument is undef. "// ''" is added here to avoid the warn.
         $self = eval { $json->decode(BOM::Config::Redis::redis_replicated_read()->get('VERIFICATION_TOKEN::' . $self->{token}) // '') } || {};
@@ -56,7 +60,7 @@ sub new {    ## no critic (RequireArgUnpack)
     die "Error creating new verification token, missing: " . join(',', @valid)
         if @valid;
 
-    my @allowed = qw(email token expires_in created_for created_by);
+    my @allowed = qw(email token expires_in created_for created_by length alphabet);
     my @passed  = keys %$self;
     @valid = array_minus(@passed, @allowed);
     die "Error adding new verification token, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
@@ -64,7 +68,7 @@ sub new {    ## no critic (RequireArgUnpack)
     $self->{token} = Bytes::Random::Secure->new(
         Bits        => 160,
         NonBlocking => 1,
-    )->string_from(join('', 'a' .. 'z', 'A' .. 'Z', '0' .. '9'), 8);
+    )->string_from(join('', $self->{alphabet}->@*), $self->{length});
 
     $self->{created_by} ||= "";
     my $key = md5_hex($self->{created_for} . $self->{created_by} . $self->{email});
