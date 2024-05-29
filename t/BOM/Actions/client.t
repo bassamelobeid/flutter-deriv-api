@@ -203,7 +203,7 @@ sub start_document_upload {
 }
 
 my ($applicant, $applicant_id, $loop, $onfido);
-subtest 'upload document' => sub {
+subtest 'document_upload' => sub {
     my $document_content = 'it is a proffaddress document';
     my $mocked_action    = Test::MockModule->new('BOM::Event::Actions::Client');
     $mocked_action->mock('_get_document_s3', sub { return Future->done($document_content) });
@@ -262,6 +262,27 @@ subtest 'upload document' => sub {
         is $test_client->documents->best_poa_date('proof_of_address', 'best_verified_date')->date_yyyymmdd,
             Date::Utility->new()->minus_time_interval('1y')->minus_time_interval('1d')->date_yyyymmdd, 'Expected best issuance date';
 
+        # case for resubmitted poa for near expired previous poa
+        my $doc_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+        $doc_mock->mock(
+            'poa_outdated_look_ahead',
+            sub {
+                return 1;
+            });
+
+        BOM::Event::Actions::Client::document_upload({
+                loginid => $test_client->loginid,
+                file_id => $upload_info->{file_id}})->get;
+
+        my $pending_key = BOM::User::Client::POA_RESUBMITTED_PREFIX . $test_client->binary_user_id;
+        my $redis       = $services->redis_events_write();
+
+        ok $redis->get($pending_key), 'redis key for pending resubmitted doc was set';
+        $redis->del($pending_key);
+
+        $doc_mock->unmock_all;
+        $test_client->documents->_clear_uploaded;
+
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
                 file_id => $upload_info->{file_id}})->get;
@@ -278,7 +299,6 @@ subtest 'upload document' => sub {
 
         $test_client->user->add_loginid("MTR112358", 'mt5', 'real', 'USD', {group => 'test/test'});
 
-        my $redis = $services->redis_events_write();
         ok !$redis->get(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get, 'email not locked down';
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
@@ -602,7 +622,6 @@ subtest 'upload document' => sub {
                         'Expected dd metrics';
 
                     my $email = mailbox_search(subject => qr/Manual age verification needed for/);
-
                     if ($email_sent) {
                         ok $email, 'POI not supported by Onfido sends an email';
                     } else {
@@ -646,6 +665,21 @@ subtest 'upload document' => sub {
                         'expected best expiry date';
                     ok $test_client->documents->expired(1), 'expired documents';
 
+                    my $pending_resubmission = BOM::User::Client::POI_RESUBMITTED_PREFIX . $test_client->binary_user_id;
+                    $redis->del($pending_resubmission)->get;
+
+                    my $doc_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+                    $doc_mock->mock(
+                        'poi_expiration_look_ahead',
+                        sub {
+                            return 1;
+                        });
+                    $doc_mock->mock(
+                        'to_be_expired',
+                        sub {
+                            return 90;
+                        });
+
                     $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
                     ok !$email, 'Email not sent, no mt5 regulated';
 
@@ -661,16 +695,20 @@ subtest 'upload document' => sub {
                             loginid                    => $test_client->loginid,
                             file_id                    => $new_doc->{file_id}})->get;
 
+                    ok !$redis->get($pending_resubmission)->get, 'No resubmission flag set - expired + resubmission from staff';
+
                     $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
-                    ok !$email, 'Email not sent, sent by staff';
+                    ok !$email, 'Email not sent, uploaded by staff';
 
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => 0,
                             loginid                    => $test_client->loginid,
                             file_id                    => $new_doc->{file_id}})->get;
 
+                    ok $redis->get($pending_resubmission)->get, 'Resubmission flag set - expired + resubmission from client';
+
                     $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
-                    ok $email, 'An email has been sent';
+                    ok $email, 'An email has been sent, uploaded by client';
 
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => 0,
@@ -690,6 +728,8 @@ subtest 'upload document' => sub {
                     $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
                     ok !$email, 'Email is locked';
                     $redis->del(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get;
+
+                    $doc_mock->unmock_all;
 
                     my $documents_mock = Test::MockModule->new(ref($test_client->documents));
                     $documents_mock->mock(
@@ -5454,17 +5494,28 @@ subtest 'New uploaded POA document notification' => sub {
 
     $test_client->status->setnx('age_verification', 'test', 'test');
 
+    my $mock_client = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+
     mailbox_clear();
     BOM::Event::Actions::Client::_send_CS_email_POA_uploaded($test_client)->get;
 
     my $msg = mailbox_search(subject => qr/New uploaded POA document for/);
-    ok $msg, 'First email sent';
+    ok $msg, 'First email sent - new submission';
 
     mailbox_clear();
     BOM::Event::Actions::Client::_send_CS_email_POA_uploaded($test_client)->get;
 
     $msg = mailbox_search(subject => qr/New uploaded POA document for/);
-    ok $msg, 'Second email sent';
+    ok $msg, 'Second email sent - new submission';
+
+    mailbox_clear();
+    $mock_client->mock(poa_outdated_look_ahead => sub { return 1 });
+    BOM::Event::Actions::Client::_send_CS_email_POA_uploaded($test_client)->get;
+
+    $msg = mailbox_search(subject => qr/Resubmission POA document for/);
+    ok $msg, 'Third email sent - resubmission';
+
+    $mock_client->unmock_all;
 };
 
 subtest 'POA email notification' => sub {

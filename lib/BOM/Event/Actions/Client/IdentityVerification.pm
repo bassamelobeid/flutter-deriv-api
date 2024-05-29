@@ -158,6 +158,11 @@ async sub verify_identity {
 
         BOM::Platform::Event::Emitter::emit('idv_verification', $message_payload);
 
+        # insert poi resubmission flag if status exists
+        my $redis = BOM::Config::Redis::redis_events();
+        $redis->set(BOM::User::Client::POI_RESUBMITTED_PREFIX . $client->binary_user_id, 1, 'NX', 'EX', 172800)
+            if $client->documents->poi_expiration_look_ahead();    #currently idv does not set status for expiring_soon but better safe than sorry :v
+
         DataDog::DogStatsd::Helper::stats_timing(
             'event.identity_verification.callout.timing',
             (ONE_SECOND_IN_MS * Time::HiRes::tv_interval($request_start)),
@@ -322,6 +327,15 @@ async sub verify_process {
             status   => $status,
             document => $document,
         }) if $document_pic;
+
+    # remove flag if status is not pending
+    unless ($status eq 'pending' || $status eq 'deferred') {
+        my $redis_events_write = _redis_events_write();
+        await $redis_events_write->connect;
+
+        my $key = BOM::User::Client::POI_RESUBMITTED_PREFIX . $client->binary_user_id;
+        await $redis_events_write->del($key);
+    }
 
     my $callback = RESULT_STATUS->{$status} // RESULT_STATUS->{failed};
     my $pictures = [grep { $_ } ($document_file_id, $selfie_file_id)];

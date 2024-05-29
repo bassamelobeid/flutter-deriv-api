@@ -334,6 +334,23 @@ async sub document_upload {
         #clear allow_poinc_resubmission status when a new document of this type is uploaded
         $client->propagate_clear_status('allow_poinc_resubmission') if $is_pow_document;
 
+        # insert resubmission flag if status exists for previous document near expiration date
+        if (!$uploaded_manually_by_staff) {
+            my $redis        = BOM::Config::Redis::redis_events();
+            my $current_time = time();
+            if ($is_poi_document && $client->documents->poi_expiration_look_ahead()) {
+                my $seconds_until_expiration_poi = ($client->documents->to_be_expired() // 0) * 24 * 60 * 60;
+                my $expiration_time_poi          = $current_time + $seconds_until_expiration_poi;
+                $redis->set(BOM::User::Client::POI_RESUBMITTED_PREFIX . $client->binary_user_id, 1, 'NX', 'EXAT', $expiration_time_poi);
+            }
+
+            if ($is_poa_document && $client->documents->poa_outdated_look_ahead()) {
+                my $seconds_until_expiration_poa = ($client->documents->to_be_outdated() // 0) * 24 * 60 * 60;
+                my $expiration_time_poa          = $current_time + $seconds_until_expiration_poa;
+                $redis->set(BOM::User::Client::POA_RESUBMITTED_PREFIX . $client->binary_user_id, 1, 'NX', 'EXAT', $expiration_time_poa);
+            }
+        }
+
         # If is a POI document but not Onfido supported, send an email to CS
         if ($is_poi_document && !$is_onfido_document && !$uploaded_manually_by_staff) {
             _notify_onfido_unsupported_document($client, $document_entry);
@@ -515,15 +532,19 @@ Returns C<undef>.
 
 sub _notify_onfido_unsupported_document {
     my ($client, $document_entry) = @_;
-    my $brand = request()->brand;
-    my $msg   = 'POI document type not supported by Onfido: ' . $document_entry->{document_type} . '. Please verify the age of the client manually.';
-    my $email_subject  = "Manual age verification needed for " . $client->loginid;
+    my $brand                = request()->brand;
+    my $redis                = BOM::Config::Redis::redis_events();
+    my $pending_resubmission = $redis->get(BOM::User::Client::POI_RESUBMITTED_PREFIX . $client->binary_user_id) // 0;
+    my $msg = 'POI document type not supported by Onfido: ' . $document_entry->{document_type} . '. Please verify the age of the client manually.';
+    my $email_subject = "Manual age verification needed for " . $client->loginid;
+
     my $email_template = "\
         <p>$msg</p>
         <ul>
             <li><b>loginid:</b> " . $client->loginid . "</li>
             <li><b>place of birth:</b> " . (code2country($client->place_of_birth) // 'not set') . "</li>
             <li><b>residence:</b> " . code2country($client->residence) . "</li>
+            <li><b>is a resubmission for near expiration:</b> " . ($pending_resubmission > 0 ? 'YES' : 'NO') . "</li>
         </ul>
         Team " . $brand->website_name . "\
         ";
@@ -1232,6 +1253,14 @@ async sub client_verification {
                                     $log->debugf('%s document %s for client %s have been updated with Onfido info',
                                         $db_doc->status, $db_doc->id, $loginid);
                                 }
+
+                                # remove resubmission flag for the document
+                                # note: at this point result can only be clear or rejected
+                                my $redis_events_write = _redis_events_write();
+                                await $redis_events_write->connect;
+
+                                my $key = BOM::User::Client::POI_RESUBMITTED_PREFIX . $client->binary_user_id;
+                                await $redis_events_write->del($key);
                             }
                         }
                     }
@@ -2604,9 +2633,17 @@ async sub _send_CS_email_POA_uploaded {
 
     my $from_email = $brand->emails('no-reply');
     my $to_email   = $brand->emails('authentications');
+    my $email_subject;
+    my $email_body;
+    if ($client->documents->poa_outdated_look_ahead()) {
+        $email_subject = 'Resubmission POA document for: ' . $client->loginid;
+        $email_body    = 'Last verified proof of address document is near expiration. This is a resubmission uploaded for ' . $client->loginid;
+    } else {
+        $email_subject = 'New uploaded POA document for: ' . $client->loginid;
+        $email_body    = 'New proof of address document was uploaded for ' . $client->loginid;
+    }
 
-    Email::Stuffer->from($from_email)->to($to_email)->subject('New uploaded POA document for: ' . $client->loginid)
-        ->text_body('New proof of address document was uploaded for ' . $client->loginid)->send();
+    Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->text_body($email_body)->send();
 
     return undef;
 }
