@@ -93,7 +93,7 @@ subtest 'Onfido supported documents updater' => sub {
             };
         });
 
-    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $redis = BOM::Config::Redis::redis_events_write();
 
     # clean all
     subtest 'clear cache' => sub {
@@ -418,44 +418,8 @@ subtest 'Onfido supported documents updater' => sub {
     $http_mock->unmock_all;
 };
 
-subtest 'document configuration with redis replicated' => sub {
-    redis_test(BOM::Config::Redis::redis_replicated_write());
-};
-
 subtest 'document configuration with redis events' => sub {
     redis_test(BOM::Config::Redis::redis_events_write());
-};
-
-subtest 'fallback to replicated' => sub {
-    my $redis_mock       = Test::MockModule->new('RedisDB');
-    my $get_flipper      = -1;
-    my $scan_all_flipper = -1;
-
-    # the first get is from redis events
-    $redis_mock->mock(
-        'get',
-        sub {
-            $get_flipper = $get_flipper * -1;
-
-            return undef if $get_flipper == 1;
-
-            return $redis_mock->original('get')->(@_);
-        });
-
-    # the first scan_all is from redis events
-    $redis_mock->mock(
-        'scan_all',
-        sub {
-            $scan_all_flipper = $scan_all_flipper * -1;
-
-            return [] if $scan_all_flipper == 1;
-
-            return $redis_mock->original('scan_all')->(@_);
-        });
-
-    redis_test(BOM::Config::Redis::redis_replicated_write());
-
-    $redis_mock->unmock_all();
 };
 
 # redis test suite

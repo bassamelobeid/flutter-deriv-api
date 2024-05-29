@@ -44,12 +44,9 @@ if ($dump) {
 }
 
 if ($verbose) {
-    my $redis            = BOM::Config::Redis::redis_events();
-    my $redis_replicated = BOM::Config::Redis::redis_replicated_read();
-    my $version          = $redis->get(BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY)
-        // $redis_replicated->get(BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY) // '';
-    my $json = $redis->get(BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY)
-        // $redis_replicated->get(BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY) // '';
+    my $redis   = BOM::Config::Redis::redis_events();
+    my $version = $redis->get(BOM::Config::Onfido::ONFIDO_REDIS_CONFIG_VERSION_KEY) // '';
+    my $json    = $redis->get(BOM::Config::Onfido::ONFIDO_REDIS_DOCUMENTS_KEY)      // '';
 
     print "Version = $version\n";
     print "$json\n";

@@ -55,13 +55,12 @@ Returns an array of hashes of supported_documents for each country
 
 sub supported_documents_list {
     try {
-        my $redis_replicated = BOM::Config::Redis::redis_replicated_read();
-        my $redis            = BOM::Config::Redis::redis_events();
+        my $redis = BOM::Config::Redis::redis_events();
 
         # override with data from Redis here if available
-        if (my $json = $redis->get(ONFIDO_REDIS_DOCUMENTS_KEY) // $redis_replicated->get(ONFIDO_REDIS_DOCUMENTS_KEY)) {
-            return decode_json($json);
-        }
+        my $json = $redis->get(ONFIDO_REDIS_DOCUMENTS_KEY);
+
+        return decode_json($json) if $json;
     } catch ($e) {
         $log->warnf('Could not read Onfido supported documents from redis key: %s', ONFIDO_REDIS_DOCUMENTS_KEY);
     }
@@ -228,10 +227,9 @@ Changes the format into hash
     my $country_details;
 
     sub _get_country_details {
-        my %args             = @_;
-        my $redis_replicated = BOM::Config::Redis::redis_replicated_read();
-        my $redis            = BOM::Config::Redis::redis_events();
-        my $conf_version     = $redis->get(ONFIDO_REDIS_CONFIG_VERSION_KEY) // $redis_replicated->get(ONFIDO_REDIS_CONFIG_VERSION_KEY) // '';
+        my %args         = @_;
+        my $redis        = BOM::Config::Redis::redis_events();
+        my $conf_version = $redis->get(ONFIDO_REDIS_CONFIG_VERSION_KEY);
 
         if ($args{overwrite} || !$country_details) {
             # would be nice to have a lock here, maybe?
@@ -263,10 +261,9 @@ sub supported_documents_updater {
     my %doc_mapping = %{ONFIDO_SUPPORTED_DOCUMENTS_CODES()};
 
     try {
-        my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
-        my $redis            = BOM::Config::Redis::redis_events_write();
-        my $response         = HTTP::Tiny->new->get(ONFIDO_SUPPORTED_DOCUMENTS_JSON);
-        my $status           = $response->{status} // '0';
+        my $redis    = BOM::Config::Redis::redis_events_write();
+        my $response = HTTP::Tiny->new->get(ONFIDO_SUPPORTED_DOCUMENTS_JSON);
+        my $status   = $response->{status} // '0';
 
         die "status=$status" unless $status == 200;
 
@@ -277,7 +274,7 @@ sub supported_documents_updater {
 
         return unless $version;
 
-        my $curr_version = $redis->get(ONFIDO_REDIS_CONFIG_VERSION_KEY) // $redis_replicated->get(ONFIDO_REDIS_CONFIG_VERSION_KEY) // '';
+        my $curr_version = $redis->get(ONFIDO_REDIS_CONFIG_VERSION_KEY) // '';
 
         return unless $version ne $curr_version;
 
@@ -307,11 +304,6 @@ sub supported_documents_updater {
             } sort keys $doc_stash->%*
         ];
 
-        $redis_replicated->multi;
-        $redis_replicated->set(ONFIDO_REDIS_CONFIG_VERSION_KEY, $version);
-        $redis_replicated->set(ONFIDO_REDIS_DOCUMENTS_KEY,      encode_json($document));
-        $redis_replicated->exec;
-
         $redis->multi;
         $redis->set(ONFIDO_REDIS_CONFIG_VERSION_KEY, $version);
         $redis->set(ONFIDO_REDIS_DOCUMENTS_KEY,      encode_json($document));
@@ -332,12 +324,9 @@ Clears the supported documents cache.
 =cut
 
 sub clear_supported_documents_cache {
-    my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
-    my $redis            = BOM::Config::Redis::redis_events();
+    my $redis = BOM::Config::Redis::redis_events();
 
-    $redis_replicated->del(ONFIDO_REDIS_DOCUMENTS_KEY);
     $redis->del(ONFIDO_REDIS_DOCUMENTS_KEY);
-    $redis_replicated->del(ONFIDO_REDIS_CONFIG_VERSION_KEY);
     $redis->del(ONFIDO_REDIS_CONFIG_VERSION_KEY);
 }
 
