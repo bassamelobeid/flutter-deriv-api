@@ -111,14 +111,28 @@ sub calc_ask_price_detailed {
 
         #if the request is coming from Websocket we should return all data(100 numbers) to build the stat chart.
         #after that(when the request is coming from pricer) we only need to return the last value to update it
-        my $ticks_stayed_in =
-              $update
-            ? $redis->lrange($stat_key, -1, -1)
-            : $redis->lrange($stat_key, 0,  -1);
 
-        my $last_tick_processed_json = $redis->hget("accumulator::previous_tick_barrier_status", $underlying_key);
-        my $last_tick_processed;
+        my ($ticks_stayed_in, $last_tick_processed_json, @res, $last_tick_processed);
+
+        if ($update) {
+            $redis->execute('multi');
+            $redis->execute('lrange', $stat_key, -1, -1);
+            $redis->execute('hget', "accumulator::previous_tick_barrier_status", $underlying_key);
+            @res = $redis->execute('exec');
+        } else {
+            $redis->execute('multi');
+            $redis->execute('lrange', $stat_key, 0, -1);
+            $redis->execute('hget', "accumulator::previous_tick_barrier_status", $underlying_key);
+            @res = $redis->execute('exec');
+        }
+
+        if (@res) {
+            $ticks_stayed_in          = $res[0][0];
+            $last_tick_processed_json = $res[0][1];
+        }
+
         $last_tick_processed = decode_json($last_tick_processed_json) if $last_tick_processed_json;
+
         if ($last_tick_processed && @$ticks_stayed_in) {
             # ticks_stayed_in does not include the latest tick yet, we
             # need to calculate what it should be if we include the
