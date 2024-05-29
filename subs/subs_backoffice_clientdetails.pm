@@ -679,7 +679,7 @@ SQL
             my $idv_report = $idv_document_check->{report};
             $idv_report = eval { decode_json_text $idv_report } if $idv_report;
 
-            my $provider         = $idv_document_check->{provider};
+            my $provider         = $idv_document_check->{provider}                   // '';
             my $providers_config = BOM::Config::identity_verification()->{providers} // {};
             my $provider_config  = $providers_config->{$provider}                    // {};
             my $is_selfish       = $provider_config->{selfish};
