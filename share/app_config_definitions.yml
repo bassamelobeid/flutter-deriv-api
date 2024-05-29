@@ -71,7 +71,7 @@ payments:
       isa: json_string
       default: '{
                 "account_transfer": {
-                    "internal": [ "internal_transfer", "mt5_transfer", "dxtrade_transfer" ]
+                    "internal": [ "internal_transfer", "mt5_transfer", "dxtrade_transfer", "ctrader_transfer" ]
                 },
                 "affiliate_reward": {
                     "internal": [ "affiliate_reward" ]
