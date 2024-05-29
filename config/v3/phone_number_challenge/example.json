@@ -1,4 +1,5 @@
 {
     "phone_number_challenge": 1,
-    "carrier": "whatsapp"
+    "carrier": "whatsapp",
+    "email_code": "dummy"
 }

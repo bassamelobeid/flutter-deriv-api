@@ -11,7 +11,8 @@
     "additionalProperties": false,
     "required": [
         "phone_number_challenge",
-        "carrier"
+        "carrier",
+        "email_code"
     ],
     "properties": {
         "phone_number_challenge": {
@@ -25,9 +26,13 @@
             "description": "The carrier sending the OTP.",
             "type": "string",
             "enum": [
-                "whatsapp",
-                "sms"
+                "sms",
+                "whatsapp"
             ]
+        },
+        "email_code": {
+            "description": "The code sent via email to begin the verification.",
+            "type": "string"
         },
         "loginid": {
             "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
