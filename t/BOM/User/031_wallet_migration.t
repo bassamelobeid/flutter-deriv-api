@@ -17,7 +17,6 @@ use BOM::Test::Helper::MT5;
 use BOM::Test::Helper::CTrader;
 
 use BOM::User::WalletMigration;
-
 use BOM::Config::Runtime;
 use BOM::User::FinancialAssessment qw(update_financial_assessment);
 
@@ -1459,6 +1458,52 @@ subtest 'Migrate KYC verified clients' => sub {
         my $cr_wallet = BOM::User::Client->get_client_instance($cr_wallet_id);
 
         ok($cr_wallet->fully_authenticated, 'Fully authenticated status is migrated');
+    };
+
+    subtest 'aml risk classification is migrated when value is manual override' => sub {
+        my ($user) = create_user();
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        my $cr_usd =
+            BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', aml_risk_classification => 'manual override - high'});
+        $cr_usd->set_default_account('USD');
+        $user->add_client($cr_usd);
+
+        my $error = exception {
+            $migration->process();
+        };
+
+        my $account_links = $user->get_accounts_links();
+        my $cr_wallet_id  = shift($account_links->{$cr_usd->loginid}->@*)->{loginid};
+        my $cr_wallet     = BOM::User::Client->get_client_instance($cr_wallet_id);
+
+        ok($cr_wallet->aml_risk_classification, 'manual override - high');
+    };
+
+    subtest 'aml risk classification is not migrated when value is low/high/standard' => sub {
+        my ($user) = create_user();
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', aml_risk_classification => 'high'});
+        $cr_usd->set_default_account('USD');
+        $user->add_client($cr_usd);
+
+        my $error = exception {
+            $migration->process();
+        };
+
+        my $account_links = $user->get_accounts_links();
+        my $cr_wallet_id  = shift($account_links->{$cr_usd->loginid}->@*)->{loginid};
+        my $cr_wallet     = BOM::User::Client->get_client_instance($cr_wallet_id);
+        is($cr_wallet->aml_risk_classification, 'low', 'No value copied');
     };
 
     subtest 'Financial Assestment is migrated correctly' => sub {

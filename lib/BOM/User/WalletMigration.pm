@@ -43,6 +43,12 @@ use constant {
     STATE_ELIGIBLE    => 'eligible',
     STATE_INELIGIBLE  => 'ineligible',
     STATE_IN_PROGRESS => 'in_progress',
+
+    ELIGIBLE_AML_RISK_COLLECTION_VALUES => +{
+        'manual override - low'      => 1,
+        'manual override - standard' => 1,
+        'manual override - high'     => 1,
+    },
 };
 
 class BOM::User::WalletMigration;
@@ -420,10 +426,12 @@ method create_wallet (%args) {
 
     my @fields_to_copy = qw(citizen salutation first_name last_name date_of_birth residence
         address_line_1 address_line_2 address_city address_state address_postcode
-        phone secret_question secret_answer tax_residence tax_identification_number
-        account_opening_reason place_of_birth tax_residence tax_identification_number
+        phone secret_question secret_answer tax_residence
+        account_opening_reason place_of_birth tax_identification_number
         non_pep_declaration_time fatca_declaration_time fatca_declaration myaffiliates_token client_password
     );
+
+    push @fields_to_copy, 'aml_risk_classification' if ELIGIBLE_AML_RISK_COLLECTION_VALUES->{$client->aml_risk_classification};
 
     my $type        = BOM::Config::AccountType::Registry->account_type_by_name($account_type);
     my $broker_code = $type->get_single_broker_code($lc);
