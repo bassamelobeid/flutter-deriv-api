@@ -717,7 +717,27 @@ subtest 'poi soon to be expired' => sub {
         'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set',
         'cashier_locked',           'document_expired',        'poi_expiring_soon'
         ],
-        'Expected statuses while expired + having mt5 regulated';
+        'Expected statuses while expired + NO pending doc + having mt5 regulated';
+
+    $documents = {
+        proof_of_identity => {
+            is_expired    => 1,
+            is_pending    => 1,
+            to_be_expired => -90,
+            documents     => {
+                test => {
+                    test => 1,
+                    type => 'passport'
+                }}}};
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set',
+        'cashier_locked'
+        ],
+        'Expected statuses while expired + pending doc + having mt5 regulated';
 
     $documents = {};
     $result    = $c->tcall('get_account_status', {token => $token});
@@ -827,9 +847,24 @@ subtest 'poa soon to be outdated' => sub {
         [
         'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
         'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set',
-        'poa_expiring_soon',        'document_expired'
+        'document_expired',         'poa_expiring_soon'
         ],
-        'Expected statuses while outdated + having mt5 regulated';
+        'Expected statuses while outdated + NO pending doc + having mt5 regulated';
+
+    $documents = {
+        proof_of_address => {
+            is_outdated    => 1,
+            is_pending     => 1,
+            to_be_outdated => -90,
+            documents      => {test => {test => 1}}}};
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'age_verification',         'allow_document_upload',   'authenticated',  'crs_tin_information',
+        'dxtrade_password_not_set', 'financial_risk_approval', 'idv_disallowed', 'mt5_password_not_set'
+        ],
+        'Expected statuses while outdated + pending doc + having mt5 regulated';
 
     $documents = {};
     $result    = $c->tcall('get_account_status', {token => $token});

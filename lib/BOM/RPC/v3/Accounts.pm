@@ -999,10 +999,10 @@ rpc
     my $has_mt5_regulated_account = $client->user->has_mt5_regulated_account(use_mt5_conf => 1);
 
     # if POI is soon to be expired, report it so FE could show the upload UI
-    push(@$status, 'poi_expiring_soon') if $client->documents->poi_expiration_look_ahead();
+    push(@$status, 'poi_expiring_soon') if $client->documents->poi_expiration_look_ahead() && $client->get_poi_status ne 'pending';
 
     # if POA is soon to be outdated, report it so FE could show the upload UI
-    push(@$status, 'poa_expiring_soon') if $client->documents->poa_outdated_look_ahead();
+    push(@$status, 'poa_expiring_soon') if $client->documents->poa_outdated_look_ahead() && $client->get_poa_status ne 'pending';
 
     push(@$status, 'email_not_verified') unless $client->user->email_verified;
 
