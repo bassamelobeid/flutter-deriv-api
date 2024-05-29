@@ -135,7 +135,7 @@ if ($email ne $new_email) {
 
     $user_data = BOM::Service::user(
         context    => BOM::Backoffice::UserService::get_context,
-        command    => 'update_attributes',
+        command    => 'update_attributes_force',
         user_id    => $email,
         attributes => {email => $new_email},
     );
