@@ -487,6 +487,18 @@ if ($input{document_list}) {
             $doc->save;
         }
 
+        # remove resubmission flag for the document
+        my $redis_events_write = BOM::Config::Redis::redis_events_write();
+
+        my $key;
+        if ($is_poi) {
+            $key = BOM::User::Client::POI_RESUBMITTED_PREFIX . $client->binary_user_id;
+            $redis_events_write->del($key);
+        } elsif ($is_poa) {
+            $key = BOM::User::Client::POA_RESUBMITTED_PREFIX . $client->binary_user_id;
+            $redis_events_write->del($key);
+        }
+
         my $verified_date = Date::Utility->new->date_yyyymmdd;
         $doc->verified_date($verified_date) if $new_doc_status eq 'verified' && !$field_error;
 
