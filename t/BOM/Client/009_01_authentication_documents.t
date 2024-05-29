@@ -462,32 +462,8 @@ subtest 'Onfido mapping' => sub {
     cmp_deeply $client->documents->provider_types->{onfido}, $mappings, 'Expected Onfido types mapping';
 };
 
-subtest 'poa_address_mismatch with redis replicated' => sub {
-    poa_address_mismatch_test(BOM::Config::Redis::redis_replicated_write());
-};
-
 subtest 'poa_address_mismatch with redis events' => sub {
     poa_address_mismatch_test(BOM::Config::Redis::redis_events_write());
-};
-
-subtest 'poa_address_mismatch fallback to replicated' => sub {
-    my $redis_mock  = Test::MockModule->new('RedisDB');
-    my $get_flipper = -1;
-
-    # the first get is from redis events
-    $redis_mock->mock(
-        'get',
-        sub {
-            $get_flipper = $get_flipper * -1;
-
-            return undef if $get_flipper == 1;
-
-            return $redis_mock->original('get')->(@_);
-        });
-
-    poa_address_mismatch_test(BOM::Config::Redis::redis_replicated_write());
-
-    $redis_mock->unmock_all();
 };
 
 sub poa_address_mismatch_test {
@@ -543,28 +519,6 @@ sub poa_address_mismatch_test {
 
 subtest 'is_poa_address_fixed' => sub {
     is_poa_address_fixed_test();
-};
-
-subtest 'is_poa_address_fixed fallback to replicated' => sub {
-    my $redis_mock  = Test::MockModule->new('RedisDB');
-    my $get_flipper = -1;
-
-    # the first get is from redis events
-    $redis_mock->mock(
-        'get',
-        sub {
-            $get_flipper = $get_flipper * -1;
-
-            print $get_flipper;
-
-            return undef if $get_flipper == 1;
-
-            return $redis_mock->original('get')->(@_);
-        });
-
-    is_poa_address_fixed_test();
-
-    $redis_mock->unmock_all();
 };
 
 sub is_poa_address_fixed_test {
@@ -948,32 +902,8 @@ subtest 'check_words_similarity' => sub {
 
 # is upload available test suite
 
-subtest 'is upload available with redis replicated' => sub {
-    is_upload_available_test(BOM::Config::Redis::redis_replicated_write(), 'is_available@deriv.com');
-};
-
 subtest 'is upload available configuration with redis events' => sub {
     is_upload_available_test(BOM::Config::Redis::redis_events_write(), 'is_available2@deriv.com');
-};
-
-subtest 'is upload available fallback to replicated' => sub {
-    my $redis_mock  = Test::MockModule->new('RedisDB');
-    my $get_flipper = -1;
-
-    # the first get is from redis events
-    $redis_mock->mock(
-        'get',
-        sub {
-            $get_flipper = $get_flipper * -1;
-
-            return undef if $get_flipper == 1;
-
-            return $redis_mock->original('get')->(@_);
-        });
-
-    is_upload_available_test(BOM::Config::Redis::redis_replicated_write(), 'is_available3@deriv.com');
-
-    $redis_mock->unmock_all();
 };
 
 sub is_upload_available_test {
