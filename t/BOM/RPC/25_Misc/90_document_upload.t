@@ -272,41 +272,11 @@ subtest 'Attempt to upload file with same checksum as "Basic upload test sequenc
 ## Tests for limit of uploaded documents reached per day
 #########################################################
 
-subtest 'limit of uploaded documents using redis replica' => sub {
-    BOM::Config::Redis::redis_replicated_write()->del('MAX_UPLOADS_KEY::' . $real_client->binary_user_id);
-    BOM::Config::Redis::redis_events_write()->del('MAX_UPLOADS_KEY::' . $real_client->binary_user_id);
-    limit_of_uploaded_documents_test(BOM::Config::Redis::redis_replicated_write());
-};
-
 subtest 'limit of uploaded documents using redis events' => sub {
-    BOM::Config::Redis::redis_replicated_write()->del('MAX_UPLOADS_KEY::' . $real_client->binary_user_id);
     BOM::Config::Redis::redis_events_write()->del('MAX_UPLOADS_KEY::' . $real_client->binary_user_id);
     limit_of_uploaded_documents_test(BOM::Config::Redis::redis_events_write());
 };
 
-subtest 'limit of uploaded documents fallback to replicated' => sub {
-    BOM::Config::Redis::redis_replicated_write()->del('MAX_UPLOADS_KEY::' . $real_client->binary_user_id);
-    BOM::Config::Redis::redis_events_write()->del('MAX_UPLOADS_KEY::' . $real_client->binary_user_id);
-    my $redis_mock  = Test::MockModule->new('RedisDB');
-    my $get_flipper = -1;
-
-    # the first get is from redis events
-    $redis_mock->mock(
-        'get',
-        sub {
-            $get_flipper = $get_flipper * -1;
-
-            return undef if $get_flipper == 1;
-
-            return $redis_mock->original('get')->(@_);
-        });
-
-    limit_of_uploaded_documents_test(BOM::Config::Redis::redis_replicated_write());
-
-    $redis_mock->unmock_all();
-};
-
-BOM::Config::Redis::redis_replicated_write()->del('MAX_UPLOADS_KEY::' . $real_client->binary_user_id);
 BOM::Config::Redis::redis_events_write()->del('MAX_UPLOADS_KEY::' . $real_client->binary_user_id);
 
 sub limit_of_uploaded_documents_test {
@@ -321,7 +291,7 @@ sub limit_of_uploaded_documents_test {
 }
 
 subtest 'Limit of uploaded documents reached' => sub {
-    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $redis = BOM::Config::Redis::redis_events_write();
     my $key   = 'MAX_UPLOADS_KEY::' . $real_client->binary_user_id;
 
     $redis->set($key, 21);
@@ -336,7 +306,7 @@ subtest 'Limit of uploaded documents reached' => sub {
 #########################################################
 
 subtest 'DD metrics for docs uploaded' => sub {
-    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $redis = BOM::Config::Redis::redis_events_write();
     my $key   = 'MAX_UPLOADS_KEY::' . $real_client->binary_user_id;
     $redis->del($key);
 

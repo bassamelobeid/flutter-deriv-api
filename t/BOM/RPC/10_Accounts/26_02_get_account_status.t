@@ -1468,19 +1468,6 @@ subtest 'IDV Validated account' => sub {
                 iom             => 0,
                 vanuatu         => 0,
             },
-            authenticated_with_idv => {
-                dsl             => 0,
-                malta           => 0,
-                labuan          => 0,
-                virtual         => 0,
-                bvi             => 0,
-                samoa           => 0,
-                svg             => 0,
-                'samoa-virtual' => 0,
-                maltainvest     => 0,
-                iom             => 0,
-                vanuatu         => 0,
-            },
         },
         'identity' => {
             'services' => {
@@ -1523,19 +1510,6 @@ subtest 'IDV Validated account' => sub {
         'document'           => {
             status                => "none",
             verified_jurisdiction => {
-                dsl             => 0,
-                malta           => 0,
-                labuan          => 0,
-                virtual         => 0,
-                bvi             => 0,
-                samoa           => 0,
-                svg             => 0,
-                'samoa-virtual' => 0,
-                maltainvest     => 0,
-                iom             => 0,
-                vanuatu         => 0,
-            },
-            authenticated_with_idv => {
                 dsl             => 0,
                 malta           => 0,
                 labuan          => 0,
@@ -1633,19 +1607,6 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
                 iom             => 0,
                 vanuatu         => 0,
             },
-            authenticated_with_idv => {
-                dsl             => 0,
-                malta           => 0,
-                labuan          => 0,
-                virtual         => 0,
-                bvi             => 0,
-                samoa           => 0,
-                svg             => 0,
-                'samoa-virtual' => 0,
-                maltainvest     => 0,
-                iom             => 0,
-                vanuatu         => 0,
-            },
         },
         'identity' => {
             'services' => {
@@ -1690,19 +1651,6 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
         'document'           => {
             status                => "none",
             verified_jurisdiction => {
-                dsl             => 0,
-                malta           => 0,
-                labuan          => 0,
-                virtual         => 0,
-                bvi             => 0,
-                samoa           => 0,
-                svg             => 0,
-                'samoa-virtual' => 0,
-                maltainvest     => 0,
-                iom             => 0,
-                vanuatu         => 0,
-            },
-            authenticated_with_idv => {
                 dsl             => 0,
                 malta           => 0,
                 labuan          => 0,
@@ -1784,19 +1732,6 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
                 iom             => 0,
                 vanuatu         => 0,
             },
-            authenticated_with_idv => {
-                dsl             => 0,
-                malta           => 0,
-                labuan          => 0,
-                virtual         => 0,
-                bvi             => 0,
-                samoa           => 0,
-                svg             => 0,
-                'samoa-virtual' => 0,
-                maltainvest     => 0,
-                iom             => 0,
-                vanuatu         => 0,
-            },
         },
         'identity' => {
             'services' => {
@@ -1856,19 +1791,6 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
         'document'           => {
             status                => "none",
             verified_jurisdiction => {
-                dsl             => 0,
-                malta           => 0,
-                labuan          => 0,
-                virtual         => 0,
-                bvi             => 0,
-                samoa           => 0,
-                svg             => 0,
-                'samoa-virtual' => 0,
-                maltainvest     => 0,
-                iom             => 0,
-                vanuatu         => 0,
-            },
-            authenticated_with_idv => {
                 dsl             => 0,
                 malta           => 0,
                 labuan          => 0,

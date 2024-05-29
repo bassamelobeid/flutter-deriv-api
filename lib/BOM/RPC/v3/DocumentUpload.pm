@@ -123,17 +123,8 @@ sub successful_upload {
     try {
         my $finish_upload_result = $client->finish_document_upload($args->{file_id});
 
-        my $redis            = BOM::Config::Redis::redis_events_write();
-        my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
-        my $key              = MAX_UPLOADS_KEY . $client->binary_user_id;
-
-        $redis_replicated->set(
-            $key,
-            0,
-            'EX' => MAX_UPLOADS_TRIES_TTL,
-            'NX'
-        );
-        $redis_replicated->incrby($key, 1);
+        my $redis = BOM::Config::Redis::redis_events_write();
+        my $key   = MAX_UPLOADS_KEY . $client->binary_user_id;
 
         $redis->set(
             $key,

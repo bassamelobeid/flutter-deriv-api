@@ -106,32 +106,8 @@ subtest 'onfido validation errors' => sub {
     };
 };
 
-subtest 'onfido websocket api using redis replicated' => sub {
-    onfido_websocket_api_test(BOM::Config::Redis::redis_replicated_write(), 'test1', 'emailtest1@email.com');
-};
-
 subtest 'onfido websocket api using redis events' => sub {
     onfido_websocket_api_test(BOM::Config::Redis::redis_events_write(), 'test1_2', 'emailtest1_2@email.com');
-};
-
-subtest 'onfido websocket api fallback to replicated' => sub {
-    my $redis_mock  = Test::MockModule->new('RedisDB');
-    my $get_flipper = -1;
-
-    # the first get is from redis events
-    $redis_mock->mock(
-        'get',
-        sub {
-            $get_flipper = $get_flipper * -1;
-
-            return undef if $get_flipper == 1;
-
-            return $redis_mock->original('get')->(@_);
-        });
-
-    onfido_websocket_api_test(BOM::Config::Redis::redis_replicated_write(), 'test1_3', 'emailtest1_3@email.com', $redis_mock);
-
-    $redis_mock->unmock_all;
 };
 
 sub onfido_websocket_api_test {

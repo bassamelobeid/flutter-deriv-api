@@ -57,8 +57,7 @@ sub onfido_service_token {
     my $referrer = $args->{referrer};
     my $country  = $args->{country} // '';
 
-    my $redis            = BOM::Config::Redis::redis_events_write();
-    my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
+    my $redis = BOM::Config::Redis::redis_events_write();
 
     return Future->done({
             error => BOM::RPC::v3::Utility::create_error({
@@ -102,8 +101,7 @@ sub onfido_service_token {
                         })}) unless $applicant;
 
             # If the token exists we return it
-            my $token = $redis->get(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id)
-                // $redis_replicated->get(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id);
+            my $token = $redis->get(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id);
 
             return Future->done({token => $token}) if $token;
 
@@ -121,7 +119,6 @@ sub onfido_service_token {
                                 })}) unless exists $response->{token};
 
                     # 5340 seconds = 89 minutes
-                    $redis_replicated->setex(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id, 5340, $response->{token});
                     $redis->setex(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id, 5340, $response->{token});
                     return Future->done({token => $response->{token}});
                 });

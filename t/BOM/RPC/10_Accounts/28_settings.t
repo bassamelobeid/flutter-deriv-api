@@ -1504,7 +1504,7 @@ subtest 'set_settings address mismatch' => sub {
         ok !$client1->fully_authenticated(), 'Status should not be fully authenticated';
 
     }
-    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $redis = BOM::Config::Redis::redis_events_write();
     ok !$redis->get('POA_ADDRESS_MISMATCH::' . $client1->binary_user_id), 'Redis key should be deleted';
 
     # Negative test

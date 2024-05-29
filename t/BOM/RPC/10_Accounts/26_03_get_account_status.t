@@ -93,19 +93,6 @@ subtest 'check legacy cfd_score' => sub {
                         iom             => 1,
                         vanuatu         => 1,
                     },
-                    authenticated_with_idv => {
-                        dsl             => 0,
-                        malta           => 0,
-                        labuan          => 0,
-                        virtual         => 0,
-                        bvi             => 0,
-                        samoa           => 0,
-                        svg             => 0,
-                        'samoa-virtual' => 0,
-                        maltainvest     => 0,
-                        iom             => 0,
-                        vanuatu         => 0,
-                    },
                 },
                 identity => {
                     services => {
@@ -185,19 +172,6 @@ subtest 'check legacy cfd_score' => sub {
                         maltainvest     => 1,
                         iom             => 1,
                         vanuatu         => 1,
-                    },
-                    authenticated_with_idv => {
-                        dsl             => 0,
-                        malta           => 0,
-                        labuan          => 0,
-                        virtual         => 0,
-                        bvi             => 0,
-                        samoa           => 0,
-                        svg             => 0,
-                        'samoa-virtual' => 0,
-                        maltainvest     => 0,
-                        iom             => 0,
-                        vanuatu         => 0,
                     },
                 },
                 identity => {
@@ -340,19 +314,6 @@ subtest 'Fully Auth with IDV' => sub {
                     dsl             => 0,
                     labuan          => 0
                 },
-                authenticated_with_idv => {
-                    dsl             => 0,
-                    malta           => 0,
-                    labuan          => 0,
-                    virtual         => 0,
-                    bvi             => 1,
-                    samoa           => 0,
-                    svg             => 1,
-                    'samoa-virtual' => 0,
-                    maltainvest     => 0,
-                    iom             => 0,
-                    vanuatu         => 0,
-                },
             }
         },
         currency_config => {
@@ -418,19 +379,6 @@ subtest 'Fully Auth with IDV' => sub {
             document           => {
                 status                => 'none',
                 verified_jurisdiction => {
-                    dsl             => 0,
-                    malta           => 0,
-                    labuan          => 0,
-                    virtual         => 0,
-                    bvi             => 0,
-                    samoa           => 0,
-                    svg             => 0,
-                    'samoa-virtual' => 0,
-                    maltainvest     => 0,
-                    iom             => 0,
-                    vanuatu         => 0,
-                },
-                authenticated_with_idv => {
                     dsl             => 0,
                     malta           => 0,
                     labuan          => 0,
@@ -1238,19 +1186,7 @@ subtest "suspended onfido" => sub {
                     iom             => 0,
                     vanuatu         => 0,
                 },
-                authenticated_with_idv => {
-                    dsl             => 0,
-                    malta           => 0,
-                    labuan          => 0,
-                    virtual         => 0,
-                    bvi             => 0,
-                    samoa           => 0,
-                    svg             => 0,
-                    'samoa-virtual' => 0,
-                    maltainvest     => 0,
-                    iom             => 0,
-                    vanuatu         => 0,
-                }}
+            }
         },
         currency_config => {
             USD => {
@@ -1324,19 +1260,7 @@ subtest "suspended onfido" => sub {
                     iom             => 0,
                     vanuatu         => 0,
                 },
-                authenticated_with_idv => {
-                    dsl             => 0,
-                    malta           => 0,
-                    labuan          => 0,
-                    virtual         => 0,
-                    bvi             => 0,
-                    samoa           => 0,
-                    svg             => 0,
-                    'samoa-virtual' => 0,
-                    maltainvest     => 0,
-                    iom             => 0,
-                    vanuatu         => 0,
-                }}
+            }
         },
         currency_config => {
             USD => {

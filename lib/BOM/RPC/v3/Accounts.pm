@@ -1016,12 +1016,6 @@ rpc
         $verified_jurisdiction->{$_} = $client->fully_authenticated({landing_company => $_}) ? 1 : 0;
     }
 
-    my $authenticated_with_idv = +{};
-
-    for ($lc->@*) {
-        $authenticated_with_idv->{$_} = $client->poa_authenticated_with_idv({landing_company => $_}) ? 1 : 0;
-    }
-
     push(@$status, 'idv_revoked') if BOM::User::IdentityVerification::is_idv_revoked($idv_client);
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -1142,9 +1136,6 @@ rpc
 
     # We need to add the authentication status for each mt5 jurisdiction
     $authentication->{document}->{verified_jurisdiction} = $verified_jurisdiction;
-
-    # We need to add the status of idv authentication for each mt5 jurisdiction
-    $authentication->{document}->{authenticated_with_idv} = $authenticated_with_idv;
 
     return {
         status                        => [sort(uniq(@$status))],
