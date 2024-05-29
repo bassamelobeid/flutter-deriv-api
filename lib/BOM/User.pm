@@ -35,6 +35,7 @@ use BOM::Service::User::Transitional::Password;
 use BOM::Service::User::Transitional::PreferredLanguage;
 use BOM::Service::User::Transitional::SocialSignup;
 use BOM::Service::User::Transitional::TotpFields;
+use BOM::Service::User::Attributes;
 use BOM::Config::Runtime;
 use BOM::Config::TradingPlatform::KycStatus;
 use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
@@ -1175,23 +1176,17 @@ sub get_siblings_for_transfer {
 # and the arg will be that field directly
 ################################################################################
 sub update_email_fields {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_email_fields from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
+    BOM::Service::User::Attributes::trace_caller();
     return BOM::Service::User::Transitional::UpdateEmail::update_email_fields(@_);
 }
 
 sub update_totp_fields {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_totp_fields from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
+    BOM::Service::User::Attributes::trace_caller();
     return BOM::Service::User::Transitional::TotpFields::update_totp_fields(@_);
 }
 
 sub update_has_social_signup {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_has_social_signup from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
+    BOM::Service::User::Attributes::trace_caller();
     return BOM::Service::User::Transitional::SocialSignup::update_has_social_signup(@_);
 }
 
@@ -1762,9 +1757,7 @@ Returns 2 char-length language code
 =cut
 
 sub update_preferred_language {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_preferred_language from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
+    BOM::Service::User::Attributes::trace_caller();
     return BOM::Service::User::Transitional::PreferredLanguage::update_preferred_language(@_);
 }
 
@@ -1801,9 +1794,7 @@ Returns 1 on success
 =cut
 
 sub update_email {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_email from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
+    BOM::Service::User::Attributes::trace_caller();
     return BOM::Service::User::Transitional::UpdateEmail::update_email(@_);
 }
 
@@ -1822,9 +1813,7 @@ Returns $self
 =cut
 
 sub update_trading_password {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_trading_password from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
+    BOM::Service::User::Attributes::trace_caller();
     return BOM::Service::User::Transitional::Password::update_trading_password(@_);
 }
 
@@ -1843,9 +1832,7 @@ Returns $self
 =cut
 
 sub update_dx_trading_password {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::update_dx_trading_password from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
+    BOM::Service::User::Attributes::trace_caller();
     return BOM::Service::User::Transitional::Password::update_dx_trading_password(@_);
 }
 

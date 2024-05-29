@@ -3,6 +3,8 @@ use strict;
 use warnings;
 
 use BOM::Service::User::Transitional::Password;
+use BOM::Service::User::Attributes;
+
 use Log::Any qw($log);
 
 =head1 NAME
@@ -13,16 +15,12 @@ to BOM::Service::User::Password and will vanish in the future into the user serv
 =cut
 
 sub hashpw {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::Password::hashpw from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
+    BOM::Service::User::Attributes::trace_caller();
     return BOM::Service::User::Transitional::Password::hashpw(@_);
 }
 
 sub checkpw {
-    my ($package, $filename, $line) = caller(0);
-    $log->warn("BOM::Service() - Call to BOM::User::Password::checkpw from outside of user service from: $package at $filename, line $line")
-        unless BOM::Config::on_production();
+    BOM::Service::User::Attributes::trace_caller();
     return BOM::Service::User::Transitional::Password::checkpw(@_);
 }
 

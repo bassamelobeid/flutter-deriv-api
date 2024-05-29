@@ -4,6 +4,7 @@ use strict;
 use warnings;
 no indirect;
 use Scalar::Util qw(blessed looks_like_number);
+use Log::Any     qw($log);
 
 use BOM::Service::User::Attributes::Get;
 use BOM::Service::User::Attributes::Update;
@@ -391,6 +392,29 @@ sub get_requested_attributes {
         $handlers->{$attribute} = $ATTRIBUTES{$attribute};
     }
     return $handlers;
+}
+
+=head2 trace_caller
+
+If enabled this function logs the callers caller and the name of the function above.
+
+=over 4
+
+=item * Input: None
+
+=item * Return: Boolean 1 if caller trace should be logged
+
+=back
+
+=cut
+
+sub trace_caller {
+    my $trace_enable = 0;
+    if ($trace_enable == 1) {
+        my ($caller_package, $caller_filename, $caller_line, $caller_sub) = caller(0);
+        my ($package, $filename, $line) = caller(1);
+        $log->warn("BOM::Service() - Call to $caller_sub from outside of user service from: $package at $filename, line $line");
+    }
 }
 
 1;

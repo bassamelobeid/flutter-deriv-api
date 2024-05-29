@@ -30,7 +30,13 @@ use BOM::Platform::Event::Emitter;
 # - between 8 and 25 characters
 # - includes at least 1 character of numbers and alphabet (both lower and uppercase)
 # - all characters ASCII index should be within ( )[space] to (~)[tilde] indexes range
-use constant REGEX_PASSWORD_VALIDATION => qr/^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$/;
+use constant {
+    REGEX_PASSWORD_VALIDATION => qr/^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$/,
+    NX_FALSE                  => 0,
+    NX_TRUE                   => 1,
+    FORCE_FALSE               => 0,
+    FORCE_TRUE                => 1,
+};
 
 =head1 DESCRIPTION
 
@@ -59,15 +65,72 @@ my %save_handler_map = (
 
 =head2 update_attributes
 
+This subroutine acts as a wrapper for calling the internal _update_attributes with a specific behavior. It updates the attributes of an object based on the provided request but does not enforce exclusivity in attribute updating.
+
+=over 4
+
+=item * Input: HashRef (request) - A reference to a hash containing the attributes to be updated.
+
+=item * Return: HashRef - Returns the result from the _update_attributes subroutine, including the status, command, and list of affected items. This call allows existing attributes to be overwritten.
+
+=back
+
+=cut
+
+sub update_attributes {
+    my ($request) = @_;
+    return _update_attributes(FORCE_FALSE, NX_FALSE, $request);
+}
+
+=head2 update_attributes_nx
+
+This subroutine wraps the call to the internal _update_attributes with a behavior that ensures no existing attributes are overwritten during the update. It is used to update attributes of an object based on the provided request, with a constraint that the update should not affect existing values.
+
+=over 4
+
+=item * Input: HashRef (request) - A reference to a hash containing the attributes to be updated.
+
+=item * Return: HashRef - Returns the result from the _update_attributes subroutine, including the status, command, and list of affected items. This call prevents existing attributes from being overwritten.
+
+=back
+
+=cut
+
+sub update_attributes_nx {
+    my ($request) = @_;
+    return _update_attributes(FORCE_FALSE, NX_TRUE, $request);
+}
+
+=head2 update_attributes_force
+
+This subroutine wraps the call to the internal _update_attributes with a behavior that ignores the immutable attributes logic and overwrites as requested. Ideally this should only be used in tests and the backoffice and is likely to be enfoced by the tokens
+
+=over 4
+
+=item * Input: HashRef (request) - A reference to a hash containing the attributes to be updated.
+
+=item * Return: HashRef - Returns the result from the _update_attributes subroutine, including the status, command, and list of affected items. This call prevents existing attributes from being overwritten.
+
+=back
+
+=cut
+
+sub update_attributes_force {
+    my ($request) = @_;
+    return _update_attributes(FORCE_TRUE, NX_FALSE, $request);
+}
+
+=head2 _update_attributes
+
 This subroutine updates the attributes of a user or client. It first checks if the caller is within the BOM::Service namespace. Then, it retrieves the attributes to be updated from the request. If no attributes are specified, it retrieves all attributes.
 
-For each attribute, it checks if there are any flags and if they are present. If the attribute is immutable, it throws an error. Then, it processes each attribute, executing the set handler for the attribute and checking if anything has changed. If something has changed, it adds the save handlers and affected items to the respective lists.
+For each attribute, it checks if there are any flags and if they are present. If the attribute is immutable and not in force mode, it throws an error. Then, it processes each attribute, executing the set handler for the attribute and checking if anything has changed. If something has changed, it adds the save handlers and affected items to the respective lists.
 
 After all attributes have been processed, it executes the save handlers for the attributes that have changed. Finally, it returns a hash reference containing the status, command and the list of affected items.
 
 =over 4
 
-=item * Input: HashRef (request)
+=item * Input: Boolean(force), Boolean(not_exist), HashRef (request)
 
 =item * Return: HashRef (status, command, affected)
 
@@ -75,8 +138,8 @@ After all attributes have been processed, it executes the save handlers for the 
 
 =cut
 
-sub update_attributes {
-    my ($request)  = @_;
+sub _update_attributes {
+    my ($force, $not_exist, $request) = @_;
     my $attributes = $request->{attributes} // [];
     my $parameters = [];
 
@@ -114,10 +177,17 @@ sub update_attributes {
         }
 
         # Some attributes are immutable and cannot be changed but its ...variable
-        my $immutable_attributes = BOM::Service::User::Attributes::Get::get_immutable_attributes($request, 'immutable_attributes');
-        for my $attribute (keys %$parameters) {
-            if (grep { $_ eq $attribute } @$immutable_attributes) {
-                die "Immutable|::|Attribute $attribute is immutable";
+        unless ($force) {
+            my $immutable_attributes = BOM::Service::User::Attributes::Get::get_immutable_attributes($request, 'immutable_attributes');
+            for my $attribute (keys %$parameters) {
+                if (grep { $_ eq $attribute } @$immutable_attributes) {
+                    # Allow immutable attributes to be set if the current value is undef
+                    my $handler = $parameters->{$attribute}->{get_handler};
+                    my $value   = $handler->($request, $parameters->{$attribute}->{remap} // $attribute, $parameters->{$attribute}->{type});
+                    if (defined $value) {
+                        die "Immutable|::|Attribute $attribute is immutable and already set";
+                    }
+                }
             }
         }
 

@@ -111,6 +111,14 @@ my %COMMAND_MAP = (
                 }
             },
         },
+        'update_attributes_nx' => {
+            function   => \&BOM::Service::User::Attributes::Update::update_attributes_nx,
+            validation => 'update_attributes',
+        },
+        'update_attributes_force' => {
+            function   => \&BOM::Service::User::Attributes::Update::update_attributes_force,
+            validation => 'update_attributes',
+        },
 
         # Status
         'get_login_history' => {
@@ -298,9 +306,13 @@ sub _dispatch_command {
 
     try {
         if (my $command_struct = $command_map->{$request{command} // ''}) {
+            # Quick check that the validation struct is defined, allow commands to use others validation, space saver
+            my $validation_struct = exists $command_struct->{validation} ? $command_map->{$command_struct->{validation}} : $command_struct;
+            die "Command validation not found for command '$request{command}'" unless defined $validation_struct;
+
             # Validate keys based on commands_list, whilst its not strictly necessary to validate the command
             # in this way the error messages are more readable. Filter out the required keys and validate.
-            my @required_keys = sort grep { !$command_struct->{parameters}{$_}{optional} } keys %{$command_struct->{parameters}};
+            my @required_keys = sort grep { !$validation_struct->{parameters}{$_}{optional} } keys %{$validation_struct->{parameters}};
             my @missing_keys  = ();
             foreach my $required_key (@required_keys) {
                 push @missing_keys, $required_key unless exists $request{$required_key};
@@ -310,7 +322,7 @@ sub _dispatch_command {
             try {
                 validate_with(
                     params      => \%request,
-                    spec        => $command_struct->{parameters},
+                    spec        => $validation_struct->{parameters},
                     allow_extra => 0,
                 );
             } catch ($e) {
@@ -350,7 +362,6 @@ sub _dispatch_command {
             };
         }
     } catch ($e) {
-        $log->warn("Error in command: $e");
         my $message = $e;
 
         # Attempts to extract the error class and message from the exception
@@ -370,6 +381,13 @@ sub _dispatch_command {
 
         # Has to be belt and braces here, we cannot guarantee that the request is a hashref
         my $command = $request{command} // 'MISSING COMMAND - FIX ME!';
+
+        my @low_rank_errors = (qw(UserNotFound));
+        if (grep { $_ eq $error_class } @low_rank_errors) {
+            $log->info("Failure processing command '$command': $e");
+        } else {
+            $log->warn("Error processing command '$command': $e");
+        }
 
         # Before we return we need to check if the cache needs to be flushed because updating
         # things is not an atomic event at the moment, there is a risk the cache object is
