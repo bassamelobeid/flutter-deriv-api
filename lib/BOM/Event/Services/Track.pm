@@ -305,6 +305,7 @@ my @TRANSACTIONAL_EVENTS = qw(
     mt5_signup
     account_closure
     under_antifraud_investigation
+    trading_platform_account_created
 );
 
 my $loop = IO::Async::Loop->new;
