@@ -19,7 +19,6 @@ use BOM::Config::Runtime;
 
 #we need this because of calculating max exchange rates on currency config
 populate_exchange_rates();
-print STDERR "pid of script is $$\n";
 
 my $reader = BOM::Config::Chronicle::get_chronicle_reader();
 my $writer = BOM::Config::Chronicle::get_chronicle_writer();
