@@ -1978,10 +1978,18 @@ rpc change_email => sub {
                     message_to_client => $error->{message_to_client}});
         }
 
-        if (!$args->{new_password} && $has_social_signup) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => "PasswordError",
-                    message_to_client => localize("Unable to update email, password required for social login.")});
+        # You can only change your email away from social signup if you provide a new password
+        # however this conflicts with the immutable nature of email per the client immutable_fields
+        # function so in this edge case we will override the immutable_fields function to allow the change
+        my $forced = 0;
+        if ($has_social_signup) {
+            if (!$args->{new_password}) {
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => "PasswordError",
+                        message_to_client => localize("Unable to update email, password required for social login.")});
+            } else {
+                $forced = 1;
+            }
         }
 
         my $updated_attributes = {email => $args->{new_email}};
@@ -1993,24 +2001,22 @@ rpc change_email => sub {
         }
         $user_data = BOM::Service::user(
             context    => $params->{user_service_context},
-            command    => 'update_attributes',
+            command    => $forced ? 'update_attributes_force' : 'update_attributes',
             user_id    => $params->{user_id},
             attributes => $updated_attributes,
             flags      => $flags
         );
         unless ($user_data->{status} eq 'ok') {
-            unless ($user_data->{status} eq 'ok') {
-                if ($user_data->{class} eq 'PasswordError') {
-                    return BOM::RPC::v3::Utility::create_error({
-                        code              => 'PasswordError',
-                        message_to_client => localize($user_data->{message}),
-                    });
-                } else {
-                    return BOM::RPC::v3::Utility::create_error({
-                        code              => 'PasswordChangeError',
-                        message_to_client => localize("We were unable to change your password due to an unexpected error. Please try again."),
-                    });
-                }
+            if ($user_data->{class} eq 'PasswordError') {
+                return BOM::RPC::v3::Utility::create_error({
+                    code              => 'PasswordError',
+                    message_to_client => localize($user_data->{message}),
+                });
+            } else {
+                return BOM::RPC::v3::Utility::create_error({
+                    code              => 'PasswordChangeError',
+                    message_to_client => localize("We were unable to change your password due to an unexpected error. Please try again."),
+                });
             }
         }
 
