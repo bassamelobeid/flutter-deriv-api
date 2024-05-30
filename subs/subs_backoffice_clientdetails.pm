@@ -214,9 +214,10 @@ my $UNTRUSTED_STATUS = [{
     },
     {
         'linktype'    => 'lockmt5withdrawal',
-        'comments'    => 'MT5 Withdrawal Locked',
+        'comments'    => 'MT5 - Transfer from Client Locked',
         'code'        => 'mt5_withdrawal_locked',
-        'show_reason' => 'yes'
+        'show_reason' => 'yes',
+        'explanation' => 'Blocks withdrawals/transfers from the client to MT5',
     },
     {
         'linktype'    => 'duplicateaccount',
