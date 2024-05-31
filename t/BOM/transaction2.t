@@ -241,7 +241,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
 
             like(
                 $error->{-message_to_client},
-                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
+                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
                 'message_to_client'
             );
             is $error->{-mesg}, 'Exceeds turnover limit on tick_expiry_engine_turnover_limit', 'mesg';
@@ -373,7 +373,7 @@ subtest 'asian_daily_turnover_limit', sub {
 
             like(
                 $error->{-message_to_client},
-                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
+                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
                 'message_to_client'
             );
             is $error->{-mesg}, 'Exceeds turnover limit on asian_turnover_limit', 'mesg';
@@ -515,7 +515,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
 
             like(
                 $error->{-message_to_client},
-                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
+                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
                 'message_to_client'
             );
             $error->{-mesg} =~ s/\n//g;
@@ -924,7 +924,7 @@ subtest 'non atm turnover checks' => sub {
 
             like(
                 $error->{-message_to_client},
-                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
+                qr/You've reached the daily maximum stake amount for this asset. Choose a different asset or trade this asset tomorrow when the daily limit resets at (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [ 0-9]{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} 00:00:00 UTC/,
                 'message_to_client'
             );
             is $error->{-mesg}, 'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit', 'mesg';
