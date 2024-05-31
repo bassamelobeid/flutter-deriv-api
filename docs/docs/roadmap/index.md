@@ -2,7 +2,7 @@
 
 You can find Gantt view of the roadmap in our [clickup space](https://app.clickup.com/20696747/v/g/kqknb-686695)
 
-![gantt chart](../assets/images/gantt.png)
+![Gantt chart](../assets/images/gantt.png)
 
 ## Pricing Service Roadmap
 
