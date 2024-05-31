@@ -233,9 +233,31 @@ This subroutine retrieves the immutable attributes of a client. It first gets th
 
 sub get_immutable_attributes {
     my ($request, $attribute, $type) = @_;
-    my $client           = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
-    my @immutable_fields = $client->immutable_fields();
-    return \@immutable_fields;
+    my $client                  = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my @client_immutable_fields = $client->immutable_fields();
+
+    # We need to be a little thoughtful here as the front-end takes these seriously however the
+    # behaviour changes brought by the user service means that sometimes that client function will
+    # say something is immutable when it is not. e.g duplicate-client change currency will give say
+    # a whole bunch of things are immutable when asked with a real client vs virtual even if the user
+    # has never set the fields.... We need to be careful to not break the front-end
+    #
+    # So we will call it, get the field list AND if the value is not set we will remove it from the list
+
+    # Turn the list into a hash for easy lookup
+    my %immutable_fields = map { $_ => 1 } @client_immutable_fields;
+
+    # Now we need to check if the value is set, if not we remove it from the list
+    for my $field (@client_immutable_fields) {
+        if (!defined $client->$field || $client->$field eq '') {
+            delete $immutable_fields{$field};
+        }
+    }
+    # Special case for address, if line1 immutable always line2 as well.
+    $immutable_fields{address_line_2} = 1 if ($immutable_fields{address_line_1});
+
+    # Turn the immutable_fields hash into an array ref for return
+    return [sort keys %immutable_fields];
 }
 
 =head2 get_user_uuid

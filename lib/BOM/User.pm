@@ -1057,17 +1057,34 @@ sub get_default_client {
     # Preference is enabled // [disabled] // virtual // self_excluded // [duplicated];
     #
     my $prospective_client;
-    my $prospective_client_rank = 16;    # One above highest rank, ensures prospective is always set
+    my $prospective_client_rank = 32;    # One above highest rank, ensures prospective is always set
     foreach my $loginid (@sorted_loginids) {
         my $rank   = 0;
         my $client = $self->get_client_instance($loginid, $args{db_operation});
+
+        # Duplicate accounts need a little extra thought as there is a use case where there
+        # an account is marked as duplicated but is not actually a duplicate account, its
+        # just been flagged as such to allow currency change, but there is really still only
+        # the one account lets work that out here.
+        my $is_duplicate = $client->status->duplicate_account;
+        my $not_perfect  = 0;
+        if ($is_duplicate) {
+            my $dup_reason = $client->status->reason('duplicate_account') // '';
+            $is_duplicate = 0 if ($dup_reason =~ /Duplicate account - currency change/);
+            # Will mean we keep the search for a better client going
+            $not_perfect = 1;
+        }
+
+        # Skip if we're not including disabled or duplicated
         next if (!$args{include_disabled}   && $client->status->disabled);
-        next if (!$args{include_duplicated} && $client->status->duplicate_account);
+        next if (!$args{include_duplicated} && $is_duplicate);
+
         # Score the client if we're still here
-        $rank += 1 if $client->status->disabled;
-        $rank += 2 if $client->is_virtual;
-        $rank += 4 if $client->get_self_exclusion_until_date;
-        $rank += 8 if $client->status->duplicate_account;
+        $rank += 1  if $not_perfect;
+        $rank += 2  if $client->status->disabled;
+        $rank += 4  if $client->is_virtual;
+        $rank += 8  if $client->get_self_exclusion_until_date;
+        $rank += 16 if $is_duplicate;
         # Otherwise we need to iterate again
         if ($rank < $prospective_client_rank) {
             $prospective_client_rank = $rank;

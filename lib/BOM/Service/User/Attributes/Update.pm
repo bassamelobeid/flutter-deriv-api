@@ -178,15 +178,12 @@ sub _update_attributes {
 
         # Some attributes are immutable and cannot be changed but its ...variable
         unless ($force) {
+            # It will already have been checked if an attribute is set/unset and matched so if we
+            # see it then its not allowed to be set and fail straight away
             my $immutable_attributes = BOM::Service::User::Attributes::Get::get_immutable_attributes($request, 'immutable_attributes');
             for my $attribute (keys %$parameters) {
                 if (grep { $_ eq $attribute } @$immutable_attributes) {
-                    # Allow immutable attributes to be set if the current value is undef
-                    my $handler = $parameters->{$attribute}->{get_handler};
-                    my $value   = $handler->($request, $parameters->{$attribute}->{remap} // $attribute, $parameters->{$attribute}->{type});
-                    if (defined $value) {
-                        die "Immutable|::|Attribute $attribute is immutable and already set";
-                    }
+                    die "Immutable|::|Attribute $attribute is immutable";
                 }
             }
         }
