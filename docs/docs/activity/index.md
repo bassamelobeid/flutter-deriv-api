@@ -14,7 +14,7 @@ Progress:
 - implemented parsing of config files with offerings information
 - implemented offering validation
 - defined the API
-- build scripts
+- Created build scripts
 
 ### Chronicle client library
 
