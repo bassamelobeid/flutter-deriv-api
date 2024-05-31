@@ -2455,9 +2455,12 @@ subtest 'MF under Duplicated account - DIEL country' => sub {
         email_verified => 1,
     );
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => $email,
-        residence   => 'za',
+        broker_code               => 'VRTC',
+        email                     => $email,
+        residence                 => 'za',
+        account_opening_reason    => 'Hedging',
+        tax_residence             => 'it',
+        tax_identification_number => 'MRTSVT79M29F8_9P',
     });
 
     $user->add_client($client_vr);
@@ -2602,9 +2605,12 @@ subtest 'MF under Duplicated account - Spain' => sub {
         email_verified => 1,
     );
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => $email,
-        residence   => 'es',
+        broker_code               => 'VRTC',
+        email                     => $email,
+        residence                 => 'es',
+        account_opening_reason    => 'Hedging',
+        tax_residence             => 'es',
+        tax_identification_number => 'MRTSVT79M29F8_9P',
     });
 
     $user->add_client($client_vr);
