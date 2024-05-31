@@ -2,6 +2,10 @@
 
 ## Status
 
+### 2024-05-31
+
+- Offerings service is partially ready, we have implemented offerings validation
+
 ### 2024-05-12
 
 - We have a [dedicated space in Click Up](https://app.clickup.com/20696747/v/g/kqknb-686695) now
@@ -25,6 +29,8 @@ and a roadmap for going forward.
 Still trying to separate the core repository (`bom-pricing`) from dependency on non-service-related code and data.
 
 ## Website
+
+- Updated Roadmap, API, Active projects and KPIs
 
 ### 2024-05-21
 
