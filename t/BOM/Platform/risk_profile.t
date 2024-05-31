@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::MockModule;
+use Test::MockTime qw(:all);
 use Test::Warnings;
 use Test::Deep;
 
@@ -136,7 +137,48 @@ subtest 'profiles are filtered based on start_time and end_time' => sub {
            "zzz": { "underlying_symbol": "R_100", "risk_profile": "high_risk", "name": "Z"} }'
     );
     $rp = BOM::Platform::RiskProfile->new(%args);
-    is $rp->get_risk_profile, 'high_risk', 'risk profile for R_100 is low_risk';
+    is $rp->get_risk_profile, 'high_risk', 'risk profile for R_100 is high_risk';
+
+    subtest 'cache changes on dates without change to key' => sub {
+        my @test_values = ({
+                name         => 'before all custom settings',
+                epoch        => 1715240000,
+                risk_profile => 'low_risk'
+            },
+            {
+                name         => 'during xxx setting',
+                epoch        => 1715240060,
+                risk_profile => 'no_business'
+            },
+            {
+                name         => 'between all custom settings',
+                epoch        => 1715241000,
+                risk_profile => 'low_risk'
+            },
+            {
+                name         => 'during yyy setting',
+                epoch        => 1715241060,
+                risk_profile => 'high_risk'
+            },
+            {
+                name         => 'after all custom settings',
+                epoch        => 1715242000,
+                risk_profile => 'low_risk'
+            },
+        );
+        BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
+            '{ "xxx": { "underlying_symbol": "R_100", "risk_profile": "no_business", "name": "X", "start_time" : 1715240001, "end_time" : 1715240061},
+           "yyy": { "underlying_symbol": "R_100", "risk_profile": "high_risk", "name": "Y", "start_time" : 1715241001, "end_time": 1715241061} }'
+        );
+        for my $test_case (@test_values) {
+            set_fixed_time($test_case->{epoch});
+            $rp = BOM::Platform::RiskProfile->new(%args);
+            my $risk_profile = $test_case->{risk_profile};
+            my $desc         = $test_case->{name} . ', risk profile for R_100 is ' . $risk_profile;
+            is $rp->get_risk_profile, $risk_profile, $desc;
+        }
+        restore_time();
+    };
 };
 
 subtest 'custom client profile' => sub {

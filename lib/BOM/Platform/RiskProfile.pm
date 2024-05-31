@@ -179,18 +179,27 @@ has raw_custom_profiles => (
 );
 
 # this is a cache to avoid decode for each contract
-my $product_profiles_txt      = '';
-my $product_profiles_compiled = {};
+my $product_profiles_txt             = '';
+my $product_profiles_compiled        = {};
+my $product_profiles_for_date        = {};
+my $product_profiles_for_date_expiry = Date::Utility->today;
 
 sub _build_raw_custom_profiles {
     my $self = shift;
 
-    my $ptr = \BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles;    # use a reference to avoid copying
-    $product_profiles_compiled = $json->decode($product_profiles_txt = $$ptr)                  # copy and compile
-        unless $$ptr eq $product_profiles_txt;
+    my $now         = Date::Utility->new;
+    my $ptr         = \BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles;    # use a reference to avoid copying
+    my $has_changed = ($$ptr eq $product_profiles_txt) ? 0 : 1;
 
-    my $now = Date::Utility->new;
-    return $self->_filter_product_limits_for_date($product_profiles_compiled, $now);
+    if ($has_changed or $now->is_after($product_profiles_for_date_expiry)) {
+
+        $product_profiles_compiled = $json->decode($product_profiles_txt = $$ptr) if $has_changed;
+        my $res = $self->_filter_product_limits_for_date($product_profiles_compiled, $now);
+        $product_profiles_for_date_expiry = $res->{expiry};
+        $product_profiles_for_date        = $res->{value};
+    }
+
+    return $product_profiles_for_date;
 }
 
 # this one is the risk profile including the client profile
@@ -309,18 +318,22 @@ sub get_turnover_limit_parameters {
 my $custom_limits_txt      = '';
 my $custom_limits_compiled = {};
 
+# This one doesn't actually run against everything, so we
+# cannot cache the final result.
 sub custom_client_profiles {
     my ($self, $loginid) = @_;
 
-    my $ptr = \BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
-    $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr)                       # copy and compile
-        unless $$ptr eq $custom_limits_txt;
+    my $now         = Date::Utility->new;
+    my $ptr         = \BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
+    my $has_changed = ($$ptr eq $custom_limits_txt) ? 0 : 1;
+
+    $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr) if $has_changed;
 
     return unless $custom_limits_compiled->{$loginid};
 
-    my $now    = Date::Utility->new;
     my %limits = %{$custom_limits_compiled->{$loginid}};
-    $limits{custom_limits} = $self->_filter_product_limits_for_date($limits{custom_limits}, $now);
+    my $res    = $self->_filter_product_limits_for_date($limits{custom_limits}, $now);
+    $limits{custom_limits} = $res->{value};
 
     return \%limits;
 }
@@ -534,15 +547,42 @@ sub _filter_product_limits_for_date {
     my ($self, $profiles, $date) = @_;
 
     my $filtered = {};
+    my @possible_expiries;
     for my $key (keys %$profiles) {
         my $profile = $profiles->{$key};
-        unless (($profile->{start_time} && $date->is_before(Date::Utility->new($profile->{start_time})))
-            || ($profile->{end_time} && $date->is_after(Date::Utility->new($profile->{end_time}))))
-        {
-            $filtered->{$key} = $profile;
+        my $can_skip_for_date;
+        # We check both of these so that we know when to expire.
+        if ($profile->{start_time}) {
+            my $st = Date::Utility->new($profile->{start_time});
+            if ($date->is_before($st)) {
+                push @possible_expiries, $st;
+                $can_skip_for_date = 1;
+            }
         }
+        if ($profile->{end_time}) {
+            my $et = Date::Utility->new($profile->{end_time});
+            # This now expires on the expiration instead of
+            # after in the previous implementation
+            if ($date->is_before($et)) {
+                push @possible_expiries, $et;
+            } else {
+                $can_skip_for_date = 1;
+            }
+        }
+        $filtered->{$key} = $profile unless $can_skip_for_date;
     }
-    return $filtered;
+    my $expiry;
+    if (@possible_expiries) {
+        my @sorted = sort { $a->epoch <=> $b->epoch } @possible_expiries;
+        $expiry = shift @sorted;
+    } else {
+        # Hold it for about an hour if nothing changes
+        $expiry = $date->plus_time_interval('59m59s');
+    }
+    return +{
+        expiry => $expiry,
+        value  => $filtered
+    };
 }
 
 no Moose;
