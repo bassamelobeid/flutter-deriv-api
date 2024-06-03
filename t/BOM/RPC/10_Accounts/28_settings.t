@@ -1705,7 +1705,7 @@ subtest 'get settings from virtual with a dup account' => sub {
 
     $vr_only_result = $c->tcall('get_settings', $params);
 
-    ok !$vr_only_result->{employment_status}, 'no financial assessment means no employment status is present';
+    ok $vr_only_result->{employment_status}, 'employment status is present';
 
     cmp_bag $vr_only_result->{immutable_fields}, [uniq($dup_result->{immutable_fields}->@*, @dup_immutable_fields, @fa_duplicated_fields)],
         'All immutable fields are included in the response (minus the secrets)';
