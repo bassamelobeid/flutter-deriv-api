@@ -114,7 +114,7 @@ async sub set_age_verification {
     my $user = $client->user;
     my @clients_to_update =
         grep { $client->broker_code ne $_->broker_code }
-        map { [$user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
+        map { $user->clients_for_landing_company($_) } @allowed_lc_to_sync;
     foreach my $client_to_update (@clients_to_update) {
         $setter->($client_to_update);
     }
