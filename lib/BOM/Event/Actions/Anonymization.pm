@@ -512,8 +512,7 @@ async sub _df_anonymize {
 
     return unless LandingCompany::Registry::get_currency_type($cli->currency) eq 'fiat';
 
-    return await $redis->zadd(DF_ANONYMIZATION_KEY, time,
-        join('|', $cli->loginid, BOM::Platform::Doughflow::get_sportsbook_by_short_code($cli->landing_company->short, $cli->currency)));
+    return await $redis->zadd(DF_ANONYMIZATION_KEY, time, join('|', $cli->doughflow_pin, BOM::Platform::Doughflow::get_sportsbook_for_client($cli)));
 }
 
 =head2 df_anonymization_done

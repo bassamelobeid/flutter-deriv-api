@@ -40,9 +40,8 @@ $redis_mock->mock(
 
         subtest $cli->loginid . ' DF queue' => sub {
             ok !$cli->is_virtual, 'Client added to DF queue is not virtual';
-            is LandingCompany::Registry::get_currency_type($cli->currency), 'fiat', 'Currency added to DF queue is not crypto';
-            is BOM::Platform::Doughflow::get_sportsbook_by_short_code($cli->landing_company->short, $cli->currency), $payload[1],
-                'Expected sbook enqueued';
+            is LandingCompany::Registry::get_currency_type($cli->currency), 'fiat',      'Currency added to DF queue is not crypto';
+            is BOM::Platform::Doughflow::get_sportsbook_for_client($cli),   $payload[1], 'Expected sbook enqueued';
             push $df_partial->@*, $cli->loginid;
         };
 

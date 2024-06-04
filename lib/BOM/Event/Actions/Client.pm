@@ -4284,88 +4284,44 @@ async sub shared_payment_method_found {
     my $shared_loginids = $args->{shared_loginid} or die 'No shared client login ID specified';
     my $payment_method  = $args->{payment_method} or die 'No payment method specified';
 
-    my $client = BOM::User::Client->new({loginid => $client_loginid})
+    my $client = BOM::User::Client->get_client_instance_by_doughflow_pin($client_loginid)
         or die 'Could not instantiate client for login ID ' . $client_loginid;
 
     my @shared_loginid_array = sort(uniq(split(',', trim($shared_loginids))));
-
     die "Invalid shared loginids specified. Loginids string passed is empty." unless @shared_loginid_array;
 
-    my @shared_clients    = ();
-    my @filtered_loginids = ();
-    my %seen              = ();
-    my $user_client       = $client->user;
-    my %send_email_count  = ($user_client->id => 1);
+    my %shared_users = ($client->binary_user_id => $client->user);
 
     foreach my $shared_loginid (@shared_loginid_array) {
+        my $shared_client = BOM::User::Client->get_client_instance_by_doughflow_pin($shared_loginid) or next;
+        next if exists $shared_users{$shared_client->binary_user_id};
+        $shared_users{$shared_client->binary_user_id} = $shared_client->user;
+    }
 
-        # Check if client already exists
-        next if $seen{$shared_loginid}++;
-        my $shared_client = BOM::User::Client->new({loginid => $shared_loginid});
-
-        next unless $shared_client;
-
-        push @filtered_loginids, $shared_loginid;
-        push @shared_clients,    $shared_client;
-
-        my $user = $shared_client->user;
-
-        # Get sibling accounts
-
-        my @clients = grep {
-            not(   $_->status->closed
-                or $_->status->disabled
-                or $_->is_virtual
-                or $_->is_wallet
-                or $_->loginid eq $shared_client->loginid
-                or $_->loginid eq $client_loginid)
-        } $user->clients(
+    my @shared_clients;
+    for my $user (values %shared_users) {
+        my @siblings = $user->clients(
             include_disabled   => 0,
-            include_duplicated => 0
+            include_duplicated => 0,
+            include_virtual    => 0
         );
-        foreach my $shared_sibling_client (@clients) {
-            # Check if client already exists move to next
-            next if $seen{$shared_sibling_client->loginid}++;
-            push @filtered_loginids, $shared_sibling_client->loginid;
-            push @shared_clients,    $shared_sibling_client;
-        }
+        push @shared_clients, grep { !$_->status->closed && $_->get_account_type->name ne 'standard' } @siblings;
     }
 
-    # Get sibling accounts of client
+    my %sent_user_email;
+    foreach my $shared_client (@shared_clients) {
+        my @shared_loginids = sort map { $_->loginid } grep { $_->binary_user_id != $shared_client->binary_user_id } @shared_clients;
+        splice @shared_loginids, 10;    # The number of loginids in the reason is limited to 10
 
-    my @sibling_clients =
-        grep { not($_->status->closed or $_->status->disabled or $_->is_virtual or $_->is_wallet or $_->loginid eq $client_loginid) }
-        $user_client->clients(
-        include_disabled   => 0,
-        include_duplicated => 0
-        );
-    foreach my $sibling_client (@sibling_clients) {
-        # Check if client already exists move to next
-        next if $seen{$sibling_client->loginid}++;
-        push @filtered_loginids, $sibling_client->loginid;
-        push @shared_clients,    $sibling_client;
-    }
-    splice @filtered_loginids, 10;    # The number of loginids in the reason is limited to 10
-
-    # Lock the cashier and set shared PM to both clients
-    $args->{staff} //= 'system';
-    $client->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-    $client->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($client, join(',', @filtered_loginids), $payment_method));
-
-    # This may be dropped when POI/POA refactoring is done
-    $client->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $client->status->age_verification;
-    _send_shared_payment_method_email($client);
-
-    foreach my $shared (@shared_clients) {
-        $shared->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-        $shared->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($shared, $client_loginid, $payment_method));
+        $shared_client->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
+        $shared_client->status->upsert('shared_payment_method', $args->{staff},
+            _shared_payment_reason($shared_client, join(',', @shared_loginids), $payment_method));
 
         # This may be dropped when POI/POA refactoring is done
-        $shared->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
-        unless ($send_email_count{$shared->user->id}) {
-            _send_shared_payment_method_email($shared);
-            $send_email_count{$shared->user->id} = 1;
-        }
+        $shared_client->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found')
+            unless $shared_client->status->age_verification;
+
+        _send_shared_payment_method_email($shared_client) unless $sent_user_email{$shared_client->binary_user_id}++;
     }
 
     return;

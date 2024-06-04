@@ -126,7 +126,7 @@ subtest 'Shared PM event' => sub {
                 MF8888888  => 'Sharing payment method - ZP (random number here) with CR1790630',
             );
 
-            for my $new_loginid (keys %reasons) {
+            for my $new_loginid (sort keys %reasons) {
                 my $reason = $reasons{$new_loginid};
 
                 subtest "Sharing with loginid $new_loginid" => sub {
@@ -157,11 +157,11 @@ subtest 'Shared PM event' => sub {
                     my $new_test_reason =
                         index($reason, $new_loginid) >= 0
                         ? $reason
-                        : join(',', join(' ', $reason, $next_client->loginid), $test_client_MF->loginid) . ' ' . $payment_method_text;
+                        : $reason . ' ' . join(',', sort $next_client->loginid, $test_client_MF->loginid) . ' ' . $payment_method_text;
 
                     is $test_client->status->_get('shared_payment_method')->{reason}, $new_test_reason, 'Test client shared reason is OK';
                     is $next_client->status->_get('shared_payment_method')->{reason},
-                        join(' ', 'Shared with:', $test_client->loginid, $payment_method_text),
+                        join(' ', 'Shared with:', (join ',', sort($test_client->loginid, $test_client_MF->loginid)), $payment_method_text),
                         'Next client shared reason is OK';
                 };
             }
@@ -210,7 +210,9 @@ subtest 'multiple loginids sent in params' => sub {
     ok $test_client->status->allow_document_upload, 'Client has allow_document_upload status';
 
     is $test_client->status->shared_payment_method->{reason},
-        'Shared with: ' . join(',', $shared_client->loginid, $shared_client_another->loginid, $test_client_MF->loginid) . ' ' . $payment_method_text,
+          'Shared with: '
+        . join(',', sort $shared_client->loginid, $shared_client_another->loginid, $test_client_MF->loginid) . ' '
+        . $payment_method_text,
         'the status reason contains both the shared clients loginids';
 
     ok $shared_client->status->cashier_locked,        'shared client has cashier_locked status';
@@ -221,7 +223,8 @@ subtest 'multiple loginids sent in params' => sub {
     ok $shared_client_another->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_client_another->status->allow_document_upload, 'shared has allow_document_upload status';
 
-    is $shared_client_another->status->shared_payment_method->{reason}, 'Shared with: ' . $test_client->loginid . ' ' . $payment_method_text,
+    is $shared_client_another->status->shared_payment_method->{reason},
+        'Shared with: ' . join(',', sort $shared_client->loginid, $test_client->loginid, $test_client_MF->loginid) . ' ' . $payment_method_text,
         'Correct reason for shared payment method';
 
     $mocker_client->unmock_all;
@@ -229,47 +232,51 @@ subtest 'multiple loginids sent in params' => sub {
 };
 
 subtest 'check status is copied to both account in case of diel account' => sub {
+
+    my $user_from = BOM::User->create(
+        email          => 'test_from@bin.com',
+        password       => 'x',
+        email_verified => 1,
+    );
+
     my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => 'test_from@bin.com',
     });
 
-    my $email     = $client_from->email;
-    my $user_from = BOM::User->create(
-        email          => $client_from->email,
-        password       => "hello",
-        email_verified => 1,
-    );
     $user_from->add_client($client_from);
-    my $shared_diel_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test_diel@bin.com',
-        residence   => 'za'
-    });
-    my $shared_diel_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-        email       => 'test_diel@bin.com',
-        residence   => 'za'
-    });
+
     my $shared_diel_user = BOM::User->create(
-        email          => $shared_diel_client_cr->email,
-        password       => "hello",
+        email          => 'test_diel@bin.com',
+        password       => 'x',
         email_verified => 1,
-        residence      => 'za'
     );
+
+    my $shared_diel_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $shared_diel_user->id,
+    });
+
+    my $shared_diel_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        binary_user_id => $shared_diel_user->id,
+    });
+
     $shared_diel_user->add_client($shared_diel_client_cr);
     $shared_diel_user->add_client($shared_diel_client_mf);
 
-    my $client_side_effect_another = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'side_effect@bin.com',
-    });
-
     my $user_side_effect_another = BOM::User->create(
-        email          => $client_side_effect_another->email,
-        password       => "hello",
+        email          => 'side_effect@bin.com',
+        password       => 'x',
         email_verified => 1,
     );
+
+    my $client_side_effect_another = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user_side_effect_another->id,
+    });
+
+    $user_side_effect_another->add_client($client_side_effect_another);
 
     # Mocking send_email
     my @emails;
@@ -306,7 +313,7 @@ subtest 'check status is copied to both account in case of diel account' => sub 
     ok $client_from->status->allow_document_upload, 'Client has allow_document_upload status';
 
     is $client_from->status->shared_payment_method->{reason},
-        'Shared with: ' . join(',', $shared_diel_client_mf->loginid, $shared_diel_client_cr->loginid) . ' ' . $payment_method_text,
+        'Shared with: ' . join(',', sort $shared_diel_client_mf->loginid, $shared_diel_client_cr->loginid) . ' ' . $payment_method_text,
         'the status reason contains both the shared clients loginids';
 
     ok $shared_diel_client_cr->status->cashier_locked,        'shared client has cashier_locked status';
@@ -371,6 +378,41 @@ subtest 'Already age verified client' => sub {
     ok !$shared_client->status->allow_document_upload, 'shared does not have allow_document_upload status';
 
     $mocker_client->unmock_all;
+};
+
+subtest 'wallets' => sub {
+
+    my $wallet1 =
+        BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW', account_type => 'doughflow', email => 'wallet1@test.com'});
+    BOM::User->create(
+        email    => $wallet1->email,
+        password => 'x'
+    )->add_client($wallet1);
+    my $wallet1_loginid = $wallet1->loginid;
+
+    my $wallet2 =
+        BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW', account_type => 'doughflow', email => 'wallet2@test.com'});
+    BOM::User->create(
+        email    => $wallet2->email,
+        password => 'x'
+    )->add_client($wallet2);
+    my $wallet2_loginid = $wallet2->loginid;
+
+    $action_handler->({
+            client_loginid => $wallet1->doughflow_pin,
+            shared_loginid => $wallet2->doughflow_pin,
+            payment_method => 'xyz',
+        })->get;
+
+    ok $wallet1->status->cashier_locked,        'Sharee has cashier_locked status';
+    ok $wallet1->status->shared_payment_method, 'Sharee shared_payment_method status';
+    like $wallet1->status->shared_payment_method->{reason}, qr/$wallet2_loginid/, 'shared_payment_method reason contains shared loginid';
+    ok $wallet1->status->allow_document_upload, 'Sharee has allow_document_upload status';
+
+    ok $wallet2->status->cashier_locked,        'Sharer has cashier_locked status';
+    ok $wallet2->status->shared_payment_method, 'Sharer has shared_payment_method status';
+    like $wallet2->status->shared_payment_method->{reason}, qr/$wallet1_loginid/, 'shared_payment_method reason contains sharee loginid';
+    ok $wallet2->status->allow_document_upload, 'Sharer has allow_document_upload status';
 };
 
 done_testing();
