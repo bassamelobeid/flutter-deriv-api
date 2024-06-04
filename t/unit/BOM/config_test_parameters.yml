@@ -390,13 +390,23 @@
     config: BOM::Config::cashier_config
     expected_config:
       doughflow:
-        sportsbooks_mapping:
-          dsl: ''
-          iom: ''
-          malta: ''
-          maltainvest: ''
-          samoa: ''
-          svg: ''
+        sportsbooks:
+          dsl:
+            non-wallet: ''
+          iom:
+            non-wallet: ''
+          malta:
+            non-wallet: ''
+          maltainvest:
+            non-wallet: ''
+          samoa:
+            non-wallet: ''
+          svg:
+            non-wallet: ''
+            wallet: ''
+          maltainvest:
+            non-wallet: ''
+            wallet: ''         
   name: cashier.yml
 - args:
     config: BOM::Config::redis_replicated_config

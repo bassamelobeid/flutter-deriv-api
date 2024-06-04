@@ -7,11 +7,11 @@ use BOM::Config;
 
 subtest 'Cashier Sportsbooks name convention' => sub {
     my $cashier_config = BOM::Config::cashier_config();
-    my $mapping        = $cashier_config->{doughflow}->{sportsbooks_mapping};
-    for my $short_code (keys $mapping->%*) {
-        subtest "$short_code honors the name convention" => sub {
-            like($mapping->{$short_code}, qr/^Deriv\b/, "$short_code have a sportsbooks name starting with 'Deriv'");
-        };
+    my $sportsbooks    = $cashier_config->{doughflow}{sportsbooks};
+    for my $lc (keys %$sportsbooks) {
+        for my $account_type (keys $sportsbooks->{$lc}->%*) {
+            like($sportsbooks->{$lc}{$account_type}, qr/^Deriv\b/, "$lc $account_type sportsbooks name starts with 'Deriv'");
+        }
     }
 };
 

@@ -1,8 +1,18 @@
+# The actual sportsbook name is formed by apending currency code.
+# In QA environment, "Deriv" will be replaced with doughflow/environment from /etc/rmg/third_party.yml
 doughflow:
-  sportsbooks_mapping:
-    svg: "Deriv (SVG) LLC"
-    malta: "Deriv (Europe) Ltd"
-    iom: "Deriv (MX) Ltd"
-    maltainvest: "Deriv Investments Ltd"
-    samoa: "Deriv (SVG) LLC"
-    dsl: "Deriv (DSL) Ltd"
+  sportsbooks:
+    svg:
+      non-wallet: 'Deriv (SVG) LLC'
+      wallet: 'Deriv (SVG) LLC WLT'
+    maltainvest:
+      non-wallet: 'Deriv Investments Ltd'
+      wallet: 'Deriv Investments Ltd WLT'
+    malta:
+      non-wallet: 'Deriv (Europe) Ltd'
+    iom:
+      non-wallet: 'Deriv (MX) Ltd'
+    samoa:
+      non-wallet: 'Deriv (SVG) LLC'
+    dsl:
+      non-wallet: 'Deriv (DSL) Ltd'

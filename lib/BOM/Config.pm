@@ -394,7 +394,7 @@ sub on_qa {
 
 Only useful in QA Box. For production check L<on_production>
 
-Returns the cashier environment. C<'Test'> or C<'Stage'>.
+Returns the cashier environment. QA number, 'Stage', '' or 'Test'.
 
 =cut
 
@@ -857,6 +857,21 @@ Config for cfds trading platform jurisdiction
 
 sub cfds_jurisdiction_config {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/cfd/jurisdiction/cfds_jurisdiction.yml');
+    return $config;
+}
+
+=head2 doughflow_api_config
+
+Doughflow-api configuration.
+
+Example:
+
+    my $config = BOM::Config::doughflow_api_config();
+
+=cut
+
+sub doughflow_api_config {
+    state $config = YAML::XS::LoadFile('/etc/rmg/doughflow-api.yml');
     return $config;
 }
 
