@@ -111,6 +111,7 @@ subtest 'creating a DF client' => sub {
     is($df_client->NationalID, undef,                     'No Document');
 
     my $bag = $df_client->create_customer_property_bag({
+        PIN            => 'CR0001',
         SecurePassCode => 'test',
         Sportsbook     => 'foo',
         IP_Address     => '127.0.0.1',
@@ -134,7 +135,7 @@ subtest 'creating a DF client' => sub {
         Province       => 'NSW',
         Street         => '11 Bligh St',
         Country        => 'AU',
-        PIN            => 'CR10000',
+        PIN            => 'CR0001',
         },
         'Expected bag resolved';
 
@@ -154,6 +155,7 @@ subtest 'creating a DF client' => sub {
             is($df_client->NationalID, undef, 'There is a document number');
 
             my $bag = $df_client->create_customer_property_bag({
+                PIN            => 'CR10000',
                 SecurePassCode => 'test',
                 Sportsbook     => 'foo',
                 IP_Address     => '127.0.0.1',
@@ -199,6 +201,7 @@ subtest 'creating a DF client' => sub {
             is($df_client->NationalID, undef, 'Only ZA is allowed');
 
             my $bag = $df_client->create_customer_property_bag({
+                PIN            => 'CR10000',
                 SecurePassCode => 'test',
                 Sportsbook     => 'foo',
                 IP_Address     => '127.0.0.1',
@@ -249,6 +252,7 @@ subtest 'creating a DF client' => sub {
             is($df_client->NationalID, '12345', 'There is a document number');
 
             my $bag = $df_client->create_customer_property_bag({
+                PIN            => 'CR10000',
                 SecurePassCode => 'test',
                 Sportsbook     => 'foo',
                 IP_Address     => '127.0.0.1',
@@ -295,6 +299,7 @@ subtest 'creating a DF client' => sub {
             is($df_client->NationalID, undef, 'Only ZA is allowed');
 
             my $bag = $df_client->create_customer_property_bag({
+                PIN            => 'CR10000',
                 SecurePassCode => 'test',
                 Sportsbook     => 'foo',
                 IP_Address     => '127.0.0.1',

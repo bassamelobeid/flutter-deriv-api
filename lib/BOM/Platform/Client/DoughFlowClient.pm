@@ -42,17 +42,17 @@ use BOM::User::IdentityVerification;
 =cut
 
 # property bag for DoughFlow CreateCustomer API
-# requires SportsBook, SecurePassCode, IP, and hash key as "password"
+# requires PIN, SportsBook, SecurePassCode, IP, and hash key as "password"
 sub create_customer_property_bag {
     my $self         = shift;
     my $args         = shift;
     my $national_id  = $self->NationalID;
     my $property_bag = {
+        PIN            => $args->{'PIN'},
         SecurePassCode => $args->{'SecurePassCode'},
         Sportsbook     => $args->{'Sportsbook'},
         IP_Address     => $args->{'IP_Address'},
         Password       => $args->{'Password'},
-        PIN            => $self->loginid,
         CustName       => $self->CustName,
         City           => $self->City,
         Street         => $self->Street,

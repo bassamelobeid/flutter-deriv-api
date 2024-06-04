@@ -28,60 +28,8 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(
     get_doughflow_language_code_for
     get_payment_methods
-    get_sportsbook
+    get_sportsbook_for_client
 );
-
-=head2 get_sportsbook_by_short_code
-
-Given a Landing Company short code and a currency code, returns the sportsbook name (or frontend name in Doughflow/PremierCashier jargon)
-
-=over 4
-
-=item * C<short_code> -  A string with the landing company short code.
-
-=item * C<currency> - Currency code in ISO 4217 (three letter code).
-
-=back
-
-Returns a string with the Sportsbook name.
-
-=cut
-
-sub get_sportsbook_by_short_code {
-    my ($short_code, $currency) = @_;
-
-    my $sportsbook_name = get_sportsbook_name_for($short_code);
-    if (not BOM::Config::on_production()) {
-        my $cashier_env = BOM::Config::cashier_env;
-        $sportsbook_name =~ s/^Deriv\b/$cashier_env/;
-    }
-
-    return $sportsbook_name . ' ' . $currency;
-}
-
-=head2 get_sportsbook
-
-Given a broker code and a currency code, returns the sportsbook name (or frontend name in Doughflow/PremierCashier jargon)
-
-=over 4
-
-=item * C<broker> -  A string with the broker code.
-
-=item * C<currency> - Currency code in ISO 4217 (three letter code).
-
-=back
-
-Returns  a string with the Sportsbook name.
-
-=cut
-
-sub get_sportsbook {
-    my ($broker, $currency) = @_;
-
-    my $landing_company = LandingCompany::Registry->by_broker($broker);
-
-    return get_sportsbook_by_short_code($landing_company->{short}, $currency);
-}
 
 =head2 get_doughflow_language_code_for
 
@@ -121,28 +69,69 @@ sub get_doughflow_language_code_for {
     return $code;
 }
 
-=head2 get_sportsbook_name_for
+=head2 get_sportsbook_for_client
 
-Get doughflow sportsbook name for a landing company.
+Given a client, returns the sportsbook name (or frontend name in Doughflow/PremierCashier jargon)
 
-Takes the following argument:
+Arguments:
 
 =over 4
 
-=item * C<landing_company_shortcode> - short code of landing company
+=item * C<client> - Client object
 
 =back
 
-Returns a sportsbook name corresponding to the landing company
+Returns a sportsbook name.
 
 =cut
 
-sub get_sportsbook_name_for {
-    my $landing_company_shortcode = shift;
+sub get_sportsbook_for_client {
+    my $client = shift;
 
-    my $mapping = BOM::Config::cashier_config()->{doughflow}->{sportsbooks_mapping};
+    # clients who are wallets and don't have pin mapping should use WLT sportsbook
+    my $is_wallet = $client->is_wallet && $client->doughflow_pin eq $client->loginid;
 
-    return $mapping->{$landing_company_shortcode} // '';
+    return get_sportsbook(
+        landing_company => $client->landing_company->short,
+        currency        => $client->currency,
+        is_wallet       => $is_wallet,
+    );
+}
+
+=head2 get_sportsbook
+
+Get doughflow sportsbook name by args.
+
+Takes the following named arguments:
+
+=over 4
+
+=item * C<landing_company> - landing company short code
+
+=item * C<currency> - uppercase currency code
+
+=item * C<is_wallet> - get wallet sportsbook when true, otherwise non-wallet sportsbook
+
+=back
+
+Returns a sportsbook name or empty string.
+
+=cut
+
+sub get_sportsbook {
+    my %args = @_;
+
+    my $config          = BOM::Config::cashier_config()->{doughflow}{sportsbooks};
+    my $landing_company = $args{landing_company};
+    my $wallet_key      = $args{is_wallet} ? 'wallet' : 'non-wallet';
+    my $sportsbook      = $config->{$landing_company}{$wallet_key} // die "no sportsbook found for $landing_company ($wallet_key)";
+
+    unless (BOM::Config::on_production()) {
+        my $cashier_env = BOM::Config::cashier_env();
+        $sportsbook =~ s/^Deriv\b/$cashier_env/;
+    }
+
+    return $sportsbook . ' ' . $args{currency};
 }
 
 =head2 get_payment_methods
@@ -237,7 +226,14 @@ sub get_payment_methods {
         my $currencies = $lc->legal_allowed_currencies;
         for my $currency (keys %$currencies) {
             if ($currencies->{$currency}->{type} eq 'fiat') {
-                push @sportsbook_names, get_sportsbook_by_short_code($lc->{short}, $currency);
+                push @sportsbook_names,
+                    get_sportsbook(
+                    landing_company => $lc->short,
+                    currency        => $currency
+                    );
+                if (my $wallet_sportsbook = get_sportsbook(landing_company => $lc->short, currency => $currency, is_wallet => 1)) {
+                    push @sportsbook_names, $wallet_sportsbook;
+                }
             }
         }
     }

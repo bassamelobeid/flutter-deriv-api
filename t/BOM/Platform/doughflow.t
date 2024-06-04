@@ -4,30 +4,13 @@ use warnings;
 use Test::More;
 use Test::MockModule;
 use Test::Deep;
+use Test::Fatal;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config;
 use BOM::Config::Runtime;
-
-use BOM::Platform::Doughflow qw(get_sportsbook get_payment_methods);
+use BOM::Platform::Doughflow qw(get_sportsbook_for_client get_payment_methods);
+use BOM::User;
 use LandingCompany::Registry;
-
-my @doughflow_sportsbooks_mock = (
-    'Deriv (SVG) LLC USD',
-    'Deriv (SVG) LLC EUR',
-    'Deriv (SVG) LLC AUD',
-    'Deriv (SVG) LLC GBP',
-    'Deriv (Europe) Ltd GBP',
-    'Deriv (Europe) Ltd EUR',
-    'Deriv (Europe) Ltd USD',
-    'Deriv (MX) Ltd GBP',
-    'Deriv (MX) Ltd USD',
-    'Deriv Investments Ltd USD',
-    'Deriv Investments Ltd EUR',
-    'Deriv Investments Ltd GBP',
-    'Deriv (DSL) Ltd USD',
-    'Deriv (DSL) Ltd EUR',
-    'Deriv (DSL) Ltd GBP',
-    'Deriv (DSL) Ltd AUD',
-);
 
 sub _test_data {
     my $file_name = shift;
@@ -66,40 +49,167 @@ sub get_fiat_currencies {
 }
 
 my $config_mocked = Test::MockModule->new('BOM::Config');
-$config_mocked->mock('on_production', sub { return 1 });
-my %doughflow_sportsbooks = map { $_ => 1 } @doughflow_sportsbooks_mock;
-my @all_broker_codes      = LandingCompany::Registry->all_broker_codes;
 
-for my $broker (@all_broker_codes) {
-    my $lc = LandingCompany::Registry->by_broker($broker);
+subtest 'get_sportsbook' => sub {
 
-    next if $lc->short =~ /virtual/;
+    my %valid_sportsbooks = map { $_ => 1 } (
+        'Deriv (SVG) LLC USD',
+        'Deriv (SVG) LLC EUR',
+        'Deriv (SVG) LLC AUD',
+        'Deriv (SVG) LLC GBP',
+        'Deriv (Europe) Ltd GBP',
+        'Deriv (Europe) Ltd EUR',
+        'Deriv (Europe) Ltd USD',
+        'Deriv (MX) Ltd GBP',
+        'Deriv (MX) Ltd USD',
+        'Deriv Investments Ltd USD',
+        'Deriv Investments Ltd EUR',
+        'Deriv Investments Ltd GBP',
+        'Deriv (DSL) Ltd USD',
+        'Deriv (DSL) Ltd EUR',
+        'Deriv (DSL) Ltd GBP',
+        'Deriv (DSL) Ltd AUD',
+        'Deriv (SVG) LLC WLT USD',
+        'Deriv (SVG) LLC WLT EUR',
+        'Deriv (SVG) LLC WLT AUD',
+        'Deriv (SVG) LLC WLT GBP',
+        'Deriv Investments Ltd WLT USD',
+        'Deriv Investments Ltd WLT EUR',
+        'Deriv Investments Ltd WLT GBP',
+    );
 
+    $config_mocked->mock('on_production', 1);
+
+    for my $lc (LandingCompany::Registry->get_all) {
+        next unless $lc->broker_codes->@* && !$lc->is_virtual;
+
+        my @currencies = get_fiat_currencies($lc->legal_allowed_currencies);
+        for my $currency (@currencies) {
+            my $sportsbook = BOM::Platform::Doughflow::get_sportsbook(
+                landing_company => $lc->short,
+                currency        => $currency
+            );
+            ok exists $valid_sportsbooks{$sportsbook}, "'$sportsbook' is a valid Doughflow sportsbook";
+            unlike $sportsbook, qr/\sWLT\s/, 'and name does not contain WLT';
+
+            if ($lc->short =~ /^(svg|maltainvest)$/) {
+                my $sportsbook = BOM::Platform::Doughflow::get_sportsbook(
+                    landing_company => $lc->short,
+                    currency        => $currency,
+                    is_wallet       => 1
+                );
+                ok exists $valid_sportsbooks{$sportsbook}, "'$sportsbook' is a valid Doughflow sportsbook";
+                like $sportsbook, qr/\sWLT\s/, 'and name contains WLT';
+            }
+        }
+    }
+
+    %valid_sportsbooks = map { $_ => 1 } (
+        'testenv (SVG) LLC USD',
+        'testenv (SVG) LLC EUR',
+        'testenv (SVG) LLC AUD',
+        'testenv (SVG) LLC GBP',
+        'testenv (Europe) Ltd GBP',
+        'testenv (Europe) Ltd EUR',
+        'testenv (Europe) Ltd USD',
+        'testenv (MX) Ltd GBP',
+        'testenv (MX) Ltd USD',
+        'testenv Investments Ltd USD',
+        'testenv Investments Ltd EUR',
+        'testenv Investments Ltd GBP',
+        'testenv (DSL) Ltd USD',
+        'testenv (DSL) Ltd EUR',
+        'testenv (DSL) Ltd GBP',
+        'testenv (DSL) Ltd AUD',
+        'testenv (SVG) LLC WLT USD',
+        'testenv (SVG) LLC WLT EUR',
+        'testenv (SVG) LLC WLT AUD',
+        'testenv (SVG) LLC WLT GBP',
+        'testenv Investments Ltd WLT USD',
+        'testenv Investments Ltd WLT EUR',
+        'testenv Investments Ltd WLT GBP',
+    );
+
+    $config_mocked->mock('on_production', 0);
+    $config_mocked->mock('cashier_env',   'testenv');
+
+    for my $lc (LandingCompany::Registry->get_all) {
+        next unless $lc->broker_codes->@* && !$lc->is_virtual;
+
+        my @currencies = get_fiat_currencies($lc->legal_allowed_currencies);
+        for my $currency (@currencies) {
+            my $sportsbook = BOM::Platform::Doughflow::get_sportsbook(
+                landing_company => $lc->short,
+                currency        => $currency
+            );
+            ok exists $valid_sportsbooks{$sportsbook}, "'$sportsbook' is a valid Doughflow sportsbook for non-wallet";
+
+            if ($lc->short =~ /^(svg|maltainvest)$/) {
+                my $sportsbook = BOM::Platform::Doughflow::get_sportsbook(
+                    landing_company => $lc->short,
+                    currency        => $currency,
+                    is_wallet       => 1
+                );
+                ok exists $valid_sportsbooks{$sportsbook}, "'$sportsbook' is a valid Doughflow sportsbook for wallet";
+            }
+        }
+    }
+
+    like(
+        exception { BOM::Platform::Doughflow::get_sportsbook(landing_company => 'xxx', currency => 'yyy') },
+        qr/^no sportsbook found for xxx \(non-wallet\)/,
+        'dies when no sportsbook'
+    );
+};
+
+subtest 'get_sportsbook_for_client' => sub {
+    $config_mocked->mock('on_production', 1);
+
+    my $lc         = LandingCompany::Registry->by_name('svg');
     my @currencies = get_fiat_currencies($lc->legal_allowed_currencies);
-    for my $currency (@currencies) {
-        my $sportsbook = get_sportsbook($broker, $currency);
-        ok exists $doughflow_sportsbooks{$sportsbook}, "'$sportsbook' exists in Doughflow sportsbooks";
+
+    for my $cur (@currencies) {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        $client->account($cur);
+        my $sbook = get_sportsbook_for_client($client);
+        is $sbook, "Deriv (SVG) LLC $cur", $sbook;
+
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW'});
+        $client->account($cur);
+        $sbook = get_sportsbook_for_client($client);
+        is $sbook, "Deriv (SVG) LLC WLT $cur", $sbook;
     }
-}
-$config_mocked->unmock('on_production');
 
-subtest 'doughflow deriv sportsbook landing company consistency except for DSL' => sub {
-    my @all_broker_codes = LandingCompany::Registry->all_broker_codes;
+    $lc         = LandingCompany::Registry->by_name('maltainvest');
+    @currencies = get_fiat_currencies($lc->legal_allowed_currencies);
 
-    for my $broker (@all_broker_codes) {
-        my $lc = LandingCompany::Registry->by_broker($broker);
+    for my $cur (@currencies) {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
+        $client->account($cur);
+        my $sbook = get_sportsbook_for_client($client);
+        is $sbook, "Deriv Investments Ltd $cur", $sbook;
 
-        next if $lc->short =~ /virtual|samoa|dsl/;
-
-        my $sportsbook = BOM::Platform::Doughflow::get_sportsbook_name_for($lc->short);
-        next unless $sportsbook;
-
-        my ($sportsbook_first_two_words) = $sportsbook =~ /^([A-Za-z]*\s\(*[A-Za-z]*\)*)/;
-
-        my ($lc_first_two_words) = $lc->name =~ /^([A-Za-z]*\s\(*[A-Za-z]*\)*)/;
-        is($sportsbook_first_two_words, $lc_first_two_words,
-            "Sportsbook starts with $sportsbook_first_two_words and it matches landing company that starts with $lc_first_two_words");
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MFW'});
+        $client->account($cur);
+        $sbook = get_sportsbook_for_client($client);
+        is $sbook, "Deriv Investments Ltd WLT $cur", $sbook;
     }
+
+    my $user = BOM::User->create(
+        email    => 'wallet@test.com',
+        password => 'x',
+    );
+
+    my $wallet =
+        BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW', account_type => 'doughflow', binary_user_id => $user->id});
+    my $standard =
+        BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', account_type => 'standard', binary_user_id => $user->id});
+    $user->add_client($_) for $wallet, $standard;
+    $wallet->account('USD');
+    $wallet->set_doughflow_pin($standard->loginid);
+
+    is get_sportsbook_for_client($wallet), 'Deriv (SVG) LLC USD', 'wallet with mapped doughflow pin uses non-wallet sbook';
+
 };
 
 subtest 'get_payment_methods' => sub {
@@ -124,7 +234,6 @@ subtest 'get_payment_methods' => sub {
     @params   = ();
     $dd_trace = {};
 
-    my $config_mocked = Test::MockModule->new('BOM::Config');
     $config_mocked->mock('on_production', sub { return 1 });
 
     my $payment_methods = get_payment_methods($country, $brand);
