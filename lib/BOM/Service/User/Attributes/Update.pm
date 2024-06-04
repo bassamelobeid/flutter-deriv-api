@@ -754,8 +754,9 @@ sub save_user_email {
     # Moved from rpc change_email
     my $client                 = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
     my $default_client_loginid = $client->loginid;
-    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',    {loginid => $default_client_loginid});
-    BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid}) unless $client->is_virtual;
+    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',     {loginid => $default_client_loginid});
+    BOM::Platform::Event::Emitter::emit('sync_user_to_CTRADER', {loginid => $default_client_loginid});
+    BOM::Platform::Event::Emitter::emit('sync_onfido_details',  {loginid => $default_client_loginid}) unless $client->is_virtual;
 }
 
 =head2 save_user_dx_trading_password

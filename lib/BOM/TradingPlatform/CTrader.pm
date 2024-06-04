@@ -31,6 +31,7 @@ use BOM::TradingPlatform::Helper::HelperCTrader qw(
     is_valid_group
     traderid_from_traderlightlist
     get_ctrader_account_type
+    get_client_details
 );
 
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
@@ -236,8 +237,9 @@ sub handle_api_error {
         $self->handle_trader_not_found_error(%args);
     }
 
-    $args{password} = '<hidden>'                            if $args{password};
-    $resp           = [$resp->@{qw/content reason status/}] if ref $resp eq 'HASH';
+    $args{password}                = '<hidden>'                            if $args{password};
+    $args{payload}{contactDetails} = '<hidden>'                            if $args{payload}{contactDetails};
+    $resp                          = [$resp->@{qw/content reason status/}] if ref $resp eq 'HASH';
     stats_inc('ctrader.rpc_service.api_call_fail', {tags => ['server:' . $args{server}, 'method:' . $args{method}]});
     my $error_message = sprintf('ctrader call failed for %s: %s, call args: %s', $self->client->loginid, Dumper($resp), Dumper(\%args));
     $error_message =~ s/[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+/*****/g;
@@ -967,6 +969,80 @@ sub register_partnerid {
             userId    => $args->{ctid_userid}});
 
     return 1;
+}
+
+=head2 sync_account_contact_details
+
+Syncs account contact details with cTrader. Includes updating address, phone, and email, etc. Also Includes updating CTID email to
+latest email used by client.
+
+=cut
+
+sub sync_account_contact_details {
+    my ($self) = @_;
+
+    my $sync_error = [];
+
+    my @local_accounts = $self->local_accounts() or return [];
+
+    for my $local_account (@local_accounts) {
+        my $ct_account;
+        try {
+            $ct_account = $self->call_api(
+                server  => $local_account->{account_type},
+                method  => 'trader_get',
+                payload => {loginid => $local_account->{attributes}->{login}});
+        } catch {
+            push @$sync_error, {trader_get => $local_account->{loginid}};
+            next;
+        }
+
+        $ct_account->{contactDetails} = get_client_details($self->client);
+        $ct_account->{name}           = delete $ct_account->{contactDetails}->{name};
+        $ct_account->{lastName}       = delete $ct_account->{contactDetails}->{lastName};
+
+        try {
+            $self->call_api(
+                server  => $local_account->{account_type},
+                method  => 'trader_update',
+                payload => {
+                    loginid => $local_account->{attributes}->{login},
+                    %$ct_account
+                }) if $ct_account->{contactDetails};
+        } catch ($e) {
+            push @$sync_error, {trader_update => $local_account->{loginid}};
+            next;
+        }
+    }
+
+    my $ctid_userid = $self->get_ctid_userid();
+    die "ctid is not found for " . $self->client->loginid unless $ctid_userid;
+
+    my $ctid_api_userid;
+    try {
+        $ctid_api_userid = $self->call_api(
+            server  => 'real',
+            method  => 'ctid_getuserid',
+            path    => 'cid',
+            payload => {email => $self->client->email});
+    } catch ($e) {
+        push @$sync_error, {ctid_getuserid => $ctid_userid};
+    }
+
+    try {
+        $self->call_api(
+            server  => 'real',
+            method  => 'ctid_changeemail',
+            path    => 'cid',
+            payload => {
+                userId   => $ctid_userid,
+                newEmail => $self->client->email,
+            }) unless $ctid_api_userid->{userId};
+    } catch ($e) {
+        push @$sync_error, {ctid_changeemail => $ctid_userid};
+    }
+
+    return $sync_error;
 }
 
 =head2 get_ctid_userid

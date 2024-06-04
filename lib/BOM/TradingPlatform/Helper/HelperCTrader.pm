@@ -22,6 +22,7 @@ our @EXPORT_OK = qw(
     is_valid_group
     traderid_from_traderlightlist
     get_ctrader_account_type
+    get_client_details
 );
 
 use constant CTRADER_ALL_LEVERAGE => 400000;
@@ -31,7 +32,7 @@ use constant CTRADER_DEFAULT_BALANCE => {
 };
 use constant DEFAULT_ACCESS_RIGHTS => 'FULL_ACCESS';
 
-=head2 _get_client_details
+=head2 get_client_details
 
 Get client details in format accepted by cTrader API.
 
@@ -43,7 +44,7 @@ Get client details in format accepted by cTrader API.
 
 =cut
 
-sub _get_client_details {
+sub get_client_details {
     my $client = shift;
 
     #Need to find out countryId system
@@ -220,7 +221,7 @@ Construct hash data in cTrader accepted format for new trader account creation.
 
 sub construct_new_trader_params {
     my $params         = shift;
-    my $client_details = _get_client_details($params->{client});
+    my $client_details = get_client_details($params->{client});
 
     return +{
         name            => delete $client_details->{name},
