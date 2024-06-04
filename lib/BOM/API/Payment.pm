@@ -187,12 +187,13 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
             # eg /account/ and /account should both work
             $env->{PATH_INFO} =~ s{/$}{};
 
-            my $content_type = $req->header('Content-Type');
-            my ($xs, $client_loginid);
+            my $content_type = $req->header('Content-Type') // 'none';
+            my ($xs, $client_loginid, $udef3);
             ## set user for DoughFlow
             if ($env->{'X-DoughFlow-Authorization-Passed'}) {
                 $client_loginid = scalar($req->param('client_loginid'));
-                if (not $client_loginid and $content_type) {
+                $udef3          = scalar($req->param('udef3'));
+                if (not $client_loginid) {
                     if ($content_type =~ m{xml}) {
                         $xs = XML::Simple->new(ForceArray => 0);
                         if ($req->content) {
@@ -204,7 +205,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                                 $log->error(sprintf "Error trying to parse XML message. Error was %s", $error);
                                 return [422, [], ['Unprocessable entity']];
                             }
-                            $client_loginid = $data->{client_loginid};
+                            ($client_loginid, $udef3) = $data->@{qw(client_loginid udef3)};
                         }
                     } elsif ($content_type =~ m{application/json}) {
                         if ($req->content) {
@@ -216,38 +217,42 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                                 $log->error(sprintf "Error trying to parse JSON message. Error was %s", $error);
                                 return [422, [], ['Unprocessable entity']];
                             }
-                            $client_loginid = $data->{client_loginid};
+                            ($client_loginid, $udef3) = $data->@{qw(client_loginid udef3)};
                         }
                     }
                 }
 
                 if ($req->method eq 'POST') {
-                    if ($content_type and not $content_type =~ m{application/json|xml|x-www-form-urlencoded}) {
+                    if ($content_type !~ m{application/json|xml|x-www-form-urlencoded}) {
                         stats_inc('bom_paymentapi.error.unsupported_media_type', {tags => [$content_type]});
                         $log->error(sprintf "Content Type %s is not supported.", $content_type);
                         return [415, [], ['Unsupported Media Type']];
                     }
                 }
-                unless ($client_loginid && $client_loginid =~ /^[A-Z]{2,6}\d{3,}$/) {
-                    stats_inc('bom_paymentapi.error.authorization_required', {tags => [$content_type]});
-                    return [401, [], ['Authorization required']];
-                }
 
-                my $client = BOM::User::Client->new({
-                        loginid => $client_loginid,
-                    })
-                    || do {
+                my $client;
+                try {
+                    $client = BOM::User::Client->get_client_instance_by_doughflow_pin($client_loginid) || die;
+                } catch {
                     stats_inc('bom_paymentapi.error.authorization_required', {tags => [$content_type]});
                     $log->error(sprintf "Client %s does not exist.", $client_loginid);
                     return [401, [], ['Authorization required']];
-                    };
+                }
+
+                # This validates that udef3 matches the loginid - perhaps over-cautious since udef3 isn't used after this point
+                if ($udef3 && $udef3 ne $client->loginid) {
+                    stats_inc('bom_paymentapi.error.authorization_required', {tags => [$content_type]});
+                    $log->error(sprintf 'Loginid %s provided in udef3 is not associated with PIN %s', $udef3, $client_loginid);
+                    return [401, [], ['Authorization required']];
+                }
+
                 $env->{BOM_USER} = $client;
             }
 
             my $r = $router->dispatch($env);
             return $r if ref($r) eq 'ARRAY';    # from Router::Resource 405 or 404
 
-            if ($content_type and $content_type =~ m{xml}) {
+            if ($content_type =~ m{xml}) {
                 $xs = XML::Simple->new(ForceArray => 0) unless $xs;
 
                 if (blessed($r)) {              # Plack::Response
@@ -275,7 +280,7 @@ sub authen_cb {
 
     my $client = undef;
     try {
-        $client = BOM::User::Client->new({loginid => $username});
+        $client = BOM::User::Client->get_client_instance_by_doughflow_pin($username);
     } catch {
         return;
     }

@@ -11,10 +11,10 @@ use BOM::Config::Runtime;
 use LandingCompany::Registry;
 
 sub session_GET {
-    my $c       = shift;
-    my $log     = $c->env->{log};
-    my $client  = $c->user;
-    my $loginid = $client->loginid;
+    my $c      = shift;
+    my $log    = $c->env->{log};
+    my $client = $c->user;
+    my $pin    = $client->doughflow_pin;
 
     $log->debug("session_GET for $client, DF Auth-Passed header " . ($c->env->{'X-DoughFlow-Authorization-Passed'} || 'missing'));
 
@@ -23,7 +23,7 @@ sub session_GET {
         if $c->env->{'X-DoughFlow-Authorization-Passed'};
 
     my $cb = BOM::Database::ClientDB->new({
-        client_loginid => $loginid,
+        client_loginid => $client->loginid,
     });
 
     my $handoff_token_key;
@@ -35,7 +35,7 @@ sub session_GET {
             db                 => $cb->db,
             data_object_params => {
                 key            => $handoff_token_key,
-                client_loginid => $loginid,
+                client_loginid => $pin,
                 expires        => time + 4 * 60,
             },
         );
@@ -50,7 +50,7 @@ sub session_GET {
                 db                 => $cb->db,
                 data_object_params => {
                     key            => $handoff_token_key,
-                    client_loginid => $loginid,
+                    client_loginid => $pin,
                     expires        => time + 4 * 60,
 
                 },
@@ -59,7 +59,7 @@ sub session_GET {
     }
 
     return {
-        loginid            => $client->loginid,
+        loginid            => $pin,
         handoff_token_key  => $handoff_token_key,
         handoff_token_data => {
             key            => $handoff_token->key,
@@ -101,7 +101,9 @@ sub session_validate_GET {
         return $c->status_bad_request('No token found', 'bom_paymentapi.session.no_token_found');
     }
 
-    if (not $handoff_token->is_valid or ($handoff_token->client_loginid ne $c->user->loginid)) {
+    my $pin = $c->user->doughflow_pin;
+
+    if (not $handoff_token->is_valid or ($handoff_token->client_loginid ne $pin)) {
         return $c->status_bad_request('Token invalid or expired');
     }
 
@@ -110,7 +112,7 @@ sub session_validate_GET {
     # link to additional client details that might be useful
     my $client_uri = $c->req->base->clone;
     $client_uri->path('/paymentapi/client/');
-    $client_uri->query('loginid=' . $c->user->loginid);
+    $client_uri->query('loginid=' . $pin);
     return {
         status  => 'accepted',
         details => $client_uri->as_string,
