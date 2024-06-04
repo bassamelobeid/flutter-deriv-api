@@ -19,7 +19,7 @@ use POSIX                      qw(ceil);
 use JSON::MaybeUTF8            qw(encode_json_utf8 encode_json_text);
 use Math::BigFloat;
 
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 
 use BOM::Platform::Event::Emitter;
 use BOM::User::Utility qw(p2p_exchange_rate p2p_rate_rounding);
@@ -187,7 +187,8 @@ sub p2p_advertiser_create {
     die +{error_code => 'AdvertiserNameTaken'} if $self->_p2p_advertisers(unique_name => $name)->[0];
 
     my $lc_withdrawal_limit =
-        Business::Config::LandingCompany->new()->payment_limit()->{withdrawal_limits}{$self->client->landing_company->short}{lifetime_limit};
+        Business::Config::LandingCompany::Registry->new()->payment_limit()
+        ->{withdrawal_limits}{$self->client->landing_company->short}{lifetime_limit};
     my $p2p_create_order_chat = BOM::Config::Runtime->instance->app_config->payments->p2p->create_order_chat;
 
     my ($advertiser, $token, $expiry);
