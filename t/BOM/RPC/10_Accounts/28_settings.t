@@ -259,8 +259,10 @@ subtest 'get settings' => sub {
             'trading_hub'                    => 0,
             'dxtrade_user_exception'         => 0,
             'phone_number_verification'      => {
-                'verified'     => 0,
-                'next_attempt' => $time,
+                'verified'            => 0,
+                'next_attempt'        => $time,
+                'next_email_attempt'  => $time,
+                'next_verify_attempt' => $time,
             },
         });
 
@@ -387,8 +389,10 @@ subtest 'get settings' => sub {
             'trading_hub'                    => 0,
             'dxtrade_user_exception'         => 0,
             'phone_number_verification'      => {
-                'verified'     => 0,
-                'next_attempt' => $time,
+                'verified'            => 0,
+                'next_attempt'        => $time,
+                'next_email_attempt'  => $time,
+                'next_verify_attempt' => $time,
             },
         },
         'vr client returns same even when it does not have real sibling'
@@ -435,8 +439,10 @@ subtest 'get settings' => sub {
             'financial_assessment'           => {'employment_status' => 'Employed'},
             'fatca_declaration'              => 1,
             'phone_number_verification'      => {
-                'verified'     => 0,
-                'next_attempt' => $time,
+                'verified'            => 0,
+                'next_attempt'        => $time,
+                'next_email_attempt'  => $time,
+                'next_verify_attempt' => $time,
             },
         },
         'vr client return real account information when it has sibling'
@@ -489,8 +495,10 @@ subtest 'get settings' => sub {
         'trading_hub'                    => 0,
         'dxtrade_user_exception'         => 0,
         'phone_number_verification'      => {
-            'verified'     => 0,
-            'next_attempt' => $time,
+            'verified'            => 0,
+            'next_attempt'        => $time,
+            'next_email_attempt'  => $time,
+            'next_verify_attempt' => $time,
         },
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
@@ -531,8 +539,10 @@ subtest 'get settings' => sub {
         'trading_hub'                    => 0,
         'dxtrade_user_exception'         => 0,
         'phone_number_verification'      => {
-            'verified'     => 0,
-            'next_attempt' => $time,
+            'verified'            => 0,
+            'next_attempt'        => $time,
+            'next_email_attempt'  => $time,
+            'next_verify_attempt' => $time,
         },
     };
     is_deeply($result, $expected, 'return 1 for code of conduct approval');
