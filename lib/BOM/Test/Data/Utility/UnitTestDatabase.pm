@@ -91,6 +91,10 @@ sub _post_import_operations {
         sequence => 'bet_serial',
     });
 
+    if ($self->{no_auth_method_sync}) {
+        $self->db_handler->do('DROP TRIGGER sync_client_authentication_method ON betonmarkets.client_authentication_method');
+    }
+
     return;
 }
 
@@ -413,11 +417,18 @@ sub import {
     my %options = map { $_ => 1 } @others;
 
     if (exists $options{':init'}) {
-        __PACKAGE__->instance->prepare_unit_test_database;
+        my $test_db = __PACKAGE__->instance;
+
+        # no_auth_method_sync option will disable the sync_client_authentication_method trigger on client_authentication_method table
+        $test_db->{no_auth_method_sync} = exists $options{no_auth_method_sync};
+
+        $test_db->prepare_unit_test_database;
+
         unless (exists $options{':exclude_bet_market_setup'}) {
             setup_db_underlying_mapping('market');
             setup_db_underlying_mapping('limits_market_mapper');
         }
+
         require BOM::Test::Data::Utility::UserTestDatabase;
 
         BOM::Test::Data::Utility::UserTestDatabase->import(':init');

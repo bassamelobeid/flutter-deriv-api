@@ -115,14 +115,16 @@ sub create_wallet_factory {
     );
 
     $residence //= 'id';
+
     unless ($address_state) {
         my $states = BOM::Platform::Locale::get_state_option($residence);
         $address_state = $states->[0]->{value} if $states;
     }
 
-    my $wallet_generator = sub {
-        my ($broker_code, $account_type, $currency) = @_;
-        my $client = $user->create_wallet(
+    my $account_generator = sub {
+        my ($broker_code, $account_type, $currency, $wallet_loginid) = @_;
+
+        my %params = (
             broker_code               => $broker_code,
             account_type              => $account_type,
             email                     => $user->email,
@@ -146,18 +148,21 @@ sub create_wallet_factory {
             fatca_declaration_time    => DateTime->now,
             fatca_declaration         => 1,
             salutation                => 'Mr.',
-
+            wallet_loginid            => $wallet_loginid,
         );
+
+        my $client = $wallet_loginid ? $user->create_client(%params) : $user->create_wallet(%params);
+
         $client->set_default_account($currency);
 
         if ($broker_code eq 'MFW') {
             fill_up_maltainvest_financial_assestment($client);
         }
 
-        return $client, BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+        return wantarray ? ($client, BOM::Platform::Token::API->new->create_token($client->loginid, 'test token')) : $client;
     };
 
-    return $user, $wallet_generator;
+    return $user, $account_generator;
 
 }
 
