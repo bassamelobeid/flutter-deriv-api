@@ -64,4 +64,3 @@ Returns whether this client instance can perform trading.
 sub can_trade { 0 }
 
 1;
-

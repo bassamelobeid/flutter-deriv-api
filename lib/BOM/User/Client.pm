@@ -4729,6 +4729,69 @@ sub get_df_payouts_count {
     return $redis_value;
 }
 
+=head2 set_doughflow_pin
+
+Sets the identifier to use for PIN in the doughflow system.
+
+=cut
+
+sub set_doughflow_pin {
+    my ($self, $pin) = @_;
+
+    die 'set_doughflow_pin is not applicable to this account type' unless $self->get_account_type->name eq 'doughflow';
+
+    return BOM::Database::UserDB::rose_db(operation => 'write')->dbic->run(
+        fixup => sub {
+            $_->do('SELECT users.set_doughflow_mapping(?,?,?)', undef, $self->loginid, $pin, $self->binary_user_id);
+        });
+}
+
+=head2 doughflow_pin
+
+Returns the identifier to use for PIN in the doughflow system.
+
+=cut
+
+sub doughflow_pin {
+    my $self = shift;
+
+    die 'doughflow_pin is not applicable to this account type' if $self->is_virtual;
+
+    return $self->loginid if $self->is_legacy;
+
+    die 'doughflow_pin is not applicable to this account type' unless $self->get_account_type->name eq 'doughflow';
+
+    my ($pin) = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT doughflow_pin FROM users.get_doughflow_mapping(?, NULL, NULL)', undef, $self->loginid);
+        });
+
+    return $pin // $self->loginid;
+}
+
+=head2 get_client_instance_by_doughflow_pin
+
+Returns a client or wallet instance from a doughlow PIN.
+
+=over 4
+
+=item * C<pin> - string
+
+=back
+
+=cut
+
+sub get_client_instance_by_doughflow_pin {
+    my ($self, $pin) = @_;
+
+    my ($loginid) = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM users.get_doughflow_mapping(NULL, ?, NULL)', undef, $pin);
+        });
+
+    return $self->get_client_instance($loginid // $pin, 'write');
+}
+
 =head2 copy_status_to_siblings
 
 Copies the given status from the current client to its siblings that haven't set with it before and returns the loginid of the updated clients.
@@ -6809,6 +6872,28 @@ sub partner_id {
     my ($self) = @_;
     # TODO: call partner hub for partner id
     return "TEST_VALUE";
+}
+
+=head2 has_doughflow_payment
+
+Returns true if client has any doughflow deposit or withdrawal.
+
+=cut
+
+sub has_doughflow_payment {
+    my ($self) = @_;
+
+    my $account = $self->default_account or return 0;
+    my $old_db  = $self->get_db;
+    $self->set_db('replica') if 'replica' ne $old_db;
+
+    my $result = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT payment.has_doughflow_payment(?)', {Slice => {}}, $account->id);
+        });
+
+    $self->set_db($old_db) if 'replica' ne $old_db;
+    return $result;
 }
 
 1;

@@ -20,6 +20,7 @@ use Log::Any '$log', default_adapter => 'Stderr';
 use BOM::User;
 use BOM::User::Wallet;
 use BOM::User::Client;
+use BOM::Platform::Doughflow qw(get_sportsbook_for_client);
 
 use Carp       qw(croak);
 use List::Util qw(any none uniq);
@@ -268,6 +269,10 @@ method process {
         if (!$wallet_to_link) {
             $wallet_to_link = $self->create_wallet($wallet_params->%*);
             $existing_wallets->{$lc}{$type}{$currency} = $wallet_to_link;
+
+            if ($type eq 'doughflow' && $wallet_params->{client}) {
+                $wallet_to_link->set_doughflow_pin($loginid) if $wallet_params->{client}->has_doughflow_payment;
+            }
         }
 
         # For internal trading accounts we need to update account type

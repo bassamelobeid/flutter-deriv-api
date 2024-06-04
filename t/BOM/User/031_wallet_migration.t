@@ -5,7 +5,7 @@ use Test::MockModule;
 use Test::Deep;
 use Test::Fatal;
 use Test::Warnings;
-
+use List::Util;
 use Data::Dumper;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -26,6 +26,8 @@ BOM::Test::Helper::MT5::mock_server();
 BOM::Test::Helper::CTrader::mock_server();
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
+$app_config->system->suspend->wallets(0);
+$app_config->system->suspend->wallet_migration(0);
 
 subtest 'Constructor: new' => sub {
     my ($user) = create_user();
@@ -744,6 +746,63 @@ subtest process_migration => sub {
         is($wallet_id, $account_links->{$ctrader_id}[0]{loginid}, 'Wallet id is the same for real and ctrader real');
     };
 
+    subtest 'Doughflow migration' => sub {
+
+        my $client_mock   = Test::MockModule->new('BOM::User::Client');
+        my $has_doughflow = 1;
+        $client_mock->redefine(has_doughflow_payment => sub { $has_doughflow });
+
+        my $set_doughflow_pins;
+        $client_mock->redefine(set_doughflow_pin => sub { push $set_doughflow_pins->{$_[0]->loginid}->@*, $_[1] });
+
+        subtest 'client with doughflow payments' => sub {
+            my ($user, $virtual) = create_user();
+
+            my $migration = BOM::User::WalletMigration->new(
+                user   => $user,
+                app_id => 1,
+            );
+
+            my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+            $cr_usd->set_default_account('USD');
+            $user->add_client($cr_usd);
+
+            my $error = exception {
+                $migration->process();
+            };
+
+            is($error, undef, 'No error is thrown');
+
+            my %details     = $user->loginid_details->%*;
+            my $crw_loginid = List::Util::first { $details{$_}{is_wallet} && !$details{$_}{is_virtual} } keys %details;
+            my $crw         = BOM::User::Client->get_client_instance($crw_loginid);
+            cmp_deeply($set_doughflow_pins, {$crw_loginid => [$cr_usd->loginid]}, 'doughlow pin was set');
+        };
+
+        subtest 'client with no doughflow payments' => sub {
+            my ($user, $virtual) = create_user();
+
+            my $migration = BOM::User::WalletMigration->new(
+                user   => $user,
+                app_id => 1,
+            );
+
+            my $cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+            $cr_usd->set_default_account('USD');
+            $user->add_client($cr_usd);
+
+            $has_doughflow      = 0;
+            $set_doughflow_pins = undef;
+
+            my $error = exception {
+                $migration->process();
+            };
+
+            is($error, undef, 'No error is thrown');
+            is $set_doughflow_pins, undef, 'doughflow pin was not set';
+        };
+
+    };
 };
 
 subtest 'Getting migration plan' => sub {
