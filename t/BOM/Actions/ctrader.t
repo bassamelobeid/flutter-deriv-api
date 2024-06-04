@@ -75,4 +75,102 @@ subtest "ctrader_account_created" => sub {
 
 };
 
+subtest 'sync_info' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'ctradersyncinfo@test.com',
+        first_name  => 'AAAA',
+        last_name   => 'BBBB',
+        residence   => 'id'
+    });
+
+    my $user = BOM::User->create(
+        email    => $test_client->email,
+        password => BOM::User::Password::hashpw('password'));
+    $user->add_client($test_client);
+    $test_client->user->add_loginid("CTR100000", 'ctrader', 'real', 'USD', {login => 100000});
+    $test_client->binary_user_id($user->id);
+    $test_client->save;
+
+    my $mocked_ctrader = Test::MockModule->new('BOM::TradingPlatform::CTrader');
+    $mocked_ctrader->redefine(
+        call_api => sub {
+            my ($self, %payload) = @_;
+            return {};
+        });
+
+    $mocked_ctrader->redefine(
+        get_ctid_userid => sub {
+            return 100;
+        });
+
+    my $emitter_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions    = [];
+
+    $emitter_mock->mock(
+        'emit',
+        sub {
+            push $emissions->@*, {@_};
+            return $emitter_mock->original('emit')->(@_);
+        });
+
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{sync_user_to_CTRADER};
+
+    subtest 'Event emit once for success case' => sub {
+        $emissions = [];
+        my $args = {};
+
+        like exception { $action_handler->($args)->get; }, qr/Loginid needed/, 'correct exception when loginid is missing';
+        $args->{loginid} = $test_client->loginid;
+        $action_handler->($args);
+        is(scalar @$emissions, 0, 'Event emitted once');
+    };
+
+    subtest 'Event emit again with increment retry_count for sync_error case' => sub {
+        $emissions = [];
+
+        $mocked_ctrader->redefine(
+            call_api => sub {
+                my ($self, %payload) = @_;
+                die;
+                return {};
+            });
+
+        my $args = {loginid => $test_client->loginid};
+        $action_handler->($args);
+        is(scalar @$emissions, 1, 'Event emitted with retry');
+        cmp_deeply(
+            $emissions->[0],
+            {
+                'sync_user_to_CTRADER' => {
+                    loginid     => $test_client->loginid,
+                    retry_count => 1,
+                }
+            },
+            'Event re-emitted with retry count increment'
+        );
+    };
+
+    subtest 'Event dont emit again with retry_count at 5 for sync_error case' => sub {
+        $emissions = [];
+
+        $mocked_ctrader->redefine(
+            call_api => sub {
+                my ($self, %payload) = @_;
+                die;
+                return {};
+            });
+
+        my $args = {
+            loginid     => $test_client->loginid,
+            retry_count => 5
+        };
+        $action_handler->($args);
+        is(scalar @$emissions, 0, 'Event not emitted with retry count at 5');
+    };
+
+    $mocked_ctrader->unmock_all();
+    $emitter_mock->unmock_all();
+};
+
 done_testing();

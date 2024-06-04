@@ -135,7 +135,8 @@ subtest 'process - generic jobs' => sub {
                 trigger_cio_broadcast crypto_cashier_transaction_updated
                 update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies mt5_deriv_auto_rescind mt5_archive_restore_sync sync_mt5_accounts_status
                 poa_updated poi_updated underage_client_detected mt5_archive_accounts mt5_svg_migration_requested ctrader_account_created nodejs_hello
-                withdrawal_estimated_fee_updated p2p_settings_updated onfido_check_completed poi_claim_ownership recheck_onfido_face_similarity anti_fraud_investigation_email/
+                withdrawal_estimated_fee_updated p2p_settings_updated onfido_check_completed poi_claim_ownership recheck_onfido_face_similarity anti_fraud_investigation_email
+                sync_user_to_CTRADER/
         ),
         'Correct number of actions that can be emitted'
     );

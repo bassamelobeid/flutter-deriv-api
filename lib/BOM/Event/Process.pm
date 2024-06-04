@@ -126,6 +126,7 @@ my $action_mapping = {
         poi_updated                                 => \&BOM::Event::Actions::Client::poi_updated,
         notify_resubmission_of_poi_poa_documents    => \&BOM::Event::Actions::Client::notify_resubmission_of_poi_poa_documents,
         ctrader_account_created                     => \&BOM::Event::Actions::CTrader::ctrader_account_created,
+        sync_user_to_CTRADER                        => \&BOM::Event::Actions::CTrader::sync_info,
         underage_client_detected                    => \&BOM::Event::Actions::Client::underage_client_detected,
         poi_claim_ownership                         => \&BOM::Event::Actions::Client::poi_claim_ownership,
         onfido_check_completed                      => \&BOM::Event::Actions::Client::onfido_check_completed,

@@ -12,6 +12,7 @@ use BOM::Database::CommissionDB;
 use BOM::User::Client;
 use WebService::MyAffiliates;
 use Log::Any qw($log);
+use Data::Dumper;
 use Syntax::Keyword::Try;
 
 =head2 ctrader_account_created
@@ -85,6 +86,51 @@ sub ctrader_account_created {
                 }
 
             }
+        }
+    }
+
+    return 1;
+}
+
+=head2 sync_info
+
+Perform sync of ctrader account contact details and ctid email.
+
+=over 4
+
+=item * C<loginid> - BOM client instance's loginid
+
+=item * C<retry_count> - Optional. Count to track retry on failed sync operation
+
+=back
+
+=cut
+
+sub sync_info {
+    my $params = shift;
+
+    die 'Loginid needed' unless $params->{loginid};
+    my $retry_count = $params->{retry_count} // 0;
+
+    my $client = BOM::User::Client->new({loginid => $params->{loginid}});
+    my $ct     = BOM::TradingPlatform->new(
+        platform => 'ctrader',
+        client   => $client,
+        user     => $client->user
+    );
+
+    my $sync_error = $ct->sync_account_contact_details();
+
+    if (@{$sync_error}) {
+        $log->error('Error syncing account contact details: ' . Dumper($sync_error) . ' at retry attempt: ' . $retry_count);
+
+        if ($retry_count < 5) {
+            BOM::Platform::Event::Emitter::emit(
+                'sync_user_to_CTRADER',
+                {
+                    loginid     => $params->{loginid},
+                    retry_count => $retry_count + 1
+                });
         }
     }
 
