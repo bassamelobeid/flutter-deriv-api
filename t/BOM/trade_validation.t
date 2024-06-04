@@ -25,7 +25,7 @@ use BOM::Test::Helper::Client               qw(create_client top_up);
 use BOM::Test::Helper::ExchangeRates        qw/populate_exchange_rates/;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Config;
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::User::Script::AMLClientsUpdate;
 

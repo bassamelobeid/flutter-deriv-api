@@ -9,7 +9,7 @@ use List::Util qw(min max first any);
 use YAML::XS   qw(LoadFile);
 use JSON::MaybeXS;
 
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 
 use BOM::Config::Quants              qw(get_exchangerates_limit);
 use Format::Util::Numbers            qw/financialrounding/;
