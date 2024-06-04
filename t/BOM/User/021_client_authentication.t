@@ -341,7 +341,6 @@ subtest 'set_authentication_and_status' => sub {
             my ($authentication, $status, $high_risk, $ignore_idv, $lc, $auth_with_idv, $fully_authenticated, $case) =
                 @{$test}{qw/authentication status high_risk ignore_idv lc auth_with_idv fully_authenticated case/};
 
-            $_->delete for @{$client_cr1->client_authentication_method};
             $client_cr1->set_authentication($authentication, {status => $status}, 'testing script');
 
             my $client_mock = Test::MockModule->new('BOM::User::Client');
@@ -352,6 +351,7 @@ subtest 'set_authentication_and_status' => sub {
                 });
 
             $client_cr1 = BOM::User::Client->new({loginid => $client_cr1->loginid});
+
             # we need xand (xnor amirite?) so we will use these auxiliar vars to store the booleans
             my $x = $client_cr1->fully_authenticated({ignore_idv => $ignore_idv, landing_company => $lc}) ? 1 : 0;
             my $y = $fully_authenticated                                                                  ? 1 : 0;

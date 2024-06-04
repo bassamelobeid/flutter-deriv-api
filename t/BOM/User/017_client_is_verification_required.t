@@ -201,6 +201,9 @@ subtest 'update mifir id' => sub {
                             "value" => "1111111111"
                         }]}};
         });
+    $_->delete for $client->client_authentication_method->@*;
+    $client->client_authentication_method(undef);
+    $client->save;
     $client->set_authentication_and_status('ID_DOCUMENT', 'test');
     is($client->mifir_id, 'SK1111111111', 'mifir id is set for with document_number');
     $client->mifir_id(undef);
@@ -221,6 +224,9 @@ subtest 'update mifir id' => sub {
                             "value" => "1111111111"
                         }]}};
         });
+    $_->delete for $client->client_authentication_method->@*;
+    $client->client_authentication_method(undef);
+    $client->save;
     $client->set_authentication_and_status('ID_DOCUMENT', 'test');
     is($client->mifir_id, 'CY111111', 'mifir id is set for with personal_number');
     $client->citizen(undef);

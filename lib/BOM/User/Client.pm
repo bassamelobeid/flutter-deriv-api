@@ -119,6 +119,9 @@ use constant {
     DF_PAYOUTS_COUNTER_TTL => 60 * 60 * 24 * 7,       # 7 days
 };
 
+# These authentication methods will be synced across landing companies when the LCs allow authentication syncing.
+use constant SYNCABLE_AUTH_METHODS => qw(ID_DOCUMENT ID_NOTARIZED ID_PO_BOX);
+
 use constant {
     POI_RESUBMITTED_PREFIX => "POI::RESUBMITTED::PREFIX::",
     POA_RESUBMITTED_PREFIX => "POA::RESUBMITTED::PREFIX::",
@@ -422,17 +425,21 @@ sub get_authentication {
 
 =head2 set_authentication
 
-Set authentication for a client and all allowed siblings.
+Set authentication for a client and all allowed siblings. Auth will be synced to a sibling when either are true:
 
-Allow client to upload documents if the status is needs_action.
+(a) Authentication method is one of SYNCABLE_AUTH_METHODS, and the current landing company has the sibling's
+    landing company in allowed_landing_companies_for_authentication_sync in landing company yml
+(b) Client landing company is the same as sibling landing company
 
-Takes the following arguments as named parameters
+Takes the following arguments
 
 =over
 
 =item * C<method> - required. Name of an authentication method.
 
-=item * C<authentication_status> - required. The status of authentication method.
+=item * C<authentication_status> - required. Hashref containing status of authentication method.
+
+=item *
 
 =back
 
@@ -442,113 +449,133 @@ Returns the authentication method for a client.
 
 sub set_authentication {
     my ($self, $method, $authentication_status, $staff) = @_;
-    $staff ||= "system";
+
     my $status = $authentication_status->{status};
-    unless ($self->get_db eq 'write') {
-        $self->set_db('write');
-        $self->client_authentication_method(undef);    # throw out my read-only versions..
+
+    my @syncable_lc = $self->landing_company->allowed_landing_companies_for_authentication_sync->@*;
+    my $lc          = $self->landing_company->short;
+
+    my @clients_to_update = $self;
+    if (my $user = $self->user) {
+        # Get all siblings for a client except self to ensure we update same instance as $self
+        push @clients_to_update, grep { $_->loginid ne $self->loginid } $user->clients;
     }
 
-    # Set authentication method for a client and all allowed siblings
-    my @allowed_lc_to_sync = @{$self->landing_company->allowed_landing_companies_for_authentication_sync};
-    my @clients_to_update;
-    # Get all siblings for a client except virtual one and itself
-    if ($self->user and not $self->is_virtual) {
-        @clients_to_update =
-            grep { $_->loginid ne $self->loginid } $self->user->clients(include_virtual => 0);
-    }
-    # Push the client to the list.
-    push(@clients_to_update, $self);
-    # Set authentication for client itself
-    # Set authentication for allowed landing company
-    # Skip if client is already authenticated
-    foreach my $cli (@clients_to_update) {
-        if (   ($self->landing_company->short eq $cli->landing_company->short)
-            or (any { $_ eq $cli->landing_company->short } @allowed_lc_to_sync)
-            and not($cli->get_authentication($method) and ($cli->get_authentication($method)->status eq $status)))
-        {
-            # Remove existing status to make the auth methods mutually exclusive
-            $_->delete for @{$cli->client_authentication_method};
-            $cli->add_client_authentication_method({
-                authentication_method_code => $method,
-                status                     => $status
-            });
-            if ($status eq 'pass') {
-                $cli->status->clear_allow_document_upload;
-                # We should notify CS to check TIN and MIFIR for MF clients
-                # if its status updated from respective MLT or MX
-                _notify_cs_about_authenticated_mf($cli->loginid, $self->broker_code)
-                    if not $self->landing_company->short eq 'maltainvest' and $cli->landing_company->short eq 'maltainvest';
-                # Remove unwelcome from MX once its authenticated from MF
-                $cli->status->clear_unwelcome
-                    if ($cli->residence eq 'gb'
-                    and $cli->landing_company->short eq 'iom'
-                    and $cli->status->unwelcome);
-            } elsif ($status eq 'needs_action' and not $cli->status->allow_document_upload) {
-                $cli->status->upsert('allow_document_upload', $staff, 'MARKED_AS_NEEDS_ACTION');
-            }
-            $cli->save;
-        }
+    foreach my $sibling (@clients_to_update) {
+        my $sibling_lc = $sibling->landing_company->short;
+
+        # skip unless sync is allowed by the method and landing companies
+        next unless ((any { $method eq $_ } SYNCABLE_AUTH_METHODS) && (any { $sibling_lc eq $_ } @syncable_lc)) || $sibling_lc eq $lc;
+
+        $sibling->add_single_authentication_method(
+            method => $method,
+            status => $status,
+            staff  => $staff
+        );
+
+        # notify CS to check TIN and MIFIR for MF clients if auth updated from a different LC
+        _notify_cs_about_authenticated_mf($sibling->loginid, $self->broker_code)
+            if $sibling_lc eq 'maltainvest' && $status eq 'pass' && $sibling_lc ne $lc;
     }
 
-    $self->update_status_after_auth_fa();
-    return $self->get_authentication($method);
+    if ($method eq 'ID_DOCUMENT' && $status eq 'pass') {
+        BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $self->loginid});
+    }
 }
 
 =head2 sync_authentication_from_siblings
 
 Update authentication for a client upon signup based on all allowed siblings.
 
-Allow client to upload documents if the status is needs_action.
-
 =cut
 
 sub sync_authentication_from_siblings {
     my $self = shift;
+
+    my $user = $self->user or return;
+
+    # Get all siblings for self
+    my @siblings = grep { $_->loginid ne $self->loginid } $user->clients;
+    my $lc       = $self->landing_company->short;
+
+    # Apply method from a sibling when sibling LC allows auth to be synced or sibling LC is the same
+    foreach my $sibling (sort { $a->broker_code ne $self->broker_code } @siblings) {
+        my $sibling_lc  = $sibling->landing_company->short;
+        my @syncable_lc = $sibling->landing_company->allowed_landing_companies_for_authentication_sync->@*;
+
+        for my $auth ($sibling->client_authentication_method->@*) {
+            next
+                unless ((any { $auth->authentication_method_code eq $_ } SYNCABLE_AUTH_METHODS) && (any { $lc eq $_ } @syncable_lc))
+                || $sibling_lc eq $lc;
+
+            $self->add_single_authentication_method(
+                method => $auth->authentication_method_code,
+                status => $auth->status,
+            );
+
+            # notify CS to check TIN and MIFIR for MF clients if auth updated from a different LC
+            _notify_cs_about_authenticated_mf($self->loginid, $sibling->broker_code) if $lc eq 'maltainvest' and $sibling_lc ne $lc;
+
+            return;
+
+        }
+    }
+}
+
+=head2 add_single_authentication_method
+
+Updates the authentication method for this client only.
+Allow client to upload documents if the status is needs_action.
+Performs other side effects according to the method and status.
+
+Takes the following arguments as named parameters
+
+=over
+
+=item * C<method> - required. Name of an authentication method.
+
+=item * C<status> - required. The status of authentication method.
+
+=item * C<staff> - staff name for new/changed client statuses.
+
+=back
+
+=cut
+
+sub add_single_authentication_method {
+    my ($self, %args) = @_;
+
+    my ($method, $status) = @args{qw(method status)};
+    my $staff = $args{staff} || 'system';
+
     unless ($self->get_db eq 'write') {
         $self->set_db('write');
         $self->client_authentication_method(undef);    # throw out my read-only versions..
     }
-    my (@allowed_lc_to_sync, @siblings, $method, $status);
-    # Get all siblings for a client except virtual one and itself
-    if (!$self->is_virtual && (my $user = $self->user)) {
-        @siblings = grep { $_->loginid ne $self->loginid } $self->user->clients(include_virtual => 0);
-    }
-    # Get authentication method and status from allowed sibling
-    # Update new created account's authentication
-    foreach my $cli (@siblings) {
-        @allowed_lc_to_sync = (
-            $cli->landing_company->allowed_landing_companies_for_authentication_sync->@*,
-            $cli->landing_company->short,    #Allow to sync to the same company
-        );
 
-        # Skip if client is in the same DB, sync had been done by db trigger
-        next if $cli->broker_code eq $self->broker_code;
-        if ((any { $_ eq $self->landing_company->short } @allowed_lc_to_sync) and $cli->client_authentication_method) {
-            for my $auth_method (qw/ID_DOCUMENT ID_NOTARIZED ID_PO_BOX/) {
-                my $auth = $cli->get_authentication($auth_method);
-                if ($auth) {
-                    $method = $auth->authentication_method_code;
-                    $status = $auth->status;
-                    $self->add_client_authentication_method({
-                        authentication_method_code => $method,
-                        status                     => $status
-                    });
-                    if ($status eq 'pass') {
-                        $self->status->clear_allow_document_upload;
-                        # We should notify CS to check TIN and MIFIR for MF clients
-                        _notify_cs_about_authenticated_mf($self->loginid, $cli->broker_code) if $self->landing_company->short eq 'maltainvest';
-                    } elsif ($status eq 'needs_action') {
-                        $self->status->upsert('allow_document_upload', 'system', 'MARKED_AS_NEEDS_ACTION')
-                            if not $cli->status->allow_document_upload;
-                    }
-                    $self->save;
-                    return $self->get_authentication($method);
-                }
-            }
-        }
+    if (my $auth = $self->get_authentication($method)) {
+        return if $auth->status eq $status;
     }
-    return undef;
+
+    # Remove existing status to make the auth methods mutually exclusive
+    $_->delete for $self->client_authentication_method->@*;
+    $self->add_client_authentication_method({authentication_method_code => $method, status => $status});
+
+    my $address_verified_status;
+    if ($status eq 'pass') {
+        $self->status->clear_allow_document_upload;
+        $address_verified_status = 1 unless $method eq 'IDV_PHOTO';
+        $self->update_mifir_id() if $method eq 'ID_DOCUMENT';
+
+    } elsif ($status eq 'needs_action') {
+        $self->status->setnx('allow_document_upload', $staff, 'MARKED_AS_NEEDS_ACTION');
+    }
+
+    $self->status->upsert('address_verified', $staff, 'address verified') if $address_verified_status;
+    $self->status->clear_address_verified unless $address_verified_status;
+
+    $self->save;
+    $self->update_status_after_auth_fa();
 }
 
 =head2 set_authentication_and_status
@@ -559,7 +586,7 @@ it is used in bom-backoffice->f_clientloginid_edit.cgi and bom-events->Authentic
 
 =over 4
 
-=item * C<client_authentication> - client authentication status
+=item * C<type> - client authentication status
 
 =item * C<staff> - the staff who triggered the process
 
@@ -568,67 +595,13 @@ it is used in bom-backoffice->f_clientloginid_edit.cgi and bom-events->Authentic
 =cut
 
 sub set_authentication_and_status {
-    my ($self, $client_authentication, $staff) = @_;
-    my $address_verified;
+    my ($self, $type, $staff) = @_;
 
-    # Remove existing status to make the auth methods mutually exclusive
-    $_->delete for @{$self->client_authentication_method};
-
-    if ($client_authentication eq 'IDV') {
-        $self->set_authentication('IDV', {status => 'pass'}, $staff);
-        $address_verified = 1;
-    }
-
-    if ($client_authentication eq 'IDV_ADDRESS') {
-        $self->set_authentication('IDV_ADDRESS', {status => 'pass'}, $staff);
-        $address_verified = 1;
-    }
-
-    if ($client_authentication eq 'IDV_PHOTO') {
-        $self->set_authentication('IDV_PHOTO', {status => 'pass'}, $staff);
-    }
-
-    if ($client_authentication eq 'ID_NOTARIZED') {
-        $self->set_authentication('ID_NOTARIZED', {status => 'pass'}, $staff);
-        $address_verified = 1;
-    }
-
-    if ($client_authentication eq 'ID_PO_BOX') {
-        $self->set_authentication('ID_PO_BOX', {status => 'pass'}, $staff);
-        $address_verified = 1;
-    }
-
-    if ($client_authentication eq 'ID_DOCUMENT') {
-        $self->set_authentication('ID_DOCUMENT', {status => 'pass'}, $staff);
-        BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $self->loginid});
-        $address_verified = 1;
-        $self->update_mifir_id();
-    }
-
-    if ($client_authentication eq 'ID_ONLINE') {
-        $self->set_authentication('ID_ONLINE', {status => 'pass'}, $staff);
-        $address_verified = 1;
-    }
-
-    if ($client_authentication eq 'NEEDS_ACTION') {
+    if (any { $type eq $_ } qw(IDV IDV_ADDRESS IDV_PHOTO ID_NOTARIZED ID_PO_BOX ID_DOCUMENT ID_ONLINE)) {
+        $self->set_authentication($type, {status => 'pass'}, $staff);
+    } elsif ($type eq 'NEEDS_ACTION') {
         $self->set_authentication('ID_DOCUMENT', {status => 'needs_action'}, $staff);
-        # 'Needs Action' shouldn't replace the locks from the account because we'll lose the request authentication reason
-        $self->status->setnx('allow_document_upload', $staff, 'MARKED_AS_NEEDS_ACTION');
     }
-
-    $self->save;
-    $self->update_status_after_auth_fa('', $staff);
-    # Remove unwelcome status from MX client once it fully authenticated
-    $self->status->clear_unwelcome
-        if ($self->residence eq 'gb'
-        and $self->landing_company->short eq 'iom'
-        and $self->fully_authenticated
-        and $self->status->unwelcome);
-
-    $self->status->upsert('address_verified', $staff, 'address verified') if $address_verified;
-    $self->status->clear_address_verified unless $address_verified;
-
-    return 1;
 }
 
 =head2 notify_cs_about_authenticated_mf

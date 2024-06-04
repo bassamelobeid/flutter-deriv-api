@@ -891,6 +891,10 @@ Return an ARRAY reference that is a list of clients in following order
 
 =item * C<db_operation> - defaults to write.
 
+=item * C<include_virtual> - defaults to true.
+
+=item * C<wallet_loginid> - if empty string will only include accounts with no wallet_loginid
+
 =back
 
 =cut
@@ -901,6 +905,11 @@ sub get_clients_in_sorted_order {
     # Note to avoid binding real/virtual DBs with client creation calls then if include_virtual is 0
     # then accounts_by_category will NOT return any virtual clients. We will filter the account list here
     my @loginids = ($args{include_virtual} // 1) ? $self->bom_loginids : $self->bom_real_loginids;
+
+    if (exists $args{wallet_loginid}) {
+        my %details = $self->loginid_details->%*;
+        @loginids = grep { ($details{$_}{wallet_loginid} // '') eq $args{wallet_loginid} } @loginids;
+    }
 
     my $account_lists    = $self->accounts_by_category(\@loginids, %args);
     my @allowed_statuses = qw(enabled virtual self_excluded disabled);

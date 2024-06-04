@@ -526,7 +526,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     undef @called_for_clients;
 
     # financial assessment incompelete, authenticated, different reason
-    $client_cr->status->setnx('withdrawal_locked', 'system', 'Some reason');
+    $client_cr->status->upsert('withdrawal_locked', 'system', 'Some reason');
     update_financial_assessment($user, $data);
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
     ok $client_cr->status->withdrawal_locked, 'withdrawal is locked for another reason - cannot be auto-removed';

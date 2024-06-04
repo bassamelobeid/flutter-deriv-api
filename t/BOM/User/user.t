@@ -235,6 +235,24 @@ subtest 'user clients' => sub {
     is $clients[1]->loginid, $clients{self_closed}->loginid, 'correct  self-closed loginid';
 };
 
+subtest 'user->clients for wallets' => sub {
+    my $user = BOM::User->create(
+        email    => 'wallet@test.com',
+        password => 'x',
+    );
+
+    my $crw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW', account_type => 'doughflow'});
+    my $cr  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR',  account_type => 'standard'});
+    $user->add_client($crw);
+    $user->add_client($cr, $crw->loginid);
+
+    cmp_bag([map { $_->loginid } $user->clients(wallet_loginid => $crw->loginid)], [$cr->loginid], 'filter with wallet_loginind');
+
+    cmp_bag([map { $_->loginid } $user->clients(wallet_loginid => '')], [$crw->loginid], 'filter with empty wallet_loginind');
+
+    cmp_bag([map { $_->loginid } $user->clients()], [$crw->loginid, $cr->loginid], 'no filter');
+};
+
 subtest 'accounts_by_category' => sub {
     my $user_by_category = BOM::User->create(
         email    => random_email_address({domain => 'binary.com'}),
@@ -496,7 +514,7 @@ subtest 'MirrorBinaryUserId' => sub {
     # at this point we have 8 rows in the queue: 2x VRTC, 7x CR, 2x MT
     my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
     # dependent on clients created by previous tests
-    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 17, 'got expected number of queue entries';
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 19, 'got expected number of queue entries';
 
     BOM::User::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';

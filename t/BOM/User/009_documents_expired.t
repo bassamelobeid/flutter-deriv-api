@@ -60,9 +60,11 @@ $documents_mock->mock(
         return $documents_mock->original('uploaded')->(@_);
     });
 
+my $filenames;
+
 subtest 'client documents expiry' => sub {
     foreach my $loginid (sort keys %clients_document_expiry) {
-        my ($test, $SQL, $sth_doc_new, $id1, $id2, $sth_doc_info, $sth_doc_finish, $sth_doc_update, $actual, $expected);
+        my ($test, $SQL, $sth_doc_new, $id1, $id2, $sth_doc_info, $sth_doc_finish, $sth_doc_update, $actual, $expected, $fname);
 
         my $client          = BOM::User::Client->new({loginid => $loginid});
         my $document_expiry = $clients_document_expiry{$loginid};
@@ -77,8 +79,8 @@ subtest 'client documents expiry' => sub {
             $sth_doc_new = $dbh->prepare($SQL);
             $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 55555, '75bada1e034d13b417083507db47ee4a',
                 'none', 'front', undef, 0, 'legacy');
-
-            $id1 = $sth_doc_new->fetch()->[0];
+            ($id1, $fname) = $sth_doc_new->fetch()->@*;
+            push $filenames->{$client->loginid}{poi}->@*, $fname;
             $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
 
             $sth_doc_info = $dbh->prepare($SQL);
@@ -144,7 +146,8 @@ subtest 'client documents expiry' => sub {
             ## Create a second document
             $sth_doc_new->execute($client->loginid, 'passport', 'PNG', undef, 66666, '204a5098dac0dc176c88e4ab5312dbd5',
                 'none', 'front', undef, 0, 'legacy');
-            $id2 = $sth_doc_new->fetch()->[0];
+            ($id2, $fname) = $sth_doc_new->fetch()->@*;
+            push $filenames->{$client->loginid}{poi}->@*, $fname;
 
             $SQL = 'SELECT COUNT(*) from betonmarkets.client_authentication_document WHERE client_loginid = ?';
             my $doc_nums = $dbh->prepare($SQL);
@@ -175,7 +178,10 @@ subtest 'client documents expiry' => sub {
             $sth_doc_new = $dbh->prepare($SQL);
             $sth_doc_new->execute($client->loginid, 'bankstatement', 'PNG', 'yesterday', 65555, '75bada1e034d13b417083507db47ee4b',
                 'none', 'front', undef, 0, 'legacy');
-            $id1            = $sth_doc_new->fetch()->[0];
+            my $fname;
+            ($id1, $fname) = $sth_doc_new->fetch()->@*;
+            push $filenames->{$client->loginid}{poa}->@*, $fname;
+
             $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
             $sth_doc_finish = $dbh->prepare($SQL);
             $sth_doc_finish->execute($id1);
@@ -229,15 +235,13 @@ subtest 'documents uploaded' => sub {
     my $document_hash_mf = {
         proof_of_address => {
             documents => {
-                $client_mf->loginid
-                    . ".bankstatement.270744561_front.PNG" => {
-                    expiry_date =>
-                        $documents_mf->{proof_of_address}{documents}{$client_mf->loginid . ".bankstatement.270744561_front.PNG"}{expiry_date},
-                    format => "PNG",
-                    id     => 65555,
-                    status => "verified",
-                    type   => "bankstatement",
-                    },
+                $filenames->{$client_mf->loginid}{poa}[0] => {
+                    expiry_date => $documents_mf->{proof_of_address}{documents}{$filenames->{$client_mf->loginid}{poa}[0]}{expiry_date},
+                    format      => "PNG",
+                    id          => 65555,
+                    status      => "verified",
+                    type        => "bankstatement",
+                },
             },
             is_pending         => 0,
             is_verified        => 1,
@@ -247,46 +251,43 @@ subtest 'documents uploaded' => sub {
         },
         proof_of_identity => {
             documents => {
-                $client_mf->loginid
-                    . ".passport.270744521_front.PNG" => {
-                    expiry_date => $documents_mf->{proof_of_identity}{documents}{$client_mf->loginid . ".passport.270744521_front.PNG"}{expiry_date},
+                $filenames->{$client_mf->loginid}{poi}[0] => {
+                    expiry_date => $documents_mf->{proof_of_identity}{documents}{$filenames->{$client_mf->loginid}{poi}[0]}{expiry_date},
                     format      => "PNG",
                     id          => 55555,
                     status      => "verified",
                     type        => "passport",
-                    },
-                $client_mf->loginid
-                    . ".passport.270744541_front.PNG" => {
-                    expiry_date => $documents_mf->{proof_of_identity}{documents}{$client_mf->loginid . ".passport.270744541_front.PNG"}{expiry_date},
+                },
+                $filenames->{$client_mf->loginid}{poi}[1] => {
+                    expiry_date => $documents_mf->{proof_of_identity}{documents}{$filenames->{$client_mf->loginid}{poi}[1]}{expiry_date},
                     format      => "PNG",
                     id          => 66666,
                     status      => "verified",
                     type        => "passport",
-                    },
+                },
             },
             is_expired    => 0,
             is_pending    => 0,
             is_verified   => 2,
             to_be_expired => -1,    # it's okay for this to be a negative number
-            expiry_date   => $documents_mf->{proof_of_identity}{documents}{$client_mf->loginid . ".passport.270744541_front.PNG"}{expiry_date},
+            expiry_date   => $documents_mf->{proof_of_identity}{documents}{$filenames->{$client_mf->loginid}{poi}[0]}{expiry_date},
         },
     };
 
-    cmp_deeply($documents_mf, $document_hash_mf, 'correct structure for client documents');
+    cmp_deeply($documents_mf, $document_hash_mf, 'correct structure for mf client documents');
+
     my $documents_cr = $client_cr->documents->uploaded();
 
     my $document_hash_cr = {
         proof_of_address => {
             documents => {
-                $client_cr->loginid
-                    . ".bankstatement.270744501_front.PNG" => {
-                    expiry_date =>
-                        $documents_cr->{proof_of_address}{documents}{$client_cr->loginid . ".bankstatement.270744501_front.PNG"}{expiry_date},
-                    format => "PNG",
-                    id     => 65555,
-                    status => "verified",
-                    type   => "bankstatement",
-                    },
+                $filenames->{$client_cr->loginid}{poa}[0] => {
+                    expiry_date => $documents_cr->{proof_of_address}{documents}{$filenames->{$client_cr->loginid}{poa}[0]}{expiry_date},
+                    format      => "PNG",
+                    id          => 65555,
+                    status      => "verified",
+                    type        => "bankstatement",
+                },
             },
             is_pending         => 0,
             is_verified        => 1,
@@ -296,32 +297,30 @@ subtest 'documents uploaded' => sub {
         },
         proof_of_identity => {
             documents => {
-                $client_cr->loginid
-                    . ".passport.270744461_front.PNG" => {
-                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744461_front.PNG"}{expiry_date},
+                $filenames->{$client_cr->loginid}{poi}[0] => {
+                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$filenames->{$client_cr->loginid}{poi}[0]}{expiry_date},
                     format      => "PNG",
                     id          => 55555,
                     status      => "verified",
                     type        => "passport",
-                    },
-                $client_cr->loginid
-                    . ".passport.270744481_front.PNG" => {
-                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744481_front.PNG"}{expiry_date},
+                },
+                $filenames->{$client_cr->loginid}{poi}[1] => {
+                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$filenames->{$client_cr->loginid}{poi}[1]}{expiry_date},
                     format      => "PNG",
                     id          => 66666,
                     status      => "verified",
                     type        => "passport",
-                    },
+                },
             },
             is_expired    => 0,
             is_pending    => 0,
             is_verified   => 2,
             to_be_expired => -1,    # it's okay for this to be a negative number
-            expiry_date   => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . '.passport.270744481_front.PNG'}{expiry_date},
+            expiry_date   => $documents_cr->{proof_of_identity}{documents}{$filenames->{$client_cr->loginid}{poi}[0]}{expiry_date},
         },
     };
 
-    cmp_deeply($documents_cr, $document_hash_cr, 'correct structure for client documents');
+    cmp_deeply($documents_cr, $document_hash_cr, 'correct structure for cr client documents');
 
     my $client        = $client_cr;
     my $document_hash = $document_hash_cr;

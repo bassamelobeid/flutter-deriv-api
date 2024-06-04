@@ -671,7 +671,6 @@ subtest 'poa_address_fix' => sub {
             $client->address_2($test->{address_2});
 
             # clear fully_authenticated
-
             $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'}, $test->{staff});
 
             if ($test->{age_verification}) {

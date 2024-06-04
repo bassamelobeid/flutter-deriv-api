@@ -1100,12 +1100,12 @@ subtest 'immutable fields for a real account having duplicate accounts' => sub {
     $client_mf->save;
 
     my $client_mf2 = create_client('MF');
-    $client_mf->email($email2);
-    $client_mf->save;
+    $client_mf2->email($email2);
+    $client_mf2->save;
 
     my $client_mf3 = create_client('MF');
-    $client_mf->email($email);
-    $client_mf->save;
+    $client_mf3->email($email);
+    $client_mf3->save;
 
     my $user = BOM::User->create(
         email          => $email,
@@ -1120,10 +1120,13 @@ subtest 'immutable fields for a real account having duplicate accounts' => sub {
     );
 
     $client_mf->status->clear_age_verification;
+    $client_mf->status->clear_address_verified;
     $client_mf->status->_clear_all;
     $client_mf2->status->clear_age_verification;
+    $client_mf2->status->clear_address_verified;
     $client_mf2->status->_clear_all;
     $client_mf3->status->clear_age_verification;
+    $client_mf3->status->clear_address_verified;
     $client_mf3->status->_clear_all;
 
     $_->delete for @{$client_cr2->client_authentication_method};
@@ -1138,8 +1141,9 @@ subtest 'immutable fields for a real account having duplicate accounts' => sub {
     $client_mf2 = BOM::User::Client->new({loginid => $client_mf2->loginid});    # reload client to avoid cache issues
     $client_mf3 = BOM::User::Client->new({loginid => $client_mf3->loginid});    # reload client to avoid cache issues
 
-    cmp_bag $client_cr->status->all,  [], 'client CR has no status';
-    cmp_bag $client_mf->status->all,  [], 'client MF has no status';
+    cmp_bag $client_cr->status->all, [], 'client CR has no status';
+    cmp_bag $client_mf->status->all, [], 'client MF has no status';
+
     cmp_bag $client_mf2->status->all, [], 'client MF2 has no status';
     ok !$client_cr->fully_authenticated,  'client CR not fully auth';
     ok !$client_mf->fully_authenticated,  'client MF not fully auth';
