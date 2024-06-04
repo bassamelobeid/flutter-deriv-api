@@ -22,7 +22,7 @@ use JSON::MaybeXS;
 use Text::Trim;
 use Math::BigFloat;
 
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw/convert_currency in_usd offer_to_clients/;
 
@@ -83,7 +83,7 @@ use constant {
             TransferBlockedTradingAccounts TransferBlockedLegacy TransferBlockedClientIsVirtual RealToVirtualNotAllowed MaximumTransfers MaximumAmountTransfers
         )]};
 
-my $payment_limits = Business::Config::LandingCompany->new()->payment_limit();
+my $payment_limits = Business::Config::LandingCompany::Registry->new()->payment_limit();
 
 rpc "cashier", sub {
     my $params           = shift;

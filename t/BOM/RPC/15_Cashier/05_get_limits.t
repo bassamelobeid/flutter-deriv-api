@@ -9,7 +9,7 @@ use Test::Deep;
 use YAML::XS qw(LoadFile);
 
 use Format::Util::Numbers qw/formatnumber financialrounding/;
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 
 use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -25,7 +25,7 @@ use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
 
 my $c              = BOM::Test::RPC::QueueClient->new();
-my $payment_limits = Business::Config::LandingCompany->new()->payment_limit();
+my $payment_limits = Business::Config::LandingCompany::Registry->new()->payment_limit();
 my $params         = {token => '12345'};
 
 # Mocked currency converter to imitate currency conversion for CR accounts

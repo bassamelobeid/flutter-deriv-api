@@ -13,7 +13,7 @@ use List::Util qw( first shuffle );
 use YAML::XS;
 use Data::Dumper;
 
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 
 use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
@@ -121,7 +121,7 @@ my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
 my $payment_agent_exclusion_list = BOM::Config::Runtime->instance->app_config->payments->payment_agent_residence_check_exclusion;
 
 ## Cannot test if we do not know some edge cases:
-my $payment_withdrawal_limits = Business::Config::LandingCompany->new()->payment_limit->{withdrawal_limits};
+my $payment_withdrawal_limits = Business::Config::LandingCompany::Registry->new()->payment_limit->{withdrawal_limits};
 my $payment_transfer_limits   = BOM::Config::payment_agent()->{transaction_limits}->{transfer};
 
 my $mock_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
@@ -1350,15 +1350,16 @@ sub reset_payment_agent_config {
 }
 
 sub reset_payment_limit_config {
-    ## In-place modification of the items returned by Business::Config::LandingCompany
+    ## In-place modification of the items returned by Business::Config::LandingCompany::Registry
     ## This is needed as mocking and clone/dclone do not work well, due to items declared as 'state'
     ## We assume all config items are "hashes all the way down"
 
     my $funcname = 'payment_limit';
-    Business::Config::LandingCompany->can($funcname) or die "Sorry, Business::Config::LandingCompany does not have a function named '$funcname'";
+    Business::Config::LandingCompany::Registry->can($funcname)
+        or die "Sorry, Business::Config::LandingCompany::Registry does not have a function named '$funcname'";
 
-    my $config = Business::Config::LandingCompany->new()->$funcname;
-    ref $config eq 'HASH' or die "Business::Config::LandingCompany->$funcname is not a hash?!\n";
+    my $config = Business::Config::LandingCompany::Registry->new()->$funcname;
+    ref $config eq 'HASH' or die "Business::Config::LandingCompany::Registry->$funcname is not a hash?!\n";
 
     reset_config($config);
 

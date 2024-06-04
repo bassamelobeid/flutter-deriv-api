@@ -17,6 +17,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::BOM::RPC::QueueClient;
 use BOM::Test::RPC::QueueClient;
+use Business::Config::LandingCompany::Registry;
 
 use BOM::User;
 use BOM::Config::Redis;
@@ -167,7 +168,7 @@ subtest 'reality_check' => sub {
 
 subtest 'get_limits' => sub {
     my $c              = BOM::Test::RPC::QueueClient->new();
-    my $payment_limits = Business::Config::LandingCompany->new()->payment_limit();
+    my $payment_limits = Business::Config::LandingCompany::Registry->new()->payment_limit();
     my $params         = {token => '12345'};
 
     my %withdrawal = (

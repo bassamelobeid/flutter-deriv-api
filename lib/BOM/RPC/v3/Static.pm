@@ -549,7 +549,7 @@ Return static configuration about the trading platforms currently supported.
 
 rpc trading_platforms => auth => [],
     sub {
-    my $config = Business::Config::LandingCompany->new()->trading_platforms();
+    my $config = Business::Config::LandingCompany::Registry->new()->trading_platforms();
     return $config->{trading_platforms}->{types};
     };
 
