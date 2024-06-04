@@ -40,7 +40,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Utility;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Client::DoughFlowClient;
-use BOM::Platform::Doughflow qw( get_sportsbook );
+use BOM::Platform::Doughflow qw( get_sportsbook_for_client );
 use BOM::Platform::Event::Emitter;
 use BOM::Database::ClientDB;
 use BOM::Config;
@@ -2144,7 +2144,7 @@ print qq[<hr><form action="$self_post?loginID=$encoded_loginid" id="clientInfoFo
     <input type="hidden" name="p2p_approved" value="$p2p_approved">];
 
 # Get latest client object to make sure it contains updated client info (after editing client details form)
-$client = BOM::User::Client->new({loginid => $loginid});
+$client = BOM::User::Client->get_client_instance($loginid, 'write');
 print_client_details($client, $client_aml_jurisdiction_risk, $is_readonly);
 
 my $INPUT_SELECTOR = 'input:not([type="hidden"]):not([type="submit"]):not([type="reset"]):not([type="button"])';
@@ -2458,8 +2458,11 @@ sub dropdown {
     return $ddl;
 }
 
-if (not $client->is_virtual and !$is_readonly) {
+if (!$client->is_virtual && !$is_readonly && ($client->is_legacy || $client->get_account_type->name eq 'doughflow')) {
     Bar("Sync Client Authentication Status to Doughflow", {nav_link => "Sync to Doughflow"});
+
+    print '<p>Doughflow PIN: ' . $client->doughflow_pin . '</p>';
+
     print qq{
         <p>Click to sync client authentication status to Doughflow: </p>
         <form action="$self_post" method="get">

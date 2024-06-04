@@ -1728,6 +1728,9 @@ sub sync_to_doughflow {
     return "Only fiat currency accounts are allowed to sync to doughflow."
         unless LandingCompany::Registry::get_currency_type($client->default_account->currency_code) eq 'fiat';
 
+    return "Sync to doughflow is not applicable to this account type."
+        unless $client->is_legacy || $client->get_account_type->name eq 'doughflow';
+
     my $loginid = $client->loginid;
 
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
@@ -1735,6 +1738,8 @@ sub sync_to_doughflow {
 
     return 'Sync not allowed as the client has never deposited using doughflow.'
         unless $currency;
+
+    my $doughflow_pin = $client->doughflow_pin;
 
     # create handoff token
     my $client_db = BOM::Database::ClientDB->new({
@@ -1745,7 +1750,7 @@ sub sync_to_doughflow {
         db                 => $client_db,
         data_object_params => {
             key            => BOM::Database::Model::HandoffToken::generate_session_key,
-            client_loginid => $loginid,
+            client_loginid => $doughflow_pin,
             expires        => time + 60,
         },
     );
@@ -1771,8 +1776,9 @@ sub sync_to_doughflow {
     my $result = $ua->post(
         $url,
         $df_client->create_customer_property_bag({
+                PIN            => $doughflow_pin,
                 SecurePassCode => $doughflow_pass,
-                Sportsbook     => get_sportsbook($client->broker_code, $currency),
+                Sportsbook     => get_sportsbook_for_client($client),
                 IP_Address     => '127.0.0.1',
                 Password       => $handoff_token->key,
             }));
@@ -1920,7 +1926,7 @@ sub get_client_details {
     my $well_formatted = $loginid =~ m/^[A-Z]{2,4}[\d]{4,10}$/;
     my $client;
     try {
-        $client = BOM::User::Client->new({loginid => $loginid}) if $well_formatted;
+        $client = BOM::User::Client->get_client_instance($loginid, 'write') if $well_formatted;
     } catch {
     }
 
