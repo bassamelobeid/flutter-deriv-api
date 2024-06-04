@@ -5,7 +5,7 @@ the current potential metrics have a zero baseline.  This makes determining a
 proper level for any such metric a more or less boolean choice.  We have either
 created something which is now generating a baseline metric or we have not.
 
-The key parameters that we monitor are on the [Pricing Subsystem dashboard](https://app.datadoghq.com/dashboard/8u5-s2a-4rk/pricing-subsystem?fromUser=false&refresh_mode=sliding&view=spans&from_ts=1716116672725&to_ts=1716289472725&live=true) in DataDog.
+The key parameters that we monitor are on the [Pricing Subsystem dashboard](https://app.datadoghq.com/dashboard/8u5-s2a-4rk/pricing-subsystem?fromUser=false&refresh_mode=sliding&view=spans&from_ts=1716116672725&to_ts=1716289472725&live=true) in DataDog, but we do not expect to see any improvements on those in the medium term.
 
 As such, it is more productive to focus on OKRs for the current period.  Pricing
 services require access to configuration data, market data and pricing request
@@ -17,15 +17,13 @@ in the monolithic legacy code.  The projects we expect to complete in the near
 term include:
 
 - Chronicle reader to extract market data from the existing systems
-    - Current status: 40% complete
-    - Expected completion: 1-2 weeks
+    - Current status: In progress
     - Challenges: proper testing for correctness against production data
 - Offerings service to support contract routing and validation
-    - Current status: nearly complete
+    - Current status: In progress
     - Blocking on: chronicle reader
 - Pricer configuration import to tune pricers as done in legacy perl
-    - Current status: 50% complete
-    - Expected completion: 1-2 weeks
+    - Current status: In progress
     - Needs: conversion to an importable Go module
 - Volatility reader
     - Current status: planning
