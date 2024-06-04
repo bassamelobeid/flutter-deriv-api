@@ -58,6 +58,8 @@ subtest 'Doughflow' => sub {
     $params->{token}           = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token123');
     $params->{domain}          = 'binary.com';
 
+    $mocked_call->mock('post', sub { return {_content => 'frontend not found'} });
+
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_internal_message_like(qr/frontend not found/, 'No frontend error');
 
     $mocked_call->mock('post', sub { return {_content => 'customer too old'} });
@@ -566,45 +568,60 @@ subtest 'Crypto withdrawal API initial validations' => sub {
     $mock_auth->unmock_all();
     $mock_utility->unmock_all();
     $mock_CashierValidation->unmock_all();
-
 };
 
 subtest 'wallets' => sub {
 
     $mocked_call->mock('post', sub { return {_content => 'OK'} });
 
-    my $test_client_crw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code  => 'CRW',
-        account_type => 'doughflow',
-        email        => 'wallet@test.com',
-    });
-
-    my $test_client_std = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code  => 'CR',
-        account_type => 'standard',
-        email        => $test_client_crw->email,
-    });
-
-    my $wallet_user = BOM::User->create(
-        email    => $test_client_crw->email,
+    my $user = BOM::User->create(
+        email    => 'wallet@test.com',
         password => 'x',
     );
 
-    $wallet_user->add_client($test_client_crw);
-    $wallet_user->add_client($test_client_std);
-    $test_client_crw->account('USD');
-    $test_client_std->account('USD');
-    $wallet_user->link_wallet_to_trading_account({wallet_id => $test_client_crw->loginid, client_id => $test_client_std->loginid});
+    my $client_crw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CRW',
+        account_type   => 'doughflow',
+        binary_user_id => $user->id,
+    });
+
+    my $client_std = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        account_type   => 'standard',
+        binary_user_id => $user->id,
+    });
+
+    for my $client ($client_crw, $client_std) {
+        $user->add_client($client);
+        $client->account('USD');
+    }
+    my ($crw_loginid, $std_loginid, $user_id) = ($client_crw->loginid, $client_std->loginid, $user->id);
+
+    $user->link_wallet_to_trading_account({wallet_id => $crw_loginid, client_id => $std_loginid});
 
     my $params = {
         language => 'EN',
         source   => 1,
         args     => {cashier => 'deposit'},
-        token    => BOM::Platform::Token::API->new->create_token($test_client_crw->loginid, 'test token')};
+        token    => BOM::Platform::Token::API->new->create_token($crw_loginid, 'test token')};
 
-    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error('CRW can access cashier');
+    my $resp = $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error('CRW can access cashier')->result;
 
-    $params->{token} = BOM::Platform::Token::API->new->create_token($test_client_std->loginid, 'test token');
+    like $resp, qr/PIN=$crw_loginid/,      'PIN set to CRW loginid';
+    like $resp, qr/udef3=$crw_loginid/,    'udef3 set to CRW loginid';
+    like $resp, qr/udef4=$user_id/,        'udef4 set to user id';
+    like $resp, qr/Sportsbook=.+?WLT.+?&/, 'Sportsbook contains WLT';
+
+    $client_crw->set_doughflow_pin($std_loginid);
+
+    $resp = $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error->result;
+
+    like $resp,   qr/PIN=$std_loginid/,      'PIN set to CR loginid after setting mapping';
+    like $resp,   qr/udef3=$crw_loginid/,    'udef3 set to CRW loginid';
+    like $resp,   qr/udef4=$user_id/,        'udef4 set to user id';
+    unlike $resp, qr/Sportsbook=.+?WLT.+?&/, 'Sportsbook does not contain WLT';
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($std_loginid, 'test token');
 
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error('CR standard cannot access cashier')
         ->error_code_is('CashierForwardError', 'correct error code')

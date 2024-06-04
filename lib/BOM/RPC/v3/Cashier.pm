@@ -34,7 +34,7 @@ use BOM::Config::CurrencyConfig;
 use BOM::RPC::Registry '-dsl';
 
 use BOM::Platform::Client::DoughFlowClient;
-use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
+use BOM::Platform::Doughflow qw( get_sportsbook_for_client get_doughflow_language_code_for );
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Config::PaymentAgent;
@@ -193,16 +193,18 @@ rpc "cashier", sub {
         $log->infof('Trying to access doughflow from an unrecognized domain: %s', $domain);
         DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.invalid_doughflow_domain.count', {tags => ["domain:@{[ $domain ]}"]});
     }
-    $doughflow_loc = "https://cashier.@{[ $domain ]}" if $is_white_listed;
+    $doughflow_loc = "https://cashier.@{[ $domain ]}" if $is_white_listed && !BOM::Config::on_qa();
 
+    my $doughflow_pin     = $client->doughflow_pin;
     my $doughflow_pass    = BOM::Config::third_party()->{doughflow}->{passcode};
     my $url               = $doughflow_loc . '/CreateCustomer.asp';
-    my $sportsbook        = get_sportsbook($df_client->broker, $currency);
-    my $handoff_token_key = _get_handoff_token_key($df_client->loginid);
+    my $sportsbook        = get_sportsbook_for_client($client);
+    my $handoff_token_key = _get_handoff_token_key($df_client->loginid, $doughflow_pin);
 
     my $result = $ua->post(
         $url,
         $df_client->create_customer_property_bag({
+                PIN            => $doughflow_pin,
                 SecurePassCode => $doughflow_pass,
                 Sportsbook     => $sportsbook,
                 IP_Address     => '127.0.0.1',
@@ -263,7 +265,7 @@ rpc "cashier", sub {
         );
     }
 
-    my $secret = String::UTF8::MD5::md5($df_client->loginid . '-' . $handoff_token_key);
+    my $secret = String::UTF8::MD5::md5($doughflow_pin . '-' . $handoff_token_key);
 
     if ($action eq 'deposit') {
         $action = 'DEPOSIT';
@@ -278,12 +280,16 @@ rpc "cashier", sub {
         ->append_utf8(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token_key, $action));
 
     # build DF link.
-    # udef1 and udef2 are custom DF params we use for language and brand
+    # udef* are custom params:
+    # udef1: language
+    # udef2: brand
+    # udef3: real loginid (pin may be different for migrated wallets)
+    # udef4: binary user id
     $url =
           $doughflow_loc
         . '/login.asp?Sportsbook='
         . $sportsbook . '&PIN='
-        . $df_client->loginid
+        . $doughflow_pin
         . '&Lang='
         . get_doughflow_language_code_for($params->{language})
         . '&Password='
@@ -295,7 +301,11 @@ rpc "cashier", sub {
         . '&udef1='
         . $params->{language}
         . '&udef2='
-        . $brand->name;
+        . $brand->name
+        . '&udef3='
+        . $client->loginid
+        . '&udef4='
+        . $client->user->id;
     BOM::User::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
 };
@@ -349,7 +359,7 @@ sub _age_error {
 }
 
 sub _get_handoff_token_key {
-    my $loginid = shift;
+    my ($loginid, $doughflow_pin) = @_;
 
     # create handoff token
     my $cb = BOM::Database::ClientDB->new({
@@ -365,7 +375,7 @@ sub _get_handoff_token_key {
         db                 => $cb->db,
         data_object_params => {
             key            => BOM::Database::Model::HandoffToken::generate_session_key,
-            client_loginid => $loginid,
+            client_loginid => $doughflow_pin,                                             # yes, we are using pin for the loginid
             expires        => time + HANDOFF_TOKEN_TTL,
         },
     );
