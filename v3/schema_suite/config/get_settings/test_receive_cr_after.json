@@ -154,6 +154,12 @@
                     "next_attempt": {
                         "type": "integer"
                     },
+                    "next_email_attempt": {
+                        "type": "integer"
+                    },
+                    "next_verify_attempt": {
+                        "type": "integer"
+                    },
                     "verified": {
                         "type": "integer",
                         "enum": [
