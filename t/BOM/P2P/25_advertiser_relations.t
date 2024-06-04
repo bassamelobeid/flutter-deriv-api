@@ -288,16 +288,20 @@ subtest 'blocking' => sub {
         'events fired'
     );
 
+    is $me->p2p_advert_info(id => $other1_ad->{id})->{is_visible}, 0, "blocker gets full response for blocked advertiser's ad but is_visible:0";
+
     cmp_deeply(
         [map { $_->{id} } $me->p2p_advert_list(type => 'sell')->@*],
         bag($my_ad->{id}, $other2_ad->{id}),
-        'blocker doesnt see blocked advertisers ad'
+        "blocker doesn't see blocked advertisers ad at all (filtered out)"
     );
+
+    is $other1->p2p_advert_info(id => $my_ad->{id})->{is_visible}, 0, "blocker gets full response for blocked advertiser's ad but is_visible:0";
 
     cmp_deeply(
         [map { $_->{id} } $other1->p2p_advert_list(type => 'sell')->@*],
         bag($other1_ad->{id}, $other2_ad->{id}),
-        'blocked advertiser doesnt see blockers ad'
+        "blocked advertiser doesnt see blocker's ad at all (filtered out)"
     );
 
     delete $me->{_p2p_advertiser_cached};

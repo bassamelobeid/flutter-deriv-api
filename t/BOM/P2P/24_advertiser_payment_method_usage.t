@@ -33,7 +33,8 @@ $runtime_config->transaction_verification_countries_all(0);
 
 subtest 'adverts' => sub {
 
-    my $client = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
+    my $client      = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
+    my $otherclient = BOM::Test::Helper::P2PWithClient::create_advertiser;
 
     my %methods = $client->p2p_advertiser_payment_methods(
         create => [{
@@ -68,9 +69,20 @@ subtest 'adverts' => sub {
 
     $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}, method2 => {mode => 'exclude'}}));
     my $ad_info = $client->p2p_advert_info(id => $advert->{id});
-    cmp_deeply $ad_info->{payment_method_names},                      ['Method 1', 'Method 2'], 'disabled pms shown in advert info to advert owner';
+    cmp_deeply $ad_info->{payment_method_names},                      ['Method 2'], 'disabled pms not shown in advert info to advert owner';
     cmp_deeply $client->p2p_advert_list()->[0]{payment_method_names}, ['Method 2'], 'disabled pms not shown in advert list to advert owner';
     cmp_deeply $ad_info->{payment_method_details},                    \%methods,    'payment method details when a method is disbled in country';
+
+    $runtime_config->payment_method_countries($json->encode({method2 => {mode => 'include'}}));
+    cmp_deeply $client->p2p_advert_list(),      [], 'ad is filtered out to ad owner because all ad pms are not supported';
+    cmp_deeply $otherclient->p2p_advert_list(), [], 'ad is filtered out to counterparty because all ad pms are not supported';
+
+    cmp_deeply [$client->p2p_advertiser_adverts()->[0]->@{qw(is_visible visibility_status)}], [0, ["advert_no_payment_methods"]],
+        'ad owner can view ad details but is_visible set to 0 and relevent reason added to visibility status';
+    cmp_deeply [$client->p2p_advert_info(id => $ad_info->{id})->@{qw(is_visible visibility_status)}], [0, ["advert_no_payment_methods"]],
+        'ad owner can view ad details but is_visible set to 0 and relevent reason added to visibility status';
+
+    is $otherclient->p2p_advert_info(id => $ad_info->{id})->{is_visible}, 0, 'counterparty can view ad details but is_visible set to 0';
 
     BOM::Test::Helper::P2PWithClient::create_payment_methods();    # reset
 
@@ -86,7 +98,6 @@ subtest 'adverts' => sub {
     cmp_deeply $ad_info->{payment_method_names},   ['Method 2'], 'payment method names';
     cmp_deeply $ad_info->{payment_method_details}, \%methods,    'payment method details';
 
-    my $otherclient = BOM::Test::Helper::P2PWithClient::create_advertiser;
     $ad_info = $otherclient->p2p_advert_info(id => $advert->{id});
     ok !exists $ad_info->{payment_method_details}, 'payment_method_details not returned for other client from p2p_advert_info';
 
@@ -164,10 +175,9 @@ subtest 'adverts' => sub {
     );
 
     cmp_deeply $advert->{payment_method_names}, ['Method 1', 'Method 2'], 'payment method for buy ad';
-
-    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
-    cmp_deeply $client->p2p_advert_info(id => $advert->{id})->{payment_method_names}, ['Method 1', 'Method 2'],
-        'payment method names when a method is disbled in country';
+    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}, method2 => {mode => 'exclude'}}));
+    cmp_deeply $client->p2p_advert_info(id => $advert->{id})->{payment_method_names}, ['Method 2'],
+        'only available pm names included in advert payment_method_names';
     BOM::Test::Helper::P2PWithClient::create_payment_methods();    # reset
 
     cmp_deeply(
@@ -691,26 +701,23 @@ subtest 'cross border ads' => sub {
 
     my $ads = $client_za->p2p_advert_list(local_currency => 'NGN');
     ok !@$ads, 'sell ad not returned from advert_list when no compatible pms';
+    is $client_za->p2p_advert_info(id => $ad_ng->{id})->{is_visible}, 0, "test";
 
     $ads = $client_ng->p2p_advert_list(local_currency => 'ZAR');
     ok !@$ads, 'no buy ad not returned from advert_list when no compatible pms';
+    is $client_ng->p2p_advert_info(id => $ad_za->{id})->{is_visible}, 0, "test";
 
-    cmp_deeply(
-        $client_ng->p2p_advert_info(id => $ad_ng->{id})->{payment_method_names},
-        ['Method 1', 'Method 2', 'Method 3'],
-        'ad owner sees disabled sell ad pms in advert info'
-    );
+    cmp_deeply($client_ng->p2p_advert_info(id => $ad_ng->{id})->{payment_method_names},
+        ['Method 1'], 'ad owner only see enabled sell ad pms in advert info');
 
-    is $client_za->p2p_advert_info(id => $ad_ng->{id})->{payment_method_names}, undef,
-        'other client does not see disabled sell ad pms in advert info';
+    cmp_deeply [$client_za->p2p_advert_info(id => $ad_ng->{id})->@{qw(is_visible payment_method_names)}], [0, undef],
+        'is_visible set to 0 and payment_method_names not populated for counterparty because there is no matching pm in sell ad';
 
-    cmp_deeply(
-        $client_za->p2p_advert_info(id => $ad_za->{id})->{payment_method_names},
-        ['Method 1', 'Method 2', 'Method 3'],
-        'ad owner sees disabled buy ad pms in advert info'
-    );
+    cmp_deeply($client_za->p2p_advert_info(id => $ad_za->{id})->{payment_method_names},
+        ['Method 2'], 'ad owner sees only enabled buy ad pms in advert info');
 
-    is $client_ng->p2p_advert_info(id => $ad_za->{id})->{payment_method_names}, undef, 'other client does not see disabled buy ad pms in advert info';
+    cmp_deeply [$client_ng->p2p_advert_info(id => $ad_za->{id})->@{qw(is_visible payment_method_names)}], [0, undef],
+        'is_visible set to 0 and payment_method_names not populated for counterparty because there is no matching pm in buy ad';
 
     cmp_deeply(
         exception { $client_ng->p2p_order_create(advert_id => $ad_za->{id}, amount => 1, rule_engine => $rule_engine) },
@@ -764,8 +771,8 @@ subtest 'cross border ads' => sub {
 
     cmp_deeply(
         $client_ng->p2p_advert_info(id => $ad_ng->{id})->{payment_method_names},
-        ['Method 1', 'Method 2', 'Method 3'],
-        'ad owner sees disabled sell ad pms in advert info'
+        ['Method 1', 'Method 3'],
+        'ad owner sees only enabled sell ad pms in advert info'
     );
 
     cmp_deeply($client_za->p2p_advert_info(id => $ad_ng->{id})->{payment_method_names},
@@ -773,8 +780,8 @@ subtest 'cross border ads' => sub {
 
     cmp_deeply(
         $client_za->p2p_advert_info(id => $ad_za->{id})->{payment_method_names},
-        ['Method 1', 'Method 2', 'Method 3'],
-        'ad owner sees disabled buy ad pms in advert info'
+        ['Method 2', 'Method 3'],
+        'ad owner sees only enabled buy ad pms in advert info'
     );
 
     cmp_deeply($client_ng->p2p_advert_info(id => $ad_za->{id})->{payment_method_names},
