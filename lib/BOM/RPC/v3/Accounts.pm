@@ -2481,7 +2481,8 @@ rpc set_settings => sub {
                 }});
 
         BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
-        BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $current_client->loginid});
+        BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',     {loginid => $current_client->loginid});
+        BOM::Platform::Event::Emitter::emit('sync_user_to_CTRADER', {loginid => $current_client->loginid});
 
         BOM::Platform::Event::Emitter::emit('check_name_changes_after_first_deposit', {loginid => $current_client->loginid})
             if any { $_ eq 'first_name' or $_ eq 'last_name' } keys %$updated_fields_for_track;

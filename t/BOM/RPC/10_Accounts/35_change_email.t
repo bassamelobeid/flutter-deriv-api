@@ -212,16 +212,19 @@ subtest 'change email' => sub {
     is($emitted[1][1]->{loginid}, 'MF90000000',       'loginid is correct');
     is($emitted[1][0],            'sync_user_to_MT5', 'event name is correct');
 
-    is($emitted[2][1]->{loginid}, 'MF90000000',          'loginid is correct');
-    is($emitted[2][0],            'sync_onfido_details', 'event name is correct');
+    is($emitted[2][1]->{loginid}, 'MF90000000',           'loginid is correct');
+    is($emitted[2][0],            'sync_user_to_CTRADER', 'event name is correct');
 
-    is($emitted[3][1]->{properties}->{first_name}, 'bRaD',                        'first name is correct');
-    is($emitted[3][1]->{loginid},                  'MF90000000',                  'loginid is correct');
-    is($emitted[3][0],                             'reset_password_confirmation', 'event name is correct');
+    is($emitted[3][1]->{loginid}, 'MF90000000',          'loginid is correct');
+    is($emitted[3][0],            'sync_onfido_details', 'event name is correct');
 
-    is($emitted[4][1]->{properties}->{first_name}, 'bRaD',                 'first name is correct');
-    is($emitted[4][1]->{loginid},                  'MF90000000',           'loginid is correct');
-    is($emitted[4][0],                             'confirm_change_email', 'event name is correct');
+    is($emitted[4][1]->{properties}->{first_name}, 'bRaD',                        'first name is correct');
+    is($emitted[4][1]->{loginid},                  'MF90000000',                  'loginid is correct');
+    is($emitted[4][0],                             'reset_password_confirmation', 'event name is correct');
+
+    is($emitted[5][1]->{properties}->{first_name}, 'bRaD',                 'first name is correct');
+    is($emitted[5][1]->{loginid},                  'MF90000000',           'loginid is correct');
+    is($emitted[5][0],                             'confirm_change_email', 'event name is correct');
 
     $user = BOM::User->new(id => $user->{id});
     isnt($user->{password}, $hash_pwd, 'user password updated');
