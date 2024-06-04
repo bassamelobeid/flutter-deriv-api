@@ -501,6 +501,8 @@ sub p2p_advertiser_adverts {
         advertiser_id => $advertiser_info->{id},
         country       => $self->residence
     );
+
+    $list = [map { $self->filter_ad_payment_methods($_) } @$list];
     return $self->_advert_details($list);
 }
 
@@ -622,10 +624,9 @@ sub p2p_advert_info {
         if ($self->loginid eq $list->[0]{advertiser_loginid}) {
             $list->[0]{payment_method_details} =
                 $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $param{id}));
-        } else {
-            # remove invalid pms for other viewers
-            $list->[0] = $self->filter_ad_payment_methods($list->[0]);
         }
+        # remove invalid pms for myself/counterparties
+        $list->[0] = $self->filter_ad_payment_methods($list->[0]);
 
     } elsif ($param{subscribe}) {
         # at this point, advertiser is subscribing to all their ads
@@ -2917,8 +2918,8 @@ sub _advert_details {
     my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 
     for my $advert (@$list) {
-
-        my $result = {
+        my $is_advert_owner = $self->loginid eq $advert->{advertiser_loginid};
+        my $result          = +{
             account_currency  => $advert->{account_currency},
             country           => $advert->{country},
             created_time      => Date::Utility->new($advert->{created_time})->epoch,
@@ -2952,12 +2953,10 @@ sub _advert_details {
 
             # to match p2p_advert_list params, plus checking if advertiser blocked
             is_visible => (
-                        $advert->{is_active}
-                    and $advert->{can_order}
-                    and $advert->{advertiser_is_approved}
-                    and $advert->{advertiser_is_listed}
-                    and not $advert->{advertiser_blocked}
-                    and not $advert->{is_deleted}
+                all { $advert->{$_} } qw(is_active can_order advertiser_is_approved advertiser_is_listed)
+                    and ($is_advert_owner ? 1 : not($advert->{advertiser_blocked} or $advert->{client_blocked}))
+                    # when client is ad owner, no point checking advertiser_blocked/client_blocked since it's always FALSE
+                    and (($advert->{payment_method_names} // [])->@* or $advert->{payment_method}) and not $advert->{is_deleted}
                 ) ? 1
             : 0,
             advertiser_details => {
@@ -2992,7 +2991,7 @@ sub _advert_details {
             },
         };
 
-        if ($advert->{is_active} and $self->loginid eq $advert->{advertiser_loginid}) {
+        if ($advert->{is_active} and $is_advert_owner) {
             if (my $archive_date = $redis->hget(P2P_ARCHIVE_DATES_KEY, $advert->{id})) {
                 my $days = Date::Utility->new($archive_date)->days_between(Date::Utility->new);
                 $result->{days_until_archive} = $days < 0 ? 0 : $days;
@@ -3010,7 +3009,7 @@ sub _advert_details {
             ];
         }
 
-        if ($self->loginid eq $advert->{advertiser_loginid}) {
+        if ($is_advert_owner) {
             # only the advert owner can see these fields
             $result->{payment_info}             = $advert->{payment_info} // '';
             $result->{contact_info}             = $advert->{contact_info} // '';
@@ -3035,9 +3034,10 @@ sub _advert_details {
                     if ($advert->{advertiser_band_min_balance} // 0) > $advert->{min_order_amount}
                     and $advert->{max_order_amount_actual} < $advert->{advertiser_band_min_balance}
                     and $advert->{max_order_amount_actual} > $advert->{min_order_amount};
-                push @reasons, 'advert_remaining'      if $advert->{remaining} < $advert->{min_order_amount};
-                push @reasons, 'advertiser_ads_paused' if not $advert->{advertiser_is_listed};
-                push @reasons, 'advertiser_approval'   if not $advert->{advertiser_is_approved};
+                push @reasons, 'advert_remaining'          if $advert->{remaining} < $advert->{min_order_amount};
+                push @reasons, 'advert_no_payment_methods' if not(($advert->{payment_method_names} // [])->@* or $advert->{payment_method});
+                push @reasons, 'advertiser_ads_paused'     if not $advert->{advertiser_is_listed};
+                push @reasons, 'advertiser_approval'       if not $advert->{advertiser_is_approved};
                 push @reasons, 'advertiser_balance'
                     if $advert->{type} eq 'sell' and $advert->{advertiser_available_balance} < $advert->{min_order_amount};
                 push @reasons, 'advertiser_daily_limit'
