@@ -79,7 +79,7 @@ use BOM::User::Script::AMLClientsUpdate;
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
 use Business::Config;
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 
 # For smartystreets datadog stats_timing
 $Future::TIMES = 1;
@@ -3304,7 +3304,7 @@ sub qualifying_payment_check {
     my $client = BOM::User::Client->new({loginid => $loginid});
 
     my $payment_check_limits =
-        Business::Config::LandingCompany->new()->payment_limit()->{qualifying_payment_check_limits}->{$client->landing_company->short};
+        Business::Config::LandingCompany::Registry->new()->payment_limit()->{qualifying_payment_check_limits}->{$client->landing_company->short};
 
     my $limit_val       = $payment_check_limits->{limit_for_days};
     my $limit_cur       = $payment_check_limits->{currency};
