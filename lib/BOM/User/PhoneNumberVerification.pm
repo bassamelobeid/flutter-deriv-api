@@ -106,6 +106,28 @@ sub email_blocked {
     return $ttl > 0;
 }
 
+=head2 next_email_attempt
+
+Computes the next attempt for email verification of the current L<BOM::User>.
+
+It returns a timestamp in seconds or C<undef> if there's no necessity for this timestamp.
+
+=cut
+
+sub next_email_attempt {
+    my ($self) = @_;
+
+    return undef if $self->verified;
+
+    my $redis = BOM::Config::Redis::redis_events_write();
+
+    my $ttl = $redis->ttl(PNV_NEXT_EMAIL_PREFIX . $self->user->id) // 0;
+
+    $ttl = 0 if $ttl < 0;
+
+    return time + $ttl;
+}
+
 =head2 verify_blocked
 
 Blocks the verification atttempts of the OTP due to too many attempts.
@@ -140,6 +162,30 @@ sub next_attempt {
     my $ttl = $redis->ttl(PNV_NEXT_PREFIX . $self->user->id) // 0;
 
     $ttl = 0 if $ttl < 0;
+
+    return time + $ttl;
+}
+
+=head2 next_verify_attempt
+
+Computes the next verify attempt of the current L<BOM::User>.
+
+It returns a timestamp in seconds or C<undef> if there's no necessity for this timestamp.
+
+=cut
+
+sub next_verify_attempt {
+    my ($self) = @_;
+
+    return undef if $self->verified;
+
+    my $redis = BOM::Config::Redis::redis_events_write();
+
+    my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->user->id) // 0;
+
+    my $ttl = $redis->ttl(PNV_VERIFY_PREFIX . $self->user->id) // 0;
+
+    $ttl = 0 unless $attempts > SPAM_TOO_MUCH;
 
     return time + $ttl;
 }

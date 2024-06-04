@@ -173,7 +173,9 @@ sub get_user_phone_number_verification {
 
     return {
         verified => $user->pnv->verified,
-        defined $user->pnv->next_attempt ? (next_attempt => $user->pnv->next_attempt) : (),
+        defined $user->pnv->next_attempt        ? (next_attempt        => $user->pnv->next_attempt)        : (),
+        defined $user->pnv->next_email_attempt  ? (next_email_attempt  => $user->pnv->next_email_attempt)  : (),
+        defined $user->pnv->next_verify_attempt ? (next_verify_attempt => $user->pnv->next_verify_attempt) : (),
     };
 }
 

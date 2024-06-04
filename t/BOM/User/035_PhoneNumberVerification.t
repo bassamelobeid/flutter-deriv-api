@@ -87,6 +87,105 @@ subtest 'Next Attempt' => sub {
     $redis_mock->unmock_all();
 };
 
+subtest 'Next Email Attempt' => sub {
+    my $time = time;
+
+    set_fixed_time($time);
+
+    my $redis      = BOM::Config::Redis::redis_events_write();
+    my $redis_mock = Test::MockModule->new(ref($redis));
+    my $ttl;
+
+    $redis_mock->mock(
+        'ttl',
+        sub {
+            return $ttl;
+        });
+
+    $pnv->update(0);
+    $user = BOM::User->new(id => $user->id);
+    $pnv  = $user->pnv;
+    ok !$pnv->verified, 'Phone number is not verified';
+
+    for (undef, 0, -1, -2) {
+        $ttl = $_;
+
+        is $pnv->next_email_attempt, $time, 'Next attempt is the current time';
+    }
+
+    $ttl = 100;
+    $redis->set(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $user->id, 1, 'EX', $ttl);
+
+    is $pnv->next_email_attempt, $time + $ttl, 'Correct next attempt from redis';
+
+    $pnv->update(1);
+
+    $user = BOM::User->new(id => $user->id);
+    $pnv  = $user->pnv;
+
+    is $pnv->next_email_attempt, undef, 'No need for a next attempt when verified';
+
+    restore_time();
+
+    $redis->del(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $user->id);
+
+    $redis_mock->unmock_all();
+};
+
+subtest 'Next Verify Attempt' => sub {
+    my $time = time;
+
+    set_fixed_time($time);
+
+    my $redis      = BOM::Config::Redis::redis_events_write();
+    my $redis_mock = Test::MockModule->new(ref($redis));
+    my $ttl;
+
+    $redis_mock->mock(
+        'ttl',
+        sub {
+            return $ttl;
+        });
+
+    $pnv->update(0);
+    $user = BOM::User->new(id => $user->id);
+    $pnv  = $user->pnv;
+    $pnv->clear_verify_attempts;
+    ok !$pnv->verified, 'Phone number is not verified';
+
+    for (undef, 0, -1, -2) {
+        $ttl = $_;
+
+        is $pnv->next_verify_attempt, $time, 'Next attempt is the current time';
+    }
+
+    $ttl = 100;
+    $redis->set(+BOM::User::PhoneNumberVerification::PNV_VERIFY_PREFIX . $user->id, 1, 'EX', $ttl);
+
+    ok !$pnv->verify_blocked, 'Verification is not blocked';
+
+    is $pnv->next_verify_attempt, $time, 'Correct next attempt from redis';
+
+    $redis->set(+BOM::User::PhoneNumberVerification::PNV_VERIFY_PREFIX . $user->id, 4, 'EX', $ttl);
+
+    ok $pnv->verify_blocked, 'Verification is blocked';
+
+    is $pnv->next_verify_attempt, $time + $ttl, 'Correct next attempt from redis';
+
+    $pnv->update(1);
+
+    $user = BOM::User->new(id => $user->id);
+    $pnv  = $user->pnv;
+
+    is $pnv->next_verify_attempt, undef, 'No need for a next attempt when verified';
+
+    restore_time();
+
+    $redis->del(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $user->id);
+
+    $redis_mock->unmock_all();
+};
+
 subtest 'Generate OTP' => sub {
     my $time = time;
 
@@ -135,6 +234,7 @@ subtest 'Generate OTP' => sub {
 };
 
 subtest 'Increase verify attempts' => sub {
+    $pnv->clear_verify_attempts;
     for (1 .. 6) {
         my $counter = $_;
 
