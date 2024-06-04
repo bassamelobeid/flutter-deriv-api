@@ -17,9 +17,9 @@ use Format::Util::Numbers            qw(roundcommon financialrounding formatnumb
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use List::Util                       qw(min max any sum);
 
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 
 use BOM::Rules::Registry qw(rule);
 use BOM::Config::Runtime;
@@ -195,7 +195,7 @@ rule 'withdrawal.landing_company_limits' => {
         return 1 if $args->{is_internal};
 
         my $lc                = $context->landing_company_object($args);
-        my $withdrawal_limits = Business::Config::LandingCompany->new()->payment_limit()->{withdrawal_limits};
+        my $withdrawal_limits = Business::Config::LandingCompany::Registry->new()->payment_limit()->{withdrawal_limits};
         my $lc_limits         = $withdrawal_limits->{$lc->short} or $self->fail("InvalidLandingCompany", params => [$lc->short]);
         my $lc_currency       = $lc_limits->{currency};
         my $account           = $client->account;
