@@ -726,6 +726,23 @@ if ($input{whattodo} eq 'sync_to_MT5') {
     code_exit_BO();
 }
 
+# sync authentication status to CTrader
+if ($input{whattodo} eq 'sync_to_CTrader') {
+    BOM::Platform::Event::Emitter::emit('sync_user_to_CTRADER', {loginid => $loginid});
+    my $msg = Date::Utility->new->datetime . " sync client information to CTrader is requested by clerk=$clerk $ENV{REMOTE_ADDR}";
+    BOM::User::AuditLog::log($msg, $loginid, $clerk);
+
+    Bar('SYNC CLIENT INFORMATION TO CTRADER');
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_edit_msg.tt',
+        {
+            message  => "Successfully requested syncing client information to CTrader",
+            self_url => $self_href,
+        },
+    ) || die BOM::Backoffice::Request::template()->error(), "\n";
+    code_exit_BO();
+}
+
 # UPLOAD NEW ID DOC.
 if ($input{whattodo} eq 'uploadID') {
     local $CGI::POST_MAX        = 1024 * 1600;    # max 1600K posts
@@ -1629,8 +1646,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
         print "<p class=\"success\">Client " . $cli->loginid . " saved</p>";
         print "<p class=\"error\">$sync_error</p>" if $sync_error;
 
-        BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $cli->loginid})
-            if ($cli->loginid eq $loginid);
+        if ($cli->loginid eq $loginid) {
+            BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',     {loginid => $cli->loginid});
+            BOM::Platform::Event::Emitter::emit('sync_user_to_CTRADER', {loginid => $cli->loginid});
+        }
     }
 
     my %updated_fields = map { defined $input{$_} ? ($_ => $client->$_) : () }
@@ -2457,6 +2476,15 @@ if (not $client->is_virtual and !$is_readonly) {
             <input type="hidden" name="whattodo" value="sync_to_MT5">
             <input type="hidden" name="loginID" value="$encoded_loginid">
             <input type="submit" class="btn btn--primary" value="Sync to MT5">
+        </form>
+    };
+    Bar("Sync Client Information to CTrader", {nav_link => "Sync to CTrader"});
+    print qq{
+        <p>Click to sync client information to CTrader: </p>
+        <form action="$self_post" method="get">
+            <input type="hidden" name="whattodo" value="sync_to_CTrader">
+            <input type="hidden" name="loginID" value="$encoded_loginid">
+            <input type="submit" class="btn btn--primary" value="Sync to CTrader">
         </form>
     };
 }
