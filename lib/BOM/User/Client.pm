@@ -39,7 +39,7 @@ use Finance::MIFIR::CONCAT qw(mifir_concat);
 use P2P;
 use Business::Config::Account;
 use Business::Config::Country::Registry;
-use Business::Config::LandingCompany;
+use Business::Config::LandingCompany::Registry;
 use LandingCompany::Registry;
 
 use BOM::Platform::S3Client;
@@ -2243,7 +2243,7 @@ sub increment_qualifying_payments {
     my $redis_key = $loginid . '_' . $args->{action} . '_qualifying_payment_check';
 
     my $payment_check_limits =
-        Business::Config::LandingCompany->new()->payment_limit()->{qualifying_payment_check_limits}->{$self->landing_company->short};
+        Business::Config::LandingCompany::Registry->new()->payment_limit()->{qualifying_payment_check_limits}->{$self->landing_company->short};
 
     if ($redis->exists($redis_key)) {
         # abs() is used, as withdrawal transactions have negative amount
@@ -4947,7 +4947,7 @@ sub update_status_after_auth_fa {
     }
 
     if (my $p2p_advertiser = P2P->new(client => $self)->_p2p_advertiser_cached) {
-        my $limit = Business::Config::LandingCompany->new()->payment_limit()->{withdrawal_limits}{$self->landing_company->short};
+        my $limit = Business::Config::LandingCompany::Registry->new()->payment_limit()->{withdrawal_limits}{$self->landing_company->short};
         $self->db->dbic->run(
             fixup => sub {
                 $_->do('SELECT p2p.populate_withdrawal_limits(?, ?, NULL)', undef, $limit->{lifetime_limit}, $p2p_advertiser->{id});
