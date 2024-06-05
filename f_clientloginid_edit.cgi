@@ -1167,7 +1167,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     if ($input{client_authentication}) {
         $auth_method = $input{client_authentication};
         $client->set_authentication_and_status($auth_method, $clerk);
-        _update_mt5_status($client) if any { $auth_method eq $_ } qw/ID_DOCUMENT NEEDS_ACTION/;
+        _update_mt5_status($client);
     }
     if ($input{age_verification} and not $client->is_virtual) {
         my @allowed_lc_to_sync = (@{$client->landing_company->allowed_landing_companies_for_age_verification_sync}, $client->landing_company->short);
@@ -1615,7 +1615,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                 }
             }
         }
-        _update_mt5_status($cli);
     }
 
     # Check if expected address has been updated
