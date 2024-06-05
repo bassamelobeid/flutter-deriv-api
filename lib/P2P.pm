@@ -156,7 +156,7 @@ Returns, a C<hashref> containing the P2P settings.
 sub p2p_settings {
     my ($self, %param) = @_;
     my $residence = $self->residence;
-    die +{error_code => 'RestrictedCountry'} unless BOM::Config::P2P::advert_config()->{$residence};
+    die +{error_code => 'RestrictedCountry'} unless $self->_advert_config_cached->{$residence};
     my $result = BOM::User::Utility::get_p2p_settings(country => $residence);
     $result->{subscription_info} = {country => $residence} if $param{subscribe};
     return $result;
@@ -2214,14 +2214,14 @@ Validation of advert rate and rate_type fields.
 sub _validate_advert_rates {
     my ($self, %param) = @_;
 
-    my $advert_config  = BOM::Config::P2P::advert_config()->{$param{country}} or die +{error_code => 'RestrictedCountry'};
-    my $type_changed   = $param{rate_type} ne ($param{old}->{rate_type} // '');
-    my $active_changed = ($param{is_active} and $param{is_active} != ($param{old}->{is_active} // 0));
+    my $country_advert_config = $self->_advert_config_cached->{$param{country}} or die +{error_code => 'RestrictedCountry'};
+    my $type_changed          = $param{rate_type} ne ($param{old}->{rate_type} // '');
+    my $active_changed        = ($param{is_active} and $param{is_active} != ($param{old}->{is_active} // 0));
 
     if ($param{rate_type} eq 'float') {
         die +{error_code => 'AdvertFloatRateNotAllowed'}
-            if ($type_changed and $advert_config->{float_ads} ne 'enabled')
-            or ($active_changed and $advert_config->{float_ads} eq 'disabled');
+            if ($type_changed and $country_advert_config->{float_ads} ne 'enabled')
+            or ($active_changed and $country_advert_config->{float_ads} eq 'disabled');
 
         # too much precision
         if (my ($decimals) = $param{rate} =~ /\.(\d+)$/) {
@@ -2240,8 +2240,8 @@ sub _validate_advert_rates {
         }
     } else {    # fixed rate
         die +{error_code => 'AdvertFixedRateNotAllowed'}
-            if ($type_changed and $advert_config->{fixed_ads} ne 'enabled')
-            or ($active_changed and $advert_config->{fixed_ads} eq 'disabled');
+            if ($type_changed and $country_advert_config->{fixed_ads} ne 'enabled')
+            or ($active_changed and $country_advert_config->{fixed_ads} eq 'disabled');
 
         # rate min
         if ($param{rate} < P2P_RATE_LOWER_LIMIT) {
@@ -2859,8 +2859,8 @@ sub _advertiser_details {
         }
 
         # if ad rates are not in the default setting, FE needs to know if advertiser has active ads of each type
-        my $advert_config = BOM::Config::P2P::advert_config()->{$self->residence};
-        if ($advert_config and ($advert_config->{fixed_ads} ne 'enabled' or $advert_config->{float_ads} ne 'disabled')) {
+        my $country_advert_config = $self->_advert_config_cached->{$self->residence};
+        if ($country_advert_config && ($country_advert_config->{fixed_ads} ne 'enabled' || $country_advert_config->{float_ads} ne 'disabled')) {
             my $ads = $self->_p2p_adverts(
                 advertiser_id => $advertiser->{id},
                 is_active     => 1,
@@ -3027,24 +3027,29 @@ sub _advert_details {
 
             if (not $result->{is_visible}) {
                 my @reasons;
-                push @reasons, 'advert_inactive'  if not $advert->{is_active};
-                push @reasons, 'advert_max_limit' if $advert->{max_order_exceeded};
-                # advert_min_limit should only be returned for the exact reason of band minimum
-                push @reasons, 'advert_min_limit'
-                    if ($advert->{advertiser_band_min_balance} // 0) > $advert->{min_order_amount}
-                    and $advert->{max_order_amount_actual} < $advert->{advertiser_band_min_balance}
-                    and $advert->{max_order_amount_actual} > $advert->{min_order_amount};
-                push @reasons, 'advert_remaining'          if $advert->{remaining} < $advert->{min_order_amount};
-                push @reasons, 'advert_no_payment_methods' if not(($advert->{payment_method_names} // [])->@* or $advert->{payment_method});
-                push @reasons, 'advertiser_ads_paused'     if not $advert->{advertiser_is_listed};
-                push @reasons, 'advertiser_approval'       if not $advert->{advertiser_is_approved};
-                push @reasons, 'advertiser_balance'
-                    if $advert->{type} eq 'sell' and $advert->{advertiser_available_balance} < $advert->{min_order_amount};
-                push @reasons, 'advertiser_daily_limit'
-                    if defined($advert->{advertiser_available_limit})
-                    and $advert->{advertiser_available_limit} < $advert->{min_order_amount};
-                push @reasons, 'advertiser_temp_ban'               if $advert->{advertiser_temp_ban};
-                push @reasons, 'advertiser_block_trade_ineligible' if $advert->{block_trade} and not $advert->{advertiser_can_block_trade};
+                my $country_advert_config = $self->_advert_config_cached->{$advert->{country}} // {};
+                if ($country_advert_config->{$advert->{rate_type} . '_ads'} eq 'disabled') {
+                    @reasons = ('advert_' . $advert->{rate_type} . '_rate_disabled');    # this reason replaces all others
+                } else {
+                    push @reasons, 'advert_inactive'  if not $advert->{is_active};
+                    push @reasons, 'advert_max_limit' if $advert->{max_order_exceeded};
+                    # advert_min_limit should only be returned for the exact reason of band minimum
+                    push @reasons, 'advert_min_limit'
+                        if ($advert->{advertiser_band_min_balance} // 0) > $advert->{min_order_amount}
+                        and $advert->{max_order_amount_actual} < $advert->{advertiser_band_min_balance}
+                        and $advert->{max_order_amount_actual} > $advert->{min_order_amount};
+                    push @reasons, 'advert_remaining'          if $advert->{remaining} < $advert->{min_order_amount};
+                    push @reasons, 'advert_no_payment_methods' if not(($advert->{payment_method_names} // [])->@* or $advert->{payment_method});
+                    push @reasons, 'advertiser_ads_paused'     if not $advert->{advertiser_is_listed};
+                    push @reasons, 'advertiser_approval'       if not $advert->{advertiser_is_approved};
+                    push @reasons, 'advertiser_balance'
+                        if $advert->{type} eq 'sell' and $advert->{advertiser_available_balance} < $advert->{min_order_amount};
+                    push @reasons, 'advertiser_daily_limit'
+                        if defined($advert->{advertiser_available_limit})
+                        and $advert->{advertiser_available_limit} < $advert->{min_order_amount};
+                    push @reasons, 'advertiser_temp_ban'               if $advert->{advertiser_temp_ban};
+                    push @reasons, 'advertiser_block_trade_ineligible' if $advert->{block_trade} and not $advert->{advertiser_can_block_trade};
+                }
                 $result->{visibility_status} = \@reasons;
             }
         } else {
@@ -4299,11 +4304,11 @@ Takes the following arguments:
 sub p2p_country_list {
     my ($self, %param) = @_;
 
-    my $target_country = @param{qw/country/};
+    my $target_country = $param{country};
 
-    my $app_config        = BOM::Config::Runtime->instance->app_config;
-    my $p2p_config        = $app_config->payments->p2p;
-    my $p2p_advert_config = BOM::Config::P2P::advert_config();
+    my $app_config    = BOM::Config::Runtime->instance->app_config;
+    my $p2p_config    = $app_config->payments->p2p;
+    my $advert_config = $self->_advert_config_cached();
 
     my $all_countries = BOM::Config::P2P::available_countries();
 
@@ -4313,22 +4318,21 @@ sub p2p_country_list {
 
     for my $country (keys $all_countries->%*) {
         next if $target_country and $target_country ne $country;
-        my $country_p2p_advert_config = $p2p_advert_config->{$country};
 
-        $countries->{$country}->{country_name}    = $all_countries->{$country};
-        $countries->{$country}->{payment_methods} = $self->p2p_payment_methods($country);
+        $countries->{$country}{country_name}    = $all_countries->{$country};
+        $countries->{$country}{payment_methods} = $self->p2p_payment_methods($country);
 
         my $local_currency = BOM::Config::CurrencyConfig::local_currency_for_country(country => $country);
-        $countries->{$country}->{local_currency} = $local_currency;
+        $countries->{$country}{local_currency} = $local_currency;
 
-        $countries->{$country}->{float_rate_offset_limit} =
+        $countries->{$country}{float_rate_offset_limit} =
             Math::BigFloat->new(BOM::Config::P2P::currency_float_range($local_currency))->bdiv(2)->bfround(-2, 'trunc')->bstr;
 
-        $countries->{$country}->{cross_border_ads_enabled} =
+        $countries->{$country}{cross_border_ads_enabled} =
             (any { lc($_) eq $country } $p2p_config->cross_border_ads_restricted_countries->@*) ? 0 : 1;
 
-        $countries->{$country}->{fixed_rate_adverts} = $country_p2p_advert_config->{fixed_ads};
-        $countries->{$country}->{float_rate_adverts} = $country_p2p_advert_config->{float_ads};
+        $countries->{$country}{fixed_rate_adverts} = $advert_config->{$country}{fixed_ads};
+        $countries->{$country}{float_rate_adverts} = $advert_config->{$country}{float_ads};
     }
 
     return $countries;
@@ -4337,8 +4341,6 @@ sub p2p_country_list {
 =head2 _p2p_payment_methods_cached
 
 Cache of p2p payment methods for the current client.
-
-We often need to get it more than once for a single RPC call.
 
 In tests you will need to delete this every time you update an payment methods and call another RPC method.
 
@@ -4354,10 +4356,6 @@ sub _p2p_payment_methods_cached {
 
 Cache of p2p payment method and their countries the current client.
 
-We often need to get it more than once for a single RPC call.
-
-In tests you will need to delete this every time you update an advertiser and call another RPC method.
-
 =cut
 
 sub _payment_method_countries_cached {
@@ -4367,7 +4365,19 @@ sub _payment_method_countries_cached {
         decode_json_utf8(BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries());
 }
 
-#### TODO: As Bill Marrioitt suggesting bellow functions should remove and use $p2p->client->sub_call explicity everywhere!
+=head2 _advert_config_cached
+
+Cache of BOM::Config::P2P::advert_config for the current instance
+
+=cut
+
+sub _advert_config_cached {
+    my $self = shift;
+
+    return $self->{_advert_config_cached} //= BOM::Config::P2P::advert_config();
+}
+
+#### TODO: As Bill Marriott suggesting below functions should remove and use $p2p->client->sub_call explicity everywhere!
 
 sub broker_code {
     my $self = shift;

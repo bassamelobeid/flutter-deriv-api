@@ -959,6 +959,29 @@ subtest 'is_visible flag and subscription event' => sub {
     $config->limits->maximum_order(1000);
     cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after limit increased';
 
+    delete $client->{_advert_config_cached};
+    $config->country_advert_config(
+        encode_json_utf8({
+                $client->residence => {
+                    float_ads => 'enabled',
+                    fixed_ads => 'disabled'
+                }}));
+
+    $advert = $client->p2p_advert_update(
+        id        => $advert->{id},
+        is_active => 0
+    );
+
+    cmp_deeply $advert->{visibility_status}, ['advert_fixed_rate_disabled'], 'visibility_status contains only fixed_ads_disabled';
+
+    delete $client->{_advert_config_cached};
+    $config->country_advert_config('{}');
+
+    $client->p2p_advert_update(
+        id        => $advert->{id},
+        is_active => 1
+    );
+
     my $client2 = BOM::Test::Helper::P2P::create_advertiser;
     $client2->p2p_advertiser_relations(add_blocked => [$advertiser_id]);
     cmp_ok $client2->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 0, 'not visible when blocked';

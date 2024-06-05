@@ -284,6 +284,7 @@ subtest $method => sub {
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'id'});
     my %params     = %params;
 
+    delete $advertiser->{_advert_config_cached};
     $config->country_advert_config(
         encode_json_utf8({
                 'id' => {
@@ -316,6 +317,7 @@ subtest $method => sub {
             'No error editing fixed ad when fixed ads disabled'
         );
 
+        delete $advertiser->{_advert_config_cached};
         $config->country_advert_config(
             encode_json_utf8({
                     'id' => {
@@ -371,6 +373,7 @@ subtest $method => sub {
             'No error editing floating ad when floating ads disabled'
         );
 
+        delete $advertiser->{_advert_config_cached};
         $config->country_advert_config(
             encode_json_utf8({
                     'id' => {
@@ -445,6 +448,7 @@ subtest $method => sub {
             'Eeror when rate outside currency specific limit'
         );
 
+        delete $advertiser->{_advert_config_cached};
         $config->currency_config('{}');
         $config->country_advert_config('{}');
     };
