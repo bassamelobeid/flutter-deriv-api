@@ -8,6 +8,7 @@ use Digest::SHA qw(sha256_hex);
 use BOM::Config;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::Platform::Event::Emitter;
+use MIME::Base64;
 
 use parent qw(Mojolicious::Controller);
 
@@ -45,10 +46,13 @@ sub send_event {
         'idv_webhook',
         {
             headers => $self->req->headers->to_hash,
-            body    => $self->req->body,
+            body    => {
+                json => $json,
+                raw  => encode_base64($self->req->body)
+            },
         });
 
-    stats_inc("bom_platform.webhook.idv_webhook_received");
+    stats_inc('bom_platform.webhook.idv_webhook_received');
     return 1;
 }
 

@@ -4,7 +4,7 @@ use Test::Deep;
 use Test::MockModule;
 use BOM::Config;
 use JSON;
-use Digest::SHA qw(hmac_sha256_base64);
+use MIME::Base64;
 
 my $t              = Test::Mojo->new('BOM::Platform::Webhook');
 my $config         = BOM::Config::third_party();
@@ -27,8 +27,9 @@ $emit_mock->mock(
     sub {
         my ($event, $args) = @_;
         is $event, 'idv_webhook', 'Event correctly emitted';
-        cmp_deeply $args->{body},    $expected_data, 'Data looks good';
-        cmp_deeply $args->{headers}, $headers,       'Headers ok';
+        cmp_deeply $args->{body}->{json}, $expected_data,                                   'JSON data looks good';
+        cmp_deeply $args->{body}->{raw},  encode_base64(JSON::encode_json($expected_data)), 'Base64 data looks good';
+        cmp_deeply $args->{headers},      $headers,                                         'Headers ok';
         return 1;
     });
 
@@ -44,7 +45,7 @@ subtest 'ok test' => sub {
 
     @metrics       = ();
     $signature     = undef;
-    $expected_data = JSON::encode_json($payload);
+    $expected_data = $payload;
     $t->post_ok(
         '/idv',
         json    => $payload,

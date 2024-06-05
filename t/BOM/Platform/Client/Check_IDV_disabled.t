@@ -444,7 +444,8 @@ subtest 'idv_configuration' => sub {
                 ai_prise => {
                     countries => {
                         bd => {documents => {national_id => ignore()}},
-                        cn => {documents => {national_id => ignore()}}}}}};
+                        cn => {documents => {national_id => ignore()}},
+                        mx => {documents => {curp        => ignore()}}}}}};
 
         cmp_deeply $config, $expected, 'expected configuration for implemented providers';
 
