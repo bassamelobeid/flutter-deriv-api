@@ -35,13 +35,6 @@ sub process_dividend {
 sub save_dividends {
     my ($data) = @_;
 
-    # This will be complete remove once we have all the cash indices closed
-    my %otc_indices =
-        map { $_ => 1 } grep { create_underlying($_)->submarket->is_OTC } create_underlying_db->get_symbols_for(
-        market            => 'indices',
-        contract_category => 'ANY'
-        );
-
     foreach my $symbol (keys %{$data}) {
         my $rates = $data->{$symbol}->{dividend_yields};
 
@@ -50,25 +43,16 @@ sub save_dividends {
         }
 
         try {
-            my $dividends = Quant::Framework::Asset->new(
+            my $otc_dividend = Quant::Framework::Asset->new(
                 symbol           => $symbol,
                 rates            => $rates,
                 recorded_date    => Date::Utility->new,
                 chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
             );
-            if (exists $otc_indices{'OTC_' . $symbol}) {
-                my $otc_dividend = Quant::Framework::Asset->new(
-                    symbol           => 'OTC_' . $symbol,
-                    rates            => $rates,
-                    recorded_date    => Date::Utility->new,
-                    chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
-                    chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
-                );
-                $otc_dividend->save;
-            }
 
-            $dividends->save;
+            $otc_dividend->save;
+
         } catch ($e) {
             print "<p class='error'>We are having error for $symbol: $e</p>";
         }
@@ -124,14 +108,14 @@ sub read_discrete_forecasted_dividend_from_excel_files {
             }
             $spot = $sheet->Cell(6, 2)->{'Val'};
         } else {
-            $underlying = create_underlying($symbol);
             try {
-                $spot = $underlying->spot // create_underlying('OTC_' . $symbol)->spot;
+                $underlying = create_underlying('OTC_' . $symbol);
+                $spot       = $underlying->spot;
             } catch ($e) {
                 print "<p class='error'>$e</p>";
             }
-
         }
+
         unless ($spot) {
             push @skipped, $underlying->symbol;
             next;
