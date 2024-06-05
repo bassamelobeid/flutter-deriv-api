@@ -60,7 +60,18 @@ my $dbic = BOM::Database::ClientDB->new({
 my $rows = $dbic->run(
     fixup => sub {
         $_->selectall_arrayref("
-                SELECT * 
+              SELECT broker_code
+                   , client_loginid
+                   , residence
+                   , payment_time
+                   , payment_gateway_code
+                   , payment_type_code
+                   , currency_code
+                   , amount
+                   , transferred_amount
+                   , currency_code_to
+                   , transfer_fees
+                   , remark
                 FROM payment.payments_report(
                     ?,
                     date_trunc('day', ?::TIMESTAMP),
