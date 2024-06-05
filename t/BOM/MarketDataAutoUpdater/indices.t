@@ -10,10 +10,13 @@ use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 my $fake_date = Date::Utility->new('2012-12-12 15:55:55');
 set_absolute_time($fake_date->epoch);
 
-my $symbols_to_update = [
-    'OTC_AEX',  'OTC_AS51', 'OTC_DJI', 'OTC_FCHI', 'OTC_FTSE', 'OTC_GDAXI', 'OTC_HSI', 'OTC_IBEX35',
-    'OTC_N225', 'OTC_NDX',  'OTC_SPC', 'OTC_SSMI', 'OTC_SX5E'
-];
+my @otc_symbols = (
+    'OTC_AEX', 'OTC_AS51', 'OTC_DJI',  'OTC_FCHI', 'OTC_FTSE', 'OTC_GDAXI', 'OTC_HSI',   'OTC_N225',
+    'OTC_NDX', 'OTC_SPC',  'OTC_SSMI', 'OTC_SX5E', 'OTC_MID',  'OTC_XIN9I', 'OTC_HSCEI', 'OTC_RTY'
+);
+@otc_symbols = sort @otc_symbols;
+
+my $symbols_to_update = \@otc_symbols;
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
         underlying => $_,
@@ -38,18 +41,22 @@ is $au->input_market, 'indices',   'input_market';
 is_deeply($au->symbols_to_update, $symbols_to_update, 'symbols_to_update matches');
 
 my $bloomberg_symbol_mapping = {
-    'AEX'  => 'OTC_AEX',
-    'AS51' => 'OTC_AS51',
-    'CAC'  => 'OTC_FCHI',
-    'DAX'  => 'OTC_GDAXI',
-    'HSI'  => 'OTC_HSI',
-    'INDU' => 'OTC_DJI',
-    'NDX'  => 'OTC_NDX',
-    'NKY'  => 'OTC_N225',
-    'SMI'  => 'OTC_SSMI',
-    'SPX'  => 'OTC_SPC',
-    'SX5E' => 'OTC_SX5E',
-    'UKX'  => 'OTC_FTSE'
+    'AEX'   => 'OTC_AEX',
+    'AS51'  => 'OTC_AS51',
+    'CAC'   => 'OTC_FCHI',
+    'DAX'   => 'OTC_GDAXI',
+    'HSI'   => 'OTC_HSI',
+    'INDU'  => 'OTC_DJI',
+    'NDX'   => 'OTC_NDX',
+    'NKY'   => 'OTC_N225',
+    'SMI'   => 'OTC_SSMI',
+    'SPX'   => 'OTC_SPC',
+    'SX5E'  => 'OTC_SX5E',
+    'UKX'   => 'OTC_FTSE',
+    'MID'   => 'OTC_MID',
+    'XIN9I' => 'OTC_XIN9I',
+    'HSCEI' => 'OTC_HSCEI',
+    'RTY'   => 'OTC_RTY'
 };
 
 is_deeply($au->bloomberg_symbol_mapping, $bloomberg_symbol_mapping, 'bloomberg_symbol_mapping matches');

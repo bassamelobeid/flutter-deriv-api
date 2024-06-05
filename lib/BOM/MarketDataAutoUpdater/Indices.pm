@@ -47,18 +47,22 @@ has bloomberg_symbol_mapping => (
     is      => 'ro',
     default => sub {
         {
-            'AEX'  => 'OTC_AEX',
-            'AS51' => 'OTC_AS51',
-            'CAC'  => 'OTC_FCHI',
-            'DAX'  => 'OTC_GDAXI',
-            'HSI'  => 'OTC_HSI',
-            'INDU' => 'OTC_DJI',
-            'NDX'  => 'OTC_NDX',
-            'NKY'  => 'OTC_N225',
-            'SMI'  => 'OTC_SSMI',
-            'SPX'  => 'OTC_SPC',
-            'SX5E' => 'OTC_SX5E',
-            'UKX'  => 'OTC_FTSE'
+            'AEX'   => 'OTC_AEX',
+            'AS51'  => 'OTC_AS51',
+            'CAC'   => 'OTC_FCHI',
+            'DAX'   => 'OTC_GDAXI',
+            'HSI'   => 'OTC_HSI',
+            'INDU'  => 'OTC_DJI',
+            'NDX'   => 'OTC_NDX',
+            'NKY'   => 'OTC_N225',
+            'SMI'   => 'OTC_SSMI',
+            'SPX'   => 'OTC_SPC',
+            'SX5E'  => 'OTC_SX5E',
+            'UKX'   => 'OTC_FTSE',
+            'MID'   => 'OTC_MID',
+            'XIN9I' => 'OTC_XIN9I',
+            'HSCEI' => 'OTC_HSCEI',
+            'RTY'   => 'OTC_RTY'
         };
     },
 );
@@ -70,12 +74,8 @@ has symbols_to_update => (
 
 sub _build_symbols_to_update {
     my $self      = shift;
-    my %skip_list = map { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
-
-    my @indices = grep { !$skip_list{$_} } create_underlying_db->get_symbols_for(
-        market            => ['indices'],
-        contract_category => 'ANY',
-    );
+    my %skip_list = map  { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
+    my @indices   = grep { !$skip_list{$_} } sort values $self->bloomberg_symbol_mapping->%*;
 
     return \@indices;
 }
