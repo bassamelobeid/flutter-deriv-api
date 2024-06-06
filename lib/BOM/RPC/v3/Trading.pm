@@ -7,7 +7,7 @@ no indirect;
 use Future;
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
-use List::Util qw(first none any);
+use List::Util qw(first none any all);
 
 use BOM::TradingPlatform;
 use BOM::Platform::Context qw (localize request);
@@ -23,6 +23,7 @@ use BOM::User;
 use BOM::User::Password;
 use BOM::Product::Listing;
 use BOM::Config;
+use Deriv::TradingPlatform;
 
 requires_auth('trading', 'wallet');
 
@@ -973,6 +974,46 @@ Returns dynamic leverage details data for the platform, defaults to mt5
 rpc trading_platform_leverage => auth => [],
     sub {
     return {leverage => BOM::Config::dynamic_leverage_config()};
+    };
+
+=head2 trading_platform_status
+
+Returns suspend status of trading platform.
+
+=over 4
+
+=item * platform - a string to represent trading platform. (E.g. mt5)
+
+=back
+
+=cut
+
+rpc trading_platform_status => auth => [],
+    sub {
+    my @trading_platform_status;
+    try {
+        my @platforms = Deriv::TradingPlatform->trading_platforms();
+
+        foreach my $platform (@platforms) {
+
+            my $trading_platform = Deriv::TradingPlatform::create(platform => $platform);
+            push @trading_platform_status, {
+                platform => $platform,
+                status   => (
+                    $trading_platform->is_platform_suspended()
+                        || all {
+                        my $account_type = $_;
+
+                        all { $trading_platform->is_server_suspended($account_type, $_) } $trading_platform->server_names($account_type)->@*;
+                        } qw (real demo)
+                ) ? 'maintenance' : 'active',
+            };
+        }
+        return \@trading_platform_status;
+    } catch ($e) {
+        handle_error($e);
+    }
+
     };
 
 1;
