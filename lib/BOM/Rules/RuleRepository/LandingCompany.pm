@@ -17,6 +17,7 @@ use List::MoreUtils qw(uniq);
 
 use LandingCompany::Registry;
 use BOM::Rules::Registry qw(rule);
+use BOM::Config::AccountType::Registry;
 
 rule 'landing_company.accounts_limit_not_reached' => {
     description => "Only one account (enabled or disabled) is allowed on regulated landing companies. Duplicate account are ignored.",
@@ -33,9 +34,6 @@ rule 'landing_company.accounts_limit_not_reached' => {
 
         my $account_type = $args->{account_type} // '';
 
-        # Only virtual and regulated trading accounts are limitted.
-        # my $number_of_accounts_limited = $is_virtual || ($landing_company->is_eu && $account_type ne 'wallet');
-
         # Regulated landing companies and trading accounts are limitted.
         # Landing companies for affiliates are also limited.
         my $number_of_accounts_limited =
@@ -45,10 +43,20 @@ rule 'landing_company.accounts_limit_not_reached' => {
 
         # duplicate should be ignored here; because we want to let new accounts created with a duplicate account existing
         # (it's a common workaround for currency change after deposit).
-        my @clients         = grep { not($_->status->duplicate_account) } $client->user->clients_for_landing_company($args->{landing_company});
+        my @clients         = grep { not($_->status->duplicate_account) } $context->user->clients_for_landing_company($args->{landing_company});
         my @enabled_clients = grep { not($_->status->disabled) } @clients;
         # disabled accounts should be always ignored when reactivating ccounts
         @clients = @enabled_clients if $action_type eq 'reactivate';
+
+        if ($args->{wallet_loginid}) {
+            my %details = $context->user->loginid_details->%*;
+            @clients = grep { ($details{$_->loginid}->{wallet_loginid} // '') eq $args->{wallet_loginid} } @clients;
+        }
+
+        if ($account_type) {
+            my $account_category = BOM::Config::AccountType::Registry->account_type_by_name($account_type)->category->name;
+            @clients = grep { $_->is_wallet } @clients if $account_category eq 'wallet';
+        }
 
         return 1 unless scalar @clients;
 

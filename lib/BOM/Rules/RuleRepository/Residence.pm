@@ -28,31 +28,6 @@ rule 'residence.account_type_is_available' => {
         $self->fail('InvalidAccount', description => 'Market type or landing company is invalid')
             unless $account_type->is_supported($context->brand($args), $context->residence($args), $context->landing_company($args));
 
-        if ($account_type->name eq 'standard') {
-            my $wallet      = $context->client($args);
-            my $wallet_type = $wallet->get_account_type->name;
-
-            return $self->fail('InvalidAccount', description => 'Account is invalid')
-                unless any { $_ eq $wallet_type } $account_type->linkable_wallet_types->@*;
-
-            my @account_links = ($wallet->user->get_accounts_links->{$wallet->loginid} // [])->@*;
-
-            for my $account_link (@account_links) {
-                next if $account_link->{platform} ne $account_type->platform;
-
-                my $sibling = BOM::User::Client->new({loginid => $account_link->{loginid}});
-
-                # At least for now we're planning to allow only one Deriv trading account per type linked to the same wallet
-                # In future we may introduce more.. but i hope we'll be introducing separate account types for those
-                next if $sibling->get_account_type->name ne $account_type->name;
-
-                # skip closed accounts
-                next if $sibling->status->duplicate_account;
-
-                return $self->fail('InvalidAccount', description => 'Account is invalid');
-            }
-        }
-
         return 1;
     },
 };

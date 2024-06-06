@@ -25,6 +25,7 @@ new_account:
     - currency.is_signup_enabled
     - client.check_duplicate_account
     - self_exclusion.sibling_account_not_excluded
+    - wallet.no_duplicate_trading_account
     - type: conditional
       on: landing_company
       rules_per_value:
@@ -74,6 +75,7 @@ activate_account:
           - currency.is_available_for_reactivation
           - client.check_duplicate_account
           - self_exclusion.sibling_account_not_excluded
+          - wallet.no_duplicate_trading_account
           - type: conditional
             on: landing_company
             rules_per_value:

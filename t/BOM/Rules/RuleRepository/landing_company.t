@@ -26,8 +26,14 @@ $client_vr->user($user);
 $client->save;
 $client_vr->save;
 
-my $rule_engine    = BOM::Rules::Engine->new(client => $client);
-my $rule_engine_vr = BOM::Rules::Engine->new(client => $client_vr);
+my $rule_engine = BOM::Rules::Engine->new(
+    client => $client,
+    user   => $user
+);
+my $rule_engine_vr = BOM::Rules::Engine->new(
+    client => $client_vr,
+    user   => $user
+);
 
 # Keeping this one test with MLT (to check for no validation when MLT is removed from client ymls)
 subtest 'rule landing_company.accounts_limit_not_reached' => sub {
@@ -46,7 +52,10 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
         broker_code => 'MLT',
     });
     $user->add_client($client_mlt);
-    my $engine = BOM::Rules::Engine->new(client => $client_mlt);
+    my $engine = BOM::Rules::Engine->new(
+        client => $client_mlt,
+        user   => $user
+    );
 
     $args{loginid} = $client_mlt->loginid;
     is_deeply exception { $engine->apply_rules($rule_name, %args) },
@@ -69,7 +78,10 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     $args{loginid} = $client_mf->loginid;
     $user->add_client($client_mf);
     $user->add_client($client_vr);
-    $engine = BOM::Rules::Engine->new(client => [$client_mf, $client_mlt, $client_vr]);
+    $engine = BOM::Rules::Engine->new(
+        client => [$client_mf, $client_mlt, $client_vr],
+        user   => $user
+    );
 
     is_deeply exception { $engine->apply_rules($rule_name, %args) },
         {
@@ -95,6 +107,39 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     $client_mf->status->set('disabled', 'test', 'test');
     is_deeply exception { $engine->apply_rules($rule_name, %args) }, undef,
         'No limits for new flow, trading account  should be only limited by wallets';
+
+    subtest 'virtual wallets' => sub {
+        my $user = BOM::User->create(
+            email    => 'wallet@test.com',
+            password => 'x',
+        );
+
+        my $vrw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRW', account_type => 'virtual'});
+        $user->add_client($vrw);
+        my $engine = BOM::Rules::Engine->new(
+            client => $vrw,
+            user   => $user
+        );
+
+        my %args = (
+            loginid         => $vrw->loginid,
+            wallet_loginid  => $vrw->loginid,
+            account_type    => 'standard',
+            landing_company => 'virtual'
+        );
+        is exception { $engine->apply_rules($rule_name, %args) }, undef, 'linked VRTC is allowed';
+
+        my $vrtc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC', account_type => 'standard'});
+        $user->add_client($vrtc, $vrw->loginid);
+        is_deeply exception { $engine->apply_rules($rule_name, %args) },
+            {
+            error_code  => 'VirtualAccountExists',
+            rule        => $rule_name,
+            description => 'Virtual account limit reached'
+            },
+            'Number of VRTC accounts is limited';
+    };
+
 };
 
 subtest 'rule landing_company.required_fields_are_non_empty' => sub {
