@@ -451,6 +451,20 @@ sub get_settings_by_group {
                 cgi.allowed_languages
                 oauth.ctrader_api.white_listed_networks
                 feature_flags.auto_tin_approval
+                system.mt5.commission_transfer.wait_between_requests.p01_ts01
+                system.mt5.commission_transfer.wait_between_requests.p01_ts02
+                system.mt5.commission_transfer.wait_between_requests.p01_ts03
+                system.mt5.commission_transfer.wait_between_requests.p01_ts04
+                system.mt5.commission_transfer.wait_between_requests.p02_ts01
+                system.mt5.commission_transfer.wait_between_requests.p02_ts02
+                system.mt5.commission_transfer.wait_between_requests.p03_ts01
+                system.mt5.commission_transfer.concurrency.p01_ts01
+                system.mt5.commission_transfer.concurrency.p01_ts02
+                system.mt5.commission_transfer.concurrency.p01_ts03
+                system.mt5.commission_transfer.concurrency.p01_ts04
+                system.mt5.commission_transfer.concurrency.p02_ts01
+                system.mt5.commission_transfer.concurrency.p02_ts02
+                system.mt5.commission_transfer.concurrency.p03_ts01
             )
         ],
         internal_transfer => [qw(
