@@ -143,16 +143,14 @@ my ($printline, @invalid_logins);
 Bar("UNTRUSTED/DISABLE CLIENT");
 LOGIN:
 foreach my $login_id (@login_ids) {
-    my $client = eval { BOM::User::Client::get_instance({'loginid' => $login_id}) };
+    my $client = eval { BOM::User::Client->get_client_instance($login_id, 'write') };
 
     if (not $client) {
         push @invalid_logins, encode_entities($login_id);
         next LOGIN;
     }
 
-    my $old_db = $client->get_db();
-    # assign write access to db_operation to perform client_status delete/copy operation
-    $client->set_db('write') if 'write' ne $old_db;
+    my $user = $client->user;
 
     my %common_args_for_execute_method = (
         client      => $client,
@@ -267,8 +265,6 @@ foreach my $login_id (@login_ids) {
             clerk                 => $clerk,
             user_groups           => $user_groups,
         });
-    # once db operation is done, set back db_operation to replica
-    $client->set_db($old_db) if 'write' ne $old_db;
 
     print BOM::Backoffice::Utility::transform_summary_status_to_html($status_op_summary, $operation) if $status_op_summary;
 }
@@ -372,7 +368,7 @@ sub execute_remove_status {
                 "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been removed, missing required permissions</b>"
                 unless $client->status->can_execute($params->{status_code}, $user_groups, 'remove');
 
-            verify_reactivation($client, $params->{status_code});
+            verify_reactivation($client, $params->{status_code}, $client->user);
             my $client_status_cleaner_method_name = 'clear_' . $params->{status_code};
             $client->status->$client_status_cleaner_method_name;
         }
