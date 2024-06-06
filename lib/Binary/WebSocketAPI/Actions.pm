@@ -738,6 +738,7 @@ sub actions_config {
                 category => 'mt5_hybrid',
             }
         ],
+        ['trading_platform_status'],
         [
             'trading_platform_password_reset',
             {

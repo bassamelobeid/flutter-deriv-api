@@ -68,6 +68,7 @@ my $unsupported_schemas = {
     'website_config/receive.json'                      => 1,
     'trading_platform_password_change/send.json'       => 1,
     'trading_platform_password_reset/send.json'        => 1,
+    'trading_platform_status/receive.json'             => 1,
 };
 
 sub prepare_from_file_error {
