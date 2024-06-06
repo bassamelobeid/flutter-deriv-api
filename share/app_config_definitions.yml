@@ -1951,6 +1951,84 @@ system:
               isa: Num
               default : 30
               global: 1
+            wait_between_requests:
+              description: "The delay between each request to MT5 (ms)"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Wait time between requests for p01_ts01"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p01_ts02:
+                  description: "Wait time between requests for p01_ts02"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p01_ts03:
+                  description: "Wait time between requests for p01_ts03"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p01_ts04:
+                  description: "Wait time between requests for p01_ts04"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p02_ts01:
+                  description: "Wait time between requests for p02_ts01"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p02_ts02:
+                  description: "Wait time between requests for p02_ts02"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p03_ts01:
+                  description: "Wait time between requests for p03_ts01"
+                  isa: Num
+                  default: 0
+                  global: 1
+            concurrency:
+              description: "The number of concurrent requests to MT5"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Concurrent requests for p01_ts01"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p01_ts02:
+                  description: "Concurrent requests for p01_ts02"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p01_ts03:
+                  description: "Concurrent requests for p01_ts03"
+                  isa: Num
+                  default: 1
+                  global: 1
+                p01_ts04:
+                  description: "Concurrent requests for p01_ts04"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p02_ts01:
+                  description: "Concurrent requests for p02_ts01"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p02_ts02:
+                  description: "Concurrent requests for p02_ts02"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p03_ts01:
+                  description: "Concurrent requests for p03_ts01"
+                  isa: Num
+                  default: 6
+                  global: 1  
         parallel_run:
           description: "Enable parallel running of MT5 Proxy (read only calls) with PHP script"
           isa: Bool
