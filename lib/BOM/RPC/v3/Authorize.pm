@@ -89,7 +89,7 @@ rpc authorize => sub {
 
     my $account = $client->default_account;
 
-    my @upgradeable_companies = get_client_upgradeable_landing_companies($client);
+    my @upgradeable_companies = get_client_upgradeable_landing_companies($client, $user);
 
     my $migration_state = BOM::User::WalletMigration::accounts_state($user);
     my $account_links   = $migration_state eq 'migrated' ? $user->get_accounts_links() : +{};
@@ -509,7 +509,7 @@ Gets a list of upgradeable companies for the client.
 =cut
 
 sub get_client_upgradeable_landing_companies {
-    my ($client) = @_;
+    my ($client, $user) = @_;
 
     # this field only for legacy accounts in future we'll use separate API call for returning this information
     return () unless $client->is_legacy;
@@ -528,6 +528,7 @@ sub get_client_upgradeable_landing_companies {
     )->%*;
     my $rule_engine = BOM::Rules::Engine->new(
         client          => $client,
+        user            => $user,
         siblings        => {$client->loginid => \@siblings},
         stop_on_failure => 0
     );

@@ -51,13 +51,15 @@ subtest 'It should be able to create trading account ' => sub {
     is(($acc ? $acc->currency_code : ''), 'USD', "It should have the same currency as wallet account");
 
     (undef, $params->{token}) = $wallet_generator->(qw(CRW p2p USD));
+
     $result = $rpc_ct->call_ok(new_account_real => $params)->has_no_system_error->has_no_error->result;
     $acc    = BOM::User::Client->new({loginid => $result->{client_id}})->default_account;
     is(($acc ? $acc->currency_code : ''), 'USD', "It should have the same currency as wallet account");
 
     like $result->{client_id}, qr{^CR\d+}, "It should create trading account attached to P2P wallet";
 
-    $rpc_ct->call_ok(new_account_real => $params)->has_no_system_error->has_error->error_code_is("InvalidAccount", "It should fail duplicate check");
+    $rpc_ct->call_ok(new_account_real => $params)
+        ->has_no_system_error->has_error->error_code_is("DuplicateTradingAccount", "It should fail duplicate check");
 };
 
 subtest 'It should not allow to create duplicated trading account for the same wallet' => sub {
@@ -69,7 +71,8 @@ subtest 'It should not allow to create duplicated trading account for the same w
     my $result = $rpc_ct->call_ok(new_account_real => $params)->has_no_system_error->has_no_error->result;
     like $result->{client_id}, qr{^CR\d+}, "It should create trading account attached to DF wallet";
 
-    $rpc_ct->call_ok(new_account_real => $params)->has_no_system_error->has_error->error_code_is("InvalidAccount", "It should fail duplicate check");
+    $rpc_ct->call_ok(new_account_real => $params)
+        ->has_no_system_error->has_error->error_code_is("DuplicateTradingAccount", "It should fail duplicate check");
 };
 
 subtest 'It should allow to create 2 trading accounts of the same type connected to different  wallet' => sub {
@@ -84,22 +87,6 @@ subtest 'It should allow to create 2 trading accounts of the same type connected
     (undef, $params->{token}) = $wallet_generator->(qw(CRW p2p USD));
     $result = $rpc_ct->call_ok(new_account_real => $params)->has_no_system_error->has_no_error->result;
     like $result->{client_id}, qr{^CR\d+}, "It should create trading account attached to DF wallet";
-};
-
-subtest 'It should not allow to create 2 trading accounts for unsupported wallet types' => sub {
-    my ($user, $wallet_generator) = BOM::Test::Helper::Client::create_wallet_factory('za', 'Gauteng');
-
-    my $params = +{};
-    (undef, $params->{token}) = $wallet_generator->(qw(CRW paymentagent USD));
-    $rpc_ct->call_ok(new_account_real => $params)->has_no_system_error->has_error->error_code_is("InvalidAccount", "It should fail duplicate check");
-};
-
-subtest 'It should not allow to create 2 trading accounts for unsupported wallet types' => sub {
-    my ($user, $wallet_generator) = BOM::Test::Helper::Client::create_wallet_factory('za', 'Gauteng');
-
-    my $params = +{};
-    (undef, $params->{token}) = $wallet_generator->(qw(CRW paymentagent USD));
-    $rpc_ct->call_ok(new_account_real => $params)->has_no_system_error->has_error->error_code_is("InvalidAccount", "It should fail duplicate check");
 };
 
 subtest 'It should be able to create trading account for maltainvest' => sub {

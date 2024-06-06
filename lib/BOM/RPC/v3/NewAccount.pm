@@ -892,8 +892,11 @@ sub create_new_real_account {
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
     return $val if $val;
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    my $action      = $args->{category} eq 'wallet' ? 'new_wallet' : 'new_account';
+    my $rule_engine = BOM::Rules::Engine->new(
+        client => $client,
+        user   => $user
+    );
+    my $action = $args->{category} eq 'wallet' ? 'new_wallet' : 'new_account';
 
     try {
         # Rules are applied on actual request arguments ($args),
@@ -964,6 +967,7 @@ sub create_trading_account {
     my $args   = $params{args};
 
     $args->{$_} = $params{$_} for (qw/broker_code account_type market_type source landing_company environment category user_agent/);
+    $args->{wallet_loginid} = $client->loginid;
     my $details_ref = _new_account_pre_process($args, $client);
     my $error_map   = BOM::RPC::v3::Utility::error_map();
     if ($details_ref->{error}) {
@@ -983,7 +987,10 @@ sub create_trading_account {
         $args = +{$args->%*, $financial_assessment->%*};
     }
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    my $rule_engine = BOM::Rules::Engine->new(
+        client => $client,
+        user   => $user
+    );
     try {
         # Rules are applied on actual request arguments ($args),
         # not the initialized values ($details_ref->{details}) used for creating the client object.
