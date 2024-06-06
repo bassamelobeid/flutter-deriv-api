@@ -333,6 +333,8 @@ sub error_map {
         MaximumTransfers                => localize('You can only perform up to [_1] transfers a day. Please try again tomorrow.'),
         MaximumAmountTransfers          => localize('The maximum amount of transfers is [_1] [_2] per day. Please try again tomorrow.'),
         CurrencyShouldMatch             => localize('Currency provided is different from account currency.'),
+
+        DuplicateTradingAccount => localize('You already have a dtrader account for this wallet.'),
     };
 }
 
@@ -859,6 +861,7 @@ sub status_op_processor {
     return undef unless scalar $status_checked->@*;
 
     my $loginid       = $client->loginid;
+    my $user          = $client->user;
     my $summary_stack = [];
     my $old_db        = $client->get_db();
     # assign write access to db_operation to perform client_status delete/copy operation
@@ -868,7 +871,7 @@ sub status_op_processor {
         try {
             if ($status_op eq 'remove') {
                 check_status_application($client, $status, $user_groups, 'remove');
-                verify_reactivation($client, $status);
+                verify_reactivation($client, $status, $user);
                 my $client_status_clearer_method_name = 'clear_' . $status;
                 $client->status->$client_status_clearer_method_name;
                 push $summary_stack->@*,
@@ -978,19 +981,22 @@ Returns array ref of success and failed accounts
 sub clear_status_from_siblings {
     my ($client, $status, $remove_accounts) = @_;
 
+    my $user = $client->user;
+
     my $sub_name = "clear_$status";
     my (@successed, @failed);
     my @siblings =
           $remove_accounts
-        ? $client->user->clients(include_disabled => 1)
-        : $client->user->clients_for_landing_company($client->landing_company->short);
+        ? $user->clients(include_disabled => 1)
+        : $user->clients_for_landing_company($client->landing_company->short);
 
     # Only add client to siblings if it is not already present in the array
     my $present_in_siblings = any { $_->{loginid} eq $client->{loginid} } @siblings;
     push @siblings, $client if ($remove_accounts && !$present_in_siblings);
+
     for my $sibling (@siblings) {
         try {
-            verify_reactivation($sibling, $status);
+            verify_reactivation($sibling, $status, $user);
             $sibling->status->$sub_name;
             push @successed, $sibling;
         } catch ($e) {
@@ -1022,7 +1028,7 @@ It return either an error or a 1 which means success
 =cut
 
 sub verify_reactivation {
-    my ($client, $status) = @_;
+    my ($client, $status, $user) = @_;
 
     return 0 unless ($status eq 'disabled'     or $status eq 'duplicate_account');
     return 0 unless ($client->status->disabled or $client->status->duplicate_account);
@@ -1031,7 +1037,10 @@ sub verify_reactivation {
         promo_code_status promo_code non_pep_declaration_time address_line_1 address_line_2 address_postcode);
 
     try {
-        my $rule_engine     = BOM::Rules::Engine->new(client => $client);
+        my $rule_engine = BOM::Rules::Engine->new(
+            client => $client,
+            user   => $user
+        );
         my $landing_company = $client->landing_company->short;
         my $market_type;
         if ($landing_company eq 'maltainvest') {
@@ -1042,13 +1051,15 @@ sub verify_reactivation {
             $market_type = $company ? 'financial' : 'synthetic';
         }
 
-        my $account_type = $client->get_account_type;
-        my $action       = $account_type->category->name eq 'wallet' ? 'activate_wallet' : 'activate_account';
+        my $account_type   = $client->get_account_type;
+        my $action         = $account_type->category->name eq 'wallet' ? 'activate_wallet' : 'activate_account';
+        my $wallet_loginid = $user->loginid_details->{$client->loginid}{wallet_loginid};
 
         $rule_engine->verify_action(
             $action,
             action_type     => 'reactivate',
             account_type    => $client->get_account_type->name,
+            wallet_loginid  => $wallet_loginid,
             market_type     => $market_type,
             landing_company => $landing_company,
             (map { $_ => $client->$_ } @required_args),
