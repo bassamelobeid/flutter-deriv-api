@@ -80,6 +80,13 @@ $test_client_mf->payment_free_gift(
     remark   => 'free gift',
 );
 
+$test_client_mf->payment_legacy_payment(
+    currency     => 'USD',
+    amount       => 50,
+    remark       => 'recovery',
+    payment_type => 'recovery',
+);
+
 my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch - 99,
     underlying => 'R_50',
@@ -193,7 +200,7 @@ subtest 'statement' => sub {
     $txn->buy(skip_validation => 1);
     my $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
-    is($result->{count},                        3,      "have 3 statements");
+    is($result->{count},                        4,      "have 4 statements");
     $result = $c->tcall(
         $method,
         {
@@ -205,14 +212,17 @@ subtest 'statement' => sub {
         'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.',
         "if have short code, we get more details"
     );
-    is($result->{transactions}[2]{longcode}, 'free gift', "if no short code, then longcode is the remark");
+
+    is($result->{transactions}[2]{longcode}, 'Manual Recovery Adjustment', "if no short code, then longcode is the remark");
+    is($result->{transactions}[3]{longcode}, 'free gift',                  "if no short code, then longcode is the remark");
 
     # here the expired contract is sold, so we can get the txns as test value
     my $txns = BOM::Transaction::History::get_transaction_history({client => $test_client_mf});
     $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
-    is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
+    is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for recovery');
+    is($result->{transactions}[3]{transaction_time}, Date::Utility->new($txns->[3]{payment_time})->epoch,  'transaction time correct for payment');
     {
         my $sell_tr = [grep { $_->{action_type} && $_->{action_type} eq 'sell' } @{$result->{transactions}}]->[0];
         my $buy_tr  = [grep { $_->{action_type} && $_->{action_type} eq 'buy' } @{$result->{transactions}}]->[0];
@@ -244,7 +254,7 @@ subtest 'statement' => sub {
     $txn->buy(skip_validation => 1);
     $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
-    is($result->{count},                        5,      "have 5 statements");
+    is($result->{count},                        6,      "have 6 statements");
     $result = $c->tcall(
         $method,
         {
@@ -348,7 +358,7 @@ subtest 'statement' => sub {
         is($result->{transactions}->@*, 1, 'correct number of results for specific date range');
         cmp_ok($result->{transactions}[0]{amount}, '==', 23, 'expected result for specific date range');
 
-        for my $expected ([buy => 2], [sell => 2], [deposit => 3], [withdrawal => 0], [escrow => 0], [adjustment => 0], [virtual_credit => 0]) {
+        for my $expected ([buy => 2], [sell => 2], [deposit => 4], [withdrawal => 0], [escrow => 0], [adjustment => 0], [virtual_credit => 0]) {
             $result = $c->tcall(
                 $method,
                 {
