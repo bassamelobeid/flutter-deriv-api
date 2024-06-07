@@ -108,7 +108,7 @@ payments:
                     "internal": [ "internal_transfer" ]
                 },
                 "legacy_payment": {
-                    "internal": [ "account_transfer", "adjustment", "adjustment_purchase", "adjustment_sale", "cancellation", "closed_account", "commission_paid", "compacted_statement", "dxtrade_adjustment", "free_gift", "internal_transfer", "miscellaneous", "payment_fee", "test_account", "testing", "voucher" ],
+                    "internal": [ "account_transfer", "adjustment", "adjustment_purchase", "adjustment_sale", "cancellation", "closed_account", "commission_paid", "compacted_statement", "dxtrade_adjustment", "free_gift", "internal_transfer", "miscellaneous", "payment_fee", "recovery", "test_account", "testing", "voucher" ],
                     "external": [ "bank_money_transfer", "credit_debit_card", "crypto_cashier", "ewallet", "local_cheque", "external_cashier"]
                 },
                 "moneta": {
