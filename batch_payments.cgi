@@ -248,12 +248,13 @@ read_csv_row_and_callback(
                         my $brand           = request()->brand;
                         my $action_resolved = uc $action;
                         $action_resolved = 'WITHDRAWAL_REVERSAL' if $action_resolved eq 'REVERSAL';
+                        my $event = get_event_by_type($action_resolved);
+
                         BOM::Platform::Event::Emitter::emit(
-                            'payops_event_email',
+                            $event,
                             {
-                                event_name => 'payops_event_email',
+                                event_name => $event,
                                 loginid    => $client->loginid,
-                                template   => 'doughflow_payment_status_update',
                                 properties => {
                                     type          => $action_resolved,
                                     statement_url => $brand->statement_url({language => $client->user->preferred_language}),

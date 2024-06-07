@@ -435,13 +435,13 @@ if ($informclient) {
     my $brand = request()->brand;
     # DEPOSIT_REVERSAL is defined as DEBIT with the deposit_reversal inside the remark
     $ttype = 'DEPOSIT_REVERSAL' if (uc $ttype) eq 'DEBIT' and $remark =~ /deposit_reversal/;
+    my $event = get_event_by_type($ttype);
 
     BOM::Platform::Event::Emitter::emit(
-        'payops_event_email',
+        $event,
         {
-            event_name => 'payops_event_email',
+            event_name => $event,
             loginid    => $client->loginid,
-            template   => 'doughflow_payment_status_update',
             properties => {
                 type          => uc $ttype,
                 statement_url => $brand->statement_url({language => $client->user->preferred_language}),
