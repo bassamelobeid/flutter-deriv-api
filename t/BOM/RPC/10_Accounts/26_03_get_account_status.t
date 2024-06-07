@@ -239,6 +239,17 @@ subtest 'Fully Auth with IDV' => sub {
             return $idv_status;
         });
 
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    my $documents;
+
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            my ($self) = @_;
+            $self->_clear_uploaded;
+            return $documents // {};
+        });
+
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
@@ -328,7 +339,25 @@ subtest 'Fully Auth with IDV' => sub {
         },
         'expected response for IDV fully authenticated';
 
-    ## client becomes high risk
+    # client makes a resubmission of a valid POA
+    $documents = {
+        proof_of_address => {
+            is_pending => 1,
+            documents  => {test => {test => 1}}}};
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_bag $result->{status},
+        [
+        'allow_document_upload',              'authenticated',
+        'cashier_locked',                     'dxtrade_password_not_set',
+        'financial_information_not_complete', 'mt5_additional_kyc_required',
+        'mt5_password_not_set',               'trading_experience_not_complete'
+        ],
+        'expected response for IDV fully authenticated + document resubmission in pending status';
+
+    $documents_mock->unmock_all;
+
+    # client becomes high risk
     $client->aml_risk_classification('high');
     $client->save;
 

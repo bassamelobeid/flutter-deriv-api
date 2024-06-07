@@ -1130,7 +1130,7 @@ rpc
     push(@$status, 'mt5_additional_kyc_required') if $client->is_mt5_additional_kyc_required();
 
     if ($client->fully_authenticated and not $client->fully_authenticated({ignore_idv => 1})) {
-        push(@$status, 'poa_authenticated_with_idv');
+        push(@$status, 'poa_authenticated_with_idv') if $client->get_poa_status ne 'pending';
     }
     push(@$status, 'tin_manually_approved') if $client->is_tin_manually_approved;
 
