@@ -35,8 +35,7 @@
    $language    =~ s/_/-/;
    %>
 <div id="container">
-   <h1 class="title-text" style="font-size: 2.4rem"><%= l('Welcome!') %></h1>
-   <p class="subtitle-text"><%= l('Log in to continue.') %></p>
+   <h1 class="title-text"><%= l('Welcome back') %></h1>
    <form novalidate id="frmLogin" method="POST">
       <div class='input-group'>
          <div class="input-wrapper <% if (stash('error')) { %>has_error<% } %>">
@@ -101,7 +100,7 @@
    <% } %>
    <% } %>
    <p id="signup-link" class="account-text">
-      <%== l('Don’t have an account yet? [_1]Create a new account[_2]', "<a class='account-link' href=$signup_url>", '</a>') %>
+      <%== l('Don’t have an account yet? [_1]Sign up[_2]', "<a class='account-link' href=$signup_url>", '</a>') %>
    </p>
 </div>
 <% } %>

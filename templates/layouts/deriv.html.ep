@@ -414,16 +414,14 @@
                 margin-top: -20px;
             }
             .title-text {
+                align-self: stretch;
+                color: var(--system-light-1-prominent-text, #333);
                 margin-top: 0;
-                margin-bottom: 0.8rem;
-                line-height: 3.6rem;
-            }
-            .subtitle-text {
-                display: flex;
-                font-size: var(--text-size-s);
-                color: var(--color-black-3);
-                margin-bottom: 1.6rem;
-                align-items: center;
+                margin-bottom: 24px;
+                line-height: 26px;
+                font-family: "IBM Plex Sans";
+                font-size: 18px;
+                font-weight: 400;
             }
             .deriv-url {
                 background-color: var(--color-grey-3);
