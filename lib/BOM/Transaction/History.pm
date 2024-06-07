@@ -288,6 +288,11 @@ sub _get_txn_remark {
         return localize('Manual Deriv X Adjustment');
     }
 
+    # recovery
+    if ($gateway_type eq 'recovery') {
+        return localize('Manual Recovery Adjustment');
+    }
+
     return undef;
 }
 

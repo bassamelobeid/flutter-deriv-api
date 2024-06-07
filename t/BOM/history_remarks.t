@@ -557,6 +557,28 @@ subtest 'get remarks by dxtrade_adjustment' => sub {
     is $res[0], 'Manual Deriv X Adjustment';
 };
 
+subtest 'get remarks by recovery' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'recovery@binary.com'
+    });
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+
+    my $txn = $client->payment_legacy_payment(
+        currency     => 'USD',
+        remark       => 'recovery',
+        amount       => 10,
+        payment_type => 'recovery'
+    );
+
+    my @res = get_remarks($client);
+    is $res[0], 'Manual Recovery Adjustment';
+};
+
 sub get_remarks {
     return map { $_->{payment_remark} } get_transaction_history({client => shift})->@*;
 }
