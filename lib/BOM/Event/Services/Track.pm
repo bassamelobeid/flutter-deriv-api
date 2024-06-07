@@ -177,6 +177,10 @@ my %EVENT_PROPERTIES = (
         [qw(first_name poi_reason poi_title poi_subtitle footnote poi_layout poa_reason poa_title poa_subtitle poa_layout title is_eu)],
     professional_status_requested            => [qw(first_name email request_professional_status)],
     payops_event_email                       => [qw(contents subject loginid email_template properties email phone country language email_consent)],
+    payment_credit_deposit                   => [qw(loginid type statement_url live_chat_url amount currency clerk first_name last_name salutation)],
+    payment_debit_withdrawal                 => [qw(loginid type statement_url live_chat_url amount currency clerk first_name last_name salutation)],
+    payment_deposit_reversal                 => [qw(loginid type statement_url live_chat_url amount currency clerk first_name last_name salutation)],
+    payment_withdrawal_reversal_event        => [qw(loginid type statement_url live_chat_url amount currency clerk first_name last_name salutation)],
     p2p_limit_changed                        => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
     p2p_limit_upgrade_available              => [qw(loginid advertiser_id)],
     dp_successful_login                      => [qw(timestamp anonymous_id login_provider app_id)],
@@ -251,6 +255,10 @@ my @COMMON_EVENT_METHODS = qw(
     under_antifraud_investigation
     duplicated_document_account_closed
     phone_number_verification
+    payment_credit_deposit
+    payment_debit_withdrawal
+    payment_deposit_reversal
+    payment_withdrawal_reversal_event
 );
 
 # list of events that will be forwarded directly to cio as transactional emails
@@ -306,6 +314,10 @@ my @TRANSACTIONAL_EVENTS = qw(
     account_closure
     under_antifraud_investigation
     trading_platform_account_created
+    payment_credit_deposit
+    payment_debit_withdrawal
+    payment_deposit_reversal
+    payment_withdrawal_reversal_event
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1700,6 +1712,22 @@ It is triggered for each B<poi_poa_resubmission> event emitted, delivering it to
 =head2 poa_verification_warning
 
 It is triggered for each B<poa_verification_warning> event emitted, delivering it to Segment.
+
+=head2 payment_credit_deposit
+
+It is triggered for each B<payment_credit_deposit> event emitted, delivering it to Segment.
+
+=head2 payment_debit_withdrawal
+
+It is triggered for each B<payment_debit_withdrawal> event emitted, delivering it to Segment.
+
+=head2 payment_deposit_reversal
+
+It is triggered for each B<payment_deposit_reversal> event emitted, delivering it to Segment.
+
+=head2 payment_withdrawal_reversal_event
+
+It is triggered for each B<payment_withdrawal_reversal_event> event emitted, delivering it to Segment.
 
 =head2 poa_verification_expired
 

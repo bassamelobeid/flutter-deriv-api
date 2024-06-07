@@ -231,13 +231,13 @@ subtest 'process - tracking jobs' => sub {
                 mt5_password_changed mt5_inactive_notification mt5_inactive_account_closed payops_event_email
                 p2p_archived_ad p2p_advert_created p2p_advertiser_cancel_at_fault p2p_advertiser_temp_banned
                 payment_withdrawal payment_withdrawal_reversal reset_password_request reset_password_confirmation
-                request_change_email confirm_change_email verify_change_email account_reactivated
-                login transfer_between_accounts set_financial_assessment payment_deposit
+                request_change_email confirm_change_email verify_change_email account_reactivated payment_debit_withdrawal
+                login transfer_between_accounts set_financial_assessment payment_deposit payment_credit_deposit
                 account_closure profile_change account_opening_new account_verification trading_platform_account_created
                 trading_platform_password_reset_request trading_platform_investor_password_reset_request
-                trading_platform_password_changed trading_platform_password_change_failed
+                trading_platform_password_changed trading_platform_password_change_failed payment_deposit_reversal
                 trading_platform_investor_password_changed trading_platform_investor_password_change_failed
-                underage_account_closed account_with_false_info_locked email_subscription signup
+                underage_account_closed account_with_false_info_locked email_subscription signup payment_withdrawal_reversal_event
                 age_verified bonus_approve bonus_reject request_edd_document_upload
                 p2p_order_confirm_verify p2p_limit_changed p2p_limit_upgrade_available mt5_change_color poa_verification_expired poa_verification_warning poi_poa_resubmission
                 verify_email_closed_account_reset_password verify_email_closed_account_account_opening verify_email_closed_account_other request_payment_withdraw
