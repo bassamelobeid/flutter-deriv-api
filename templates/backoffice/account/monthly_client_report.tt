@@ -45,6 +45,7 @@
             [ 'commission_paid',    'Commission Paid' ],
             [ 'account_transfer',   'Account Transfer' ],
             [ 'ctrader_transfer',   'cTrader Transfer' ],
+            [ 'recovery',           'Recovery' ],
         ];
     %]
 

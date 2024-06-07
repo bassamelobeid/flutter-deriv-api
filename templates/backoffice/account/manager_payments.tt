@@ -160,6 +160,7 @@
             <option value="dxtrade_adjustment"  >DXtrade Adjustment</option> 
             <option value="account_transfer"    >Account Transfer</option>
             <option value="closed_account"      >Closed Account</option>
+            <option value="recovery"            >Recovery</option>
         </select>
     </div>
 
@@ -191,14 +192,10 @@
     <div class="all_payment_types bank_money_transfer col-stack">
         <label>RMG Bank:</label>
         <select name="bom_bank_info">
-            <option value="FAB BSL USD 0017220100101">FAB BSL USD 0017220100101</option>
-            <option value="NBV CGL USD 0143184001">NBV CGL USD 0143184001</option>
-            <option value="Standard Bank MXGBP 11712171">Standard Bank MXGBP 11712171</option>
-            <option value="Standard Bank MXUSD 11712198">Standard Bank MXUSD 11712198</option>
-            <option value="Sparkasse MLTEUR 10000030590000">Sparkasse MLTEUR 10000030590000</option>
             <option value="Sparkasse MFEUR 10000030593000">Sparkasse MFEUR 10000030593000</option>
             <option value="Sparkasse MFUSD 10000030593040">Sparkasse MFUSD 10000030593040</option>
             <option value="Sparkasse MFGBP 10000030593080">Sparkasse MFGBP 10000030593080</option>
+            <option value="Lidion MFEUR 302489GCCAEUR022">Lidion MFEUR 302489GCCAEUR022</option>
         </select>
     </div>
     <div class="all_payment_types cash_transfer col-stack">

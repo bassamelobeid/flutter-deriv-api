@@ -25,7 +25,7 @@
                     }
                 %]
                 [% FOR i IN ['external', 'internal'] %]
-                    <td> 
+                    <tr> 
                         <b>[% i FILTER ucfirst %] Transactions</b>
                         <table class="sortable collapsed hover alternate border">
                             [% FOR d IN [ 'deposits', 'withdrawals'] %]
@@ -59,7 +59,7 @@
                                 </td>
                             [% END %]
                         </table>
-                    </td>
+                    </tr><br>
                 [% END %]
             </tr>
             <tr><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td><td>&nbsp;&nbsp;</td></tr>
