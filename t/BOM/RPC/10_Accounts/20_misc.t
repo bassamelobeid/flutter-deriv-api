@@ -18,6 +18,7 @@ use Digest::SHA      qw(hmac_sha256_hex);
 use BOM::Test::Email qw(:no_event);
 use Test::BOM::RPC::QueueClient;
 use Test::Warnings qw(warning);
+use BOM::Database::Model::OAuth;
 
 sub get_values {
     my $in = shift;
@@ -233,7 +234,31 @@ subtest 'service_token validation' => sub {
     # Tokens
     my $token = $m->create_token($test_client->loginid, 'test token');
 
+# unofficial app id for testing
+    my $app_id = do {
+        my $oauth = BOM::Database::Model::OAuth->new;
+        $oauth->dbic->dbh->do("DELETE FROM oauth.user_scope_confirm");
+        $oauth->dbic->dbh->do("DELETE FROM oauth.access_token");
+        $oauth->dbic->dbh->do("DELETE FROM oauth.apps WHERE name='Test App'");
+        my $app = $oauth->create_app({
+            name         => 'Test App',
+            user_id      => 1,
+            scopes       => ['read', 'trade', 'admin'],
+            redirect_uri => 'https://www.example.com/'
+        });
+        $app->{app_id};
+    };
+    # check permissions
     my $res = $c->tcall(
+        $method,
+        {
+            token  => $token,
+            args   => $args,
+            source => $app_id
+        });
+    is($res->{error}->{code}, 'PermissionDenied', 'Permission Denied for an unofficial app');
+
+    $res = $c->tcall(
         $method,
         {
             token => $token,

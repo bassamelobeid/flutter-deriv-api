@@ -3245,6 +3245,10 @@ async_rpc service_token => sub {
 
     my @service_futures;
 
+    if (defined $params->{source} && !BOM::RPC::v3::Utility::is_app_official($params->{source})) {
+        return Future->fail(BOM::RPC::v3::Utility::permission_error());
+    }
+
     for my $service (@services) {
 
         if ($service eq 'sendbird') {

@@ -1788,3 +1788,23 @@ sub obfuscate_token {
     $token = $obfuscated_part . $unmasked_part;
     return $token;
 }
+
+=head2 is_app_official
+
+Checks if the provided app_id is an official or unofficial application, by matching in oauth.official_apps table.
+
+=over 4
+
+=item - $app_id: A scalar representing the application ID to be checked.
+
+=back
+
+Returns true if app_id is official, otherwise false.
+
+=cut
+
+sub is_app_official {
+    my $app_id      = shift;
+    my $oauth_model = BOM::Database::Model::OAuth->new;
+    return $oauth_model->is_official_app($app_id);
+}
