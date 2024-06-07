@@ -231,9 +231,15 @@ subtest 'payment transaction' => sub {
     $txn                                      = $client->payment_legacy_payment(%$args, payment_type => 'dxtrade_adjustment');
     verify_txn($txn, $account, $args, $initial_balance, $payment_expected);
 
+    $payment_expected->{payment_type_code}    = 'recovery';
+    $payment_expected->{payment_gateway_code} = 'legacy_payment';
+    $initial_balance                          = 135;
+    $txn                                      = $client->payment_legacy_payment(%$args, payment_type => 'recovery');
+    verify_txn($txn, $account, $args, $initial_balance, $payment_expected);
+
     $payment_expected->{payment_type_code}    = 'external_cashier';
     $payment_expected->{payment_gateway_code} = 'doughflow';
-    $initial_balance                          = 135;
+    $initial_balance                          = 150;
     delete $args->{source};
     $args->{df_payment_type} = 'CreditCard';
     $txn = $client->payment_doughflow(%$args);
@@ -260,7 +266,7 @@ subtest 'payment transaction' => sub {
         },
         'expected df payment found (payment type=CreditCard)';
 
-    $initial_balance = 150;
+    $initial_balance = 165;
     delete $args->{df_payment_type};
     $txn = $client->payment_doughflow(%$args);
 
