@@ -70,7 +70,7 @@ subtest 'advertiser Registration' => sub {
     is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
 };
 
-subtest 'advertiser in POA mandetory countries' => sub {
+subtest 'advertiser in POA mandatory countries' => sub {
 
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
@@ -87,30 +87,46 @@ subtest 'advertiser in POA mandetory countries' => sub {
     cmp_deeply(
         exception { $client->p2p_advertiser_create(name => 'advertiser POA') },
         {error_code => 'AuthenticationRequired'},
-        'POI and POA required if POA disabled globally but country is mandetory'
+        'POI and POA required if POA disabled globally but country is mandatory'
     );
 
-    ok !$client->status->age_verification, "client has not basic verification";
-    ok !$client->fully_authenticated,      "client has not full authenticated";
+    ok !$client->status->age_verification, "client is not age verified";
+    ok !$client->fully_authenticated,      "client is not fully authenticated";
 
     $client->status->set('age_verification', 'system', 'testing');
-    ok $client->status->age_verification, "client has basic verification";
+    ok $client->status->age_verification, "client is age verified";
     cmp_deeply(
         exception { $client->p2p_advertiser_create(name => 'advertiser POA') },
         {error_code => 'AuthenticationRequired'},
-        'POI and POA required both not only POI if user is in POA mandetory country'
+        'POI and POA required both not only POI if user is in POA mandatory country'
+    );
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    $client_mock->mock(
+        'poa_authenticated_with_idv',
+        sub {
+            return 1;
+        });
+
+    ok $client->status->age_verification, "client is age verified";
+    ok $client->fully_authenticated,      "client is fully authenticated with idv";
+
+    cmp_deeply(
+        exception { $client->p2p_advertiser_create(name => 'advertiser POA') },
+        {error_code => 'AuthenticationRequired'},
+        'POI and POA required both - auth with IDV is not valid if user is in POA mandatory country'
     );
 
     $client->status->clear_age_verification;
     $client->set_authentication('ID_ONLINE', {status => 'pass'});
 
-    ok !$client->status->age_verification, "client has not basic verification";
-    ok $client->fully_authenticated,       "client has full authenticated";
+    ok !$client->status->age_verification, "client is not age verified";
+    ok $client->fully_authenticated,       "client is fully authenticated";
 
     cmp_deeply(
         exception { $client->p2p_advertiser_create(name => 'advertiser POA') },
         {error_code => 'AuthenticationRequired'},
-        'POI and POA required both not only POA if user is in POA mandetory country'
+        'POI and POA required both not only POA if user is in POA mandatory country'
     );
 
     $client->status->set('age_verification', 'system', 'testing');
@@ -127,6 +143,7 @@ subtest 'advertiser in POA mandetory countries' => sub {
     BOM::Config::Runtime->instance->app_config->payments->p2p->poa->enabled(0);
     BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_includes([]);
     BOM::Config::Runtime->instance->app_config->payments->p2p->poa->countries_excludes([]);
+    $client_mock->unmock_all;
 };
 
 subtest 'advertiser basic and full verification' => sub {

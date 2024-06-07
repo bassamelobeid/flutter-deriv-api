@@ -123,14 +123,15 @@ use constant {
 use constant SYNCABLE_AUTH_METHODS => qw(ID_DOCUMENT ID_NOTARIZED ID_PO_BOX);
 
 use constant {
-    POI_RESUBMITTED_PREFIX => "POI::RESUBMITTED::PREFIX::",
-    POA_RESUBMITTED_PREFIX => "POA::RESUBMITTED::PREFIX::",
+    POI_RESUBMITTED_PREFIX             => "POI::RESUBMITTED::PREFIX::",
+    POA_RESUBMITTED_PREFIX             => "POA::RESUBMITTED::PREFIX::",
+    POA_RESUBMITTED_PREFIX_DEFAULT_TTL => 60 * 60 * 24 * 2,               # 2 days
 };
 
 # this email address should not be added into brand as it is specific to internal system
 my $SUBJECT_RE = qr/(New Sign-Up|Update Address)/;
 
-my $META = __PACKAGE__->meta;    # rose::db::object::manager meta rules. Knows our db structure
+my $META = __PACKAGE__->meta;                                             # rose::db::object::manager meta rules. Knows our db structure
 
 my $json = JSON::MaybeXS->new;
 
@@ -5345,7 +5346,9 @@ sub get_poa_status {
 
     return 'pending' if $is_poa_pending;
 
-    # here we check for the flag for pending doc resubmitted after warning of expiring soon, flag lasts for 48 hours
+    # here we check for the flag for pending doc resubmitted for the following cases:
+    # - resubmission after warning of expiring soon
+    # - resubmission for a valid POA for P2P
     my $redis                = BOM::Config::Redis::redis_events();
     my $pending_resubmission = $redis->get(POA_RESUBMITTED_PREFIX . $self->binary_user_id) // 0;
 
