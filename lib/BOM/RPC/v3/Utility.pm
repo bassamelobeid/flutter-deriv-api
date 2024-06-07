@@ -33,7 +33,6 @@ use LandingCompany::Registry;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use Finance::Underlying;
 
-use BOM::Platform::Context        qw(localize request);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Redis;
@@ -472,7 +471,10 @@ sub notify_financial_assessment {
         platform => 'mt5',
         client   => $client
     );
-    my $platforms           = $platform->available_accounts({country_code => $client->residence});
+    my $platforms = $platform->available_accounts({
+        country_code => $client->residence,
+        brand        => request()->brand,
+    });
     my @supported_platforms = grep { $_->{shortcode} ne "svg" } @$platforms;
     return 0 if !@supported_platforms;
 
