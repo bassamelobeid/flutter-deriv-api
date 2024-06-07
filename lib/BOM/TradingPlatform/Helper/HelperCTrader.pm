@@ -6,9 +6,8 @@ no indirect;
 
 use Locale::Country::Extra;
 use Syntax::Keyword::Try;
-use Digest::SHA            qw(sha384_hex);
-use BOM::Platform::Context qw (request);
-use Log::Any               qw($log);
+use Digest::SHA qw(sha384_hex);
+use Log::Any    qw($log);
 use BOM::Config;
 
 use base 'Exporter';
@@ -16,7 +15,6 @@ our @EXPORT_OK = qw(
     check_existing_account
     construct_new_trader_params
     construct_group_name
-    get_ctrader_landing_company
     get_new_account_currency
     group_to_groupid
     is_valid_group
@@ -82,28 +80,6 @@ sub _country_to_countryid {
     return $countryid_config->{$country}->{country_id};
 }
 
-=head2 get_ctrader_landing_company
-
-Return the landing company for cTrader platform
-
-=over 4
-
-=item * C<client> - BOM::User::Client instance
-
-=back
-
-=cut
-
-sub get_ctrader_landing_company {
-    my ($client) = @_;
-
-    my $brand = request()->brand;
-
-    my $countries_instance = $brand->countries_instance;
-
-    return $countries_instance->ctrader_company_for_country($client->residence);
-}
-
 =head2 get_new_account_currency
 
 Resolves the default currency for the account based on Landing Company.
@@ -167,13 +143,13 @@ Check if an existing active cTrader account already exists based on group and ac
 
 sub check_existing_account {
     my ($loginids, $user, $new_account_group, $account_type) = @_;
-    my $loginid_details                     = $user->loginid_details;
     my $ctrader_config                      = BOM::Config::ctrader_general_configurations();
     my $new_account_strategy_provider_group = $ctrader_config->{strategy_provider_group}->{$account_type . '_' . $new_account_group};
     my $max_accounts_limit                  = $ctrader_config->{new_account}->{max_accounts_limit}->{$account_type};
     my $existing_group_count                = 0;
-    my $error_type;
 
+    my $error_type;
+    my $loginid_details = $user ? $user->loginid_details : undef;
     foreach my $loginid (@$loginids) {
         my $login_data                               = $loginid_details->{$loginid};
         my $existing_group                           = $login_data->{attributes}->{group};

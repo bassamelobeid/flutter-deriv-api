@@ -23,7 +23,7 @@ my $allowed_naked_packages = {
     'BOM::User::Script::MirrorBinaryUserId'            => 2,
     'BOM::MT5::User::Async'                            => 14,
     'BOM::User::Client::PaymentTransaction::Doughflow' => 2,
-    'BOM::TradingPlatform'                             => 7,
+    'BOM::TradingPlatform'                             => 8,
     'BOM::CTrader::Script::CtraderSetPartnerId'        => 2,
 };
 

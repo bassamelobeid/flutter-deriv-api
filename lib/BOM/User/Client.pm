@@ -41,6 +41,7 @@ use Business::Config::Account;
 use Business::Config::Country::Registry;
 use Business::Config::LandingCompany::Registry;
 use LandingCompany::Registry;
+use Brands;
 
 use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
@@ -6826,7 +6827,10 @@ sub is_mt5_additional_kyc_required {
         client   => $self
     );
     return 0 unless $self->residence;
-    my $platforms = $platform->available_accounts({country_code => $self->residence});
+    my $platforms = $platform->available_accounts({
+        country_code => $self->residence,
+        brand        => Brands->new,        # default to deriv
+    });
 
     return 0 unless $platforms;
     my @supported_platforms = grep { $_->{shortcode} =~ /^(bvi|vanuatu|labuan)$/ } @$platforms;

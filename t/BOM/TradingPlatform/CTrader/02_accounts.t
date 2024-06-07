@@ -15,6 +15,8 @@ use BOM::Rules::Engine;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use BOM::Config;
+use Brands;
+
 use Data::Dump 'pp';
 
 subtest "cTrader Account Creation" => sub {
@@ -569,7 +571,10 @@ subtest "cTrader Available Account" => sub {
             },
         ];
 
-        my $response = $ctrader->available_accounts();
+        my $response = $ctrader->available_accounts({
+            country_code => $client->residence,
+            brand        => Brands->new,
+        });
         cmp_deeply($response, $expected_response, 'Can get cTrader available accounts');
 
         my $expected_new_account_response = {
@@ -594,7 +599,10 @@ subtest "cTrader Available Account" => sub {
         cmp_deeply($response, $expected_new_account_response, 'Can create cTrader real account');
 
         $expected_response->[0]->{available_count} = 4;
-        $response = $ctrader->available_accounts();
+        $response = $ctrader->available_accounts({
+            country_code => $client->residence,
+            brand        => Brands->new,
+        });
         cmp_deeply($response, $expected_response, 'Can get cTrader available accounts');
     };
 
@@ -618,8 +626,40 @@ subtest "cTrader Available Account" => sub {
 
         my $expected_response = [];
 
-        my $response = $ctrader->available_accounts();
+        my $response = $ctrader->available_accounts({
+            country_code => $client->residence,
+            brand        => Brands->new,
+        });
         cmp_deeply($response, $expected_response, 'Get nothing from cTrader available accounts');
+    };
+
+    subtest 'unauthenticated case' => sub {
+        my $trading_platform = BOM::TradingPlatform->new(
+            platform    => 'ctrader',
+            rule_engine => BOM::Rules::Engine->new(),
+        );
+
+        my $available_accounts = $trading_platform->available_accounts({
+            country_code => 'id',
+            brand        => Brands->new,
+        });
+
+        my $expected_response = [{
+                linkable_landing_companies => ["svg"],
+                market_type                => "all",
+                name                       => "Deriv (SVG) LLC",
+                requirements               => {
+                    signup     => ["first_name",   "last_name", "residence", "date_of_birth"],
+                    withdrawal => ["address_city", "address_line_1"],
+                },
+                shortcode        => "svg",
+                sub_account_type => "standard",
+                available_count  => 5,
+                max_count        => 5,
+            },
+        ];
+
+        cmp_deeply($available_accounts, $expected_response, 'response matches expectations');
     };
 
     $mocked_redis->unmock_all();

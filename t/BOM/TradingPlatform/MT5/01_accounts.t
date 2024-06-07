@@ -7,6 +7,7 @@ use Test::Deep;
 use Test::MockModule;
 use Test::Exception;
 use BOM::TradingPlatform;
+use Brands;
 
 use Array::Utils qw(array_minus);
 
@@ -54,7 +55,7 @@ subtest 'available_accounts _get_mt5_lc_requirements' => sub {
 
         my $user = BOM::User->create(
             email    => $client->loginid . '@deriv.com',
-            password => 'secret_pwd'
+            password => 'secret_pwd',
         )->add_client($client);
 
         my $mt5 = BOM::TradingPlatform->new(
@@ -64,7 +65,10 @@ subtest 'available_accounts _get_mt5_lc_requirements' => sub {
 
         isa_ok($mt5, 'BOM::TradingPlatform::MT5');
 
-        my $available_accounts = $mt5->available_accounts({country_code => $client->residence});
+        my $available_accounts = $mt5->available_accounts({
+            country_code => $client->residence,
+            brand        => Brands->new,
+        });
 
         for my $account ($available_accounts->@*) {
             my $lc_short = $account->{shortcode};
@@ -100,7 +104,10 @@ subtest 'available_accounts _get_mt5_lc_requirements' => sub {
 
         lives_ok { $client->tax_residence('ar') } 'client satisfies tax_residence requirement';
 
-        my $available_accounts = $mt5->available_accounts({country_code => $client->residence});
+        my $available_accounts = $mt5->available_accounts({
+            country_code => $client->residence,
+            brand        => Brands->new,
+        });
 
         for my $account ($available_accounts->@*) {
             my $lc_short = $account->{shortcode};
@@ -141,7 +148,10 @@ subtest 'available_accounts _get_mt5_lc_requirements' => sub {
 
         ok BOM::User::Utility::has_po_box_address($client), 'client has po box as address';
 
-        my $available_accounts = $mt5->available_accounts({country_code => $client->residence});
+        my $available_accounts = $mt5->available_accounts({
+            country_code => $client->residence,
+            brand        => Brands->new,
+        });
 
         for my $account ($available_accounts->@*) {
             my $lc_short = $account->{shortcode};

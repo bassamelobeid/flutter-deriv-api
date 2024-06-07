@@ -57,6 +57,7 @@ subtest 'Implementation completeness' => sub {
 
     my $tests = {
         mt5 => {
+            available_accounts       => 1,
             new_account              => 0,
             change_investor_password => 1,
             change_password          => 1,
@@ -67,6 +68,7 @@ subtest 'Implementation completeness' => sub {
             get_open_positions       => 0,
         },
         dxtrade => {
+            available_accounts       => 0,
             new_account              => 1,
             change_investor_password => 0,
             change_password          => 1,
@@ -77,6 +79,7 @@ subtest 'Implementation completeness' => sub {
             get_open_positions       => 1,
         },
         derivez => {
+            available_accounts       => 0,
             new_account              => 1,
             change_investor_password => 0,
             change_password          => 0,

@@ -21,7 +21,6 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use Log::Any                   qw($log);
 use LandingCompany::Registry;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
-use Brands;
 
 use Format::Util::Numbers qw(financialrounding formatnumber);
 
@@ -327,16 +326,9 @@ Returns a list of available trading accounts for a given user.
 sub available_accounts {
     my ($self, $args) = @_;
 
-    unless ($args->{country_code}) {
-        $log->debugf("CountryCodeRequired Exception > Client ID: %s, Binary User ID: %s", $self->client->loginid, $self->client->binary_user_id);
-        die 'CountryCodeRequired';
-    }
+    die 'InvalidArgument' unless ($args->{country_code} and $args->{brand});
 
-    # If brand is not provided, it will default to deriv.
-    my $brand = $args->{brand} // Brands->new;
-
-    my $accounts = $brand->countries_instance->mt_account_types_for_country($args->{country_code});
-
+    my $accounts = $args->{brand}->countries_instance->mt_account_types_for_country($args->{country_code});
     return [] unless $accounts->%*;
 
     my @trading_accounts;

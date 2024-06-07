@@ -52,6 +52,7 @@ use constant INTERFACE => qw(
     get_account_info
     get_accounts
     get_open_positions
+    available_accounts
 );
 
 for my $method (INTERFACE) {

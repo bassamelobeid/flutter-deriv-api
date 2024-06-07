@@ -20,12 +20,11 @@ use BOM::User::Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Config::Redis;
 use BOM::Platform::Token::API;
-use BOM::Platform::Context                      qw (request);
+use BOM::Platform::Context                      qw(request);
 use BOM::TradingPlatform::Helper::HelperCTrader qw(
     check_existing_account
     construct_new_trader_params
     construct_group_name
-    get_ctrader_landing_company
     get_new_account_currency
     group_to_groupid
     is_valid_group
@@ -621,9 +620,11 @@ Takes the following arguments as named parameters:
 
 =item * C<currency> Client's currency will be used if not provided.
 
-=item * C<platfrom> Platform name - ctrader
-
 =item * C<company> Landing company to create account for. Example: svg
+
+=item * C<brand> Brand instance.
+
+=item * C<dry_run> Do only validation, no actual data change.
 
 =back
 
@@ -635,8 +636,10 @@ sub new_account {
     my ($self, %args) = @_;
     $args{currency} //= get_new_account_currency($self->client);
     $args{platform} //= $self->name;
+    $args{brand}    //= request()->brand();
 
-    my ($account_type, $market_type, $currency, $dry_run, $landing_company_short) = @{\%args}{qw/account_type market_type currency dry_run company/};
+    my ($account_type, $market_type, $currency, $dry_run, $requested_landing_company_short) =
+        @{\%args}{qw/account_type market_type currency dry_run company/};
     my $client      = $self->client;
     my $user        = $self->user;
     my $server      = $account_type;
@@ -655,12 +658,9 @@ sub new_account {
 
     $self->server_check($server);
 
-    if (not defined $landing_company_short) {
-        $landing_company_short = get_ctrader_landing_company($client);
-        die +{error_code => 'CTraderNotAllowed'} unless $landing_company_short;
-    } else {
-        die +{error_code => 'CTraderNotAllowed'} unless $landing_company_short eq get_ctrader_landing_company($client);
-    }
+    my $landing_company_short = $args{brand}->countries_instance->ctrader_company_for_country($client->residence);
+    die +{error_code => 'CTraderNotAllowed'}
+        unless $landing_company_short && (!defined $requested_landing_company_short || $requested_landing_company_short eq $landing_company_short);
 
     $self->rule_engine->verify_action('new_trading_account', %args, loginid => $self->client->loginid);
 
@@ -882,9 +882,13 @@ Get list of available ctrader accounts
 =cut
 
 sub available_accounts {
-    my ($self)                = @_;
-    my $landing_company_short = get_ctrader_landing_company($self->client);
-    my $lc                    = LandingCompany::Registry->by_name($landing_company_short);
+    my ($self, $args) = @_;
+    die 'InvalidArgument' unless ($args->{country_code} && $args->{brand});
+
+    my $landing_company_short = $args->{brand}->countries_instance->ctrader_company_for_country($args->{country_code});
+    die 'CTraderNotAllowed' unless $landing_company_short;
+
+    my $lc = LandingCompany::Registry->by_name($landing_company_short);
 
     my @trading_accounts;
     push @trading_accounts, +{
@@ -906,8 +910,9 @@ sub available_accounts {
         my $group_config = get_ctrader_account_type($account_type . '_' . $group);
         die +{error_code => 'CTraderNotAllowed'} unless $group_config;
 
-        my $wallet_loginid = $self->client->is_wallet ? $self->client->loginid : undef;
-        my @loginids       = $self->user->get_ctrader_loginids(wallet_loginid => $wallet_loginid);
+        my $wallet_loginid = $self->client && $self->client->is_wallet ? $self->client->loginid : undef;
+
+        my @loginids = $self->user ? $self->user->get_ctrader_loginids(wallet_loginid => $wallet_loginid) : ();
 
         my $existing_account = check_existing_account(\@loginids, $self->user, $group, $account_type);
 
