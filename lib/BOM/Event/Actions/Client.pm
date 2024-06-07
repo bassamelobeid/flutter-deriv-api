@@ -348,6 +348,9 @@ async sub document_upload {
                 my $seconds_until_expiration_poa = ($client->documents->to_be_outdated() // 0) * 24 * 60 * 60;
                 my $expiration_time_poa          = $current_time + $seconds_until_expiration_poa;
                 $redis->set(BOM::User::Client::POA_RESUBMITTED_PREFIX . $client->binary_user_id, 1, 'NX', 'EXAT', $expiration_time_poa);
+            } elsif ($is_poa_document && $client->poa_authenticated_with_idv()) {
+                $redis->set(BOM::User::Client::POA_RESUBMITTED_PREFIX . $client->binary_user_id,
+                    1, 'NX', 'EX', BOM::User::Client::POA_RESUBMITTED_PREFIX_DEFAULT_TTL);
             }
         }
 

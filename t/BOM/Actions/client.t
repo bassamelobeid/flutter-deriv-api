@@ -277,12 +277,31 @@ subtest 'document_upload' => sub {
         my $pending_key = BOM::User::Client::POA_RESUBMITTED_PREFIX . $test_client->binary_user_id;
         my $redis       = $services->redis_events_write();
 
-        ok $redis->get($pending_key), 'redis key for pending resubmitted doc was set';
+        ok $redis->get($pending_key), 'redis key for pending resubmitted doc was set (expiring_soon)';
         $redis->del($pending_key);
 
         $doc_mock->unmock_all;
         $test_client->documents->_clear_uploaded;
 
+        # case for resubmitted poa for p2p requirement
+        my $client_mock = Test::MockModule->new('BOM::User::Client');
+        $client_mock->mock(
+            'poa_authenticated_with_idv',
+            sub {
+                return 1;
+            });
+
+        BOM::Event::Actions::Client::document_upload({
+                loginid => $test_client->loginid,
+                file_id => $upload_info->{file_id}})->get;
+
+        ok $redis->get($pending_key), 'redis key for pending resubmitted doc was set (p2p)';
+        $redis->del($pending_key);
+
+        $client_mock->unmock_all;
+        $test_client->documents->_clear_uploaded;
+
+        # case for non-regulated mt5 acc created
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
                 file_id => $upload_info->{file_id}})->get;
@@ -290,6 +309,7 @@ subtest 'document_upload' => sub {
         $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
         ok !$email, 'Client does not have a regulated MT5 account';
 
+        # case for regulated mt5 acc created
         my $user_mock = Test::MockModule->new('BOM::User');
         $user_mock->mock(
             'has_mt5_regulated_account',
