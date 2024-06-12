@@ -3,14 +3,18 @@ package BOM::RPC::v3::MarketDiscovery;
 use strict;
 use warnings;
 
-use BOM::RPC::Registry '-dsl';
-
-use BOM::User::Client;
-use BOM::Platform::Context                   qw (localize request);
-use List::UtilsBy                            qw(sort_by);
+use BOM::Config::Chronicle;
+use BOM::Platform::Context                   qw(localize request);
+use BOM::Product::ContractFinder::Basic      qw(decorate decorate_brief);
+use BOM::Product::Offerings::TradingContract qw(get_all_contracts get_contracts get_unavailable_contracts);
 use BOM::Product::Offerings::TradingSymbol   qw(get_symbols);
-use BOM::Product::Offerings::TradingContract qw(get_contracts get_unavailable_contracts);
-use BOM::Product::ContractFinder::Basic;
+use BOM::RPC::Registry '-dsl';
+use BOM::User::Client;
+use List::UtilsBy qw(sort_by);
+
+use constant {
+    OFFERINGS_NAMESPACE => 'OFFERINGS',
+};
 
 rpc active_symbols => sub {
     my $params = shift;
@@ -62,32 +66,37 @@ rpc contracts_for => sub {
         %$args,
     });
 
-    my $i = 0;
-    foreach my $contract (@{$contracts_for->{available}}) {
-        # localise contract *_display
-        if ($contracts_for->{available}->[$i]->{contract_category_display}) {
-            $contracts_for->{available}->[$i]->{contract_category_display} = localize($contracts_for->{available}->[$i]->{contract_category_display});
-        }
-
-        if ($contracts_for->{available}->[$i]->{contract_display}) {
-            $contracts_for->{available}->[$i]->{contract_display} = localize($contracts_for->{available}->[$i]->{contract_display});
-        }
-        $i++;
-    }
-
-    my $count = 0;
-    foreach my $contract (@{$contracts_for->{non_available}}) {
-        # localise non_available_contract *_display and categories
-        $contracts_for->{non_available}->[$count]->{contract_display_name} =
-            localize($contracts_for->{non_available}->[$count]->{contract_display_name})
-            if $contracts_for->{non_available}->[$count]->{contract_display_name};
-
-        $contracts_for->{non_available}->[$count]->{contract_category} = localize($contracts_for->{non_available}->[$count]->{contract_category})
-            if $contracts_for->{non_available}->[$count]->{contract_category};
-        $count++;
-    }
+    $contracts_for->{available}     = _localize_contracts($contracts_for->{available});
+    $contracts_for->{non_available} = _localize_contracts($contracts_for->{non_available});
 
     return $contracts_for;
+};
+
+rpc contracts_for_company => sub {
+    my $params   = shift;
+    my $language = $params->{language} // 'EN';
+
+    my $args                 = _extract_params($params);
+    my $app_id               = $args->{app_id};
+    my $app_name             = $args->{brands}->get_app($app_id)->offerings;
+    my $country_code         = $args->{country_code};
+    my $landing_company_name = $args->{landing_company_name} // 'virtual';
+    my $endpoint             = 'contracts_for_company';
+
+    my $redis_key = join('_', $endpoint, $landing_company_name, $app_name, $country_code, $language);
+
+    if (my $cache_hit = _get_cache($redis_key)) {
+        return $cache_hit;
+    }
+
+    my $offerings     = get_all_contracts($args);
+    my $all_contracts = decorate_brief($offerings);
+
+    $all_contracts->{available} = _localize_contracts($all_contracts->{available});
+
+    _set_cache($redis_key, $all_contracts);
+
+    return $all_contracts;
 };
 
 =head2 _extract_params
@@ -120,6 +129,77 @@ sub _extract_params {
         app_id               => $app_id,
         brands               => request()->brand,
     };
+}
+
+=head2 _localize_contracts($contracts)
+
+Localize C<contract_category_display> and C<contract display>
+
+=over 4
+
+=item C<$contracts> - arrayref of list of contracts
+
+=back
+
+=cut
+
+sub _localize_contracts {
+    my $contracts = shift;
+
+    foreach my $c (@$contracts) {
+        foreach my $attr (qw(contract_category_display contract_display)) {
+            $c->{$attr} = localize($c->{$attr}) if $c->{$attr};
+        }
+    }
+
+    return $contracts;
+}
+
+=head2 _get_cache($redis_key)
+
+Get cache from redis-replicated if key exists.
+Otherwise, return undef.
+
+=over 4
+
+=item C<$redis_key> - string
+
+=back
+
+=cut
+
+sub _get_cache {
+    my $redis_key = shift;
+
+    my $value = BOM::Config::Chronicle::get_chronicle_reader()->get(OFFERINGS_NAMESPACE, $redis_key);
+
+    return $value;
+}
+
+=head2 _set_cache($redis_key, $value, $cache_time)
+
+Cache C<$value> in redis-replicated for a period of C<$cache_time>.
+
+=over 4
+
+=item C<$redis_key> - string
+
+=item C<$value> - string, data that needs to be cached
+
+=item C<$cache_time> - number, cache period in seconds. Default to 1 day.
+
+=back
+
+=cut
+
+sub _set_cache {
+    my ($redis_key, $value, $cache_time) = @_;
+    $cache_time = $cache_time // 86400;
+
+    # Set category, name, value, recording_date, archive, suppress_pub, cache time
+    BOM::Config::Chronicle::get_chronicle_writer()->set(OFFERINGS_NAMESPACE, $redis_key, $value, Date::Utility->new(), 0, 0, $cache_time);
+
+    return;
 }
 
 1;
