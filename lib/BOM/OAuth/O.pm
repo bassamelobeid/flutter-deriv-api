@@ -655,7 +655,7 @@ sub _get_client {
 sub _bad_request {
     my ($c, $error) = @_;
 
-    $log->warn("Bad Request - $error - " . request_details_string($c->req, $c->stash('request_details')));
+    $log->info("Bad Request - $error - " . request_details_string($c->req, $c->stash('request_details')));
     return $c->throw_error('invalid_request', $error);
 }
 
