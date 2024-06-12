@@ -172,7 +172,8 @@ sub actions_config {
             }
         ],
         ['contract_update_history'],
-        ['contracts_for', {stash_params => [qw/ token account_tokens /]}],
+        ['contracts_for',         {stash_params => [qw/ token account_tokens /]}],
+        ['contracts_for_company', {stash_params => [qw/ token account_tokens /]}],
         ['copy_start'],
         ['copy_stop'],
         ['copytrading_list'],

@@ -56,7 +56,7 @@ sub _prepare_fast_validate_part {
     }
     if ($type eq 'object') {
         _check_for_unknown_keys($path, $schema,
-            [@basic_keys, 'properties', 'required', 'additionalProperties', 'patternProperties', 'minProperties', 'maxProperties', 'oneOf']);
+            [@basic_keys, 'properties', 'required', 'additionalProperties', 'patternProperties', 'minProperties', 'maxProperties', 'oneOf',]);
         my $additional_properties;
         my $pattern_properties = {};
 
@@ -101,7 +101,7 @@ sub _prepare_fast_validate_part {
             max_properties        => _get_value_for($path, $schema, 'maxProperties', undef),
         };
     } elsif ($type eq 'array') {
-        _check_for_unknown_keys($path, $schema, [@basic_keys, 'items']);
+        _check_for_unknown_keys($path, $schema, [@basic_keys, 'items', 'minItems']);
         my $item_schema = _get_value_for($path, $schema, 'items', undef);
         my $items       = defined($item_schema) ? _prepare_fast_validate_part([@$path, 'items'], $item_schema) : undef;
         return {
