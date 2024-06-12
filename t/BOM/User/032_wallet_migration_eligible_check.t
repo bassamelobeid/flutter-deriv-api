@@ -15,7 +15,7 @@ use BOM::Config::Runtime;
 use BOM::Test::Helper::P2PWithClient;
 use BOM::User::WalletMigration;
 
-plan tests => 10;
+plan tests => 11;
 
 BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
@@ -419,6 +419,56 @@ subtest 'payment agent transactions' => sub {
 
     ok !$migration->is_eligible(no_cache => 1), 'Not eligible with net zero pa transactions';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['has_used_pa'], 'Failed checks is has_used_pa';
+};
+
+subtest 'disabled or duplicate account not eligible' => sub {
+    my ($user) = create_user();
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
+
+    $client->set_default_account('USD');
+    $user->add_client($client);
+
+    ok $migration->is_eligible(no_cache => 1), 'Eligible at first';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks at first';
+
+    $client->status->set('disabled', 'system', 'for testing');
+
+    my $migration1 = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    ok !$migration1->is_eligible(no_cache => 1), 'Not eligible for disabled account';
+    cmp_deeply [$migration1->eligibility_checks(no_cache => 1)], ['no_duplicate_or_disabled_account'], 'Failed checks is no_dup_or_disabled_account';
+
+    $client->status->_clear('disabled');
+
+    my $migration2 = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    ok $migration2->is_eligible(no_cache => 1), 'Eligible at first';
+    cmp_deeply [$migration2->eligibility_checks(no_cache => 1)], [], 'No failed checks at first';
+
+    $client->status->set('duplicate_account', 'system', 'for testing');
+
+    my $migration3 = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    ok !$migration3->is_eligible(no_cache => 1), 'Not eligible for duplicate account';
+    cmp_deeply [$migration3->eligibility_checks(no_cache => 1)], ['no_duplicate_or_disabled_account'], 'Failed checks is no_dup_or_disabled_account';
 };
 
 my $user_counter = 1;

@@ -568,6 +568,7 @@ method eligibility_checks (%args) {
         registered_p2p
         registered_pa
         has_used_pa
+        no_duplicate_or_disabled_account
     );
 
     my @failed_checks;
@@ -635,6 +636,19 @@ method _check_no_svg_usd_account {
         return 0 if $client->landing_company->short eq 'svg' && $client->default_account && $client->default_account->currency_code eq 'USD';
     }
     return 1;
+}
+
+=head2 _check_no_duplicate_or_disabled_account
+Returns true if the user has Disabled or Duplicate account.
+=cut
+
+method _check_no_duplicate_or_disabled_account {
+
+    for my $loginid ($user->bom_real_loginids) {
+        my $client = $self->get_client_instance($loginid);
+        return 1 if $client->status->has_any(qw(disabled duplicate_account));
+    }
+    return 0;
 }
 
 =head2 _check_currency_not_set
