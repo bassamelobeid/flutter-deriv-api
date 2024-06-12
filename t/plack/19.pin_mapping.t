@@ -66,16 +66,17 @@ is $r->content, 'Authorization required', 'error returned for wallet udef3 misma
 $wallet->set_doughflow_pin($client->loginid);
 is $wallet->doughflow_pin, $client->loginid, 'wallet pin is mapped to client loginid';
 
+# params for a payout created before migration
 $r = request_json(
     'GET',
     '/account',
     encode_json_utf8({
-            client_loginid => $client->doughflow_pin,
+            client_loginid => $client->loginid,
             currency_code  => 'USD',
             udef3          => $client->loginid,
         }));
 
-is $r->content, 'Authorization required', 'error returned for mapped client udef3 mismatch';
+is decode_json_utf8($r->content)->{client_loginid}, $wallet->loginid, 'payout created before migration can be processed after migration';
 
 $r = request_json(
     'GET',

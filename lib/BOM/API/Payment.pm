@@ -240,7 +240,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 }
 
                 # This validates that udef3 matches the loginid - perhaps over-cautious since udef3 isn't used after this point
-                if ($udef3 && $udef3 ne $client->loginid) {
+                if ($udef3 && $udef3 ne $client->loginid && $udef3 ne $client_loginid) {
                     stats_inc('bom_paymentapi.error.authorization_required', {tags => [$content_type]});
                     $log->error(sprintf 'Loginid %s provided in udef3 is not associated with PIN %s', $udef3, $client_loginid);
                     return [401, [], ['Authorization required']];
