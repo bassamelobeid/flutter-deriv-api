@@ -69,13 +69,6 @@ subtest 'get_sportsbook' => sub {
         'Deriv (DSL) Ltd EUR',
         'Deriv (DSL) Ltd GBP',
         'Deriv (DSL) Ltd AUD',
-        'Deriv (SVG) LLC WLT USD',
-        'Deriv (SVG) LLC WLT EUR',
-        'Deriv (SVG) LLC WLT AUD',
-        'Deriv (SVG) LLC WLT GBP',
-        'Deriv Investments Ltd WLT USD',
-        'Deriv Investments Ltd WLT EUR',
-        'Deriv Investments Ltd WLT GBP',
     );
 
     $config_mocked->mock('on_production', 1);
@@ -90,17 +83,6 @@ subtest 'get_sportsbook' => sub {
                 currency        => $currency
             );
             ok exists $valid_sportsbooks{$sportsbook}, "'$sportsbook' is a valid Doughflow sportsbook";
-            unlike $sportsbook, qr/\sWLT\s/, 'and name does not contain WLT';
-
-            if ($lc->short =~ /^(svg|maltainvest)$/) {
-                my $sportsbook = BOM::Platform::Doughflow::get_sportsbook(
-                    landing_company => $lc->short,
-                    currency        => $currency,
-                    is_wallet       => 1
-                );
-                ok exists $valid_sportsbooks{$sportsbook}, "'$sportsbook' is a valid Doughflow sportsbook";
-                like $sportsbook, qr/\sWLT\s/, 'and name contains WLT';
-            }
         }
     }
 
@@ -121,13 +103,6 @@ subtest 'get_sportsbook' => sub {
         'testenv (DSL) Ltd EUR',
         'testenv (DSL) Ltd GBP',
         'testenv (DSL) Ltd AUD',
-        'testenv (SVG) LLC WLT USD',
-        'testenv (SVG) LLC WLT EUR',
-        'testenv (SVG) LLC WLT AUD',
-        'testenv (SVG) LLC WLT GBP',
-        'testenv Investments Ltd WLT USD',
-        'testenv Investments Ltd WLT EUR',
-        'testenv Investments Ltd WLT GBP',
     );
 
     $config_mocked->mock('on_production', 0);
@@ -142,22 +117,13 @@ subtest 'get_sportsbook' => sub {
                 landing_company => $lc->short,
                 currency        => $currency
             );
-            ok exists $valid_sportsbooks{$sportsbook}, "'$sportsbook' is a valid Doughflow sportsbook for non-wallet";
-
-            if ($lc->short =~ /^(svg|maltainvest)$/) {
-                my $sportsbook = BOM::Platform::Doughflow::get_sportsbook(
-                    landing_company => $lc->short,
-                    currency        => $currency,
-                    is_wallet       => 1
-                );
-                ok exists $valid_sportsbooks{$sportsbook}, "'$sportsbook' is a valid Doughflow sportsbook for wallet";
-            }
+            ok exists $valid_sportsbooks{$sportsbook}, "'$sportsbook' is a valid Doughflow sportsbook";
         }
     }
 
     like(
         exception { BOM::Platform::Doughflow::get_sportsbook(landing_company => 'xxx', currency => 'yyy') },
-        qr/^no sportsbook found for xxx \(non-wallet\)/,
+        qr/^no sportsbook found for xxx/,
         'dies when no sportsbook'
     );
 };
@@ -177,7 +143,7 @@ subtest 'get_sportsbook_for_client' => sub {
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW'});
         $client->account($cur);
         $sbook = get_sportsbook_for_client($client);
-        is $sbook, "Deriv (SVG) LLC WLT $cur", $sbook;
+        is $sbook, "Deriv (SVG) LLC $cur", $sbook;
     }
 
     $lc         = LandingCompany::Registry->by_name('maltainvest');
@@ -192,24 +158,8 @@ subtest 'get_sportsbook_for_client' => sub {
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MFW'});
         $client->account($cur);
         $sbook = get_sportsbook_for_client($client);
-        is $sbook, "Deriv Investments Ltd WLT $cur", $sbook;
+        is $sbook, "Deriv Investments Ltd $cur", $sbook;
     }
-
-    my $user = BOM::User->create(
-        email    => 'wallet@test.com',
-        password => 'x',
-    );
-
-    my $wallet =
-        BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW', account_type => 'doughflow', binary_user_id => $user->id});
-    my $standard =
-        BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', account_type => 'standard', binary_user_id => $user->id});
-    $user->add_client($_) for $wallet, $standard;
-    $wallet->account('USD');
-    $wallet->set_doughflow_pin($standard->loginid);
-
-    is get_sportsbook_for_client($wallet), 'Deriv (SVG) LLC USD', 'wallet with mapped doughflow pin uses non-wallet sbook';
-
 };
 
 subtest 'get_payment_methods' => sub {

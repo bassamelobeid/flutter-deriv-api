@@ -88,13 +88,9 @@ Returns a sportsbook name.
 sub get_sportsbook_for_client {
     my $client = shift;
 
-    # clients who are wallets and don't have pin mapping should use WLT sportsbook
-    my $is_wallet = $client->is_wallet && $client->doughflow_pin eq $client->loginid;
-
     return get_sportsbook(
         landing_company => $client->landing_company->short,
         currency        => $client->currency,
-        is_wallet       => $is_wallet,
     );
 }
 
@@ -110,8 +106,6 @@ Takes the following named arguments:
 
 =item * C<currency> - uppercase currency code
 
-=item * C<is_wallet> - get wallet sportsbook when true, otherwise non-wallet sportsbook
-
 =back
 
 Returns a sportsbook name or empty string.
@@ -123,8 +117,7 @@ sub get_sportsbook {
 
     my $config          = BOM::Config::cashier_config()->{doughflow}{sportsbooks};
     my $landing_company = $args{landing_company};
-    my $wallet_key      = $args{is_wallet} ? 'wallet' : 'non-wallet';
-    my $sportsbook      = $config->{$landing_company}{$wallet_key} // die "no sportsbook found for $landing_company ($wallet_key)";
+    my $sportsbook      = $config->{$landing_company} // die "no sportsbook found for $landing_company";
 
     unless (BOM::Config::on_production()) {
         my $cashier_env = BOM::Config::cashier_env();
@@ -229,11 +222,8 @@ sub get_payment_methods {
                 push @sportsbook_names,
                     get_sportsbook(
                     landing_company => $lc->short,
-                    currency        => $currency
+                    currency        => $currency,
                     );
-                if (my $wallet_sportsbook = get_sportsbook(landing_company => $lc->short, currency => $currency, is_wallet => 1)) {
-                    push @sportsbook_names, $wallet_sportsbook;
-                }
             }
         }
     }
