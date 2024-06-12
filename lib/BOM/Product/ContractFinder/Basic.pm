@@ -3,28 +3,28 @@ package BOM::Product::ContractFinder::Basic;
 use strict;
 use warnings;
 
-use POSIX qw(floor);
-use Date::Utility;
-use Format::Util::Numbers qw/financialrounding/;
-use Time::Duration::Concise;
-use VolSurface::Utils   qw(get_strike_for_spot_delta);
-use Number::Closest::XS qw(find_closest_numbers_around);
-use YAML::XS            qw(LoadFile);
-use Quant::Framework;
-use Cache::LRU;
-use Syntax::Keyword::Try;
-use Log::Any      qw($log);
-use JSON::MaybeXS qw(decode_json);
-use List::Util    qw(max);
-
+use BOM::Config::Chronicle;
+use BOM::Config::QuantsConfig;
+use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying);
+use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Strike;
 use BOM::Product::Contract::Strike::Turbos;
-use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Config::QuantsConfig;
-use BOM::Config::Chronicle;
-use BOM::Config::Runtime;
 use BOM::Product::Contract::Strike::Vanilla;
+use Cache::LRU;
+use Date::Utility;
+use Exporter              qw(import);
+use Format::Util::Numbers qw(financialrounding);
+use JSON::MaybeXS         qw(decode_json);
+use List::Util            qw(max);
+use Number::Closest::XS   qw(find_closest_numbers_around);
+use POSIX                 qw(floor);
+use Quant::Framework;
+use Time::Duration::Concise;
+use VolSurface::Utils qw(get_strike_for_spot_delta);
+use YAML::XS          qw(LoadFile);
+
+our @EXPORT_OK = qw(decorate decorate_brief);
 
 my $cache = Cache::LRU->new(size => 500);
 
@@ -35,6 +35,72 @@ dynamic settings from backoffice
 sub app_config {
     return BOM::Config::Runtime->instance->app_config;
 }
+
+=head2 decorate ($args)
+
+Adds contract metadata to each offering object of an underlying symbol.
+
+=head3 Parameters
+
+Accepts a hashref with the following arguments:
+
+=over 4
+
+=item C<symbol> - string
+
+Underlying symbol, e.g. 'R_50', '1HZ100V'
+
+=item C<offerings> - arrayref
+
+Array reference to the list of offerings
+
+=item C<non_available_offerings> - arrayref
+
+Array reference to the list of unavailable offerings
+
+=item C<landing_company_name> - string
+
+Short name of a landing company, e.g. 'virtual', 'svg', 'iom'
+
+=back
+
+=head3 Returns
+
+Returns a hash with the following attributes:
+
+=over 4
+
+=item C<available> - arrayref
+
+Array reference to the list of available offerings with added contract metadata
+
+=item C<non_available> - arrayref
+
+Array reference to the list of unavailable offerings
+
+=item C<hit_count> - number
+
+Total number of offerings available
+
+=item C<spot> - number
+
+Current spot price for the requested underlying symbol
+
+=item C<open> - integer
+
+Market opening time for the underlying symbol in epoch value 
+
+=item C<close> - integer
+
+Market closing time for the underlying symbol in epoch value
+
+=item C<feed_license> - string
+
+Indicates whether feed data is realtime or delayed
+
+=back
+
+=cut
 
 sub decorate {
     my $args = shift;
@@ -154,7 +220,6 @@ sub decorate {
         }
 
         if ($contract_category eq 'vanilla') {
-
             # forex has dynamic max duration which is configurable from BO
             if ($underlying->market->name ne 'synthetic_index') {
                 my $per_symbol_config = JSON::MaybeXS::decode_json(app_config->get("quants.vanilla.fx_per_symbol_config." . $underlying->symbol));
@@ -224,6 +289,53 @@ sub decorate {
         open          => $open,
         close         => $close,
         feed_license  => $underlying->feed_license
+    };
+}
+
+=head2 decorate_brief ($offerings)
+
+Provide only brief details for each available offering.
+Strip out other metadata relating to market, submarket, and underlying symbol.
+
+=head3 Parameters
+
+=over 4
+
+=item C<offerings> - arrayref
+
+Array reference to the list of offerings
+
+=back
+
+=head3 Returns
+
+Returns a hash with the following attributes:
+
+=over 4
+
+=item C<available> - arrayref
+
+Array reference to the list of available offerings
+
+=item C<hit_count> - number
+
+Total number of offerings available
+
+=back
+
+=cut
+
+sub decorate_brief {
+    my $offerings = shift;
+
+    foreach my $offering (@$offerings) {
+        delete $offering->{$_}
+            for qw(exchange_name expiry_type market max_contract_duration min_contract_duration start_type submarket underlying_symbol);
+    }
+
+    return {
+        available => $offerings,
+        hit_count => scalar(@$offerings),
     };
 }
 

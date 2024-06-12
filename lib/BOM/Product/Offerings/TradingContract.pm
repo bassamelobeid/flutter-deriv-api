@@ -3,19 +3,58 @@ package BOM::Product::Offerings::TradingContract;
 use strict;
 use warnings;
 
-use Exporter qw(import);
-our @EXPORT_OK = qw(get_contracts get_unavailable_contracts);
-
-use LandingCompany::Registry;
-use Date::Utility;
-use Brands;
-
 use BOM::Config::Runtime;
 use BOM::Product::Exception;
+use Brands;
+use Exporter qw(import);
 use Finance::Contract::Category;
-use Finance::Underlying;
-use List::Util    qw(uniq);
-use JSON::MaybeXS qw(decode_json);
+use LandingCompany::Registry;
+use List::Util qw(uniq);
+
+our @EXPORT_OK = qw(get_all_contracts get_contracts get_unavailable_contracts);
+
+=head2 get_all_contracts
+
+Returns an array reference of contracts for a given landing company.
+
+=head3 Parameters
+
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item C<landing_company_name> - the name of the landing company, defaults to 'virtual'
+
+=item C<country_code> - 2-letter country code
+
+=item C<brands> - brand
+
+=item C<app_id> - application id
+
+=back
+
+=cut
+
+sub get_all_contracts {
+    my $args = shift;
+
+    my $offerings_obj = _get_offerings($args);
+    my @all_contracts = @{$offerings_obj->all_records};
+
+    my (%unique_contracts, @available_contracts);
+    foreach my $c (@all_contracts) {
+        my $contract_category = $c->{contract_category};
+        my $contract_type     = $c->{contract_type};
+        my $barrier_category  = $c->{barrier_category};
+
+        unless (exists $unique_contracts{$contract_category}{$contract_type}{$barrier_category}) {
+            $unique_contracts{$contract_category}{$contract_type}{$barrier_category} = 1;
+            push(@available_contracts, $c);
+        }
+    }
+
+    return \@available_contracts;
+}
 
 =head2 get_contracts
 
