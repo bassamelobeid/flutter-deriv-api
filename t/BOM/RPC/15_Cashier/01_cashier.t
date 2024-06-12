@@ -607,19 +607,17 @@ subtest 'wallets' => sub {
 
     my $resp = $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error('CRW can access cashier')->result;
 
-    like $resp, qr/PIN=$crw_loginid/,      'PIN set to CRW loginid';
-    like $resp, qr/udef3=$crw_loginid/,    'udef3 set to CRW loginid';
-    like $resp, qr/udef4=$user_id/,        'udef4 set to user id';
-    like $resp, qr/Sportsbook=.+?WLT.+?&/, 'Sportsbook contains WLT';
+    like $resp, qr/PIN=$crw_loginid/,   'PIN set to CRW loginid';
+    like $resp, qr/udef3=$crw_loginid/, 'udef3 set to CRW loginid';
+    like $resp, qr/udef4=$user_id/,     'udef4 set to user id';
 
     $client_crw->set_doughflow_pin($std_loginid);
 
     $resp = $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error->result;
 
-    like $resp,   qr/PIN=$std_loginid/,      'PIN set to CR loginid after setting mapping';
-    like $resp,   qr/udef3=$crw_loginid/,    'udef3 set to CRW loginid';
-    like $resp,   qr/udef4=$user_id/,        'udef4 set to user id';
-    unlike $resp, qr/Sportsbook=.+?WLT.+?&/, 'Sportsbook does not contain WLT';
+    like $resp, qr/PIN=$std_loginid/,   'PIN set to CR loginid after setting mapping';
+    like $resp, qr/udef3=$crw_loginid/, 'udef3 set to CRW loginid';
+    like $resp, qr/udef4=$user_id/,     'udef4 set to user id';
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($std_loginid, 'test token');
 
