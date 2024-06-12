@@ -2,6 +2,10 @@
 
 ## Status
 
+### 2024-06-12
+
+- Initial version of offerings service is ready and currently under testing.
+
 ### 2024-05-31
 
 - Offerings service is partially ready, we have implemented offerings validation
@@ -29,6 +33,8 @@ and a roadmap for going forward.
 Still trying to separate the core repository (`bom-pricing`) from dependency on non-service-related code and data.
 
 ## Website
+
+### 2024-05-31
 
 - Updated Roadmap, API, Active projects and KPIs
 

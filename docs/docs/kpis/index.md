@@ -20,8 +20,7 @@ term include:
     - Current status: In progress
     - Challenges: proper testing for correctness against production data
 - Offerings service to support contract routing and validation
-    - Current status: In progress
-    - Blocking on: chronicle reader
+    - Current status: In testing
 - Pricer configuration import to tune pricers as done in legacy perl
     - Current status: In progress
     - Needs: conversion to an importable Go module

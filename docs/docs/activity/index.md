@@ -5,16 +5,11 @@
 ### Offerings service
 
 We are working on implementing the offerings service. The service that would
-allow query and validate offerings. This service is a prerequisite for us to
+allow validate offerings. This service is a prerequisite for us to
 start working on the separating pricing service and providing pricing as an
 API. It is a part of phase one of the pricing service roadmap.
 
-Progress:
-
-- implemented parsing of config files with offerings information
-- implemented offering validation
-- defined the API
-- Created build scripts
+Currently the initial version is in testing.
 
 ### Chronicle client library
 
@@ -24,4 +19,5 @@ pricers.
 
 ## Accomplished
 
+- Offerings service
 - We documented the architecture of the future pricing service.
