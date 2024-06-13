@@ -1517,7 +1517,13 @@ subtest 'vanuatu can deposit upon account creation where account rights are trad
     my %mt5_account = (
         real => {login => 'MTR1001020'},
     );
-    $user->add_loginid($mt5_account{real}{login});
+    $user->add_loginid(
+        $mt5_account{real}{login},
+        'mt5', 'real', 'USD',
+        {
+            currency        => 'USD',
+            landing_company => 'svg'
+        });
 
     my %proxy_user_get_json            = %Test::BOM::RPC::Accounts::proxy_user_get_json;
     my %proxy_group_get_json           = %Test::BOM::RPC::Accounts::proxy_group_get_json;

@@ -361,7 +361,7 @@ sub mt5_accounts_lookup ($client, $account_type, $return_errors) {    ## no crit
         my $f =
             BOM::MT5::User::Async::is_suspended('', {login => $login})
             ? Future->fail(_create_account_inaccessible_error($login))
-            : _get_user_with_group($login);
+            : _get_user_with_group($login, $client);
 
         $f = $f->then(
             sub {
@@ -1508,7 +1508,7 @@ async_rpc "mt5_get_settings",
 
     return Future->fail(_create_account_inaccessible_error($login)) if (BOM::MT5::User::Async::is_suspended('', {login => $login}));
 
-    return _get_user_with_group($login)->then(
+    return _get_user_with_group($login, $client)->then(
         sub {
             my ($settings) = @_;
 
@@ -1588,6 +1588,8 @@ sub set_mt5_account_settings {
     $settings->{sub_account_type}      = $config->{sub_account_type};
     $settings->{sub_account_category}  = $config->{sub_account_category};
     $settings->{product}               = $config->{product} // '';
+    # Retrieve landing company full name when we're getting the group info from the DB.
+    $settings->{landing_company} = BOM::Config::MT5->new()->get_landing_company_name_from_group($group_name);
 
     my %server_name_mapping = (
         'Deriv (SVG) LLC'                    => 'SVG',
@@ -1619,7 +1621,7 @@ sub set_mt5_account_settings {
 }
 
 sub _get_user_with_group {
-    my ($loginid) = shift;
+    my ($loginid, $client) = @_;
 
     return BOM::MT5::User::Async::get_user($loginid)->then(
         sub {
@@ -1638,6 +1640,21 @@ sub _get_user_with_group {
     )->then(
         sub {
             my ($settings) = @_;
+
+            my $loginids = $client->user->loginid_details;
+            $loginids = {map { $_ => $loginids->{$_} } grep { $_ eq $loginid } keys %$loginids};
+
+            # if attributes field for $loginids is not empty, use the value for return, else fallback to usual API call.
+            if (keys %{$loginids->{$loginid}->{attributes}}) {
+                $settings->{currency}        = $loginids->{$loginid}->{attributes}->{currency};
+                $settings->{landing_company} = $loginids->{$loginid}->{attributes}->{landing_company};
+                $settings->{display_balance} = formatnumber('amount', $settings->{currency}, $settings->{balance});
+
+                set_mt5_account_settings($settings) if ($settings->{group});
+
+                return Future->done($settings);
+            }
+
             return BOM::MT5::User::Async::get_group($settings->{group})->then(
                 sub {
                     my ($group_details) = @_;
@@ -2314,7 +2331,7 @@ sub _mt5_validate_and_get_amount {
         $to_loginid   = $mt5_loginid;
     }
 
-    return _get_user_with_group($mt5_loginid)->then(
+    return _get_user_with_group($mt5_loginid, $authorized_client)->then(
         sub {
             my ($setting) = @_;
 
