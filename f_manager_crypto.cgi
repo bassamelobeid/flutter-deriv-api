@@ -436,11 +436,12 @@ $actions->{search} = sub {
         id     => $transaction_type,
         action => 'transaction/get_list',
         body   => {
-            currency_code => $currency,
-            $search_type  => $search_query,
-            type          => $transaction_type,
-            detail_level  => 'full',
-            offset        => $offset,
+            currency_code  => $currency,
+            $search_type   => $search_query,
+            type           => $transaction_type,
+            detail_level   => 'full',
+            offset         => $offset,
+            sort_direction => 'DESC',
         },
     };
 
