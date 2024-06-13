@@ -142,6 +142,36 @@ subtest 'rule client.residence_is_not_empty' => sub {
     $mock_client->unmock_all;
 };
 
+subtest 'rule client.resident_self_declaration' => sub {
+    my $rule_name   = 'client.resident_self_declaration';
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $residence   = 'id';
+    $mock_client->redefine(residence => sub { return $residence });
+
+    my $args = {loginid => $client->loginid};
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Rule passes for residence which does not require self declaration';
+
+    $residence = 'es';
+
+    $args->{resident_self_declaration} = 1;
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) }
+    'Rule passes for residence which requires self declaration and self-declaration is filled';
+
+    delete $args->{resident_self_declaration};
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+        {
+        error_code => 'ResidentSelfDeclarationRequired',
+        rule       => $rule_name,
+        details    => {residence => $residence},
+        },
+        'Rule fails for residence which requires self declaration and self-declaration is not filled';
+
+    $mock_client->unmock_all;
+};
+
 subtest 'rule client.signup_immutable_fields_not_changed' => sub {
     my $rule_name      = 'client.signup_immutable_fields_not_changed';
     my $rule_engine    = BOM::Rules::Engine->new(client => $client);

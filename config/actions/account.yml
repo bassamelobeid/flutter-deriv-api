@@ -34,6 +34,7 @@ new_account:
           - financial_asssessment.appropriateness_test
           - financial_asssessment.account_opening_validation
           - profile.tax_information_is_mandatory
+          - client.resident_self_declaration
     - type: conditional
       on: residence
       rules_per_value:

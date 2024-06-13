@@ -13,7 +13,8 @@ Contains rules pertaining the context client.
 use strict;
 use warnings;
 
-use BOM::Rules::Registry qw(rule);
+use BOM::Rules::Registry   qw(rule);
+use BOM::Platform::Context qw (request);
 use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;
 use List::MoreUtils qw(uniq);
@@ -181,6 +182,23 @@ rule 'client.fully_authenticated' => {
         my ($self, $context, $args) = @_;
 
         $self->fail('NotAuthenticated') unless $context->client($args)->fully_authenticated;
+
+        return 1;
+    }
+};
+
+rule 'client.resident_self_declaration' => {
+    description => "Checks if client has agreed to self declaration for account residency.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $client             = $context->client($args);
+        my $countries_instance = request()->brand->countries_instance;
+
+        return 1 unless $countries_instance->is_self_declaration_required($client->residence);
+
+        $self->fail('ResidentSelfDeclarationRequired', details => {residence => $client->residence})
+            if !$args->{resident_self_declaration} && $countries_instance->is_self_declaration_required($client->residence);
 
         return 1;
     }

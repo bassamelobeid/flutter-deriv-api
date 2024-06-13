@@ -33,6 +33,7 @@ new_wallet:
           - financial_asssessment.account_opening_validation
           - financial_asssessment.appropriateness_test
           - profile.tax_information_is_mandatory
+          - client.resident_self_declaration
     - type: conditional
       on: residence
       rules_per_value:
