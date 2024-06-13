@@ -1006,10 +1006,10 @@ subtest $method => sub {
         $params->{args}->{accept_risk}               = 1;
         $params->{args}{citizen}                     = "es";
         $params->{args}->{currency}                  = 'EUR';
+        $params->{args}->{date_of_birth}             = '1986-05-10';
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InputValidationFailed', 'It should return error: InputValidationFailed')
-            ->error_message_is('Resident Self Declaration required for country.',
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ResidentSelfDeclarationRequired',
+            'It should return error: ResidentSelfDeclarationRequired')->error_message_is('Resident Self Declaration required for country.',
             'It should return error_message: Resident Self Declaration required for country.')->error_details_is({residence => $vclient->residence});
 
         delete $params->{args};
