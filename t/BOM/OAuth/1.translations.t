@@ -166,7 +166,7 @@ cmp_deeply $events->{unknown_login}->{properties},
     title                     => 'Вход с нового устройства',
     ip                        => '127.0.0.1',
     browser                   => undef,
-    password_reset_url        => 'https://www.binary.com/ru/user/lost_passwordws.html',
+    password_reset_url        => 'https://deriv.com/ru/reset-password/',
     first_name                => $client_cr->first_name,
     },
     'expected event properties';

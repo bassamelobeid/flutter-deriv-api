@@ -98,7 +98,7 @@ $emitter_mock->mock(
 
 sub do_client_login {
     my $agent        = shift // 'chrome';
-    my $brand        = shift // 'binary';
+    my $brand        = shift // 'deriv';
     my $agent_header = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36';
     my $t            = Test::Mojo->new('BOM::OAuth');
     $email    = shift // $email;
@@ -342,6 +342,28 @@ subtest "it should include the anonymous ID and login_type in event properties" 
         is($event_properties->{anonymous_id},   $anonymous_id,   'Anonymous ID should be present in event properties');
         is($event_properties->{login_provider}, $login_provider, 'login_provider should be present in event properties');
     }
+};
+
+subtest "brand should be deriv by default" => sub {
+    my $t   = Test::Mojo->new('BOM::OAuth');
+    my $url = "/authorize?app_id=$app_id&brand=binary";
+    $t->get_ok(
+        $url => sub {
+            my ($t, $tx) = @_;
+            my $brand = $tx->req->param('brand');
+            is($brand, 'deriv', 'Brand should be deriv by default');
+        });
+};
+
+subtest "brand should be deriv by for binary app id" => sub {
+    my $t   = Test::Mojo->new('BOM::OAuth');
+    my $url = "/authorize?app_id=1";
+    $t->get_ok(
+        $url => sub {
+            my ($t, $tx) = @_;
+            my $brand = $tx->req->param('brand');
+            is($brand, 'deriv', 'Brand should be deriv by default');
+        });
 };
 
 done_testing()

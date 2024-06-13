@@ -174,8 +174,11 @@ subtest 'setting up social login' => sub {
     is_deeply(
         decode_json_utf8(decode_base64($signed_cookies->{sls}->{data})),
         {
-            'query_params' => {'app_id' => $app_id},
-            'google'       => {
+            'query_params' => {
+                'app_id' => $app_id,
+                'brand'  => 'deriv'
+            },
+            'google' => {
                 'nonce'          => 'nonce',
                 'code_challenge' => 'code_challenge',
                 'code_verifier'  => 'code_verifier'

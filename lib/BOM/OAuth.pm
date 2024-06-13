@@ -11,6 +11,7 @@ use BOM::Database::Rose::DB;
 use BOM::OAuth::Routes;
 use Syntax::Keyword::Try;
 use Log::Any qw($log);
+use Brands;
 
 sub startup {
     my $app = shift;
@@ -53,9 +54,10 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
+            my $params = $c->req->url->query;
+            $params->param('brand', Brands::DEFAULT_BRAND);
             my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
             BOM::Platform::Context::request($request);
-
             $c->stash(request => $request);
             $c->stash(brand   => $request->brand);
 
