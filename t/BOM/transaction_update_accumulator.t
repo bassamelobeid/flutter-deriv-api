@@ -186,7 +186,7 @@ lives_ok {
 
 my ($trx, $fmb, $chld, $qv1, $qv2);
 
-subtest 'update take profit' => sub {
+subtest 'update take profit not allowed' => sub {
     my ($txn, $contract);
 
     my $args = {
@@ -221,212 +221,25 @@ subtest 'update take profit' => sub {
         update_params => {take_profit => 10},
     );
 
-    ok $updater->is_valid_to_update, 'valid to update';
+    ok !$updater->is_valid_to_update, 'is invalid to update';
+    is $updater->validation_error->{code}, 'UpdateNotAllowed', 'correct code';
+    is $updater->validation_error->{message_to_client},
+        "This contract cannot be updated once you've made your purchase. This feature is not available for this contract type.",
+        'correct message_to_client';
+
     my $res = $updater->update;
-    is $res->{updated_queue}->{in},  1, 'added one entry in the queue';
-    is $res->{updated_queue}->{out}, 1, 'removed one entry in the queue';
+    ok !$res->{updated_queue}->{in},  'no entry is added in the queue';
+    ok !$res->{updated_queue}->{out}, 'no entry is removed from the queue';
 
     ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
 
     subtest 'chld row', sub {
-        is $chld->{financial_market_bet_id},    $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{'take_profit_order_amount'}, 10,         'take_profit_order_amount is 10';
-        cmp_ok $chld->{'take_profit_order_date'}, "ge", $fmb->{start_time}, 'take_profit_order_date is correctly set';
+        is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+        ok !$chld->{'take_profit_order_amount'}, 'take_profit_order_amount is not updated - undef';
     };
 
     my $audit_details = get_audit_details_by_fmbid($fmb->{id});
     ok !@$audit_details, 'no record is added to audit details';
-
-    subtest 'too frequent updates' => sub {
-
-        $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $cl,
-            contract_id   => $fmb->{id},
-            update_params => {take_profit => 30},
-        );
-        ok !$updater->is_valid_to_update, 'invalid to update again';
-        is $updater->validation_error->{code}, 'TooFrequentUpdate', 'code - TooFrequentUpdate';
-        is $updater->validation_error->{message_to_client},
-            'Only one update per second is allowed.',
-            'message_to_client - Only one update per second is allowed.';
-
-        $audit_details = get_audit_details_by_fmbid($fmb->{id});
-        ok !@$audit_details, 'no record is added to audit details';
-    };
-
-    subtest 'take profit amount less than current value' => sub {
-        # only one update per second is allowed
-        sleep 1;
-
-        $mocked_contract->mock('_build_pnl', sub { return 2.01 });
-
-        $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $cl,
-            contract_id   => $fmb->{id},
-            update_params => {take_profit => 1},
-        );
-
-        ok !$updater->is_valid_to_update, 'invalid to update';
-        is $updater->validation_error->{code},              'TakeProfitTooLow',                                           'correct code';
-        is $updater->validation_error->{message_to_client}, "Please enter a take profit amount that's higher than 2.01.", 'correct message_to_client';
-
-        $audit_details = get_audit_details_by_fmbid($fmb->{id});
-        ok !@$audit_details, 'no record is added to audit details';
-
-        $mocked_contract->unmock('_build_pnl');
-    };
-
-    $updater = BOM::Transaction::ContractUpdate->new(
-        client        => $cl,
-        contract_id   => $fmb->{id},
-        update_params => {take_profit => 15},
-    );
-    ok $updater->is_valid_to_update, 'valid to update';
-    $res = $updater->update;
-    is $res->{updated_queue}->{in},  1, 'added one entry in the queue';
-    is $res->{updated_queue}->{out}, 1, 'removed one entry from the queue';
-
-    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
-
-    subtest 'chld row', sub {
-        is $chld->{financial_market_bet_id},    $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{'take_profit_order_amount'}, 15,         'take_profit_order_amount is 15';
-        cmp_ok $chld->{'take_profit_order_date'}, "ge", $fmb->{start_time}, 'take_profit_order_date is correctly set';
-    };
-
-    $audit_details = get_audit_details_by_fmbid($fmb->{id});
-    ok $audit_details->[0], 'audit populated';
-    cmp_ok $audit_details->[0][3], "le", Date::Utility->new->db_timestamp, "timestamp is now";
-
-    sleep 1;
-
-    $updater = BOM::Transaction::ContractUpdate->new(
-        client        => $cl,
-        contract_id   => $fmb->{id},
-        update_params => {take_profit => undef},
-    );
-
-    ok $updater->is_valid_to_update, 'valid to update';
-    $res = $updater->update;
-    is $res->{updated_queue}->{in},  1, 'added one entry in the queue';
-    is $res->{updated_queue}->{out}, 1, 'removed one entry from the queue';
-
-    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
-
-    subtest 'chld row', sub {
-        is $chld->{financial_market_bet_id},    $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{'take_profit_order_amount'}, undef,      'take_profit_order_amount is undef';
-        cmp_ok $chld->{'take_profit_order_date'}, "ge", $fmb->{start_time}, 'take_profit_order_date is correctly set';
-    };
-
-    $audit_details = get_audit_details_by_fmbid($fmb->{id});
-    ok $audit_details->[0], 'audit cancel populated';
-    ok $audit_details->[1], 'audit update populated';
-    cmp_ok $audit_details->[1][3], "lt", $audit_details->[0][3], "timestamp are in order";
-
-    subtest "get update history for $fmb->{id}" => sub {
-        my $update_history = BOM::Transaction::ContractUpdateHistory->new(
-            client => $cl,
-        );
-        my $history = $update_history->get_history_by_contract_id({
-            contract_id => $fmb->{id},
-            limit       => 5000
-        });
-        is scalar(@$history),             3, 'has three entries';
-        is $history->[0]->{display_name}, 'Take profit';
-        is $history->[0]->{order_amount}, 0;
-        is $history->[1]->{display_name}, 'Take profit';
-        is $history->[1]->{order_amount}, 15;
-        is $history->[2]->{display_name}, 'Take profit';
-        is $history->[2]->{order_amount}, 10;
-
-        sleep 1;
-        $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $cl,
-            contract_id   => $fmb->{id},
-            update_params => {take_profit => 11},
-        );
-        ok $updater->is_valid_to_update, 'valid to update';
-        $updater->update;
-        $res = $update_history->get_history_by_contract_id({
-            contract_id => $fmb->{id},
-            limit       => 5000
-        });
-        is $res->[0]->{display_name}, 'Take profit';
-        is $res->[0]->{order_amount}, 11;
-        is $res->[1]->{display_name}, 'Take profit';
-        is $res->[1]->{order_amount}, 0;
-        is $res->[2]->{display_name}, 'Take profit';
-        is $res->[2]->{order_amount}, 15;
-        is $res->[3]->{display_name}, 'Take profit';
-        is $res->[3]->{order_amount}, 10;
-
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
-    };
-
-    subtest 'update take profit on a sold contract' => sub {
-        # we just want to _validate_trade_pricing_adjustment
-        my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
-        $mocked->mock($_ => sub { '' })
-            for (
-            qw/
-            _validate_sell_transaction_rate
-            _is_valid_to_sell
-            _validate_currency
-            _validate_date_pricing/
-            );
-
-        # no limits
-        $mocked->mock('limits', sub { {} });
-        my $last_updated_record = $chld;
-
-        $txn = BOM::Transaction->new({
-                purchase_date       => $contract->date_start,
-                client              => $cl,
-                contract_parameters => {
-                    shortcode       => $contract->shortcode,
-                    currency        => $cl->currency,
-                    landing_company => $cl->landing_company->short,
-                    limit_order     => {
-                        take_profit => {
-                            order_amount => $last_updated_record->{take_profit_order_amount},
-                            order_date   => $last_updated_record->{take_profit_order_date},
-                        }
-                    },
-                },
-                contract_id => $fmb->{id},
-                price       => $contract->bid_price,
-                amount_type => 'payout',
-                source      => 23,
-            });
-
-        # only one update per second is allowed
-        sleep 1;
-        my $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $cl,
-            contract_id   => $fmb->{id},
-            update_params => {take_profit => 10},
-        );
-        ok $updater->is_valid_to_update, 'valid to update';
-        # sell after is_valid_to_update is called
-        ok !$txn->sell(), 'no error when sell';
-
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
-        ok $fmb->{is_sold}, 'contract is  sold successfully';
-        sleep 1;
-        my $res = $updater->update;
-        ok !$res->{updated_queue}, 'undefined updated_queue';
-        ok !$res->{updated_table}, 'undefined updated_table';
-
-        $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $cl,
-            contract_id   => $fmb->{id},
-            update_params => {take_profit => 10},
-        );
-        ok !$updater->is_valid_to_update, 'invalid to update';
-        is $updater->validation_error->{code},              'ContractIsSold',        'code - ContractIsSold';
-        is $updater->validation_error->{message_to_client}, 'Contract has expired.', 'message_to_client - Contract has expired.';
-    };
 };
 
 done_testing();

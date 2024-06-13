@@ -562,12 +562,11 @@ subtest 'sell failure due to update' => sub {
         update_params => {take_profit => 2},
     );
 
-    ok $updater->is_valid_to_update, 'valid to update';
-    $updater->update;
-    $error = $sell_txn->sell();
-    ok $error, 'sell failed after contract is updated';
-    is $error->{-mesg}, 'Contract is updated while attempting to sell', 'error mesg Contract is updated while attempting to sell';
-    is $error->{-type}, 'SellFailureDueToUpdate',                       'error type SellFailureDueToUpdate';
+    ok !$updater->is_valid_to_update, 'is invalid to update';
+    is $updater->validation_error->{code}, 'UpdateNotAllowed', 'correct code';
+    is $updater->validation_error->{message_to_client},
+        "This contract cannot be updated once you've made your purchase. This feature is not available for this contract type.",
+        'correct message_to_client';
 
     $mocked_contract->unmock('is_expired');
     $mocked_contract->unmock('_build_pnl');
