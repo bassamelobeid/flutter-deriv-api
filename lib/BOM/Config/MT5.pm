@@ -503,15 +503,4 @@ sub get_webtrader_url {
     }
 }
 
-=head2 get_landing_company_name_from_group
-
-Returns the full name of the landing company from group info
-
-=cut
-
-sub get_landing_company_name_from_group {
-    my ($self, $group_name) = @_;
-    return BOM::Config::mt5_account_types()->{lc($group_name)}->{landing_company_name};
-}
-
 1;
