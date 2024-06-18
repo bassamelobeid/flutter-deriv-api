@@ -1,4 +1,6 @@
 name: Repository Tests (bom-postgres)
+env:
+  PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
   workflow_call:
     inputs:

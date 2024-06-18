@@ -1,5 +1,5 @@
 name: Daily workflow ((bom-rules))
-run-name: Daily mworkflow (bom-rules)
+run-name: Daily workflow (bom-rules)
 on:
   workflow_dispatch:
   workflow_call:
