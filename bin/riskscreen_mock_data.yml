@@ -1,0 +1,42 @@
+Customers:
+  - InterfaceReference: CR90000000
+    StatusID: 1
+    ClientEntityID: 100
+    DateAdded: 2020-01-01
+    CustomText1: Payment Agent
+  - InterfaceReference: MLT90000000
+    StatusID: 1
+    ClientEntityID: 101
+    DateAdded: 2020-01-01
+    CustomText1: Affiliate
+  - InterfaceReference: MF90000000
+    StatusID: 1
+    ClientEntityID: 102
+    DateAdded: 2019-01-01
+    CustomText1: Lost too much
+  - InterfaceReference: MX90000000
+    StatusID: 0
+    ClientEntityID: 103
+    DateAdded: 2020-01-01
+    CustomText1: Won too much
+Matches:
+  - InterfaceReference: CR90000000
+    Type: Potential
+    Date: 2021-01-01
+  - InterfaceReference: CR90000000
+    Type: Discounted
+    Date: 2021-09-08
+  - InterfaceReference: CR90000000
+    Type: Flagged
+    Date: 2021-08-01
+    Flag: Test Flag1
+  - InterfaceReference: CR90000000
+    Type: Flagged
+    Date: 2021-07-01
+    Flag: Test Flag2
+  - InterfaceReference: MLT90000000
+    Type: Potential
+    Date: 2021-07-11
+  - InterfaceReference: MF90000000
+    Type: Discounted
+    Date: 2020-05-20
