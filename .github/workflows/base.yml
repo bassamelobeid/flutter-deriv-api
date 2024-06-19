@@ -1,0 +1,31 @@
+name: Repository Tests
+
+on:
+  workflow_call:
+    inputs:
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
+      need_upload_result:
+        description: 'Upload the test result'
+        required: false
+        default: false
+        type: boolean
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-regentmarkets/bom-user
+  cancel-in-progress: true
+jobs:
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        test_name: [p2p, user, client, others]
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    secrets: inherit
+    with:
+      test_name: ${{ matrix.test_name }}
+      repository: regentmarkets/bom-user
+      debianci_image: ${{ inputs.debianci_image }}
+      need_upload_result: ${{ inputs.need_upload_result }}

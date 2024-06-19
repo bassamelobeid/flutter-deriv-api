@@ -1,0 +1,240 @@
+webmoney:
+  name: WebMoney
+  exclude_countries: 0
+  country:
+    - ad
+    - af
+    - ag
+    - ai
+    - al
+    - am
+    - an
+    - ao
+    - aq
+    - ar
+    - aw
+    - az
+    - ba
+    - bd
+    - bf
+    - bh
+    - bi
+    - bm
+    - bn
+    - bo
+    - br
+    - bs
+    - bt
+    - bv
+    - cc
+  fields:
+    account:
+      display_name: WM Purse Number
+apple_pay:
+  name: Apple Pay
+  exclude_countries: 0
+  country:
+    - br
+    - ch
+    - cn
+    - fo
+    - ge
+    - gl
+    - kz
+    - li
+    - mc
+    - me
+    - mo
+    - nz
+    - rs
+    - ru
+    - sj
+    - sm
+    - tw
+    - ua
+    - va
+  fields:
+    account:
+      display_name: Phone number
+google_pay:
+  name: Google Pay
+  exclude_coutries: 0
+  country:
+    - br
+    - ch
+    - cl
+    - co
+    - eg
+    - eh
+    - jo
+    - kw
+    - kz
+    - lb
+    - lk
+    - mx
+    - nz
+    - pe
+    - ph
+    - qa
+    - ru
+    - sa
+    - th
+    - tr
+    - tw
+    - ua
+    - uy
+    - za
+  fields:
+    account:
+      display_name: Phone number or UPID
+paypal:
+  name: PayPal
+  exclude_countries: 1
+  country:
+    - aq
+    - ax
+    - bb
+    - bj
+    - bl
+    - bv
+    - bw
+    - cc
+    - ci
+    - cu
+    - cw
+    - cx
+    - ec
+    - eh
+    - gh
+    - gs
+    - gw
+    - gy
+    - hm
+    - io
+    - ke
+    - kr
+    - mf
+    - ms
+    - na
+    - ng
+    - pn
+    - ps
+    - pw
+    - sn
+    - so
+    - sr
+    - ss
+    - sx
+    - sy
+    - sz
+    - tf
+    - tk
+    - tl
+    - tn
+    - to
+    - tr
+    - tz
+    - vn
+    - wf
+    - zm
+    - zw
+  fields:
+    account:
+      display_name: Email or phone number
+alipay:
+  name: Alipay
+  exclude_countries: 1
+  country:
+    - ax
+    - bb
+    - bj
+    - bl
+    - bw
+    - cd
+    - cg
+    - ci
+    - cu
+    - cw
+    - gh
+    - gy
+    - io
+    - ke
+    - kr
+    - na
+    - ng
+    - pn
+    - ps
+    - ss
+    - sy
+    - sz
+    - tl
+    - tn
+    - tz
+    - vn
+    - zm
+    - zw
+  fields:
+    account:
+      display_name: Alipay ID
+skrill:
+  name: Skrill
+  exclude_countries: 1
+  country:
+    - ax
+    - bb
+    - bj
+    - bl
+    - bw
+    - bz
+    - cd
+    - cg
+    - ci
+    - cw
+    - gh
+    - gy
+    - io
+    - ke
+    - kr
+    - na
+    - ng
+    - ps
+    - pw
+    - ss
+    - sy
+    - sz
+    - tl
+    - tn
+    - tz
+    - vn
+    - zm
+    - zw
+  fields:
+    account:
+      display_name: Email or phone number
+wechat_pay:
+  name: WeChat Pay
+  exclude_countries: 1
+  country:
+    - az
+    - bb
+    - bj
+    - bw
+    - bz
+    - ci
+    - gh
+    - ke
+    - kr
+    - na
+    - ng
+    - pw
+    - sy
+    - sz
+    - tl
+    - tn
+    - tz
+    - vn
+    - zm
+    - zw
+  fields:
+    account:
+      display_name: Phone number
