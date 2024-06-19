@@ -1,0 +1,406 @@
+---
+volatility_coef:
+  WLDAUD:
+    data:
+      error: 0.307318089905644
+      long_term_weight: 0.579
+      short_term_weight: 0.449
+    end_date: 2015-06-03
+    start_date: 2015-03-15
+  WLDEUR:
+    data:
+      error: 0.299305915299684
+      long_term_weight: 0.552
+      short_term_weight: 0.504
+    end_date: 2015-06-03
+    start_date: 2015-03-15
+  WLDGBP:
+    data:
+      error: 0.303178635219385
+      long_term_weight: 0.524
+      short_term_weight: 0.525
+    end_date: 2015-06-03
+    start_date: 2015-03-15
+  WLDUSD:
+    data:
+      error: 0.298655792898955
+      long_term_weight: 0.427
+      short_term_weight: 0.611
+    end_date: 2015-06-03
+    start_date: 2015-03-15
+  frxAUDJPY:
+    data:
+      error: 0.290451190524911
+      long_term_weight: 0.523
+      short_term_weight: 0.495
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxAUDUSD:
+    data:
+      error: 0.318779003086038
+      long_term_weight: 0.512
+      short_term_weight: 0.512
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURAUD:
+    data:
+      error: 0.297906225632013
+      long_term_weight: 0.541
+      short_term_weight: 0.484
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURCAD:
+    data:
+      error: 0.285897250188869
+      long_term_weight: 0.487
+      short_term_weight: 0.556
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURCHF:
+    data:
+      error: 0.310143795069954
+      long_term_weight: 0.467
+      short_term_weight: 0.575
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURGBP:
+    data:
+      error: 0.310143795069954
+      long_term_weight: 0.467
+      short_term_weight: 0.575
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURJPY:
+    data:
+      error: 0.298247801661584
+      long_term_weight: 0.506
+      short_term_weight: 0.529
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURUSD:
+    data:
+      error: 0.325770581003558
+      long_term_weight: 0.48
+      short_term_weight: 0.569
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPAUD:
+    data:
+      error: 0.303910145694644
+      long_term_weight: 0.537
+      short_term_weight: 0.486
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPCAD:
+    data:
+      error: 0.287906609870749
+      long_term_weight: 0.481
+      short_term_weight: 0.562
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPCHF:
+    data:
+      error: 0.310143795069954
+      long_term_weight: 0.467
+      short_term_weight: 0.575
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPJPY:
+    data:
+      error: 0.287383853157286
+      long_term_weight: 0.481
+      short_term_weight: 0.545
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPUSD:
+    data:
+      error: 0.302294009180871
+      long_term_weight: 0.445
+      short_term_weight: 0.59
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxUSDCAD:
+    data:
+      error: 0.316716443649517
+      long_term_weight: 0.486
+      short_term_weight: 0.559
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxUSDCHF:
+    data:
+      error: 0.325770581003558
+      long_term_weight: 0.48
+      short_term_weight: 0.569
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxUSDJPY:
+    data:
+      error: 0.313787052897722
+      long_term_weight: 0.453
+      short_term_weight: 0.567
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxAUDCAD:
+    data:
+      error: 0.27898552879256
+      long_term_weight: 0.553
+      short_term_weight: 0.467
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxAUDCHF:
+    data:
+      error: 0.293836890799242
+      long_term_weight: 0.55
+      short_term_weight: 0.478
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxAUDNZD:
+    data:
+      error: 0.307298253730953
+      long_term_weight: 0.512
+      short_term_weight: 0.503
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxAUDPLN:
+    data:
+      error: 0.299318486316065
+      long_term_weight: 0.497
+      short_term_weight: 0.523
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxEURNZD:
+    data:
+      error: 0.301721624508421
+      long_term_weight: 0.547
+      short_term_weight: 0.476
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxGBPNZD:
+    data:
+      error: 0.309464172062522
+      long_term_weight: 0.54
+      short_term_weight: 0.482
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxNZDUSD:
+    data:
+      error: 0.309610483285418
+      long_term_weight: 0.523
+      short_term_weight: 0.498
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxXAGUSD:
+    data:
+      error: 0.384350230151739
+      long_term_weight: 0.699
+      short_term_weight: 0.374
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxXPDUSD:
+    data:
+      error: 0.384350230151739
+      long_term_weight: 0.699
+      short_term_weight: 0.374
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxXPTUSD:
+    data:
+      error: 0.384350230151739
+      long_term_weight: 0.699
+      short_term_weight: 0.374
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxXAUUSD:
+    data:
+      error: 0.391236982559451
+      long_term_weight: 0.594
+      short_term_weight: 0.467
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+duration_coef:
+  WLDAUD:
+    data:
+      intercept: -0.3035250114621
+      slope: 0.0475881191785973
+    end_date: 2015-06-03
+    start_date: 2015-03-15
+  WLDEUR:
+    data:
+      intercept: -0.358736913094514
+      slope: 0.062989780678157
+    end_date: 2015-06-03
+    start_date: 2015-03-15
+  WLDGBP:
+    data:
+      intercept: -0.136777739851127
+      slope: 0.059386963829158
+    end_date: 2015-06-03
+    start_date: 2015-03-15
+  WLDUSD:
+    data:
+      intercept: 0.104648343298955
+      slope: 0.0653536291211579
+    end_date: 2015-06-03
+    start_date: 2015-03-15
+  frxAUDJPY:
+    data:
+      intercept: -0.23374010333261
+      slope: 0.0398254623614163
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxAUDUSD:
+    data:
+      intercept: -0.329234540674653
+      slope: 0.0513477582252071
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURAUD:
+    data:
+      intercept: -0.270006246293565
+      slope: 0.0447042343501319
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURCAD:
+    data:
+      intercept: -0.343785838839375
+      slope: 0.0561973283494523
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURCHF:
+    data:
+      intercept: -0.458803134270935
+      slope: 0.061096226358639
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURGBP:
+    data:
+      intercept: -0.458803134270935
+      slope: 0.061096226358639
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURJPY:
+    data:
+      intercept: -0.374727899439673
+      slope: 0.0509055800162822
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxEURUSD:
+    data:
+      intercept: -0.52829668587343
+      slope: 0.0692131109996501
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPAUD:
+    data:
+      intercept: -0.222430693674484
+      slope: 0.0449331380055675
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPCAD:
+    data:
+      intercept: -0.324992841580114
+      slope: 0.05646318972559
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPCHF:
+    data:
+      intercept: -0.458803134270935
+      slope: 0.061096226358639
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPJPY:
+    data:
+      intercept: -0.383588096304098
+      slope: 0.0426451477028945
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxGBPUSD:
+    data:
+      intercept: -0.392699044071569
+      slope: 0.0555226958525942
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxUSDCAD:
+    data:
+      intercept: -0.506827548409332
+      slope: 0.0619166866251214
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxUSDCHF:
+    data:
+      intercept: -0.52829668587343
+      slope: 0.0692131109996501
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxUSDJPY:
+    data:
+      intercept: -0.503027043744736
+      slope: 0.048692967887697
+    end_date: 2015-06-02
+    start_date: 2015-01-13
+  frxAUDCAD:
+    data:
+      intercept: -0.100653576618588
+      slope: 0.0390315553201844
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxAUDCHF:
+    data:
+      intercept: -0.0823014722863755
+      slope: 0.04336575275736
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxAUDNZD:
+    data:
+      intercept: -0.13972820076142
+      slope: 0.0402912592321783
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxAUDPLN:
+    data:
+      intercept: -0.146844720104225
+      slope: 0.041991171166837
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxEURNZD:
+    data:
+      intercept: -0.215432227735782
+      slope: 0.0421747825569332
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxGBPNZD:
+    data:
+      intercept: -0.172973108390858
+      slope: 0.04278680690219
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxNZDUSD:
+    data:
+      intercept: -0.222854933959425
+      slope: 0.0440816734451965
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxXAGUSD:
+    data:
+      intercept: -0.541113748891897
+      slope: 0.0790075156967031
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxXPDUSD:
+    data:
+      intercept: -0.541113748891897
+      slope: 0.0790075156967031
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxXPTUSD:
+    data:
+      intercept: -0.541113748891897
+      slope: 0.0790075156967031
+    end_date: 2015-06-03
+    start_date: 2015-01-14
+  frxXAUUSD:
+    data:
+      intercept: -0.589047442286637
+      slope: 0.0726834709429957
+    end_date: 2015-06-03
+    start_date: 2015-01-14
