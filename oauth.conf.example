@@ -1,0 +1,19 @@
+# This application expects file like that at /etc/rmg directory
+
+app->log(Mojo::Log->new(
+    level => 'info',
+    path  => '/var/log/httpd/bom-oauth_trace.log'
+));
+
+{
+    hypnotoad => {
+        listen   => ["http://*:5020"],
+        workers  => 10,
+        pid_file => '/var/run/bom-daemon/bom-oauth.pid',
+        user     => 'nobody',
+        group    => 'nogroup',
+        inactivity_timeout => 3600,
+        heartbeat_timeout => 120,
+    }
+};
+

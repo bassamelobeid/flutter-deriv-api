@@ -1,0 +1,49 @@
+<% if (defined $social_login_links && scalar $social_login_links->%*) {%>
+
+    <link href="https://static.deriv.app/css/oneall-deriv.css" type="text/css" rel="stylesheet" />
+    <style>
+        .providers_row {
+            display: flex;
+            justify-content: space-between;
+            align-content: center;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+        .provider a.button {
+            height: 48px;
+        }
+        .account-text {
+            margin-top: 17px;
+        }
+        p.error-oneall {
+            margin-top: 0;
+        }
+        .social_login_providers {
+            margin: 0.8rem auto 1.6rem auto;
+            width: 100%;
+        }
+        .provider_hidden {
+            display: none !important;
+        }
+        .provider{
+            border: none;
+        }
+        .provider#provider_google{
+            background: var(--opacity-black-75, rgba(0, 0, 0, 0.04));
+        }
+        .provider .name{
+            font-family: "IBM Plex Sans", sans-serif !important;
+        }
+    </style>
+    <div class="providers_row social_login_providers">
+    <% for my $p_name ($login_providers->@*) { %>
+        <% if($social_login_links->{$p_name}) { %>
+            <div class="provider provider_hidden" id="provider_<%== $p_name%>">
+                <a class="button" id="button_<%== $p_name%>" href="<%== $social_login_links->{$p_name} %>" rel="nofollow" title="Login with <%== $p_name%>" role="button" aria-label="Login with <%== $p_name%>" aria-haspopup="true">
+                    <div class="name" id="name_<%== $p_name %>"><%== ucfirst($p_name) %></div>
+                </a>
+            </div>
+        <%}%>
+    <%}%>
+    </div>
+<%}%>

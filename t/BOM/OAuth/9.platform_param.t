@@ -1,0 +1,286 @@
+use strict;
+use warnings;
+
+use Test::More;
+use Test::Mojo;
+use Test::MockModule;
+
+use Mojo::URL;
+use URI::Escape;
+
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Database::Model::OAuth;
+use BOM::User::Password;
+use BOM::User;
+
+my $t      = Test::Mojo->new('BOM::OAuth');
+my $app_id = do {
+    my $oauth = BOM::Database::Model::OAuth->new;
+    $oauth->dbic->dbh->do("DELETE FROM oauth.user_scope_confirm");
+    $oauth->dbic->dbh->do("DELETE FROM oauth.access_token");
+    $oauth->dbic->dbh->do("DELETE FROM oauth.apps WHERE name='Test App'");
+    my $app = $oauth->create_app({
+        name         => 'Test App',
+        user_id      => 1,
+        scopes       => ['read', 'trade', 'admin'],
+        redirect_uri => 'https://www.example.com/'
+    });
+    $app->{app_id};
+};
+#mock config for social login service
+my $mock_config = Test::MockModule->new('BOM::Config');
+$mock_config->mock(
+    service_social_login => sub {
+        return {
+            social_login => {
+                port => 'dummy',
+                host => 'dummy'
+            }};
+    });
+
+#mock config for growthbook service
+$mock_config->mock(
+    growthbook_config => sub {
+        return {
+            is_growthbook_enabled => 'dummy',
+            growthbook_client_key => 'dummy'
+        };
+    });
+
+#mock config for rudderstack FE key
+$mock_config->mock(
+    rudderstack_config => sub {
+        return {
+            rudderstack => fe_write_key => 'dummy',
+        };
+    });
+
+my $tests = [{
+        platform        => 'p2p',
+        official        => 1,
+        in_session      => 1,
+        scope_confirmed => 1,
+        lang            => "EN",
+    },
+    {
+        platform        => 'p2p',
+        official        => 1,
+        in_session      => 1,
+        scope_confirmed => 0,
+        lang            => "ES",
+    },
+    {
+        platform        => 'p3p',
+        official        => 0,
+        in_session      => 1,
+        scope_confirmed => 1,
+        lang            => "EN",
+    },
+    {
+        platform        => 'p3p',
+        official        => 0,
+        in_session      => 1,
+        scope_confirmed => 0,
+        lang            => "ES",
+    },
+    {
+        platform        => undef,
+        official        => 1,
+        in_session      => 0,
+        scope_confirmed => 1,
+        lang            => "ES",
+    },
+    {
+        platform        => undef,
+        official        => 1,
+        in_session      => 0,
+        scope_confirmed => 0,
+        lang            => "ES",
+    },
+    {
+        platform        => undef,
+        official        => 0,
+        in_session      => 0,
+        scope_confirmed => 1,
+        lang            => "ES",
+    },
+    {
+        platform        => undef,
+        official        => 0,
+        in_session      => 0,
+        scope_confirmed => 0,
+        lang            => "ES",
+    },
+    {
+        platform        => '--- trying hard $$$',
+        official        => 0,
+        in_session      => 0,
+        scope_confirmed => 0,
+        invalid         => 1,
+        lang            => "ES",
+    },
+    {
+        platform        => '--- trying hard $$$',
+        official        => 1,
+        in_session      => 0,
+        scope_confirmed => 0,
+        invalid         => 1,
+        lang            => "ES",
+    },
+    {
+        platform        => '--- trying hard $$$',
+        official        => 0,
+        in_session      => 0,
+        scope_confirmed => 1,
+        invalid         => 1,
+        lang            => "ES",
+    },
+];
+
+my $email    = 'platform+param@binary.com';
+my $password = 'Abcd1234';
+
+my $hash_pwd  = BOM::User::Password::hashpw($password);
+my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$client_cr->email($email);
+$client_cr->save;
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+$user->add_client($client_cr);
+
+# Mock secure cookie session as false as http is used in tests.
+my $mock_cookie_session = Test::MockModule->new('Mojolicious::Sessions');
+$mock_cookie_session->mock(
+    'secure' => sub {
+        return 0;
+    });
+
+my $omock   = Test::MockModule->new('BOM::OAuth::O');
+my $session = {};
+my $redirect_uri;
+
+$omock->mock(
+    'session',
+    sub {
+        my (undef, @args) = @_;
+
+        $session = {$session->%*, @args} if scalar @args == 2;
+
+        return $omock->original('session')->(@_);
+    });
+
+$omock->mock(
+    'redirect_to',
+    sub {
+        (undef, $redirect_uri) = @_;
+        return $omock->original('redirect_to')->(@_);
+    });
+
+my $model_mock = Test::MockModule->new('BOM::Database::Model::OAuth');
+my $is_official_app;
+my $is_scope_confirmed;
+
+$model_mock->mock(
+    'is_official_app',
+    sub {
+        return $is_official_app;
+    });
+
+$model_mock->mock(
+    'is_scope_confirmed',
+    sub {
+        return $is_scope_confirmed;
+    });
+
+for ($tests->@*) {
+    my ($platform, $in_session, $official, $scope_confirmed, $invalid, $lang) = @{$_}{qw/platform in_session official scope_confirmed invalid lang/};
+    $is_official_app    = $official;
+    $is_scope_confirmed = $scope_confirmed;
+
+    my $title =
+          'Platform is '
+        . ($platform // 'not given')
+        . " lang - "
+        . $lang
+        . ($official        ? ' official'          : ' unofficial')
+        . ($scope_confirmed ? ' + scope confirmed' : ' + scope not confirmed');
+
+    subtest $title => sub {
+        $session      = {};
+        $redirect_uri = undef;
+        $t            = $t->reset_session;
+
+        my $url = "/authorize?app_id=$app_id";
+
+        $platform = uri_escape($platform) if $platform;
+        $url .= "&platform=$platform" if $platform;
+        $url .= "&l=$lang"            if $lang;
+        $t = $t->get_ok($url)->content_like(qr/login/);
+
+        is $session->{platform}, $platform, 'Defined platform in session' if $in_session;
+        ok !$session->{platform}, 'Undefined platform not in session' unless $in_session;
+
+        my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
+        my $res        = $t->post_ok(
+            $url => form => {
+                login      => 1,
+                email      => $email,
+                password   => $password,
+                csrf_token => $csrf_token
+            });
+
+        if ($official || $scope_confirmed) {
+            my $uri = Mojo::URL->new($t->tx->res->headers->header('location'));
+            if ($lang) {
+                is $uri->query->param('lang'), $lang, 'Expected lang param passed into the redirection';
+            }
+            if ($platform && !$invalid) {
+                is $uri->query->param('platform'), $platform, 'Expected platform param passed into the redirection';
+            } else {
+                ok !$uri->query->param('platform'), 'No platform or invalid platform given';
+            }
+
+            is $redirect_uri, $uri, 'Expected redirect URI';
+        } else {
+            ok !$redirect_uri, 'No redirect for unofficial app or scope not confirmed';
+        }
+    };
+}
+
+subtest 'check route redirection' => sub {
+    my $auth_url = "/authorize?app_id=$app_id&en=ln&route=dashboard";
+    my $route    = 'dashboard';
+    $t = $t->get_ok($auth_url)->content_like(qr/login/);
+    my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
+    my $res        = $t->post_ok(
+        $auth_url => form => {
+            login      => 1,
+            email      => $email,
+            password   => $password,
+            csrf_token => $csrf_token
+        })->status_is(302);
+
+    my $uri = Mojo::URL->new($t->tx->res->headers->header('location'));
+
+    is $uri->query->param('route'), "dashboard", 'Expected route param passed into the redirection';
+
+    is $redirect_uri, $uri, 'Expected redirect URI';
+};
+
+subtest 'format_route_param' => sub {
+    my $result_1                   = BOM::OAuth::O::format_route_param('user/profile?param=value');
+    my $expected_formatted_route_1 = 'user%2Fprofile%3Fparam%3Dvalue';
+    is($result_1, $expected_formatted_route_1, 'format_route_param should URI-escape the route parameter');
+
+    my $result_2                   = BOM::OAuth::O::format_route_param('dashboard');
+    my $expected_formatted_route_2 = 'dashboard';
+    is($result_2, $expected_formatted_route_2, 'format_route_param should not change non-escaped route');
+
+};
+
+done_testing()

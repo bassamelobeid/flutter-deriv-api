@@ -1,0 +1,521 @@
+<script type="text/javascript">
+   !function(){"use strict";window.RudderSnippetVersion="3.0.3";var sdkBaseUrl="https://cdn.rudderlabs.com/v3"
+   ;var sdkName="rsa.min.js";var asyncScript=true;window.rudderAnalyticsBuildType="legacy",window.rudderanalytics=[]
+   ;var e=["setDefaultInstanceKey","load","ready","page","track","identify","alias","group","reset","setAnonymousId","startSession","endSession","consent"]
+   ;for(var n=0;n<e.length;n++){var t=e[n];window.rudderanalytics[t]=function(e){return function(){
+   window.rudderanalytics.push([e].concat(Array.prototype.slice.call(arguments)))}}(t)}try{
+   new Function('return import("")'),window.rudderAnalyticsBuildType="modern"}catch(a){}
+   if(window.rudderAnalyticsMount=function(){
+   "undefined"==typeof globalThis&&(Object.defineProperty(Object.prototype,"__globalThis_magic__",{get:function get(){
+   return this},configurable:true}),__globalThis_magic__.globalThis=__globalThis_magic__,
+   delete Object.prototype.__globalThis_magic__);var e=document.createElement("script")
+   ;e.src="".concat(sdkBaseUrl,"/").concat(window.rudderAnalyticsBuildType,"/").concat(sdkName),e.async=asyncScript,
+   document.head?document.head.appendChild(e):document.body.appendChild(e)
+   },"undefined"==typeof Promise||"undefined"==typeof globalThis){var d=document.createElement("script")
+   ;d.src="https://polyfill-fastly.io/v3/polyfill.min.js?version=3.111.0&features=Symbol%2CPromise&callback=rudderAnalyticsMount",
+   d.async=asyncScript,document.head?document.head.appendChild(d):document.body.appendChild(d)}else{
+   window.rudderAnalyticsMount()}window.rudderanalytics.load('<%= $fe_rudderstack_write_key->{fe_write_key} %>',"https://deriv-dataplane.rudderstack.com",{})}();
+</script>
+<script>   
+   function trackEvent(action, loginProvider, errorMessage) {
+       let appId = '<%= $app->{id} %>';
+       rudderanalytics.track("ce_login_form", {
+           action: action,
+           login_provider: loginProvider,
+           error_message: errorMessage,
+           app_id: appId,
+       });
+   }
+   
+</script>
+<% if (!$login_method || stash('error') || stash('social_error')) {
+   # doing this because the frontend is sending the chinese language as
+   # zh_cn instead of zn-cn
+   my $language =   (lc $r->language ne 'en')?lc($r->language).'/':'';
+   $language    =~ s/_/-/;
+   %>
+<div id="container">
+   <h1 class="title-text"><%= l('Welcome back') %></h1>
+   <form novalidate id="frmLogin" method="POST">
+      <div class='input-group'>
+         <div class="input-wrapper <% if (stash('error')) { %>has_error<% } %>">
+            <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" value="<%= stash('email_entered') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" <% if (stash('error')) { %>autofocus="autofocus"<% } %> />
+            <label for="txtEmail"><%= l('Email') %></label>
+            <span class="bar"></span>
+         </div>
+         <div class="input-error">
+            <p class='hide error error_invalid'><%= l("That doesn't look like an email address.") %></p>
+            <p class='hide error error_required'><%= l('Email is required.') %></p>
+            <p class='hide error error_invalid_pass'><%= l("Your email and/or password is incorrect.") %></p>
+            <% if (stash('error')) { %>
+            <p class='error'><%= stash('error') %></p>
+            <script>
+               trackEvent("login_flow_error", "email", '<%= stash('error') %>');
+            </script>
+            <% } %>
+         </div>
+      </div>
+      <div class="input-group">
+         <div class="input-wrapper">
+            <input type="password" id="txtPass" name="password" required autocomplete="off" />
+            <label for="txtPass"><%= l('Password') %></label>
+            <span class="bar"></span>
+            <span id="btnToggle" class="input-button icon_hidden"></span>
+         </div>
+         <div class="input-error">
+            <p class='hide error error_required'><%= l('Password is required.') %></p>
+         </div>
+      </div>
+      <div id="lost-password-container">
+         <% if ($is_reset_password_allowed) { %>
+            <% if ($app->{id} == 36218) { %>
+            <a target="_blank" rel="noopener noreferrer" id="lost-password" href="https://<%= $website_domain %>/<%= lc($language) %>reset-password"><%= l('Forgot password?') %></a>
+        <%} else {%>
+            <a id="lost-password" href="https://<%= $website_domain %>/<%= lc($language) %>reset-password"><%= l('Forgot password?') %></a>
+            <% } %>
+         <% } %>
+         <button type="submit" class="button secondary" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button>
+      </div>
+      <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+   </form>
+   <div class="separator" id="separatorId">
+      <p class="center-text social-text">
+         <%= stash('error') ? l('Perhaps you signed up with a social account?') : l('Or continue with') %>
+      </p>
+   </div>
+   <div id="passkeysContainer"></div>
+   <% if ($use_social_login) { %>
+   <% if ($use_oneall) { %>
+   <div id="oa_social_login_container"></div>
+   <% } else { %>
+   %= include 'shared/_social_login'
+   <% } %>
+   <% if (stash('social_error')) { %>
+   <script type="text/javascript">
+      document.addEventListener('DOMContentLoaded', function() {
+          addSocialLoginClickListener("login_flow_error", '<%= stash('social_error') %>');
+      });
+   </script>
+   <p class='error-oneall center-text'><%= stash('social_error') %></p>
+   <% } %>
+   <% } %>
+   <p id="signup-link" class="account-text">
+      <%== l('Don’t have an account yet? [_1]Sign up[_2]', "<a class='account-link' href=$signup_url>", '</a>') %>
+   </p>
+</div>
+<% } %>
+<script type="text/javascript">
+   trackEvent("open", null, null);
+</script>
+<script>
+   function addSocialLoginClickListener(action, error) {
+      const socialLoginButtons = document.querySelectorAll('.provider');
+      socialLoginButtons.forEach(button => {
+          button.addEventListener('click', function() {       
+              suppressCredentialErrors([
+                    document.getElementById('txtEmail'),
+                    document.getElementById('txtPass')
+              ]);
+              const provider = button.id.split('_')[1];
+              trackEvent(action, provider, error);
+          });
+      });
+   }
+   addSocialLoginClickListener("login_started", null);
+</script>
+<script type="text/javascript">
+   var frmLogin, txtEmail, txtPass, btnToggle;
+   window.onload = function() {
+       frmLogin  = document.getElementById('frmLogin');
+       txtEmail  = document.getElementById('txtEmail');
+       txtPass   = document.getElementById('txtPass');
+       btnToggle = document.getElementById('btnToggle');
+   
+       btnToggle.addEventListener('click', togglePasswordVisibility);
+   
+       if (frmLogin) {
+           frmLogin.addEventListener('submit', function(e) {
+                if (!validateAll()) {
+                   trackEvent("login_flow_error", "email", "Input Validation Failed on the FE");
+                   e.preventDefault();
+                   return false;
+                } else {
+                   const email = txtEmail.value.trim();
+                   const pass = txtPass.value.trim();
+
+                   if (email !== '' && pass !== '') {
+                       trackEvent("login_started", "email", null);
+                    }
+                }
+            });
+        }
+   };
+   
+   function validateAll() {
+       return validateEmail() && validatePass();
+   }
+   
+   function validateEmail() {
+       return validateField(txtEmail, new RegExp(/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$/));
+   }
+   
+   function validatePass() {
+       return validateField(txtPass, new RegExp(/^[ -~]{6,25}$/));
+   }
+   
+   function validateField(element, regex) {
+       if (element) {
+           hideErrors(element);
+   
+           var hasError = true;
+           var value = (element.value || '').trim();
+           element.value = value;
+           if (!value) {
+               showError(element, 'required');
+           } else if (!regex.test(value) || !element.checkValidity()) {
+               if (element === txtPass) {
+                   showError(txtEmail, 'invalid_pass');
+               } else {
+                   showError(element, 'invalid');
+               }
+               raiseLabel(element, 1);
+           } else {
+               hasError = false;
+               raiseLabel(element, !!value)
+           }
+   
+           return !hasError;
+       }
+   }
+   
+   function hideErrors(element) {
+       element.parentNode.classList.remove('has_error');
+       element.parentNode.parentNode.querySelectorAll('.input-error .error').forEach(function (el) {
+           el.classList.add('hide');
+       });
+   }
+
+   function suppressCredentialErrors(elements){
+        elements.forEach(function(element) {
+            if (element && element.parentNode) {
+                hideErrors(element);
+                element.value= "";
+            }
+        });
+   }
+
+   function showError(element, errorType) {
+       element.parentNode.classList.add('has_error');
+       var el = element.parentNode.parentNode.querySelector('.input-error .error_' + errorType);
+       if (el) {
+           el.classList.remove('hide');
+       }
+   }
+   
+   function raiseLabel(element, should_raise) {
+       element.parentNode.querySelector('label').classList[should_raise ? 'add' : 'remove']('raised-label');
+   }
+   
+   function scrollToErrorOneall() {
+       const element = document.querySelector('p.error-oneall');
+   
+       if (element) {
+       const offsetTop = element.offsetTop;
+       const offsetLeft = element.offsetLeft;
+   
+       window.scrollTo({
+       top: offsetTop,
+       left: offsetLeft,
+       behavior: 'smooth'
+       });
+       }
+   }
+   
+   setTimeout(function() {
+   scrollToErrorOneall();
+   }, 1000);
+   
+   function togglePasswordVisibility() {
+       if (txtPass.type === 'password') {
+           txtPass.type = 'text';
+           btnToggle.classList.remove('icon_hidden');
+           btnToggle.classList.add('icon_visible');
+       } else {
+           txtPass.type = 'password';
+           btnToggle.classList.remove('icon_visible');
+           btnToggle.classList.add('icon_hidden');
+       }
+   }
+</script>
+<% if ($use_oneall) { %>
+<script type="text/javascript">
+   var use_social_login = '<%== $use_social_login %>';
+   if (use_social_login) {
+       var separator = document.getElementById("separatorId");
+       if (separator) {
+           separator.style.display = "block";
+       }
+       var cb = '<%= $oneall_callback %>';
+       var login_method = '<%= $login_method %>';
+       var providers = <%== Mojo::JSON::encode_json($login_providers) %>;
+   
+       /* Embeds the buttons into the container oa_social_login_container */
+       var _oneall = _oneall || [];
+       _oneall.push(['social_login', 'set_force_re_authentication', true]);
+       _oneall.push(['social_login', 'set_providers', providers]);
+       _oneall.push(['social_login', 'set_callback_uri', cb]);
+       _oneall.push(['social_login', 'set_popup_usage', 'never']);
+       /* push all configs before this as once rendered it not possible to hook*/
+       _oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
+       
+       if (login_method) {
+           _oneall.push(['social_login', 'do_login', login_method]);
+       }
+       if (document.getElementById('frmLogin')) {
+           document.getElementById('frmLogin').reset();
+       }
+   }
+</script>
+<%}%>
+<script src="https://www.datadoghq-browser-agent.com/us1/v4/datadog-rum.js" type="text/javascript"></script>
+<script>
+   var DD_APP_ID = '<%= $dd_rum_config->{APP_ID} %>';
+   var DD_CLIENT_TOKEN = '<%= $dd_rum_config->{CLIENT_TOKEN} %>';
+   
+   if(window.DD_RUM && DD_APP_ID && DD_CLIENT_TOKEN) {
+       window.DD_RUM.init({
+           clientToken: DD_CLIENT_TOKEN,
+           applicationId: DD_APP_ID,
+           site: 'datadoghq.com',
+           service: '<%= $dd_rum_config->{SERVICE_NAME} %>',
+           env: '<%= $dd_rum_config->{ENV} %>',
+           version: '<%= $dd_rum_config->{VERSION} %>',
+           sessionSampleRate: <%= $dd_rum_config->{SESSION_SAMPLE_RATE} %>,
+           trackResources: true,
+           trackLongTasks: true,
+           trackUserInteractions: true,
+           trackFrustrations: true,
+           defaultPrivacyLevel: 'mask-user-input',
+           enableExperimentalFeatures: ['clickmap'],
+       })
+   }
+</script>
+<script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@growthbook/growthbook/dist/bundles/index.js"></script>
+<script>
+const { startAuthentication, browserSupportsWebAuthn } = SimpleWebAuthnBrowser;
+// Time for the authenticater to throw an error when device is not supported < ~50ms and time to cancel operation > ~250ms
+const DEVICE_NOT_SUPPORTED_TIMEOUT = 200; // Time in milliseconds
+
+document.addEventListener('DOMContentLoaded', async function () {
+    if(browserSupportsWebAuthn()) {
+        let growthbookEnabled = '<%= $growthbook_request_data->{IS_ENABLED} %>';
+        if (growthbookEnabled === '0'){
+            renderPasskeysForm();
+        }
+        else{
+            let GrowthBook = window.growthbook.GrowthBook;
+            const gb = new GrowthBook({
+                apiHost: "https://cdn.growthbook.io",
+                clientKey: '<%= $growthbook_request_data->{CLIENT_KEY} %>',
+            });
+            let passkeyFeatureFlag = await setAttributesAndCheckFeatureFlag(gb);
+
+            if(passkeyFeatureFlag){
+                renderPasskeysForm();
+            }
+        }
+    } 
+});
+
+function passkeyBtnClickEvent(){
+    document.getElementById('btnPasskeys').addEventListener('click', async function () {
+    suppressCredentialErrors([
+                    document.getElementById('txtEmail'),
+                    document.getElementById('txtPass')
+    ]);
+    trackEvent("login_started", "passkeys", null);
+    const optionsResponse =  await fetchOptionsFromServer();
+    if(optionsResponse){
+        const assertionResponse =  await startWebAuthentication(optionsResponse.publicKey);
+        if(assertionResponse)
+        {
+            document.getElementById('resp').value = JSON.stringify(assertionResponse);
+            let form = document.getElementById("passkeysForm");
+            form.submit();
+        }
+    }
+    });
+}
+
+function renderPasskeysForm(){
+    const passkeysForm = document.createElement('form');
+    passkeysForm.method = 'POST';
+    passkeysForm.id = 'passkeysForm';
+
+    passkeysForm.innerHTML = `
+        <div class="passkey">
+                <a class="button passkey-btn" id="btnPasskeys" href="#" rel="nofollow" title="Login with passkeys" role="button" aria-label="Login with passkeys" aria-haspopup="true">
+                    <span>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 20V17.2C3 16.6333 3.14583 16.1125 3.4375 15.6375C3.72917 15.1625 4.11667 14.8 4.6 14.55C5.63333 14.0333 6.68333 13.6458 7.75 13.3875C8.81667 13.1292 9.9 13 11 13C11.3333 13 11.6667 13.0125 12 13.0375C12.3333 13.0625 12.6667 13.1 13 13.15C12.9333 14.1167 13.1083 15.0292 13.525 15.8875C13.9417 16.7458 14.55 17.45 15.35 18V20H3ZM19 23L17.5 21.5V16.85C16.7667 16.6333 16.1667 16.2208 15.7 15.6125C15.2333 15.0042 15 14.3 15 13.5C15 12.5333 15.3417 11.7083 16.025 11.025C16.7083 10.3417 17.5333 10 18.5 10C19.4667 10 20.2917 10.3417 20.975 11.025C21.6583 11.7083 22 12.5333 22 13.5C22 14.25 21.7875 14.9167 21.3625 15.5C20.9375 16.0833 20.4 16.5 19.75 16.75L21 18L19.5 19.5L21 21L19 23ZM11 12C9.9 12 8.95833 11.6083 8.175 10.825C7.39167 10.0417 7 9.1 7 8C7 6.9 7.39167 5.95833 8.175 5.175C8.95833 4.39167 9.9 4 11 4C12.1 4 13.0417 4.39167 13.825 5.175C14.6083 5.95833 15 6.9 15 8C15 9.1 14.6083 10.0417 13.825 10.825C13.0417 11.6083 12.1 12 11 12ZM18.5 14C18.7833 14 19.0208 13.9042 19.2125 13.7125C19.4042 13.5208 19.5 13.2833 19.5 13C19.5 12.7167 19.4042 12.4792 19.2125 12.2875C19.0208 12.0958 18.7833 12 18.5 12C18.2167 12 17.9792 12.0958 17.7875 12.2875C17.5958 12.4792 17.5 12.7167 17.5 13C17.5 13.2833 17.5958 13.5208 17.7875 13.7125C17.9792 13.9042 18.2167 14 18.5 14Z" fill="#333333"/>
+                        </svg>
+                    </span>
+                    <span class="passkey-text">Passkey</span>
+                </a>
+        </div>
+       
+        <input type="hidden" name="publicKeyCredential" id="resp" />
+        <input type="hidden" name="passkeys_login" id="passkeys_login" value="0" />
+        <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+    `;
+    document.getElementById('passkeysContainer').appendChild(passkeysForm);
+    document.getElementById('passkeys_login').value = "1";
+    passkeyBtnClickEvent();
+}
+
+function showErrorPopUp(errorMessage, errorTitle) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = "popup";
+    errorDiv.innerHTML = `
+        <div class="popup-container">
+            <div class="popup-title">${errorTitle}</div>
+            <div class="popup-text">${errorMessage}</div>
+            <div class="popup-btn" onclick="clickOK()">Ok</div>
+        </div>
+    `;
+    document.getElementById('passkeysContainer').appendChild(errorDiv);
+    trackEvent("login_flow_error", "passkeys", errorMessage);
+}
+
+function clickOK() {
+    const errorPopUp = document.getElementsByClassName("popup")[0];
+    errorPopUp.parentNode.removeChild(errorPopUp);
+}
+
+async function fetchOptionsFromServer() {
+    try {
+        const response = await fetch('api/v1/passkeys/login/options');
+        const options = await response.json();
+        if(options.message && options.error_code){
+            showErrorPopUp(options.message, options.title);
+        }
+        else{
+            return options;
+        }
+    } catch (error) {
+        showErrorPopUp(error, "Error");
+    }
+}
+
+async function startWebAuthentication(publicKey) {
+    const startTime = performance.now();
+    try {
+        return await startAuthentication(publicKey);
+    } catch (error) {
+        const elapsedTime = performance.now() - startTime;
+        // The Web Authentication API only returns a NotAllowedError code when the user cancels the operation or the device does not support WebAuthn.
+        // As a workaround, we assume that the device does not support WebAuthn if the error is thrown within DEVICE_NOT_SUPPORTED_TIMEOUT,
+        // as the operation of cancellation needs user interaction and takes more time.
+        if (error.name === 'NotAllowedError' && elapsedTime < DEVICE_NOT_SUPPORTED_TIMEOUT) {
+            showErrorPopUp("This device doesn’t support passkeys. Choose a different login method.", "Passkey login unavailable");
+        }
+    }
+}
+
+function get_user_info() {
+    try {
+        let escapedJsonString = ('<%= $user_request_details %>');
+        let unescapedJsonString = escapedJsonString.replace(/&quot;/g, '"');
+        let user_info = JSON.parse(unescapedJsonString);
+        user_info.browser = (user_info.user_agent.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?/i) || [])[1] || '';
+        return user_info;
+    } catch (error) {
+        console.error("Error parsing user info:", error);
+        return {};
+    }
+}
+
+async function setAttributesAndCheckFeatureFlag(gb) {
+    try {
+        let userInfo = get_user_info();
+        const attributes= await gb.setAttributes({
+                country: userInfo.country_code,
+                client_ip: userInfo.client_ip,
+                browser: userInfo.browser,
+                user_agent: userInfo.user_agent,
+                domain: userInfo.domain,
+                app_id: userInfo.app_id
+        });
+        await gb.loadFeatures();
+        return gb.isOn("web_passkeys");
+    } catch (error) {
+        console.error("Error setting attributes and checking feature flag:", error);
+        return false;
+    }
+}
+
+</script>
+<script>
+   let passkeysError = "<%= stash('passkeys_error') %>";
+   if (passkeysError) {
+       let passkeysErrorTitle = '<%= stash("passkeys_error_title") %>';
+       showErrorPopUp(passkeysError, passkeysErrorTitle);
+   }
+</script>
+<script type="text/javascript">
+   function update_separator (show) {
+       let separator = document.getElementById("separatorId");
+       if (show) {     
+           separator.classList.add("separator-show");
+       }
+       else{
+           separator.classList.remove("separator-show");
+       }
+   }
+   
+</script>
+<script>
+   //social login buttons visibility
+   function update_social_buttons(config) {
+       let providers = document.getElementsByClassName('provider');
+       let hiddenCount = 0;
+       for(const providerBtn of providers){
+           hiddenCount += update_button(providerBtn, config);
+       }
+       update_separator(hiddenCount < providers.length);
+   }
+   
+   function update_button (btn, config) {
+       let provider_name = btn.id.split('_')[1];
+       if (provider_name == 'facebook') {
+           provider_name = 'fb'; // coming like this from config.
+       }
+       if (config[`social_login_${provider_name}`]) {
+           btn.classList.remove('provider_hidden');
+           return 0;
+       }
+       btn.classList.add('provider_hidden');
+       return 1;
+   }
+</script>
+%= include 'shared/_oauth_config'
+<script type="module">
+   let fallbackTimeout = setTimeout(() => update_social_buttons(window.local_config), 2000);
+   
+   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
+   import {getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+   const firebaseConfig = {
+       databaseURL: '<%= $firebase->{db_url} %>'
+   }
+   const app = initializeApp(firebaseConfig,'oauthConfig');
+   const db = getDatabase(app);
+   const oauthRef = ref(db, 'remote_config/oauth');
+   onValue(oauthRef, (snapshot) => {
+       clearTimeout(fallbackTimeout);
+       const data = snapshot.val();
+       update_social_buttons(data);
+   },
+   (error) => console.log(error)
+   );
+</script>

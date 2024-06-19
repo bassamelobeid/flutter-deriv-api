@@ -1,0 +1,32 @@
+use strict;
+use warnings;
+
+use Test::More;
+use Test::Pod::CoverageChange;
+
+# This hashref indicates packages which contain sub routines that do not have any POD documentation.
+# The number indicates the number of subroutines that are missing POD in the package.
+# The number of naked (undocumented) subs should never be increased in this hashref.
+
+my $allowed_naked_packages = {
+    'BOM::OAuth'                            => 1,
+    'BOM::OAuth::O'                         => 9,
+    'BOM::OAuth::OneAll'                    => 2,
+    'BOM::OAuth::SingleSignOn'              => 5,
+    'BOM::OAuth::Common'                    => 3,
+    'BOM::OAuth::SocialLoginClient'         => 3,
+    'BOM::OAuth::SocialLoginController'     => 1,
+    'BOM::Transport::RedisAPI'              => 2,
+    'BOM::OAuth::Passkeys::PasskeysClient'  => 2,
+    'BOM::OAuth::Passkeys::PasskeysService' => 2,
+
+};
+
+my $ignored_packages = ['BOM::OAuth::SingleSignOn',];
+
+Test::Pod::CoverageChange::pod_coverage_syntax_ok(
+    allowed_naked_packages => $allowed_naked_packages,
+    ignored_packages       => $ignored_packages
+);
+
+done_testing();

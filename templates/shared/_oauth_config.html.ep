@@ -1,0 +1,10 @@
+<script>
+window.local_config = {
+    "marketing_growthbook": true,
+    "social_login_apple": true,
+    "social_login_fb": true,
+    "social_login_google": true,
+    "tracking_GTM": true,
+    "tracking_datadog": true
+};
+</script>
