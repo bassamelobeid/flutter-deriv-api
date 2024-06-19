@@ -1,0 +1,11 @@
+{
+  "proposal": 1,
+  "amount": "[_1]",
+  "basis": "payout",
+  "currency": "USD",
+  "contract_type": "[_2]",
+  "symbol": "[_3]",
+  "duration": "[_4]",
+  "duration_unit": "[_5]",
+  "subscribe": 1
+}

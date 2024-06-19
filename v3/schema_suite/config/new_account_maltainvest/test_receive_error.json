@@ -1,0 +1,41 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "error" : {
+         "properties" : {
+            "message" : {
+               "type" : "string"
+            },
+            "code" : {
+               "type" : "string"
+            },
+            "details" : {
+               "type" : "object",
+               "properties" : {
+                  "cooling_off_expiration_date" : {
+                     "type" : "integer"
+                  }
+               }
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "message",
+            "code"
+         ]
+      },
+      "msg_type" : {
+         "pattern" : "^new_account_maltainvest$",
+         "type" : "string"
+      }
+   }
+}

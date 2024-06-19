@@ -1,0 +1,248 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "get_account_status" : {
+         "required" : [
+            "prompt_client_to_authenticate",
+            "p2p_poa_required",
+            "status",
+            "risk_classification",
+            "currency_config"
+         ],
+         "properties" : {
+            "currency_config" : {
+               "type" : "object",
+               "patternProperties" : {
+                   "^[a-zA-Z0-9]{2,20}$" : {
+                       "type" : "object",
+                       "properties" : {
+                           "is_deposit_suspended" : {
+                               "type" : "integer",
+                               "enum": [
+                                  0,
+                                  1
+                              ]
+                           },
+                           "is_withdrawal_suspended" : {
+                               "type" : "integer",
+                               "enum": [
+                                  0,
+                                  1
+                              ]
+                           }
+                       }
+                   }
+               }
+            },
+            "p2p_poa_required":{
+               "type" : "integer",
+               "enum" : [
+                  0,
+                  1
+               ]
+            },
+            "p2p_status":{
+               "type":"string",
+               "enum": [
+                  "none",
+                  "active",
+                  "temp_ban",
+                  "perm_ban"
+               ]
+            },
+            "prompt_client_to_authenticate" : {
+               "enum" : [1,0]
+            },
+            "status" : {
+               "type" : "array"
+            },
+            "risk_classification" : {
+               "pattern" : "^(low|standard|high)?$",
+               "type" : [
+                  "string",
+                  "null"
+               ]
+            },
+            "authentication" : {
+               "type" : "object",
+               "required": [
+                   "needs_verification",
+                   "document",
+                   "identity"
+               ],
+               "properties" : {
+                  "attempts" : {
+                     "type" : "object",
+                     "properties" : {
+                        "count" : {
+                           "type" : "integer"
+                        },
+                        "history" : {
+                           "type" : "array"
+                        },
+                        "latest" : {
+                           "type" : [ "object", "null" ]
+                        }
+                     }
+                  },
+                   "needs_verification" : {
+                       "type" : "array"
+                   },
+                   "document" : {
+                       "type" : "object",
+                       "properties" : {
+                           "status" : {
+                               "type" : "string",
+                               "enum": [
+                                  "none",
+                                  "pending",
+                                  "rejected",
+                                  "verified",
+                                  "expired",
+                                  "suspected"
+                              ]
+                           },
+                          "verified_jurisdiction":{
+                            "type":"object",
+                            "properties": {
+                                "maltainvest":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "virtual":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "dsl":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "bvi":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "vanuatu":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "samoa-virtual":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "malta":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "samoa":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "iom":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "labuan":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "svg":{
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                }
+                            }
+                        },
+                           "expiry_date" : {
+                               "type" : "integer"
+                           }
+                       }
+                   },
+                   "identity" : {
+                       "type" : "object",
+                       "properties" : {
+                           "status" : {
+                               "type" : "string",
+                               "enum": [
+                                 "none",
+                                 "pending",
+                                 "rejected",
+                                 "verified",
+                                 "expired",
+                                 "suspected"
+                              ]
+                           },
+                           "expiry_date" : {
+                               "type" : "integer"
+                           }
+                       }
+                   },
+                   "income" : {
+                     "type" : "object",
+                     "properties" : {
+                         "status" : {
+                             "type" : "string",
+                             "enum": [
+                                "none",
+                                "pending",
+                                "rejected",
+                                "verified",
+                                "locked"
+                            ]
+                         }
+                     }
+                 }
+               }
+            },
+            "social_identity_provider": {
+               "enum": ["google", "facebook"]
+            }
+         },
+         "type" : "object"
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^get_account_status$"
+      }
+   }
+}

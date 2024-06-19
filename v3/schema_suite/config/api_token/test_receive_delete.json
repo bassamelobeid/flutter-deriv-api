@@ -1,0 +1,37 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^api_token$"
+      },
+      "api_token" : {
+         "type" : "object",
+         "properties" : {
+            "delete_token" : {
+               "enum" : [1],
+               "type" : "integer"
+            },
+            "tokens" : {
+               "items" : {
+                  "type" : "null"
+               },
+               "type" : "array"
+            }
+         },
+         "required" : [
+            "delete_token",
+            "tokens"
+         ]
+      }
+   }
+}

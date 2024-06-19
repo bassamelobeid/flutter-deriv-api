@@ -1,0 +1,36 @@
+{
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "description" : null,
+    "additionalProperties" : null,
+    "type" : "object",
+    "title" : null,
+    "required" : [
+       "echo_req",
+       "msg_type"
+    ],
+    "properties" : {
+       "echo_req" : {},
+       "error" : {
+          "type" : "object",
+          "properties" : {
+             "message" : {
+                "pattern" : "proposal_open_contract",
+                "type" : "string"
+             },
+             "code" : {
+                "pattern" : "^AlreadySubscribed$",
+                "type" : "string"
+             }
+          },
+          "required" : [
+             "message",
+             "code"
+          ]
+       },
+       "msg_type" : {
+          "type" : "string",
+          "pattern" : "^proposal_open_contract$"
+       }
+    }
+ }
+ 

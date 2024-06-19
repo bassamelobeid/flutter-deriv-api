@@ -1,0 +1,78 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^app_register$",
+         "type" : "string"
+      },
+      "app_register" : {
+         "required" : [
+            "scopes",
+            "name",
+            "homepage",
+            "app_markup_percentage",
+            "appstore",
+            "verification_uri",
+            "googleplay",
+            "app_id",
+            "github",
+            "redirect_uri"
+         ],
+         "type" : "object",
+         "title" : "Application object",
+         "properties" : {
+            "scopes" : {
+               "items" : {
+                  "pattern" : "^(read|trade|payments|admin)$",
+                  "type" : "string"
+               },
+               "type" : "array"
+            },
+            "name" : {
+               "pattern" : "^Test Application$",
+               "type" : "string"
+            },
+            "homepage" : {
+               "pattern" : "^https://test\\.example\\.com/$",
+               "type" : "string"
+            },
+            "app_markup_percentage" : {
+               "enum" : [1.5],
+               "type" : "number"
+            },
+            "appstore" : {
+               "pattern" : "^https://itunes\\.apple\\.com/test_app$",
+               "type" : "string"
+            },
+            "verification_uri" : {
+               "pattern" : "^https://test\\.example\\.com/verify",
+               "type" : "string"
+            },
+            "googleplay" : {
+               "pattern" : "^https://play\\.google\\.com/store/apps/details\\?id=test\\.app$",
+               "type" : "string"
+            },
+            "app_id" : {
+               "type" : "integer"
+            },
+            "github" : {
+               "pattern" : "^https://github\\.com/test_org/app$",
+               "type" : "string"
+            },
+            "redirect_uri" : {
+               "pattern" : "^https://test\\.example\\.com/redirect$",
+               "type" : "string"
+            }
+         }
+      }
+   }
+}

@@ -1,0 +1,23 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "set_account_currency",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^set_account_currency$",
+         "type" : "string"
+      },
+      "set_account_currency" : {
+         "type" : "integer",
+         "enum" : [1]
+      },
+      "echo_req" : {}
+   }
+}

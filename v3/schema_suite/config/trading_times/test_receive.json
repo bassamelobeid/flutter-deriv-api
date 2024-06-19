@@ -1,0 +1,98 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "trading_times" : {
+         "properties" : {
+            "markets" : {
+               "type" : "array",
+               "items" : {
+                   "required" : ["name"],
+                  "properties" : {
+                     "name" : {
+                        "type" : "string"
+                     },
+                     "submarkets" : {
+                        "items" : {
+                           "type" : "object",
+                           "required": ["name"],
+                           "properties" : {
+                              "symbols" : {
+                                 "items" : {
+                                    "required": ["name", "symbol"],
+                                    "properties" : {
+                                       "events" : {
+                                          "items" : {
+                                             "properties" : {
+                                                "dates" : {
+                                                   "type" : "string"
+                                                },
+                                                "descrip" : {
+                                                   "type" : "string"
+                                                }
+                                             },
+                                             "type" : "object"
+                                          },
+                                          "type" : "array"
+                                       },
+                                       "name" : {
+                                          "type" : "string"
+                                       },
+                                       "times" : {
+                                           "required": ["close", "settlement", "open" ],
+                                          "properties" : {
+                                             "close" : {
+                                                "type" : "array",
+                                                "items" : {
+                                                   "type" : "string"
+                                                }
+                                             },
+                                             "settlement" : {
+                                                "type" : "string"
+                                             },
+                                             "open" : {
+                                                "type" : "array",
+                                                "items" : {
+                                                   "type" : "string"
+                                                }
+                                             }
+                                          },
+                                          "type" : "object"
+                                       },
+                                       "symbol" : {
+                                          "type" : "string"
+                                       }
+                                    },
+                                    "type" : "object"
+                                 },
+                                 "type" : "array"
+                              },
+                              "name" : {
+                                 "type" : "string"
+                              }
+                           }
+                        },
+                        "type" : "array"
+                     }
+                  },
+                  "type" : "object"
+               }
+            }
+         },
+         "type" : "object",
+         "minItems" : 1
+      },
+      "msg_type" : {
+         "pattern" : "^trading_times$",
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
+}

@@ -1,0 +1,22 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "app_delete",
+      "msg_type",
+      "echo_req"
+   ],
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "properties" : {
+      "app_delete" : {
+         "enum" : [[_2]]
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^app_delete$"
+      },
+      "echo_req" : {}
+   }
+}

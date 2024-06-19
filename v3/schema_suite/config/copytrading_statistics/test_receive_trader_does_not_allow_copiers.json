@@ -1,0 +1,38 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "req_id" : {
+         "type" : "integer"
+      },
+      "error" : {
+         "required" : [
+            "code",
+            "message"
+         ],
+         "properties" : {
+            "code" : {
+               "pattern" : "^CopyTradingNotAllowed$",
+               "type" : "string"
+            },
+            "message" : {
+               "type" : "string",
+               "pattern" : "^Trader does not allow copy trading\\.$"
+            }
+         },
+         "type" : "object",
+         "additionalProperties" : false
+      },
+      "msg_type" : {
+         "type" : "string"
+      }
+   }
+}

@@ -1,0 +1,45 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^new_account_real$"
+      },
+      "new_account_real" : {
+         "properties" : {
+            "oauth_token" : {
+               "pattern" : "^.{32}$",
+               "type" : "string"
+            },
+            "client_id" : {
+               "pattern" : "^CR\\d+$",
+               "type" : "string"
+            },
+            "landing_company_shortcode" : {
+               "pattern" : "^svg$",
+               "type" : "string"
+            },
+            "landing_company" : {
+               "type" : "string",
+               "pattern": "^Deriv \\(SVG\\) LLC$"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "oauth_token",
+            "client_id",
+            "landing_company_shortcode",
+            "landing_company"
+         ]
+      }
+   }
+}

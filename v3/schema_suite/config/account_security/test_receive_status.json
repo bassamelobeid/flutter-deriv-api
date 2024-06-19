@@ -1,0 +1,36 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type",
+      "account_security"
+   ],
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "account_security" : {
+         "type" : "object",
+         "properties" : {
+            "totp" : {
+               "properties" : {
+                  "is_enabled" : {
+                     "type" : "integer",
+                     "enum" : [0,1]
+                  }
+               },
+               "type" : "object",
+               "required" : [
+                  "is_enabled"
+               ]
+            }
+         }
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "account_security",
+         "type" : "string"
+      }
+   }
+}

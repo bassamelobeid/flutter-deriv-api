@@ -1,0 +1,107 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "description" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^landing_company_details$"
+      },
+      "landing_company_details" : {
+         "type" : "object",
+         "properties" : {
+            "legal_allowed_currencies" : {
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(USD|EUR)$"
+               },
+               "type" : "array",
+               "minItems" : 2
+            },
+            "legal_allowed_markets" : {
+               "type" : "array",
+               "minItems" : 1,
+               "items" : {
+                  "pattern" : "^(synthetic_index)$",
+                  "type" : "string"
+               }
+            },
+            "legal_default_currency" : {
+               "type" : "string",
+               "pattern" : "^EUR$"
+            },
+            "country" : {
+               "pattern" : "^Malta$",
+               "type" : "string"
+            },
+            "shortcode" : {
+               "pattern" : "^[_1]$",
+               "type" : "string"
+            },
+            "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  0
+               ]
+            },
+            "has_reality_check" : {
+               "enum" : [1],
+               "type" : "integer"
+            },
+            "legal_allowed_contract_categories" : {
+               "items" : {
+                  "enum" : [
+                     "asian",
+                     "callput",
+                     "digits",
+                     "endsinout",
+                     "staysinout",
+                     "touchnotouch",
+                     "callputspread",
+                     "callputequal",
+                     "lookback",
+                     "highlowticks",
+                     "reset",
+                     "runs",
+                     "multiplier",
+                     "turbos",
+                     "vanilla"
+                  ],
+                  "type" : "string"
+               },
+               "minItems" : 6,
+               "type" : "array"
+            },
+            "address" : {
+               "items" : {
+                  "type" : "string"
+               },
+               "type" : "array"
+            },
+            "name" : {
+               "pattern" : "^Deriv \\(Europe\\) Limited$",
+               "type" : "string"
+            }
+         },
+         "required" : [
+            "legal_allowed_currencies",
+            "legal_allowed_markets",
+            "legal_default_currency",
+            "country",
+            "shortcode",
+            "support_professional_client",
+            "has_reality_check",
+            "legal_allowed_contract_categories",
+            "address",
+            "name"
+         ]
+      }
+   }
+}

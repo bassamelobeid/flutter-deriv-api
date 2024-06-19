@@ -1,0 +1,35 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^proposal$",
+         "type" : "string"
+      },
+      "error" : {
+         "required" : [
+            "message",
+            "code"
+         ],
+         "properties" : {
+            "message" : {
+               "type" : "string",
+               "pattern" : "^Trading is not offered for this duration."
+            },
+            "code" : {
+               "type" : "string",
+               "pattern" : "^OfferingsValidationError$"
+            }
+         },
+         "type" : "object"
+      },
+      "echo_req" : {}
+   }
+}

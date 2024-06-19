@@ -1,0 +1,181 @@
+{
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "required" : [
+       "msg_type",
+       "echo_req"
+    ],
+    "title" : null,
+    "additionalProperties" : null,
+    "type" : "object",
+    "description" : null,
+    "properties" : {
+       "msg_type" : {
+          "type" : "string",
+          "pattern" : "^get_account_types$"
+       },
+       "echo_req" : {},
+       "get_account_types" : {
+          "type" : "object",
+          "properties" : {
+            "wallet" : {
+               "type" : "object",
+               "properties" : {
+                  "doughflow" : {
+                     "type" : "object",
+                     "properties" : {
+                        "currencies" : {
+                           "type" : "array",
+                           "items" : {
+                              "pattern" : "^(USD|EUR|AUD|GBP)$",
+                              "type" : "string"
+                           }
+                        }
+                     }
+                  },
+                  "crypto" : {
+                     "type" : "object",
+                     "properties" : {
+                        "currencies" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string",
+                              "items" : {
+                                 "pattern" : "^(BTC|ETH|LTC|USDT|eUSDT|USDC)$",
+                                 "type" : "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               }
+            },
+            "trading" : {
+               "type" : "object",
+               "properties" : {
+                  "standard" : {
+                     "type" : "object",
+                     "properties" : {
+                        "linkable_wallet_types" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string",
+                              "items" : {
+                                 "type" : "string"
+                              }
+                           }
+                        },
+                        "linkable_wallet_currencies" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string"
+                           }
+                        },
+                        "linkable_to_different_currency" : {
+                           "enum" : [1,0],
+                           "type" : "integer"
+                        }
+                     }
+                  },
+                  "binary" : {
+                     "type" : "object",
+                     "properties" : {
+                        "linkable_wallet_types" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string",
+                              "items" : {
+                                 "type" : "string"
+                              }
+                           }
+                        },
+                        "linkable_wallet_currencies" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string"
+                           }
+                        },
+                        "linkable_to_different_currency" : {
+                           "enum" : [1,0],
+                           "type" : "integer"
+                        }
+                     }
+                  },
+                  "dxtrade" : {
+                     "type" : "object",
+                     "properties" : {
+                        "linkable_wallet_types" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string",
+                              "items" : {
+                                 "type" : "string"
+                              }
+                           }
+                        },
+                        "linkable_wallet_currencies" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string"
+                           }
+                        },
+                        "linkable_to_different_currency" : {
+                           "enum" : [1,0],
+                           "type" : "integer"
+                        }
+                     }
+                  },
+                  "mt5" : {
+                     "type" : "object",
+                     "properties" : {
+                        "linkable_wallet_types" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string",
+                              "items" : {
+                                 "type" : "string"
+                              }
+                           }
+                        },
+                        "linkable_wallet_currencies" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string"
+                           }
+                        },
+                        "linkable_to_different_currency" : {
+                           "enum" : [1,0],
+                           "type" : "integer"
+                        }
+                     }
+                  },
+                  "derivez" : {
+                     "type" : "object",
+                     "properties" : {
+                        "linkable_wallet_types" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string",
+                              "items" : {
+                                 "type" : "string"
+                              }
+                           }
+                        },
+                        "linkable_wallet_currencies" : {
+                           "type" : "array",
+                           "items": {
+                              "type": "string"
+                           }
+                        },
+                        "linkable_to_different_currency" : {
+                           "enum" : [1,0],
+                           "type" : "integer"
+                        }
+                     }
+                  }
+               }
+            }        
+          }
+       }
+    }
+ }
+ 

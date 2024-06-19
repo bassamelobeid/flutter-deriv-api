@@ -1,0 +1,30 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type",
+      "topup_virtual"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^topup_virtual$",
+         "type" : "string"
+      },
+      "topup_virtual" : {
+         "properties" : {
+            "amount" : {
+               "type" : "number"
+            },
+            "currency" : {
+               "type" : "string"
+            }
+         },
+         "type" : "object"
+      }
+   }
+}

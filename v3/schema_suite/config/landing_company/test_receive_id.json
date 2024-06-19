@@ -1,0 +1,413 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "landing_company" : {
+         "required" : [
+            "id",
+            "name",
+            "virtual_company"
+         ],
+         "properties" : {
+            "mt_financial_company" : {
+               "properties" : {
+                  "financial" : {
+                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "support_professional_client", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
+                      "type": "object",
+                     "has_reality_check" : {
+                        "type" : "integer",
+                        "enum" : [0]
+                     },
+                     "legal_default_currency" : {
+                        "pattern" : "^USD$",
+                        "type" : "string"
+                     },
+                     "country" : {
+                        "type" : "string",
+                        "pattern" : "^Republic of Vanuatu$"
+                     },
+                     "shortcode" : {
+                        "type" : "string",
+                        "pattern" : "^vanuatu$"
+                     },
+                     "support_professional_client" : {
+                        "type" : "integer",
+                        "enum" : [
+                           0
+                        ]
+                     },
+                     "legal_allowed_contract_categories" : {
+                        "minItems" : 1,
+                        "type" : "array",
+                        "items" : {
+                           "pattern" : "^callput$",
+                           "type" : "string"
+                        }
+                     },
+                     "address" : {
+                        "minItems" : 1,
+                        "items" : {
+                           "type" : "string"
+                        },
+                        "type" : "array"
+                     },
+                     "name" : {
+                        "pattern" : "^Binary \\(V\\) Ltd$",
+                        "type" : "string"
+                     },
+                     "legal_allowed_markets" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^(forex)$"
+                        },
+                        "type" : "array",
+                        "minItems" : 1
+                     },
+                     "legal_allowed_currencies" : {
+                        "minItems" : 1,
+                        "type" : "array",
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^USD$"
+                        }
+                     }
+                  },
+                  "financial_stp" : {
+                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "support_professional_client", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
+                     "type" : "object",
+                     "legal_allowed_markets" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^(forex)$"
+                        },
+                        "type" : "array",
+                        "minItems" : 1
+                     },
+                     "legal_allowed_currencies" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^USD$"
+                        },
+                        "minItems" : 1,
+                        "type" : "array"
+                     },
+                     "has_reality_check" : {
+                        "type" : "integer",
+                        "enum" : [0]
+                     },
+                     "shortcode" : {
+                        "pattern" : "^labuan$",
+                        "type" : "string"
+                     },
+                     "support_professional_client" : {
+                        "type" : "integer",
+                        "enum" : [
+                           0
+                        ]
+                     },
+                     "legal_default_currency" : {
+                        "type" : "string",
+                        "pattern" : "^USD$"
+                     },
+                     "country" : {
+                        "type" : "string",
+                        "pattern" : "^Malaysia Federation$"
+                     },
+                     "address" : {
+                        "type" : "array",
+                        "items" : {
+                           "type" : "string"
+                        }
+                     },
+                     "name" : {
+                        "pattern" : "^Binary \\(FX\\) Ltd$",
+                        "type" : "string"
+                     },
+                     "legal_allowed_contract_categories" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^callput$"
+                        },
+                        "minItems" : 1,
+                        "type" : "array"
+                     }
+                  }
+               },
+               "type" : "object",
+               "required" : ["financial", "financial_stp"]
+            },
+            "mt_gaming_company" : {
+               "properties" : {
+                  "financial" : {
+                     "type" : "object",
+                     "legal_allowed_markets" : {
+                        "type" : "array",
+                        "minItems" : 4,
+                        "items" : {
+                           "pattern" : "^(commodities|forex|indices|synthetic_index)$",
+                           "type" : "string"
+                        }
+                     },
+                     "legal_allowed_currencies" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "/^[a-zA-Z0-9]{2,20}$/"
+                        },
+                        "type" : "array",
+                        "minItems" : 5
+                     },
+                     "name" : {
+                        "type" : "string",
+                        "pattern": "^Deriv \\(SVG\\) LLC$"
+                     },
+                     "address" : {
+                        "items" : {
+                           "type" : "string"
+                        },
+                        "type" : "null"
+                     },
+                     "legal_allowed_contract_categories" : {
+                        "type" : "array",
+                        "minItems" : 6,
+                        "items" : {
+                           "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|multiplier|vanilla|turbos)$",
+                           "type" : "string"
+                        }
+                     },
+                     "has_reality_check" : {
+                        "type" : "integer",
+                        "enum" : [0]
+                     },
+                     "shortcode" : {
+                        "type" : "string",
+                        "pattern" : "^svg$"
+                     },
+                     "support_professional_client" : {
+                        "type" : "integer",
+                        "enum" : [
+                           0
+                        ]
+                     },
+                     "legal_default_currency" : {
+                        "type" : "string",
+                        "pattern" : "^USD$"
+                     },
+                     "country" : {
+                        "pattern" : "^Saint Vincent and the Grenadines^",
+                        "type" : "string"
+                     }
+                  }
+               },
+               "type" : "object"
+            },
+            "financial_company" : {
+               "required" : [
+                  "shortcode",
+                  "support_professional_client",
+                  "legal_default_currency",
+                  "country",
+                  "has_reality_check",
+                  "name",
+                  "legal_allowed_contract_categories",
+                  "legal_allowed_currencies",
+                  "legal_allowed_markets"
+               ],
+               "type" : "object",
+               "properties" : {
+                  "shortcode" : {
+                     "pattern" : "^(svg|maltainvest)$",
+                     "type" : "string"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "enum" : [
+                        0,1
+                     ]
+                  },
+                  "legal_default_currency" : {
+                     "pattern" : "^[a-zA-Z0-9]{2,20}$",
+                     "type" : "string"
+                  },
+                  "country" : {
+                     "type" : "string"
+                  },
+                  "has_reality_check" : {
+                     "pattern" : "^0$",
+                     "type" : "integer"
+                  },
+                  "address" : {
+                    "type" : "null"
+                  },
+                  "name" : {
+                     "type" : "string"
+                  },
+                  "legal_allowed_contract_categories" : {
+                     "items" : {
+                        "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs|multiplier|vanilla|accumulator|turbos)$",
+                        "type" : "string"
+                     },
+                     "type" : "array"
+                  },
+                  "legal_allowed_currencies" : {
+                     "items" : {
+                        "pattern" : "^[a-zA-Z0-9]{2,20}$",
+                        "type" : "string"
+                     },
+                     "type" : "array"
+                  },
+                  "legal_allowed_markets" : {
+                     "items" : {
+                        "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
+                        "type" : "string"
+                     },
+                     "type" : "array"
+                  }
+               }
+            },
+            "gaming_company" : {
+               "type" : "object",
+               "properties" : {
+                  "legal_allowed_markets" : {
+                     "minItems" : 4,
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string",
+                        "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$"
+                     }
+                  },
+                  "legal_allowed_currencies" : {
+                     "minItems" : 5,
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string",
+                        "pattern" : "^[a-zA-Z0-9]{2,20}$"
+                     }
+                  },
+                  "country" : {
+                     "type" : "string",
+                     "pattern" : "^Saint Vincent and the Grenadines$"
+                  },
+                  "legal_default_currency" : {
+                     "pattern" : "^USD$",
+                     "type" : "string"
+                  },
+                  "shortcode" : {
+                     "type" : "string",
+                     "pattern" : "^svg$"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "enum" : [
+                        0
+                     ]
+                  },
+                  "has_reality_check" : {
+                     "type" : "integer",
+                     "pattern" : "^0$"
+                  },
+                  "legal_allowed_contract_categories" : {
+                     "type" : "array",
+                     "minItems" : 6,
+                     "items" : {
+                        "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs|multiplier|vanilla|accumulator|turbos)$",
+                        "type" : "string"
+                     }
+                  },
+                  "name" : {
+                     "type" : "string",
+                     "pattern" : "^Deriv \\(SVG\\) LLC$"
+                  },
+                  "address" : {
+                     "items" : {
+                        "type" : "string"
+                     },
+                     "type" : "null"
+                  }
+               },
+               "required" : [
+                  "legal_allowed_markets",
+                  "legal_allowed_currencies",
+                  "country",
+                  "legal_default_currency",
+                  "shortcode",
+                  "support_professional_client",
+                  "has_reality_check",
+                  "legal_allowed_contract_categories",
+                  "name"
+               ]
+            },
+            "id" : {
+               "pattern" : "^id$",
+               "type" : "string"
+            },
+            "name" : {
+               "pattern" : "^Indonesia$",
+               "type" : "string"
+            },
+            "virtual_company" : {
+               "pattern" : "^virtual$",
+               "type" : "string"
+            },
+            "all_company": {
+               "type": "string",
+               "enum": [
+                  "svg",
+                  "none"
+               ]
+            },
+            "derivez": {
+               "type": "object",
+               "additionalProperties": false,
+               "properties": {
+                   "all": {
+                       "type": "object",
+                       "additionalProperties": false,
+                       "properties": {
+                           "standard": {
+                              "type": "string",
+                              "additionalProperties": false,
+                              "enum": [
+                                 "svg",
+                                 "none"
+                              ]
+                           }
+                       }
+                   }
+               }
+            },
+            "ctrader": {
+               "type": "object",
+               "additionalProperties": false,
+               "properties": {
+                   "all": {
+                       "type": "object",
+                       "additionalProperties": false,
+                       "properties": {
+                           "standard": {
+                              "type": "string",
+                              "additionalProperties": false,
+                              "enum": [
+                                 "svg",
+                                 "none"
+                              ]
+                           }
+                       }
+                   }
+               }
+            }
+         },
+         "type" : "object"
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string"
+      }
+   }
+}

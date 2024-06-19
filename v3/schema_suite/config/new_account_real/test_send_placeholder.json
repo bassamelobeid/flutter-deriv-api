@@ -1,0 +1,19 @@
+{
+  "new_account_real": "1",
+  "salutation": "Mr",
+  "first_name": "[_1]",
+  "last_name": "[_2]",
+  "date_of_birth": "[_3]",
+  "citizen": "at",
+  "residence": "[_4]",
+  "place_of_birth": "id",
+  "address_line_1": "20 Broadway Av",
+  "address_line_2": "East Melbourne VIC",
+  "address_city": "[_5]",
+  "address_state": "BT",
+  "address_postcode": "3002",
+  "phone": "[_6]",
+  "secret_question": "Mother's maiden name",
+  "secret_answer": "Jones",
+  "account_opening_reason": "Speculative"
+}

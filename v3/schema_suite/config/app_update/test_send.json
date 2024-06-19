@@ -1,0 +1,16 @@
+{
+  "app_update": "[_1]",
+  "name": "Test",
+  "scopes": [
+    "read",
+    "trade",
+    "payments"
+  ],
+  "homepage": "https://test-app.example.com/",
+  "github": "https://github.com/test_application/app",
+  "appstore": "https://itunes.apple.com/test_application",
+  "googleplay": "https://play.google.com/store/apps/details?id=test.app",
+  "redirect_uri": "https://test-app.example.com/redirect",
+  "verification_uri": "https://test-app.example.com/verify",
+  "app_markup_percentage": "2.5"
+}

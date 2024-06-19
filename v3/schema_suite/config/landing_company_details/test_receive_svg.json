@@ -1,0 +1,87 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^landing_company_details$"
+      },
+      "echo_req" : {},
+      "landing_company_details" : {
+         "properties" : {
+            "legal_allowed_currencies" : {
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^[a-zA-Z0-9]{2,20}$"
+               },
+               "type" : "array",
+               "minItems" : 7
+            },
+            "legal_allowed_markets" : {
+               "minItems" : 4,
+               "type" : "array",
+               "items" : {
+                  "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
+                  "type" : "string"
+               }
+            },
+            "legal_default_currency" : {
+               "pattern" : "^USD$",
+               "type" : "string"
+            },
+            "country" : {
+               "pattern" : "^Saint Vincent and the Grenadines$",
+               "type" : "string"
+            },
+            "shortcode" : {
+               "pattern" : "^[_1]$",
+               "type" : "string"
+            },
+            "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  0
+               ]
+            },
+            "has_reality_check" : {
+               "enum" : [0],
+               "type" : "integer"
+            },
+            "legal_allowed_contract_categories" : {
+               "minItems" : 6,
+               "type" : "array",
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs|multiplier|vanilla|accumulator|turbos)$"
+               }
+            },
+            "address" : {
+               "type" : "null"
+            },
+            "name" : {
+               "pattern": "^Deriv \\(SVG\\) LLC$",
+               "type" : "string"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "legal_allowed_currencies",
+            "legal_allowed_markets",
+            "legal_default_currency",
+            "country",
+            "shortcode",
+            "support_professional_client",
+            "has_reality_check",
+            "legal_allowed_contract_categories",
+            "name"
+         ]
+      }
+   }
+}

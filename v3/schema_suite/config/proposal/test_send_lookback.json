@@ -1,0 +1,9 @@
+{
+  "proposal": 1,
+  "multiplier": "10",
+  "currency": "USD",
+  "contract_type": "[_1]",
+  "symbol": "[_2]",
+  "duration": "[_3]",
+  "duration_unit": "[_4]"
+}

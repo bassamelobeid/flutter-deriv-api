@@ -1,0 +1,24 @@
+{
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "required" : [
+        "identity_verification_document_add",
+        "msg_type",
+        "echo_req"
+    ],
+    "description" : null,
+    "additionalProperties" : null,
+    "title" : null,
+    "type" : "object",
+    "properties" : {
+       "identity_verification_document_add" : {
+            "type" : "integer",
+            "enum" : [1]
+       },
+       "msg_type" : {
+            "type" : "string",
+            "pattern" : "^identity_verification_document_add$"
+       },
+       "echo_req" : {}
+    }
+ }
+ 

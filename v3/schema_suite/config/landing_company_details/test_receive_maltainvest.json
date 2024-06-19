@@ -1,0 +1,91 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^landing_company_details$"
+      },
+      "landing_company_details" : {
+         "required" : [
+            "shortcode",
+            "support_professional_client",
+            "legal_default_currency",
+            "country",
+            "has_reality_check",
+            "address",
+            "name",
+            "legal_allowed_contract_categories",
+            "legal_allowed_markets",
+            "legal_allowed_currencies"
+         ],
+         "properties" : {
+            "shortcode" : {
+               "type" : "string",
+               "pattern" : "^[_1]$"
+            },
+            "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  1
+               ]
+            },
+            "legal_default_currency" : {
+               "type" : "string",
+               "pattern" : "^EUR$"
+            },
+            "country" : {
+               "type" : "string",
+               "pattern" : "^Malta$"
+            },
+            "has_reality_check" : {
+               "type" : "integer",
+               "enum" : [0]
+            },
+            "address" : {
+               "items" : {
+                  "type" : "string"
+               },
+               "type" : "array"
+            },
+            "name" : {
+               "type" : "string",
+               "pattern" : "^Deriv Investments \\(Europe\\) Limited$"
+            },
+            "legal_allowed_contract_categories" : {
+               "type" : "array",
+               "minItems" : 1,
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^multiplier|turbos$"
+               }
+            },
+            "legal_allowed_markets" : {
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(forex|synthetic_index|cryptocurrency)$"
+               },
+               "minItems" : 1,
+               "type" : "array"
+            },
+            "legal_allowed_currencies" : {
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(USD|EUR)$"
+               },
+               "type" : "array",
+               "minItems" : 2
+            }
+         },
+         "type" : "object"
+      }
+   }
+}

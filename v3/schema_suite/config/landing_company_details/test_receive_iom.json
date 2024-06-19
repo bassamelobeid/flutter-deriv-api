@@ -1,0 +1,101 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "landing_company_details" : {
+         "required" : [
+            "name",
+            "address",
+            "legal_allowed_contract_categories",
+            "has_reality_check",
+            "shortcode",
+            "support_professional_client",
+            "country",
+            "legal_default_currency",
+            "legal_allowed_currencies",
+            "legal_allowed_markets"
+         ],
+         "properties" : {
+            "name" : {
+               "pattern" : "^Deriv \\(MX\\) Ltd$",
+               "type" : "string"
+            },
+            "address" : {
+               "type" : "array",
+               "items" : {
+                  "type" : "string"
+               }
+            },
+            "legal_allowed_contract_categories" : {
+               "items" : {
+                  "enum" : [
+                     "asian",
+                     "callput",
+                     "digits",
+                     "endsinout",
+                     "staysinout",
+                     "touchnotouch",
+                     "callputspread",
+                     "callputequal",
+                     "lookback",
+                     "highlowticks",
+                     "reset",
+                     "runs",
+                     "multiplier",
+                     "turbos",
+                     "vanilla"
+                  ],
+                  "type" : "string"
+               },
+               "type" : "array",
+               "minItems" : 6
+            },
+            "has_reality_check" : {
+               "enum" : [1],
+               "type" : "integer"
+            },
+            "shortcode" : {
+               "type" : "string",
+               "pattern" : "^[_1]$"
+            },
+            "country" : {
+               "type" : "string",
+               "pattern" : "^Isle of Man$"
+            },
+            "legal_default_currency" : {
+               "type" : "string",
+               "pattern" : "^GBP$"
+            },
+            "legal_allowed_currencies" : {
+               "minItems" : 1,
+               "type" : "array",
+               "items" : {
+                  "pattern" : "^(USD)$",
+                  "type" : "string"
+               }
+            },
+            "legal_allowed_markets" : {
+               "minItems" : 4,
+               "type" : "array",
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(commodities|forex|indices|synthetic_index)$"
+               }
+            }
+         },
+         "type" : "object"
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^landing_company_details$"
+      }
+   }
+}

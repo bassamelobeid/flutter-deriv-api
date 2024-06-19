@@ -1,0 +1,79 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "app_update" : {
+         "properties" : {
+            "googleplay" : {
+               "type" : "string",
+               "pattern" : "^https://play\\.google\\.com/store/apps/details\\?id=test\\.app$"
+            },
+            "github" : {
+               "pattern" : "^https\\://github\\.com/test_application/app$",
+               "type" : "string"
+            },
+            "app_id" : {
+               "type" : "integer"
+            },
+            "redirect_uri" : {
+               "pattern" : "^https\\://test\\-app\\.example\\.com/redirect$",
+               "type" : "string"
+            },
+            "scopes" : {
+               "minItems" : 3,
+               "type" : "array",
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(read|trade|payments)$"
+               },
+               "maxItems" : 3
+            },
+            "name" : {
+               "pattern" : "^Test$",
+               "type" : "string"
+            },
+            "homepage" : {
+               "pattern" : "^https\\://test\\-app\\.example\\.com/$",
+               "type" : "string"
+            },
+            "app_markup_percentage" : {
+               "enum" : [2.5],
+               "type" : "number"
+            },
+            "appstore" : {
+               "type" : "string",
+               "pattern" : "^https\\://itunes\\.apple\\.com/test_application$"
+            },
+            "verification_uri" : {
+               "type" : "string",
+               "pattern" : "^https\\://test\\-app\\.example\\.com/verify$"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "googleplay",
+            "github",
+            "app_id",
+            "redirect_uri",
+            "scopes",
+            "name",
+            "homepage",
+            "app_markup_percentage",
+            "appstore",
+            "verification_uri"
+         ]
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^app_update$",
+         "type" : "string"
+      }
+   }
+}

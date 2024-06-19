@@ -1,0 +1,182 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "landing_company" : {
+         "properties" : {
+            "financial_company" : {
+               "type" : "object",
+               "properties" : {
+                  "legal_allowed_markets" : {
+                     "items" : {
+                        "pattern" : "^(forex|synthetic_index|cryptocurrency)$",
+                        "type" : "string"
+                     },
+                     "minItems" : 1,
+                     "type" : "array"
+                  },
+                  "legal_allowed_currencies" : {
+                     "type" : "array",
+                     "minItems" : 2,
+                     "items" : {
+                        "type" : "string",
+                        "pattern" : "^(USD|EUR)$"
+                     }
+                  },
+                  "legal_allowed_contract_categories" : {
+                     "minItems" : 1,
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string",
+                        "pattern" : "^multiplier|turbos$"
+                     }
+                  },
+                  "address" : {
+                     "items" : {
+                        "type" : "string"
+                     },
+                     "type" : "array"
+                  },
+                  "name" : {
+                     "pattern" : "^Deriv Investments \\(Europe\\) Limited$",
+                     "type" : "string"
+                  },
+                  "has_reality_check" : {
+                     "type" : "integer",
+                     "enum" : [0]
+                  },
+                  "legal_default_currency" : {
+                     "type" : "string",
+                     "pattern" : "^EUR$"
+                  },
+                  "country" : {
+                     "pattern" : "^Malta$",
+                     "type" : "string"
+                  },
+                  "shortcode" : {
+                     "type" : "string",
+                     "pattern" : "^maltainvest$"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "enum" : [
+                        1
+                     ]
+                  }
+               },
+               "required" : [
+                  "legal_allowed_markets",
+                  "legal_allowed_contract_categories",
+                  "address",
+                  "name",
+                  "has_reality_check",
+                  "legal_default_currency",
+                  "country",
+                  "shortcode"
+               ]
+            },
+            "gaming" : {
+               "type" : "object",
+               "properties" : {
+                  "legal_allowed_markets" : {
+                     "items" : {
+                        "pattern" : "^(forex|synthetic_index|cryptocurrency)$",
+                        "type" : "string"
+                     },
+                     "minItems" : 1,
+                     "type" : "array"
+                  },
+                  "legal_allowed_currencies" : {
+                     "type" : "array",
+                     "minItems" : 3,
+                     "items" : {
+                        "type" : "string",
+                        "pattern" : "^(USD|EUR|GBP)$"
+                     }
+                  },
+                  "legal_allowed_contract_categories" : {
+                     "minItems" : 1,
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string",
+                        "pattern" : "^multiplier$"
+                     }
+                  },
+                  "address" : {
+                     "items" : {
+                        "type" : "string"
+                     },
+                     "type" : "array"
+                  },
+                  "name" : {
+                     "pattern" : "^Deriv Investments \\(Europe\\) Limited$",
+                     "type" : "string"
+                  },
+                  "has_reality_check" : {
+                     "type" : "integer",
+                     "enum" : [0]
+                  },
+                  "legal_default_currency" : {
+                     "type" : "string",
+                     "pattern" : "^EUR$"
+                  },
+                  "country" : {
+                     "pattern" : "^Malta$",
+                     "type" : "string"
+                  },
+                  "shortcode" : {
+                     "type" : "string",
+                     "pattern" : "^maltainvest$"
+                  }
+               },
+               "required" : [
+                  "legal_allowed_markets",
+                  "legal_allowed_contract_categories",
+                  "address",
+                  "name",
+                  "has_reality_check",
+                  "legal_default_currency",
+                  "country",
+                  "shortcode"
+               ]
+            },
+            "virtual_company" : {
+               "type" : "string",
+               "pattern" : "^virtual$"
+            },
+            "name" : {
+               "pattern" : "^Germany$",
+               "type" : "string"
+            },
+            "id" : {
+               "pattern" : "^de$",
+               "type" : "string"
+            },
+            "all_company" : {
+               "type": "string",
+               "enum": [
+                  "svg",
+                  "none"
+               ]
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "virtual_company",
+            "name",
+            "id"
+         ]
+      },
+      "msg_type" : {
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
+}

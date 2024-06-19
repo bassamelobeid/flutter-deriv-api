@@ -1,0 +1,80 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^landing_company_details$",
+         "type" : "string"
+      },
+      "landing_company_details" : {
+         "type" : "object",
+         "properties" : {
+            "legal_allowed_currencies" : {
+               "minItems" : 1,
+               "type" : "array",
+               "items" : {
+                  "pattern" : "^USD$",
+                  "type" : "string"
+               }
+            },
+            "legal_allowed_markets" : {
+               "items" : {
+                  "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
+                  "type" : "string"
+               },
+               "minItems" : 4,
+               "type" : "array"
+            },
+            "legal_allowed_contract_categories" : {
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs|multiplier|vanilla|accumulator|turbos)$"
+               },
+               "minItems" : 6,
+               "type" : "array"
+            },
+            "address" : {
+               "type" : "null"
+            },
+            "name" : {
+               "type" : "string",
+               "pattern" : "^Deriv Limited$"
+            },
+            "legal_default_currency" : {
+               "type" : "string",
+               "pattern" : "^USD$"
+            },
+            "country" : {
+               "type" : "string",
+               "pattern" : "^Bahamas$"
+            },
+            "shortcode" : {
+               "type" : "string",
+               "pattern" : "^[_1]$"
+            },
+            "has_reality_check" : {
+               "enum" : [0],
+               "type" : "integer"
+            }
+         },
+         "required" : [
+            "legal_allowed_currencies",
+            "legal_allowed_markets",
+            "legal_allowed_contract_categories",
+            "name",
+            "legal_default_currency",
+            "country",
+            "shortcode",
+            "has_reality_check"
+         ]
+      }
+   }
+}

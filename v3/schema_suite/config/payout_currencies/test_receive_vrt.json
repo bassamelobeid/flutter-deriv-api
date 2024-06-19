@@ -1,0 +1,32 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "payout_currencies",
+      "msg_type", 
+      "echo_req"
+   ],
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "properties" : {
+      "echo_req" : {
+         "type" : "object",
+         "required": ["payout_currencies"], 
+         "payout_currencies" : {
+            "type" : "number"
+         }
+      },
+      "payout_currencies" : {
+         "items" : {
+            "pattern" : "^[_1]$",
+            "type" : "string"
+         },
+         "minItems" : "[_2]",
+         "type" : "array"
+      },
+      "msg_type" : {
+         "type" : "string"
+      }
+   }
+}

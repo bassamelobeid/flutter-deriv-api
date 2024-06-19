@@ -1,0 +1,51 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "msg_type",
+      "new_account" 
+   ],
+   "properties" : {
+      "new_account" : {
+         "properties" : {
+            "currency" : {
+               "type" : "string",
+               "pattern" : "^USD$"
+            },
+            "balance" : {
+               "type" : "number",
+               "enum" : [
+                  10000
+               ]
+            },
+            "client_loginid" : {
+               "pattern" : "^VRTC\\d+$",
+               "type" : "string"
+            },
+            "oauth_token" : {
+               "type" : "string"
+            },
+            "email" : {
+               "pattern" : "^[_2]$",
+               "type" : "string"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "currency",
+            "balance",
+            "client_loginid",
+            "oauth_token",
+            "email",
+         ]
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^new_account$"
+      }
+   }
+}

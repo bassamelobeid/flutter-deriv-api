@@ -1,0 +1,63 @@
+{
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "required" : [
+       "msg_type",
+       "echo_req"
+    ],
+    "title" : null,
+    "additionalProperties" : null,
+    "type" : "object",
+    "description" : null,
+    "properties" : {
+       "msg_type" : {
+          "type" : "string",
+          "pattern" : "^landing_company_details$"
+       },
+       "echo_req" : {},
+       "landing_company_details" : {
+          "properties" : {
+             "legal_allowed_currencies" : {
+                "items" : {
+                   "type" : "string",
+                   "pattern" : "^(USD|EUR|GBP|AUD)$"
+                },
+                "type" : "array",
+                "minItems" : 4
+             },
+             "legal_default_currency" : {
+                "pattern" : "^USD$",
+                "type" : "string"
+             },
+             "country" : {
+                "pattern" : "^Seychelles$",
+                "type" : "string"
+             },
+             "shortcode" : {
+                "pattern" : "^[_1]$",
+                "type" : "string"
+             },
+             "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  0
+               ]
+            },
+             "address" : {
+                "type" : "null"
+             },
+             "name" : {
+                "pattern": "^Deriv Services Ltd$",
+                "type" : "string"
+             }
+          },
+          "type" : "object",
+          "required" : [
+             "legal_allowed_currencies",
+             "legal_default_currency",
+             "country",
+             "shortcode",
+             "name"
+          ]
+       }
+    }
+ }

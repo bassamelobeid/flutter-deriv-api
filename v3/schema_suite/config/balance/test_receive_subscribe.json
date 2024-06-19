@@ -1,0 +1,43 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "required": ["echo_req", "balance", "msg_type", "subscription"],
+    "properties": {
+        "echo_req": {
+        },
+        "balance": {
+            "type": "object",
+            "required": ["balance", "currency", "loginid"],
+            "properties": {
+                "balance": {
+                    "type": "number",
+                    "enum": [[_1]]
+                },
+                "currency": {
+                    "type": "string",
+                    "pattern": "^[_2]$"
+                },
+                "loginid": {
+                    "type": "string",
+                    "pattern": "^[_3]$"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "msg_type": {
+            "type": "string",
+            "pattern": "^balance$"
+        },
+        "subscription": {
+            "type": "object",
+            "required": ["id"],
+            "properties":{
+                "id": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

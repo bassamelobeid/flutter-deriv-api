@@ -1,0 +1,63 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^proposal$",
+         "type" : "string"
+      },
+      "echo_req" : {},
+      "proposal" : {
+         "properties" : {
+            "longcode" : {
+               "pattern" : "^[_6]$",
+               "type" : "string"
+            },
+            "spot_time" : {
+               "type" : "number"
+            },
+            "display_value" : {
+                "type" :"string",
+                "enum" : ["[_8]"]
+            },
+            "id" : {
+               "type" : "string",
+               "pattern" : "[\\d\\w-]+$"
+            },
+            "date_start" : {
+               "type" : "number"
+            },
+            "payout" : {
+               "type" : "number",
+               "enum" : [0]
+            },
+            "spot" : {
+               "enum" : [[_9]],
+               "type" : "number"
+            },
+            "ask_price" : {
+               "type" : "number",
+               "enum" : [[_7]]
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "longcode",
+            "spot_time",
+            "display_value",
+            "id",
+            "date_start",
+            "payout",
+            "spot",
+            "ask_price"
+         ]
+      }
+   }
+}

@@ -1,0 +1,81 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "app_list",
+      "msg_type"
+   ],
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "app_list" : {
+         "items" : {
+             "required": ["verification_uri", "appstore", "homepage", "app_markup_percentage", "scopes", "name", "redirect_uri", "github", "googleplay", "app_id"],
+            "type" : "object",
+            "properties" : {
+               "googleplay" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "github" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "app_id" : {
+                  "pattern" : "(?!^[_1]$)(^.*$)",
+                  "type" : "integer"
+               },
+               "redirect_uri" : {
+                  "type" : "string"
+               },
+               "scopes" : {
+                  "minItem" : 1,
+                  "maxItem" : 5,
+                  "items" : {
+                     "pattern" : "^(read|trade|trading_information|payments|admin)$",
+                     "type" : "string"
+                  },
+                  "type" : "array"
+               },
+               "name" : {
+                  "pattern" : "^.+$",
+                  "type" : "string"
+               },
+               "homepage" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "app_markup_percentage" : {
+                  "type" : "number"
+               },
+               "appstore" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "verification_uri" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               }
+            }
+         },
+         "type" : "array"
+      },
+      "msg_type" : {
+         "pattern" : "^app_list$",
+         "type" : "string"
+      }
+   }
+}

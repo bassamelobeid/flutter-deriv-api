@@ -1,0 +1,23 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "reset_password",
+      "echo_req",
+      "msg_type"
+   ],
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "properties" : {
+      "reset_password" : {
+         "type" : "integer",
+         "enum" : [1]
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^reset_password$",
+         "type" : "string"
+      }
+   }
+}

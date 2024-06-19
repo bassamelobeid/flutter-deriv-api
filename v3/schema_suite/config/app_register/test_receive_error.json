@@ -1,0 +1,34 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^app_register$",
+         "type" : "string"
+      },
+      "error" : {
+         "required" : [
+            "message",
+            "code"
+         ],
+         "properties" : {
+            "message" : {
+               "type" : "string"
+            },
+            "code" : {
+               "pattern" : "^AppRegister$",
+               "type" : "string"
+            }
+         },
+         "type" : "object"
+      },
+      "echo_req" : {}
+   }
+}

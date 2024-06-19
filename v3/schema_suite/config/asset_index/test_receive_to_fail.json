@@ -1,0 +1,44 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "asset_index",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^asset_index$"
+      },
+      "asset_index" : {
+         "type" : "array",
+         "items" : {
+             "required": ["type"], 
+            "items" : [
+               {
+                  "type" : "string"
+               },
+               {
+                  "type" : "array",
+                  "items" : {
+                     "minItems" : 2,
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string"
+                     },
+                     "maxItems" : 3
+                  }
+               }
+            ],
+            "additionalItems" : false,
+            "type" : "array",
+            "uniqueItems" : true
+         }
+      },
+      "echo_req" : {}
+   }
+}

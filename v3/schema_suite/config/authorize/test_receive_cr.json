@@ -1,0 +1,136 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^authorize$"
+      },
+      "echo_req" : {},
+      "authorize" : {
+         "type" : "object",
+         "properties" : {
+            "email" : {
+               "pattern" : "^[_2]$",
+               "type" : "string"
+            },
+            "is_virtual" : {
+               "enum" : [0],
+               "type" : "integer"
+            },
+            "landing_company_name" : {
+               "type" : "string"
+            },
+            "balance" : {
+               "enum" : [0],
+               "type" : "number"
+            },
+            "scopes" : {
+               "minItems" : 4,
+               "type" : "array",
+               "items" : {
+                  "pattern" : "^(admin|payments|read|trade)$",
+                  "type" : "string"
+               }
+            },
+            "account_list" : {
+               "items" : {
+                  "type" : "object",
+                  "properties" : {
+                     "excluded_until" : {
+                        "type" : "integer"
+                     },
+                     "currency" : {
+                        "type" : "string"
+                     },
+                     "currency_type" : {
+                        "type" : "string"
+                     },
+                     "landing_company_name" : {
+                        "type" : "string"
+                     },
+                     "loginid" : {
+                        "type" : "string",
+                        "pattern" : "^[A-Z]{2,4}\\d+$"
+                     },
+                     "is_virtual" : {
+                        "enum" : [0,1],
+                        "type" : "integer"
+                     },
+                     "is_disabled" : {
+                        "enum" : [0,1],
+                        "type" : "integer"
+                     },
+                     "trading": {
+                        "type": "object"
+                     },
+                     "wallet": {
+                        "type": "object"
+                     },
+                     "created_at": {
+                        "type": "integer"
+                     }
+                  }
+               },
+               "description" : "List of accounts for current client",
+               "type" : "array"
+            },
+            "upgradeable_landing_companies" : {
+               "type" : "array"
+            },
+            "fullname" : {
+               "type" : "string",
+               "pattern" : "^Mr [_3] Pan$"
+            },
+            "landing_company_fullname" : {
+               "type" : "string",
+               "pattern": "^Deriv \\(SVG\\) LLC$"
+            },
+            "loginid" : {
+               "pattern" : "^CR\\d+$",
+               "type" : "string"
+            },
+            "currency" : {
+               "pattern" : "^$",
+               "type" : "string"
+            },
+            "country" : {
+               "pattern" : "^[a-z]{0,2}$",
+               "type" : "string"
+            },
+            "trading": {
+               "type": "object"
+            },
+            "wallet": {
+               "type": "object"
+            }
+         },
+         "preferred_language" : {
+            "type" : "string",
+            "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+         },
+         "required" : [
+            "email",
+            "is_virtual",
+            "landing_company_name",
+            "balance",
+            "scopes",
+            "fullname",
+            "landing_company_fullname",
+            "loginid",
+            "currency",
+            "country",
+            "preferred_language",
+            "account_list",
+            "upgradeable_landing_companies"
+         ]
+      }
+   }
+}

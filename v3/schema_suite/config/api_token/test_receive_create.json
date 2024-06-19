@@ -1,0 +1,62 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^api_token$"
+      },
+      "api_token" : {
+         "required" : [
+            "tokens",
+            "new_token"
+         ],
+         "type" : "object",
+         "properties" : {
+            "tokens" : {
+               "items" : {
+                  "type" : "object",
+                  "required":["token", "display_name", "scopes", "last_used"],
+                  "properties" : {
+                     "token" : {
+                        "pattern" : "^.{15}$",
+                        "type" : "string"
+                     },
+                     "display_name" : {
+                        "type" : "string",
+                        "pattern" : "^[_1]$"
+                     },
+                     "scopes" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^(read|trade|payments|admin)$"
+                        },
+                        "minItems" : 4
+                     },
+                     "last_used" : {
+                        "type" : [
+                           "string",
+                           "null"
+                        ],
+                        "pattern" : "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})?$"
+                     }
+                  }
+               },
+               "type" : "array"
+            },
+            "new_token" : {
+               "type" : "integer",
+               "enum" : [1]
+            }
+         }
+      }
+   }
+}

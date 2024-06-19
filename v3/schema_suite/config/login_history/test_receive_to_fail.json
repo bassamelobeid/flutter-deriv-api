@@ -1,0 +1,41 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req",
+      "login_history"
+   ],
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^login_history$"
+      },
+      "echo_req" : {},
+      "login_history" : {
+         "items" : {
+             "required": ["status", "action", "environment", "time"],
+            "properties" : {
+               "status" : {
+                  "enum" : [0],
+                  "type" : "integer"
+               },
+               "action" : {
+                  "type" : "string"
+               },
+               "environment" : {
+                  "type" : "string"
+               },
+               "time" : {
+                  "type" : "integer"
+               }
+            },
+            "type" : "object"
+         },
+         "type" : "array"
+      }
+   }
+}

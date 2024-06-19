@@ -1,0 +1,30 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : "Ping Receive",
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "ping" : {
+         "pattern" : "^pong$",
+         "type" : "string"
+      },
+      "msg_type" : {
+         "pattern" : "^ping$",
+         "type" : "string"
+      },
+      "echo_req" : {
+         "type" : "object",
+         "properties" : {
+            "ping" : {
+               "type" : "string",
+               "pattern" : "^1$"
+            }
+         }
+      }
+   }
+}

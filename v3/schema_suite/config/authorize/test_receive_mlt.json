@@ -1,0 +1,135 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^authorize$",
+         "type" : "string"
+      },
+      "authorize" : {
+         "required" : [
+            "currency",
+            "country",
+            "scopes",
+            "fullname",
+            "loginid",
+            "landing_company_fullname",
+            "balance",
+            "email",
+            "is_virtual",
+            "landing_company_name",
+            "preferred_language"
+         ],
+         "type" : "object",
+         "properties" : {
+            "currency" : {
+               "pattern" : "^$",
+               "type" : "string"
+            },
+            "country" : {
+               "pattern" : "^[a-z]{0,2}$",
+               "type" : "string"
+            },
+            "scopes" : {
+               "minItems" : 4,
+               "type" : "array",
+               "items" : {
+                  "pattern" : "^(admin|payments|read|trade)$",
+                  "type" : "string"
+               }
+            },
+            "account_list" : {
+               "items" : {
+                  "properties" : {
+                     "account_type": {
+                        "type": "string"
+                     },
+                     "is_disabled" : {
+                        "enum" : [1,0],
+                        "type" : "integer"
+                     },
+                     "landing_company_name" : {
+                        "type" : "string"
+                     },
+                     "loginid" : {
+                        "pattern" : "^[A-Z]{2,4}\\d+$",
+                        "type" : "string"
+                     },
+                     "is_virtual" : {
+                        "type" : "integer",
+                        "enum" : [1,0]
+                     },
+                     "currency" : {
+                        "type" : "string"
+                     },
+                     "currency_type" : {
+                        "type" : "string"
+                     },
+                     "excluded_until" : {
+                        "type" : "integer"
+                     },
+                     "trading": {
+                        "type": "object"
+                     },
+                     "wallet": {
+                        "type": "object"
+                     },
+                     "created_at": {
+                        "type": "integer"
+                     }
+                  },
+                  "type" : "object"
+               },
+               "type" : "array",
+               "description" : "List of accounts for current client"
+            },
+            "fullname" : {
+               "pattern" : "^Mr [_3] Pan$",
+               "type" : "string"
+            },
+            "loginid" : {
+               "pattern" : "^MLT\\d+$",
+               "type" : "string"
+            },
+            "landing_company_fullname" : {
+               "type" : "string",
+               "pattern" : "^Deriv \\(Europe\\) Limited$"
+            },
+            "balance" : {
+               "type" : "number",
+               "enum" : [0]
+            },
+            "email" : {
+               "type" : "string",
+               "pattern" : "^[_2]$"
+            },
+            "is_virtual" : {
+               "enum" : [0],
+               "type" : "integer"
+            },
+            "landing_company_name" : {
+               "pattern" : "^malta$",
+               "type" : "string"
+            },
+            "preferred_language" : {
+               "type" : "string",
+               "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+            },
+            "trading": {
+               "type": "object"
+            },
+            "wallet": {
+               "type": "object"
+            }
+         }
+      },
+      "echo_req" : {}
+   }
+}

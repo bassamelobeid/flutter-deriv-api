@@ -1,0 +1,93 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "active_symbols",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^active_symbols$",
+         "type" : "string"
+      },
+      "active_symbols" : {
+         "items" : {
+            "type" : "object",
+             "required": ["submarket", "market_display_name", "is_trading_suspended", "exchange_is_open", "submarket_display_name", "display_name", "pip", "symbol", "market", "symbol_type"], 
+            "properties" : {
+               "submarket_display_name" : {
+                  "type" : "string"
+               },
+               "pip" : {
+                  "type" : "string",
+                  "pattern" : "^0\\.0{1,4}1$"
+               },
+               "delay_amount" : {
+                  "type" : "integer",
+                  "minimum" : 0
+               },
+               "submarket" : {
+                  "type" : "string"
+               },
+               "intraday_interval_minutes" : {
+                  "type" : "integer",
+                  "minimum" : 0
+               },
+               "market_display_name" : {
+                  "type" : "string"
+               },
+               "symbol_type" : {
+                  "type" : "string"
+               },
+               "symbol" : {
+                  "type" : "string"
+               },
+               "market" : {
+                  "type" : "string"
+               },
+               "quoted_currency_symbol" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ],
+                  "pattern" : "^[a-zA-Z0-9]{2,20}$"
+               },
+               "exchange_is_open" : {
+                  "type" : [
+                     "integer",
+                     "null"
+                  ],
+                  "enum" : [0,1]
+               },
+               "spot_time" : {
+                  "pattern" : "^(|\\d{10})$",
+                  "type" : "string"
+               },
+               "display_name" : {
+                  "type" : "string"
+               },
+               "is_trading_suspended" : {
+                  "type" : "integer",
+                  "enum" : [0,1]
+               },
+               "exchange_name" : {
+                  "type" : "string"
+               },
+               "spot_age" : {
+                  "type" : "number"
+               },
+               "spot" : {
+                  "pattern" : "^(|\\d+\\.\\d+)$",
+                  "type" : "string"
+               }
+            }
+         },
+         "type" : "array"
+      },
+      "echo_req" : {}
+   }
+}

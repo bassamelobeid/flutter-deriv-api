@@ -1,0 +1,23 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "set_settings",
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "set_settings" : {
+         "type" : "integer",
+         "enum" : [1]
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^set_settings$"
+      },
+      "echo_req" : {}
+   }
+}

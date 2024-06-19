@@ -1,0 +1,31 @@
+{
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "description" : null,
+    "title" : null,
+    "additionalProperties" : null,
+    "type" : "object",
+    "required" : [
+       "msg_type",
+       "echo_req",
+       "subscription"
+    ],
+    "properties" : {
+       "msg_type" : {
+          "pattern" : "^proposal_open_contract$",
+          "type" : "string"
+       },
+       "echo_req" : {},
+       "proposal_open_contract" : {},
+       "subscription": {
+            "type": "object",
+            "required": ["id"],
+            "properties":{
+                "id": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
+ 
+ 

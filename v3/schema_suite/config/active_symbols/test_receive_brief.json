@@ -1,0 +1,64 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "active_symbols",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "active_symbols" : {
+         "items" : {
+             "required": ["submarket", "market_display_name", "is_trading_suspended", "exchange_is_open", "submarket_display_name", "display_name", "pip", "symbol", "market", "symbol_type"], 
+            "properties" : {
+               "market" : {
+                  "type" : "string"
+               },
+               "symbol" : {
+                  "type" : "string"
+               },
+               "symbol_type" : {
+               },
+               "submarket" : {
+                  "type" : "string"
+               },
+               "market_display_name" : {
+                  "type" : "string"
+               },
+               "is_trading_suspended" : {
+                  "type" : "integer",
+                  "enum" : [0,1]
+               },
+               "submarket_display_name" : {
+                  "type" : "string"
+               },
+               "exchange_is_open" : {
+                  "type" : "integer",
+                  "enum" : [0,1]
+               },
+               "pip" : {
+                  "type" : "number",
+                  "minimum": 0.000001,
+                  "maximum": 0.1
+               },
+               "display_name" : {
+                  "type" : "string"
+               },
+               "display_order": {
+                 "type": "integer"
+               }
+            },
+            "type" : "object"
+         },
+         "type" : "array"
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^active_symbols$"
+      }
+   }
+}

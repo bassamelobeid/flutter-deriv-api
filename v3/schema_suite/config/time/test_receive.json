@@ -1,0 +1,23 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req",
+      "time"
+   ],
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : "Server time",
+   "description" : null,
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^time$",
+         "type" : "string"
+      },
+      "echo_req" : {},
+      "time" : {
+         "type" : "integer",
+         "minimum" : 1000000000
+      }
+   }
+}

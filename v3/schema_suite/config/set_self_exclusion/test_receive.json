@@ -1,0 +1,23 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req",
+      "set_self_exclusion"
+   ],
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^set_self_exclusion$"
+      },
+      "echo_req" : {},
+      "set_self_exclusion" : {
+         "enum" : [1],
+         "type" : "integer"
+      }
+   }
+}

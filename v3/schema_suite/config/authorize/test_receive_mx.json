@@ -1,0 +1,140 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "authorize" : {
+         "properties" : {
+            "country" : {
+               "type" : "string",
+               "pattern" : "^[a-z]{0,2}$"
+            },
+            "currency" : {
+               "pattern" : "^$",
+               "type" : "string"
+            },
+            "landing_company_fullname" : {
+               "type" : "string",
+               "pattern" : "^Deriv \\(MX\\) Ltd$"
+            },
+            "loginid" : {
+               "type" : "string",
+               "pattern" : "^MX\\d+$"
+            },
+            "fullname" : {
+               "pattern" : "^Mr [_3] Pan$",
+               "type" : "string"
+            },
+            "account_list" : {
+               "type" : "array",
+               "description" : "List of accounts for current client",
+               "items" : {
+                  "properties" : {
+                     "account_type": {
+                        "type": "string"
+                     },
+                     "excluded_until" : {
+                        "type" : "integer"
+                     },
+                     "currency" : {
+                        "type" : "string"
+                     },
+                     "currency_type" : {
+                        "type" : "string"
+                     },
+                     "is_virtual" : {
+                        "enum" : [0,1],
+                        "type" : "integer"
+                     },
+                     "loginid" : {
+                        "type" : "string",
+                        "pattern" : "^[A-Z]{2,4}\\d+$"
+                     },
+                     "landing_company_name" : {
+                        "type" : "string"
+                     },
+                     "is_disabled" : {
+                        "type" : "integer",
+                        "enum" : [0,1]
+                     },
+                     "trading": {
+                        "type": "object"
+                     },
+                     "wallet": {
+                        "type": "object"
+                     },
+                     "created_at": {
+                        "type": "integer"
+                     }
+                  },
+                  "type" : "object"
+               }
+            },
+            "upgradeable_landing_companies" : {
+               "type" : "array"
+            },
+            "scopes" : {
+               "type" : "array",
+               "minItems" : 4,
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(admin|payments|read|trade)$"
+               }
+            },
+            "balance" : {
+               "enum" : [0],
+               "type" : "number"
+            },
+            "is_virtual" : {
+               "enum" : [0],
+               "type" : "integer"
+            },
+            "landing_company_name" : {
+               "type" : "string",
+               "pattern" : "^iom$"
+            },
+            "email" : {
+               "pattern" : "^[_2]$",
+               "type" : "string"
+            },
+            "preferred_language" : {
+               "type" : "string",
+               "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+            },
+            "trading": {
+               "type": "object"
+            },
+            "wallet": {
+               "type": "object"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "country",
+            "currency",
+            "landing_company_fullname",
+            "loginid",
+            "fullname",
+            "scopes",
+            "balance",
+            "is_virtual",
+            "landing_company_name",
+            "email",
+            "preferred_language",
+            "account_list",
+            "upgradeable_landing_companies"
+         ]
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^authorize$"
+      }
+   }
+}

@@ -1,0 +1,35 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : "copytrading list",
+   "description" : "Details of copiers and/or traders for Copy Trading",
+   "type" : "object",
+    "required": ["echo_req", "msg_type"],
+   "properties" : {
+      "echo_req" : {
+         "pattern" : "copytrading_list"
+      },
+
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "copytrading_list"
+      },
+      "copytrading_list" : {
+         "title" : "copytrading list",
+         "description" : "trading copiers or traders info",
+         "type" : "object",
+         "required" : ["copiers", "traders" ],
+         "properties" : {
+            "copiers" : {
+               "description" : "List of users who are currently copy trading the authenticated user",
+               "type" : "array",
+               "maxItems" : 0
+            },
+            "traders" : {
+               "description" : "List of users who are currently copy trading the authenticated user",
+               "type" : "array",
+               "maxItems" : 0
+            }
+         }
+      }
+   }
+}

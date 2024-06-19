@@ -1,0 +1,112 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^proposal$",
+         "type" : "string"
+      },
+      "echo_req" : {},
+      "proposal" : {
+         "properties" : {
+            "longcode" : {
+               "pattern" : "^[_7]$",
+               "type" : "string"
+            },
+            "spot_time" : {
+               "type" : "number"
+            },
+            "display_value" : {
+                "type" :"string",
+                "enum" : ["[_8]"]
+            },
+            "id" : {
+               "type" : "string",
+               "pattern" : "[\\d\\w-]+$"
+            },
+            "date_start" : {
+               "type" : "number"
+            },
+            "payout" : {
+               "type" : "number",
+               "enum" : [0]
+            },
+            "spot" : {
+               "enum" : [[_10]],
+               "type" : "number"
+            },
+            "ask_price" : {
+               "type" : "number",
+               "enum" : [[_9]]
+            },
+            "limit_order" : {
+               "type": "object",
+               "description": "Contains barrier information. (Only applicable for contract with internally calculated barrier(s).).",
+               "properties": {
+                  "take_profit": {
+                     "type": "object",
+                     "description": "take profit barrier information",
+                     "properties": {
+                        "display_name": {
+                            "type": "string"
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "pip-sized barrier value"
+                        }
+                     }
+                  },
+                  "stop_out": {
+                     "type": "object",
+                     "description": "stop out barrier information",
+                     "properties": {
+                        "display_name": {
+                            "type": "string",
+                            "enum": ["[_11]"]
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "pip-sized barrier value",
+                            "enum": ["[_12]"]
+                        }
+                     }
+                  },
+                  "stop_loss": {
+                     "type": "object",
+                     "description": "take profit barrier information",
+                     "properties": {
+                        "display_name": {
+                            "type": "string",
+                            "enum": ["[_13]"]
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "pip-sized barrier value",
+                            "enum": ["[_14]"]
+                        }
+                     }
+                  }
+               }
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "longcode",
+            "spot_time",
+            "display_value",
+            "id",
+            "date_start",
+            "payout",
+            "spot",
+            "ask_price"
+         ]
+      }
+   }
+}

@@ -1,0 +1,54 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type",
+      "pip_size"
+   ],
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^history$"
+      },
+      "pip_size" : {
+          "type" :"integer"
+      }
+      ,
+      "history" : {
+         "required" : [
+            "times",
+            "prices"
+         ],
+         "type" : "object",
+         "properties" : {
+            "times" : {
+               "type" : [
+                  "array",
+                  "null"
+               ],
+               "minItems" : 10,
+               "items" : {
+                  "type" : "integer"
+               },
+               "maxItems" : 10
+            },
+            "prices" : {
+               "items" : {
+                  "type" : "number"
+               },
+               "maxItems" : 10,
+               "minItems" : 10,
+               "type" : [
+                  "array",
+                  "null"
+               ]
+            }
+         }
+      }
+   }
+}

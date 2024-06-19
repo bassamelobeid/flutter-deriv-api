@@ -1,0 +1,140 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "authorize" : {
+         "type" : "object",
+         "properties" : {
+            "email" : {
+               "type" : "string",
+               "pattern" : "^[_2]$"
+            },
+            "is_virtual" : {
+               "type" : "number",
+               "enum" :[0] 
+            },
+            "landing_company_name" : {
+               "type" : "string",
+               "pattern" : "^maltainvest$"
+            },
+            "balance" : {
+               "type" : "number",
+               "enum" : [0] 
+            },
+            "account_list" : {
+               "type" : "array",
+               "description" : "List of accounts for current client",
+               "items" : {
+                  "type" : "object",
+                  "properties" : {
+                     "account_type": {
+                        "type": "string"
+                     },
+                     "landing_company_name" : {
+                        "type" : "string"
+                     },
+                     "loginid" : {
+                        "pattern" : "^[A-Z]{2,4}\\d+$",
+                        "type" : "string"
+                     },
+                     "is_virtual" : {
+                        "type" : "integer",
+                        "enum" : [0,1]
+                     },
+                     "is_disabled" : {
+                        "enum" : [0,1],
+                        "type" : "integer"
+                     },
+                     "excluded_until" : {
+                        "type" : "integer"
+                     },
+                     "currency" : {
+                        "type" : "string"
+                     },
+                     "currency_type" : {
+                        "type" : "string"
+                     },
+                     "trading": {
+                        "type": "object"
+                     },
+                     "wallet": {
+                        "type": "object"
+                     },
+                     "created_at": {
+                        "type": "integer"
+                     }
+                  }
+               }
+            },
+            "upgradeable_landing_companies" : {
+               "type" : "array"
+            },
+            "fullname" : {
+               "type" : "string",
+               "pattern" : "^Mr [_3] Pan$"
+            },
+            "landing_company_fullname" : {
+               "type" : "string",
+               "pattern" : "^Deriv Investments \\(Europe\\) Limited$"
+            },
+            "loginid" : {
+               "type" : "string",
+               "pattern" : "^MF\\d+$"
+            },
+            "scopes" : {
+               "minItems" : 4,
+               "type" : "array",
+               "items" : {
+                  "pattern" : "^(admin|payments|read|trade)$",
+                  "type" : "string"
+               }
+            },
+            "currency" : {
+               "pattern" : "^$",
+               "type" : "string"
+            },
+            "country" : {
+               "pattern" : "^[a-z]{0,2}$",
+               "type" : "string"
+            },
+            "preferred_language" : {
+               "type" : "string",
+               "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+            },
+            "trading": {
+               "type": "object"
+            },
+            "wallet": {
+               "type": "object"
+            }
+         },
+         "required" : [
+            "email",
+            "is_virtual",
+            "landing_company_name",
+            "balance",
+            "fullname",
+            "landing_company_fullname",
+            "loginid",
+            "scopes",
+            "currency",
+            "country",
+            "preferred_language",
+            "account_list",
+            "upgradeable_landing_companies"
+         ]
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^authorize$",
+         "type" : "string"
+      }
+   }
+}

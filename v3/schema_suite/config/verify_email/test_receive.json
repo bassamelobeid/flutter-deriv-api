@@ -1,0 +1,23 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "verify_email",
+      "msg_type",
+      "echo_req"
+   ],
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "properties" : {
+      "verify_email" : {
+         "enum" : [1],
+         "type" : "integer"
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^verify_email$"
+      },
+      "echo_req" : {}
+   }
+}

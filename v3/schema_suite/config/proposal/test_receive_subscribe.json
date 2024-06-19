@@ -1,0 +1,68 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "required" : ["echo_req", "msg_type", "subscription"],
+    "properties": {
+        "proposal": {
+            "type": "object",
+            "required" : [
+                "ask_price",
+                "spot",
+                "date_start",
+                "payout",
+                "display_value",
+                "longcode",
+                "id",
+                "spot_time"
+            ],
+            "properties" : {
+                "longcode": {
+                    "type": "string",
+                    "pattern": "^[_6]$"
+                },
+                "ask_price": {
+                    "type": "number",
+                    "enum": [[_7]]
+                },
+                "display_value": {
+                    "type": "string",
+                    "pattern": "^[_8]$"
+                },
+                "date_start": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string",
+                    "pattern": "[\\d\\w-]+$"
+                },
+                "payout": {
+                    "type": "number",
+                    "enum": [[_1]]
+                },
+                "spot": {
+                    "type": "number",
+                    "enum": [[_9]]
+                },
+                "spot_time": {
+                    "type": "number"
+
+                }
+            },
+            "echo_req": {
+            },
+            "msg_type": {
+                "type": "string",
+                "pattern": "^proposal$"
+            },
+            "subscription": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

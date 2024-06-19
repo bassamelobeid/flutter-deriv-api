@@ -1,0 +1,31 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "msg_type",
+      "payout_currencies"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "type" : "string"
+      },
+      "payout_currencies" : {
+         "minItems" : 6,
+         "type" : "array",
+         "items" : {
+            "pattern" : "^(AUX|EUR|GBP|AUD|BTC)$",
+            "type" : "string"
+         }
+      },
+      "echo_req" : {
+          "required" : ["payout_currencies"],
+         "type" : "object",
+         "payout_currencies" : {
+            "type" : "number"
+         }
+      }
+   }
+}

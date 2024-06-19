@@ -1,0 +1,178 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^get_settings$"
+      },
+      "get_settings" : {
+         "type" : "object",
+         "required" : [
+            "address_line_1",
+            "last_name",
+            "email",
+            "address_postcode",
+            "email_consent",
+            "date_of_birth",
+            "client_tnc_status",
+            "country",
+            "address_state",
+            "address_city",
+            "country_code",
+            "salutation",
+            "is_authenticated_payment_agent",
+            "phone",
+            "address_line_2",
+            "first_name",
+            "account_opening_reason",
+            "non_pep_declaration",
+            "immutable_fields",
+            "preferred_language",
+            "trading_hub",
+            "phone_number_verification"
+         ],
+         "properties" : {
+            "address_line_1" : {
+               "type" : "string",
+               "pattern" : "^20 Broadway Av$"
+            },
+            "last_name" : {
+               "type" : "string",
+               "pattern" : "^Pan$"
+            },
+            "email" : {
+               "type" : "string",
+               "enum" : [
+                  "test1@binary.com",
+                  "test3@binary.com"
+               ]
+            },
+            "address_postcode" : {
+               "type" : "string",
+               "pattern" : "^3002$"
+            },
+            "email_consent" : {
+               "enum" : [0,1],
+               "type" : "integer"
+            },
+            "date_of_birth" : {
+               "type" : "integer",
+               "enum" : [
+                  318124800, 
+                  349747200
+               ]
+            },
+            "client_tnc_status" : {
+               "type" : "string",
+               "pattern" : "^Version \\d{2} \\d{4}-\\d{2}-\\d{2}$"
+            },
+            "country" : {
+               "type" : "string",
+               "pattern" : "^Indonesia$"
+            },
+            "address_state" : {
+               "pattern" : "^BT$",
+               "type" : "string"
+            },
+            "address_city" : {
+               "pattern" : "^Melbourne$",
+               "type" : "string"
+            },
+            "country_code" : {
+               "type" : "string",
+               "pattern" : "^id$"
+            },
+            "salutation" : {
+               "type" : "string",
+               "pattern" : "^Mr$"
+            },
+            "is_authenticated_payment_agent" : {
+               "type" : "integer",
+               "pattern" : "^0$"
+            },
+            "phone" : {
+               "pattern" :"^[-.,\\s+()]{0,3}(?:\\d[-.,\\s+()]{0,3}){9,35}$",
+               "type" : "string"
+            },
+            "address_line_2" : {
+               "type" : "string",
+               "pattern" : "^East Melbourne VIC$"
+            },
+            "first_name" : {
+               "type" : "string",
+               "pattern" : "^Peter$"
+            },
+            "account_opening_reason" : {
+               "pattern" : "^Speculative",
+               "type" : "string"
+            },
+            "citizen" : {
+               "type" : "string"
+            },
+            "non_pep_declaration": {
+                "type": "integer",
+                "enum": [
+                    1
+                ]
+            },
+            "fatca_declaration": {
+               "type": [
+                  "integer",
+                  "null"
+               ]
+            },
+            "immutable_fields" : {
+               "type" : "array",
+               "items" : {
+                  "type" : "string"
+               }
+            },
+            "preferred_language" : {
+               "type" : "string",
+               "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+            },
+            "trading_hub" : {
+               "type" : "integer",
+               "enum" : [
+                  0,
+                  1
+               ]
+            },
+            "phone_number_verification": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "verified"
+                ],
+                "properties": {
+                    "next_attempt": {
+                        "type": "integer"
+                    },
+                    "next_email_attempt": {
+                        "type": "integer"
+                    },
+                    "next_verify_attempt": {
+                        "type": "integer"
+                    },
+                    "verified": {
+                        "type": "integer",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    }
+                }
+            }
+         }
+      },
+      "echo_req" : {}
+   }
+}
