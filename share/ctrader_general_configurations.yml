@@ -1,0 +1,8 @@
+new_account:
+  max_accounts_limit:
+    real: 5
+    demo: 1
+strategy_provider_group:
+  real_ctrader_all_svg_std_usd: real_standard_group
+  demo_ctrader_all_svg_std_usd: demo_standard_group
+  real_ctrader_all_svg_std_hr_usd: real_standard_group

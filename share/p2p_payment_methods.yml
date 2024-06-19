@@ -1,0 +1,741 @@
+# Configuration of P2P payment methods
+#
+# Main key and field keys must match ^[a-z0-9_]{1,30}$
+# 'fields' is required for main key, must contain at least one field.
+# 'display_name' is required for main key and field keys.
+# 'required' will default to 1 if missing.
+# 'type' will default to "text" if missing.
+# Supported field types: text, memo.
+# 'is_enabled' in not allowed as a field name.
+2checkout:
+  display_name: 2Checkout
+  fields:
+    account:
+      display_name: 2Checkout account
+  type: ewallet
+543konse:
+  display_name: 543 Konse Konse
+  fields:
+    account:
+      display_name: 543 Konse Konse account
+  type: ewallet
+access_money_wallet:
+  display_name: Access Money Wallet
+  fields:
+    account:
+      display_name: Access Money Wallet account
+  type: ewallet
+airtel:
+  display_name: Airtel
+  fields:
+    account:
+      display_name: Airtel account
+  type: ewallet
+alipay:
+  display_name: Alipay
+  fields:
+    account:
+      display_name: Alipay ID
+  type: ewallet
+apple_pay:
+  display_name: Apple Pay
+  fields:
+    account:
+      display_name: Phone number
+  type: ewallet
+atease:
+  display_name: '@ease wallet'
+  fields:
+    account:
+      display_name: '@ease wallet account'
+  type: ewallet
+azimo:
+  display_name: Azimo
+  fields:
+    account:
+      display_name: Azimo account
+  type: ewallet
+bank_transfer:
+  display_name: Bank Transfer
+  fields:
+    account:
+      display_name: Account Number
+    bank_code:
+      display_name: SWIFT or IFSC code
+      required: 0
+    bank_name:
+      display_name: Bank Name
+    branch:
+      display_name: Branch
+      required: 0
+  type: bank
+bitpay:
+  display_name: BitPay
+  fields:
+    account:
+      display_name: BitPay account
+  type: ewallet
+boss_revolution:
+  display_name: Boss Revolution
+  fields:
+    account:
+      display_name: Boss Revolution account
+  type: ewallet
+broadpay:
+  display_name: BroadPay
+  fields:
+    account:
+      display_name: BroadPay account
+  type: ewallet
+btc_smega:
+  display_name: BTC SMEGA
+  fields:
+    account:
+      display_name: BTC SMEGA account
+  type: ewallet
+buyonline:
+  display_name: Buyonline
+  fields:
+    account:
+      display_name: Buyonline account
+  type: ewallet
+carbon:
+  display_name: Carbon
+  fields:
+    account:
+      display_name: Carbon account
+  type: ewallet
+cashenvoy:
+  display_name: Cashenvoy
+  fields:
+    account:
+      display_name: Cashenvoy account
+  type: ewallet
+cassava_remit:
+  display_name: Cassava Remit
+  fields:
+    account:
+      display_name: Cassava Remit account
+  type: ewallet
+cellulant:
+  display_name: Cellulant
+  fields:
+    account:
+      display_name: Cellulant account
+  type: ewallet
+celpaid:
+  display_name: Celpaid
+  fields:
+    account:
+      display_name: Celpaid account
+  type: ewallet
+clicknpay_africa:
+  display_name: ClicknPay
+  fields:
+    account:
+      display_name: ClicknPay account
+  type: ewallet
+clickpesa:
+  display_name: ClickPesa
+  fields:
+    account:
+      display_name: ClickPesa account
+  type: ewallet
+dpo:
+  display_name: DPO
+  fields:
+    account:
+      display_name: DPO account
+  type: ewallet
+dusupay:
+  display_name: DusuPay
+  fields:
+    account:
+      display_name: DusuPay account
+  type: ewallet
+ecobank_mobilemoney:
+  display_name: Ecobank MobileMoney
+  fields:
+    account:
+      display_name: Ecobank MobileMoney account
+  type: ewallet
+ecocash:
+  display_name: EcoCash
+  fields:
+    account:
+      display_name: EcoCash account
+  type: ewallet
+equitel:
+  display_name: Equitel
+  fields:
+    account:
+      display_name: Equitel account
+  type: ewallet
+etranzact:
+  display_name: eTranzact
+  fields:
+    account:
+      display_name: eTranzact account
+  type: ewallet
+ewallet_services_tanzania:
+  display_name: eWallet Services Tanzania
+  fields:
+    account:
+      display_name: eWallet Services Tanzania account
+  type: ewallet
+exchange4free:
+  display_name: Exchange4free
+  fields:
+    account:
+      display_name: Exchange4free account
+  type: ewallet
+firstmonie:
+  display_name: Firstmonie Wallet
+  fields:
+    account:
+      display_name: Firstmonie Wallet account
+  type: ewallet
+flutterwave:
+  display_name: Flutterwave
+  fields:
+    account:
+      display_name: Flutterwave account
+  type: ewallet
+fnb:
+  display_name: FNB eWallet
+  fields:
+    account:
+      display_name: FNB eWallet account
+  type: ewallet
+fortis:
+  display_name: Fortis Mobile Money
+  fields:
+    account:
+      display_name: Fortis Mobile Money account
+  type: ewallet
+gcb:
+  display_name: GCB
+  fields:
+    account:
+      display_name: GCB account
+  type: ewallet
+glo:
+  display_name: Glo
+  fields:
+    account:
+      display_name: Glo account
+  type: ewallet
+google_pay:
+  display_name: Google Pay
+  fields:
+    account:
+      display_name: Phone number or UPID
+  type: ewallet
+gt_pay:
+  display_name: GTPay
+  fields:
+    account:
+      display_name: GTPay account
+  type: ewallet
+halotel:
+  display_name: Halotel HaloPesa
+  fields:
+    account:
+      display_name: Halotel HaloPesa account
+  type: ewallet
+hubtel:
+  display_name: Hubtel
+  fields:
+    account:
+      display_name: Hubtel account
+  type: ewallet
+instacash:
+  display_name: Instacash
+  fields:
+    account:
+      display_name: Instacash account
+  type: ewallet
+inter_pay:
+  display_name: Interpay
+  fields:
+    account:
+      display_name: Interpay account
+  type: ewallet
+ipay:
+  display_name: iPay
+  fields:
+    account:
+      display_name: iPay account
+  type: ewallet
+kazang:
+  display_name: Kazang
+  fields:
+    account:
+      display_name: Kazang account
+  type: ewallet
+konga:
+  display_name: Konga
+  fields:
+    account:
+      display_name: Konga account
+  type: ewallet
+mascom_my_zaka:
+  display_name: Mascom MyZaka
+  fields:
+    account:
+      display_name: Mascom MyZaka account
+  type: ewallet
+mlipa:
+  display_name: M-Lipa
+  fields:
+    account:
+      display_name: M-Lipa account
+  type: ewallet
+mnaira:
+  display_name: m-naira
+  fields:
+    account:
+      display_name: m-naira account
+  type: ewallet
+mobicash:
+  display_name: MobiCash
+  fields:
+    account:
+      display_name: MobiCash account
+  type: ewallet
+mobipay:
+  display_name: MobiPay
+  fields:
+    account:
+      display_name: MobiPay account
+  type: ewallet
+moov:
+  display_name: Moov Money
+  fields:
+    account:
+      display_name: Moov Money account
+  type: ewallet
+mpesa_tanzania:
+  display_name: M-Pesa Tanzania
+  fields:
+    account:
+      display_name: M-Pesa Tanzania account
+  type: ewallet
+mtn_momo:
+  display_name: MTN Mobile Money (MoMo)
+  fields:
+    account:
+      display_name: MTN Mobile Money (MoMo) account
+  type: ewallet
+myghpay:
+  display_name: Myghpay
+  fields:
+    account:
+      display_name: Myghpay account
+  type: ewallet
+netpay:
+  display_name: NetPay
+  fields:
+    account:
+      display_name: NetPay account
+  type: ewallet
+nettcash:
+  display_name: Nettcash
+  fields:
+    account:
+      display_name: Nettcash account
+  type: ewallet
+noqodi:
+  display_name: noqodi
+  fields:
+    account:
+      display_name: noqodi account
+  type: ewallet
+nownow:
+  display_name: NowNow
+  fields:
+    account:
+      display_name: NowNow account
+  type: ewallet
+onemoney:
+  display_name: OneMoney
+  fields:
+    account:
+      display_name: OneMoney account
+  type: ewallet
+opay:
+  display_name: OPay
+  fields:
+    account:
+      display_name: OPay account
+  type: ewallet
+orange_money:
+  display_name: Orange Money
+  fields:
+    account:
+      display_name: Orange Money account
+  type: ewallet
+other:
+  display_name: Other
+  fields:
+    account:
+      display_name: Account ID / phone number / email
+      required: 0
+    name:
+      display_name: Payment method name
+  type: other
+paga:
+  display_name: Paga
+  fields:
+    account:
+      display_name: Paga account
+  type: ewallet
+palmpay:
+  display_name: PalmPay
+  fields:
+    account:
+      display_name: PalmPay account
+  type: ewallet
+paxful:
+  display_name: Paxful
+  fields:
+    account:
+      display_name: Paxful account
+  type: ewallet
+payant:
+  display_name: Payant
+  fields:
+    account:
+      display_name: Payant account
+  type: ewallet
+paygate:
+  display_name: PayGate
+  fields:
+    account:
+      display_name: PayGate account
+  type: ewallet
+paynow:
+  display_name: PayNow
+  fields:
+    account:
+      display_name: PayNow account
+  type: ewallet
+paypal:
+  display_name: PayPal
+  fields:
+    account:
+      display_name: Email or phone number
+  type: ewallet
+payserv:
+  display_name: PayServ Africa
+  fields:
+    account:
+      display_name: PayServ Africa account
+  type: ewallet
+paystack:
+  display_name: Paystack
+  fields:
+    account:
+      display_name: Paystack account
+  type: ewallet
+paytoday:
+  display_name: Paytoday
+  fields:
+    account:
+      display_name: Paytoday account
+  type: ewallet
+pesapel:
+  display_name: Pesapel
+  fields:
+    account:
+      display_name: Pesapel account
+  type: ewallet
+pocketmoni:
+  display_name: PocketMoni
+  fields:
+    account:
+      display_name: PocketMoni account
+  type: ewallet
+posomoney:
+  display_name: PosoMoney
+  fields:
+    account:
+      display_name: PosoMoney account
+  type: ewallet
+postdotnet:
+  display_name: PostDotNet
+  fields:
+    account:
+      display_name: PostDotNet account
+  type: ewallet
+qash:
+  display_name: QASH
+  fields:
+    account:
+      display_name: QASH account
+  type: ewallet
+qless:
+  display_name: QLess
+  fields:
+    account:
+      display_name: QLess account
+  type: ewallet
+quickteller:
+  display_name: Quickteller
+  fields:
+    account:
+      display_name: Quickteller account
+  type: ewallet
+realpay:
+  display_name: RealPay
+  fields:
+    account:
+      display_name: RealPay account
+  type: ewallet
+rocket_remit:
+  display_name: Rocket Remit
+  fields:
+    account:
+      display_name: Rocket Remit account
+  type: ewallet
+safaricom_mpesa:
+  display_name: Safaricom M-PESA
+  fields:
+    account:
+      display_name: Safaricom M-PESA account
+  type: ewallet
+simplepay:
+  display_name: SimplePay
+  fields:
+    account:
+      display_name: SimplePay account
+  type: ewallet
+skrill:
+  display_name: Skrill
+  fields:
+    account:
+      display_name: Email or phone number
+  type: ewallet
+# payment method display_name name has changed but key name: solidpaywave is retained to be consistent with app_settings::payments.p2p.payment_method_countries value in redis
+solidpaywave:
+  display_name: SolidPyco
+  fields:
+    account:
+      display_name: Wallet ID
+  type: ewallet
+speedpay_mobile:
+  display_name: SpeedPay mobile
+  fields:
+    account:
+      display_name: SpeedPay mobile account
+  type: ewallet
+sticpay:
+  display_name: SticPay
+  fields:
+    account:
+      display_name: SticPay account
+  type: ewallet
+stripe:
+  display_name: Stripe
+  fields:
+    account:
+      display_name: Stripe account
+  type: ewallet
+talkremit:
+  display_name: TalkRemit
+  fields:
+    account:
+      display_name: TalkRemit account
+  type: ewallet
+tangaza_pesa:
+  display_name: Tangaza Pesa
+  fields:
+    account:
+      display_name: Tangaza Pesa account
+  type: ewallet
+teasy_mobile_money:
+  display_name: Teasy Mobile Money
+  fields:
+    account:
+      display_name: Teasy Mobile Money account
+  type: ewallet
+telecash:
+  display_name: TeleCash
+  fields:
+    account:
+      display_name: TeleCash account
+  type: ewallet
+terrapay:
+  display_name: TerraPay
+  fields:
+    account:
+      display_name: TerraPay account
+  type: ewallet
+tigo_pesa:
+  display_name: Tigo Pesa
+  fields:
+    account:
+      display_name: Tigo Pesa account
+  type: ewallet
+tilt_africa:
+  display_name: Tilt Africa
+  fields:
+    account:
+      display_name: Tilt Africa account
+  type: ewallet
+transferwise:
+  display_name: TransferWise
+  fields:
+    account:
+      display_name: TransferWise account
+  type: ewallet
+upi:
+  display_name: Unified Payments Interface (UPI)
+  fields:
+    account :
+      display_name: UPI ID 
+  type: bank
+united_bank_of_zambia_ewallet:
+  display_name: United Bank of Zambia E-wallet
+  fields:
+    account:
+      display_name: United Bank of Zambia E-wallet account
+  type: ewallet
+unitylink:
+  display_name: Unitylink
+  fields:
+    account:
+      display_name: Unitylink account
+  type: ewallet
+vcash:
+  display_name: VCash
+  fields:
+    account:
+      display_name: VCash account
+  type: ewallet
+vodafone_cash:
+  display_name: Vodafone Cash
+  fields:
+    account:
+      display_name: Vodafone Cash account
+  type: ewallet
+voguepay:
+  display_name: Voguepay
+  fields:
+    account:
+      display_name: Voguepay account
+  type: ewallet
+wari:
+  display_name: Wari
+  fields:
+    account:
+      display_name: Wari account
+  type: ewallet
+wave_mobile_money:
+  display_name: Wave Mobile Money
+  fields:
+    account:
+      display_name: Wave Mobile Money account
+  type: ewallet
+webmoney:
+  display_name: WebMoney
+  fields:
+    account:
+      display_name: WM Purse Number
+  type: ewallet
+wechat_pay:
+  display_name: WeChat Pay
+  fields:
+    account:
+      display_name: Phone number
+  type: ewallet
+xapit_zanaco:
+  display_name: Xapit (Zanaco bank mobile banking)
+  fields:
+    account:
+      display_name: Xapit (Zanaco bank mobile banking) account
+  type: ewallet
+xendpay:
+  display_name: XendPay
+  fields:
+    account:
+      display_name: XendPay account
+  type: ewallet
+xoom:
+  display_name: Xoom
+  fields:
+    account:
+      display_name: Xoom account
+  type: ewallet
+xpress_money:
+  display_name: Xpress Money
+  fields:
+    account:
+      display_name: Xpress Money account
+  type: ewallet
+yucash:
+  display_name: YuCash
+  fields:
+    account:
+      display_name: YuCash account
+  type: ewallet
+yup_africa:
+  display_name: YUP Africa
+  fields:
+    account:
+      display_name: YUP Africa account
+  type: ewallet
+zamlink:
+  display_name: ZamLink
+  fields:
+    account:
+      display_name: ZamLink account
+  type: ewallet
+zamtel:
+  display_name: ZamTel
+  fields:
+    account:
+      display_name: ZamTel account
+  type: ewallet
+zantel:
+  display_name: Zantel
+  fields:
+    account:
+      display_name: Zantel account
+  type: ewallet
+zazu:
+  display_name: Zazu
+  fields:
+    account:
+      display_name: Zazu account
+  type: ewallet
+zim_switch:
+  display_name: Zimswitch
+  fields:
+    account:
+      display_name: Zimswitch account
+  type: ewallet
+zimpayments:
+  display_name: ZimPayments
+  fields:
+    account:
+      display_name: ZimPayments account
+  type: ewallet
+zoona:
+  display_name: Zoona
+  fields:
+    account:
+      display_name: Zoona account
+  type: ewallet
+zotapay:
+  display_name: ZotaPay
+  fields:
+    account:
+      display_name: ZotaPay account
+  type: ewallet
+zympay:
+  display_name: ZymPay
+  fields:
+    account:
+      display_name: ZymPay account
+  type: ewallet

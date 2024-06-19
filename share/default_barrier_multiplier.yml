@@ -1,0 +1,4 @@
+# This file is to set the default barrier multiplier for barrier calculation
+callputspread:
+  middle: 0.1
+  wide: 1

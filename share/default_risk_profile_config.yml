@@ -1,0 +1,67 @@
+---
+extreme_risk:
+  USD: 50
+  EUR: 50
+  AUD: 50
+  GBP: 50
+  BTC: 0.0008
+  ETH: 0.0125
+  LTC: 0.2250
+  XRP: 90
+  USDC: 50
+  UST: 50
+  eUSDT: 50
+  tUSDT: 50
+high_risk:
+  USD: 200
+  EUR: 200
+  AUD: 200
+  GBP: 200
+  BTC: 0.003
+  ETH: 0.05
+  LTC: 0.9
+  XRP: 365
+  USDC: 200
+  UST: 200
+  eUSDT: 200
+  tUSDT: 200
+moderate_risk:
+  USD: 500
+  EUR: 500
+  AUD: 500
+  GBP: 500
+  BTC: 0.0075
+  ETH: 0.125
+  LTC: 2.25
+  XRP: 910
+  USDC: 500
+  UST: 500
+  eUSDT: 500
+  tUSDT: 500
+medium_risk:
+  USD: 1000
+  EUR: 1000
+  AUD: 1000
+  GBP: 1000
+  BTC: 0.015
+  ETH: 0.25
+  LTC: 4.5
+  XRP: 1820
+  USDC: 1000
+  UST: 1000
+  eUSDT: 1000
+  tUSDT: 1000
+low_risk:
+  USD: 2000
+  EUR: 2000
+  AUD: 2000
+  GBP: 2000
+  BTC: 0.03
+  ETH: 0.5
+  LTC: 9
+  XRP: 3640
+  USDC: 2000
+  UST: 2000
+  eUSDT: 2000
+  tUSDT: 2000
+

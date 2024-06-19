@@ -1,0 +1,33 @@
+payment_limits:
+  fiat:
+      minimum: 10
+      maximum: 2000
+  crypto:
+      minimum: 0.002
+      maximum: 5
+currency_specific_limits:
+    USDC:
+      minimum: 10
+      maximum: 2000
+    UST:
+      minimum: 10
+      maximum: 2000
+    eUSDT:
+      minimum: 10
+      maximum: 2000
+    tUSDT:
+      minimum: 10
+      maximum: 2000
+minimum_topup_balance:
+  DEFAULT: 1000
+transaction_limits:
+  transfer:
+    transactions_per_day: 1000
+    amount_in_usd_per_day: 200000
+  withdraw:
+    weekday:
+      transactions_per_day: 20
+      amount_in_usd_per_day: 5000
+    weekend:
+      transactions_per_day: 20
+      amount_in_usd_per_day: 1500

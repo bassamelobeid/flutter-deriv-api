@@ -1,0 +1,1305 @@
+AAL:
+  availability:
+  - eu
+  - row
+  display_name: American Airlines Group Inc.
+  display_order: 10000
+  market: stocks
+AAPL:
+  availability:
+  - eu
+  - row
+  display_name: Apple (AAPL)
+  display_order: 4
+  market: indices
+  type: brief
+ABNB:
+  availability:
+  - eu
+  - row
+  display_name: Airbnb Inc.
+  display_order: 10000
+  market: stocks
+ADAUSD:
+  availability:
+  - eu
+  - row
+  display_name: ADA/USD
+  display_order: 6
+  market: cryptocurrency
+  type: brief
+ADS:
+  availability:
+  - eu
+  - row
+  display_name: Adidas AG
+  display_order: 10000
+  market: stocks
+AIG:
+  availability:
+  - eu
+  - row
+  display_name: American International Group Inc.
+  display_order: 10000
+  market: stocks
+AIR:
+  availability:
+  - eu
+  - row
+  display_name: Airbus SE
+  display_order: 10000
+  market: stocks
+AIRF:
+  availability:
+  - eu
+  - row
+  display_name: Air France KLM SA
+  display_order: 10000
+  market: stocks
+ALGUSD:
+  availability:
+  - eu
+  - row
+  display_name: ALG/USD
+  display_order: 10000
+  market: cryptocurrency
+AMD:
+  availability:
+  - eu
+  - row
+  display_name: Advanced Micro Devices Inc
+  display_order: 10000
+  market: stocks
+AMZN:
+  availability:
+  - eu
+  - row
+  display_name: Amazon.com
+  display_order: 10000
+  market: stocks
+AUDCAD:
+  availability:
+  - eu
+  - row
+  display_name: AUD/CAD
+  display_order: 10000
+  market: forex
+AUDCADmicro:
+  availability:
+  - eu
+  - row
+  display_name: AUD/CAD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+AUDCHF:
+  availability:
+  - eu
+  - row
+  display_name: AUD/CHF
+  display_order: 10000
+  market: forex
+AUDCHFmicro:
+  availability:
+  - eu
+  - row
+  display_name: AUD/CHF micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+AUDJPY:
+  availability:
+  - eu
+  - row
+  display_name: AUD/JPY
+  display_order: 10000
+  market: forex
+AUDJPYmicro:
+  availability:
+  - eu
+  - row
+  display_name: AUD/JPY micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+AUDNZD:
+  availability:
+  - eu
+  - row
+  display_name: AUD/NZD
+  display_order: 10000
+  market: forex
+AUDNZDmicro:
+  availability:
+  - eu
+  - row
+  display_name: AUD/NZD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+AUDUSD:
+  availability:
+  - eu
+  - row
+  display_name: AUD/USD
+  display_order: 5
+  market: forex
+  type: brief
+AUDUSDmicro:
+  availability:
+  - eu
+  - row
+  display_name: AUD/USD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+AUS_200:
+  availability:
+  - eu
+  - row
+  display_name: Australian Index
+  display_order: 10000
+  market: indices
+AVAUSD:
+  availability:
+  - eu
+  - row
+  display_name: AVA/USD
+  display_order: 10000
+  market: cryptocurrency
+BA:
+  availability:
+  - eu
+  - row
+  display_name: Boeing
+  display_order: 10000
+  market: stocks
+BABA:
+  availability:
+  - eu
+  - row
+  display_name: Alibaba Group Holding (BABA)
+  display_order: 10000
+  market: stocks
+  type: brief
+BAC:
+  availability:
+  - eu
+  - row
+  display_name: Bank of America Corporation
+  display_order: 10000
+  market: stocks
+BATUSD:
+  availability:
+  - eu
+  - row
+  display_name: BAT/USD
+  display_order: 10000
+  market: cryptocurrency
+BAY:
+  availability:
+  - eu
+  - row
+  display_name: Bayer AG
+  display_order: 10000
+  market: stocks
+BCHUSD:
+  availability:
+  - eu
+  - row
+  display_name: BCH/USD
+  display_order: 10000
+  market: cryptocurrency
+BCHUSD.conv:
+  availability:
+  - eu
+  - row
+  display_name: BCH/USD conv
+  display_order: 10000
+  enabled: 0
+  market: crypto
+BIIB:
+  availability:
+  - eu
+  - row
+  display_name: Biogen Biogen Inc
+  display_order: 10000
+  market: stocks
+BMW:
+  availability:
+  - eu
+  - row
+  display_name: BMW
+  display_order: 10000
+  market: stocks
+BNBUSD:
+  availability:
+  - eu
+  - row
+  display_name: BNB/USD
+  display_order: 10000
+  market: cryptocurrency
+BOSS:
+  availability:
+  - eu
+  - row
+  display_name: Hugo Boss AG
+  display_order: 10000
+  market: stocks
+BTCETH:
+  availability:
+  - eu
+  - row
+  display_name: BTC/ETH
+  display_order: 10000
+  market: cryptocurrency
+BTCLTC:
+  availability:
+  - eu
+  - row
+  display_name: BTC/LTC
+  display_order: 10000
+  market: cryptocurrency
+BTCUSD:
+  availability:
+  - eu
+  - row
+  display_name: BTC/USD
+  display_order: 1
+  market: cryptocurrency
+  type: brief
+BTCUSD.conv:
+  availability:
+  - eu
+  - row
+  display_name: BTC/USD conv
+  display_order: 10000
+  enabled: 0
+  market: crypto
+Boom 300 Index:
+  availability:
+  - eu
+  display_name: Boom 300 Index
+  display_order: 1
+  market: derived
+  type: brief
+C:
+  availability:
+  - eu
+  - row
+  display_name: Citigroup Inc
+  display_order: 10000
+  market: stocks
+CADCHF:
+  availability:
+  - eu
+  - row
+  display_name: CAD/CHF
+  display_order: 10000
+  market: forex
+CADJPY:
+  availability:
+  - eu
+  - row
+  display_name: CAD/JPY
+  display_order: 10000
+  market: forex
+CHFJPY:
+  availability:
+  - eu
+  - row
+  display_name: CHF/JPY
+  display_order: 10000
+  market: forex
+CONG:
+  availability:
+  - eu
+  - row
+  display_name: Continental AG
+  display_order: 10000
+  market: stocks
+CRM:
+  availability:
+  - eu
+  - row
+  display_name: Salesforce
+  display_order: 10000
+  market: stocks
+CSCO:
+  availability:
+  - eu
+  - row
+  display_name: Cisco Systems Inc.
+  display_order: 10000
+  market: stocks
+Crash 1000 Index:
+  availability:
+  - row
+  display_name: Crash 1000 Index
+  display_order: 2
+  market: derived
+  type: brief
+Crash 300 Index:
+  availability:
+  - eu
+  display_name: Crash 300 Index
+  display_order: 2
+  market: derived
+  type: brief
+DAL:
+  availability:
+  - eu
+  - row
+  display_name: Delta Air Lines Inc.
+  display_order: 10000
+  market: stocks
+DAX_40:
+  availability:
+  - eu
+  - row
+  display_name: Germany 40
+  display_order: 10000
+  market: indices
+  type: brief
+DBK:
+  availability:
+  - eu
+  - row
+  display_name: Deutsche Bank
+  display_order: 10000
+  market: stocks
+DIS:
+  availability:
+  - eu
+  - row
+  display_name: Walt Disney Co (DIS)
+  display_order: 5
+  market: indices
+  type: brief
+DOGUSD:
+  availability:
+  - eu
+  - row
+  display_name: DOG/USD
+  display_order: 5
+  market: cryptocurrency
+DOTUSD:
+  availability:
+  - eu
+  - row
+  display_name: DOT/USD
+  display_order: 10000
+  market: cryptocurrency
+DSHUSD:
+  availability:
+  - eu
+  - row
+  display_name: DSH/USD
+  display_order: 4
+  market: cryptocurrency
+  type: brief
+EBAY:
+  availability:
+  - eu
+  - row
+  display_name: eBay Inc.
+  display_order: 10000
+  market: stocks
+EOSUSD:
+  availability:
+  - eu
+  - row
+  display_name: EOS/USD
+  display_order: 10000
+  market: cryptocurrency
+ESP_35:
+  availability:
+  - eu
+  - row
+  display_name: Spanish Index
+  display_order: 10000
+  market: indices
+ETCUSD:
+  availability:
+  - eu
+  - row
+  display_name: ETC/USD
+  display_order: 10000
+  market: cryptocurrency
+ETHUSD:
+  availability:
+  - eu
+  - row
+  display_name: ETH/USD
+  display_order: 2
+  market: cryptocurrency
+  type: brief
+ETHUSD.conv:
+  availability:
+  - eu
+  - row
+  display_name: ETH/USD conv
+  display_order: 10000
+  enabled: 0
+  market: crypto
+EURAUD:
+  availability:
+  - eu
+  - row
+  display_name: EUR/AUD
+  display_order: 10000
+  market: forex
+EURAUDmicro:
+  availability:
+  - eu
+  - row
+  display_name: EUR/AUD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+EURCAD:
+  availability:
+  - eu
+  - row
+  display_name: EUR/CAD
+  display_order: 10000
+  market: forex
+EURCADmicro:
+  availability:
+  - eu
+  - row
+  display_name: EUR/CAD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+EURCHF:
+  availability:
+  - eu
+  - row
+  display_name: EUR/CHF
+  display_order: 10000
+  market: forex
+EURCHFmicro:
+  availability:
+  - eu
+  - row
+  display_name: EUR/CHF micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+EURGBP:
+  availability:
+  - eu
+  - row
+  display_name: EUR/GBP
+  display_order: 10000
+  market: forex
+EURGBPmicro:
+  availability:
+  - eu
+  - row
+  display_name: EUR/GBP micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+EURJPY:
+  availability:
+  - eu
+  - row
+  display_name: EUR/JPY
+  display_order: 10000
+  market: forex
+EURJPYmicro:
+  availability:
+  - eu
+  - row
+  display_name: EUR/JPY micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+EURNOK:
+  availability:
+  - eu
+  - row
+  display_name: EUR/NOK
+  display_order: 10000
+  market: forex
+EURNZD:
+  availability:
+  - eu
+  - row
+  display_name: EUR/NZD
+  display_order: 10000
+  market: forex
+EURNZDmicro:
+  availability:
+  - eu
+  - row
+  display_name: EUR/NZD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+EURPLN:
+  availability:
+  - eu
+  - row
+  display_name: EUR/PLN
+  display_order: 10000
+  market: forex
+EURSEK:
+  availability:
+  - eu
+  - row
+  display_name: EUR/SEK
+  display_order: 10000
+  market: forex
+EURUSD:
+  availability:
+  - eu
+  - row
+  display_name: EUR/USD
+  display_order: 1
+  market: forex
+  type: brief
+EURUSD DFX 10 Index:
+  availability:
+  - row
+  display_name: EUR/USD DFX 10 Index
+  display_order: 3
+  market: derived
+  type: brief
+EURUSDmicro:
+  availability:
+  - eu
+  - row
+  display_name: EUR/USD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+EUR_50:
+  availability:
+  - eu
+  - row
+  display_name: Euro 50 Index
+  display_order: 10000
+  market: indices
+FB:
+  availability:
+  - eu
+  - row
+  display_name: Facebook
+  display_order: 10000
+  market: stocks
+FDX:
+  availability:
+  - eu
+  - row
+  display_name: FedEx
+  display_order: 10000
+  market: stocks
+FILUSD:
+  availability:
+  - eu
+  - row
+  display_name: FIL/USD
+  display_order: 10000
+  market: cryptocurrency
+FOX:
+  availability:
+  - eu
+  - row
+  display_name: Fox Corporation B
+  display_order: 10000
+  market: stocks
+FRA_40:
+  availability:
+  - eu
+  - row
+  display_name: French Index
+  display_order: 10000
+  market: indices
+GBPAUD:
+  availability:
+  - eu
+  - row
+  display_name: GBP/AUD
+  display_order: 10000
+  market: forex
+GBPCAD:
+  availability:
+  - eu
+  - row
+  display_name: GBP/CAD
+  display_order: 10000
+  market: forex
+GBPCHF:
+  availability:
+  - eu
+  - row
+  display_name: GBP/CHF
+  display_order: 10000
+  market: forex
+GBPCHFmicro:
+  availability:
+  - eu
+  - row
+  display_name: GBP/CHF micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+GBPJPY:
+  availability:
+  - eu
+  - row
+  display_name: GBP/JPY
+  display_order: 3
+  market: forex
+  type: brief
+GBPJPYmicro:
+  availability:
+  - eu
+  - row
+  display_name: GBP/JPY micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+GBPNOK:
+  availability:
+  - eu
+  - row
+  display_name: GBP/NOK
+  display_order: 10000
+  market: forex
+GBPNZD:
+  availability:
+  - eu
+  - row
+  display_name: GBP/NZD
+  display_order: 10000
+  market: forex
+GBPSEK:
+  availability:
+  - eu
+  - row
+  display_name: GBP/SEK
+  display_order: 10000
+  market: forex
+GBPUSD:
+  availability:
+  - eu
+  - row
+  display_name: GBP/USD
+  display_order: 2
+  market: forex
+  type: brief
+GBPUSDmicro:
+  availability:
+  - eu
+  - row
+  display_name: GBP/USD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+GM:
+  availability:
+  - eu
+  - row
+  display_name: General Motors Company
+  display_order: 10000
+  market: stocks
+GOOG:
+  availability:
+  - eu
+  - row
+  display_name: Alphabet Inc (GOOG)
+  display_order: 10000
+  market: stocks
+  type: brief
+GS:
+  availability:
+  - eu
+  - row
+  display_name: Goldman Sachs Group Inc
+  display_order: 10000
+  market: stocks
+HD:
+  availability:
+  - eu
+  - row
+  display_name: Home Depot Inc
+  display_order: 10000
+  market: stocks
+HPQ:
+  availability:
+  - eu
+  - row
+  display_name: HP Inc
+  display_order: 10000
+  market: stocks
+IBM:
+  availability:
+  - eu
+  - row
+  display_name: IBM
+  display_order: 10000
+  market: stocks
+INTC:
+  availability:
+  - eu
+  - row
+  display_name: Intel
+  display_order: 10000
+  market: stocks
+IOTUSD:
+  availability:
+  - eu
+  - row
+  display_name: IOT/USD
+  display_order: 10000
+  market: cryptocurrency
+JNJ:
+  availability:
+  - eu
+  - row
+  display_name: Johnson & Johnson
+  display_order: 10000
+  market: stocks 
+JPM:
+  availability:
+  - eu
+  - row
+  display_name: JP Morgan Chase & Co.
+  display_order: 10000
+  market: stocks
+JP_225:
+  availability:
+  - eu
+  - row
+  display_name: Japanese 225
+  display_order: 10000
+  market: indices
+  type: brief
+Jump 50 Index:
+  availability:
+  - row
+  display_name: Jump 50 Index
+  display_order: 4
+  market: derived
+  type: brief
+KO:
+  availability:
+  - eu
+  - row
+  display_name: Coca-Cola Co
+  display_order: 10000
+  market: stocks
+LHAG:
+  availability:
+  - eu
+  - row
+  display_name: Lufthansa AG
+  display_order: 10000
+  market: stocks
+LNKUSD:
+  availability:
+  - eu
+  - row
+  display_name: LNK/USD
+  display_order: 10000
+  market: cryptocurrency
+LTCUSD:
+  availability:
+  - eu
+  - row
+  display_name: LTC/USD
+  display_order: 3
+  market: cryptocurrency
+  type: brief
+LTCUSD.conv:
+  availability:
+  - eu
+  - row
+  display_name: LTC/USD conv
+  display_order: 10000
+  enabled: 0
+  market: crypto
+MA:
+  availability:
+  - eu
+  - row
+  display_name: Mastercard
+  display_order: 10000
+  market: stocks
+MCD:
+  availability:
+  - eu
+  - row
+  display_name: McDonald's
+  display_order: 10000
+  market: stocks
+MKRUSD:
+  availability:
+  - eu
+  - row
+  display_name: MKR/USD
+  display_order: 10000
+  market: cryptocurrency
+MRNA:
+  availability:
+  - eu
+  - row
+  display_name: Moderna Inc
+  display_order: 10000
+  market: stocks
+MSFT:
+  availability:
+  - eu
+  - row
+  display_name: Microsoft
+  display_order: 10000
+  market: stocks
+MTCUSD:
+  availability:
+  - eu
+  - row
+  display_name: MTC/USD
+  display_order: 10000
+  market: cryptocurrency
+NED_25:
+  availability:
+  - eu
+  - row
+  display_name: Dutch Index
+  display_order: 10000
+  market: indices
+NEOUSD:
+  availability:
+  - eu
+  - row
+  display_name: NEO/USD
+  display_order: 10000
+  market: cryptocurrency
+NESN:
+  availability:
+  - eu
+  - row
+  display_name: Nestle SA
+  display_order: 10000
+  market: stocks
+NFLX:
+  availability:
+  - eu
+  - row
+  display_name: NetFlix Inc
+  display_order: 10000
+  market: stocks
+NKE:
+  availability:
+  - eu
+  - row
+  display_name: Nike Inc.
+  display_order: 10000
+  market: stocks
+NOVN:
+  availability:
+  - eu
+  - row
+  display_name: Novartis AG
+  display_order: 10000
+  market: stocks
+NVDA:
+  availability:
+  - eu
+  - row
+  display_name: Nvidia (NVDA)
+  display_order: 10000
+  market: stocks
+  type: brief
+NZDCAD:
+  availability:
+  - eu
+  - row
+  display_name: NZD/CAD
+  display_order: 10000
+  market: forex
+NZDJPY:
+  availability:
+  - eu
+  - row
+  display_name: NZD/JPY
+  display_order: 10000
+  market: forex
+NZDUSD:
+  availability:
+  - eu
+  - row
+  display_name: NZD/USD
+  display_order: 10000
+  market: forex
+NZDUSDmicro:
+  availability:
+  - eu
+  - row
+  display_name: NZD/USD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+OMGUSD:
+  availability:
+  - eu
+  - row
+  display_name: OMG/USD
+  display_order: 10000
+  market: cryptocurrency
+PEP:
+  availability:
+  - eu
+  - row
+  display_name: PepsiCo Inc
+  display_order: 10000
+  market: stocks
+PFE:
+  availability:
+  - eu
+  - row
+  display_name: Pfizer Inc
+  display_order: 10000
+  market: stocks
+PG:
+  availability:
+  - eu
+  - row
+  display_name: Procter & Gamble
+  display_order: 10000
+  market: stocks
+PSHG:
+  availability:
+  - eu
+  - row
+  display_name: Porsche Automobil Holding SE Stock
+  display_order: 10000
+  market: stocks
+PUMG:
+  availability:
+  - eu
+  - row
+  display_name: Puma SE
+  display_order: 10000
+  market: stocks
+PYPL:
+  availability:
+  - eu
+  - row
+  display_name: Paypal
+  display_order: 10000
+  market: stocks
+Range Break 200 Index:
+  availability:
+  - row
+  display_name: Range Break 200 Index
+  display_order: 6
+  market: derived
+  type: brief
+SOLUSD:
+  availability:
+  - eu
+  - row
+  display_name: SOL/USD
+  display_order: 10000
+  market: cryptocurrency
+SONY:
+  availability:
+  - eu
+  - row
+  display_name: Sony Corporation
+  display_order: 10000
+  market: stocks
+Step Index:
+  availability:
+  - row
+  display_name: Step Index
+  display_order: 5
+  market: derived
+  type: brief
+TEVA:
+  availability:
+  - eu
+  - row
+  display_name: Teva Pharmaceutical Industries Limited
+  display_order: 10000
+  market: stocks
+TRXUSD:
+  availability:
+  - eu
+  - row
+  display_name: TRX/USD
+  display_order: 10000
+  market: cryptocurrency
+TSLA:
+  availability:
+  - eu
+  - row
+  display_name: Tesla (TSLA)
+  display_order: 3
+  market: indices
+  type: brief
+UBER:
+  availability:
+  - eu
+  - row
+  display_name: Uber Technologies Inc
+  display_order: 10000
+  market: stocks
+UK_100:
+  availability:
+  - eu
+  - row
+  display_name: UK 100
+  display_order: 10000
+  market: indices
+  type: brief
+UNIUSD:
+  availability:
+  - eu
+  - row
+  display_name: UNI/USD
+  display_order: 10000
+  market: cryptocurrency
+USDCAD:
+  availability:
+  - eu
+  - row
+  display_name: USD/CAD
+  display_order: 6
+  market: forex
+  type: brief
+USDCADmicro:
+  availability:
+  - eu
+  - row
+  display_name: USD/CAD micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+USDCHF:
+  availability:
+  - eu
+  - row
+  display_name: USD/CHF
+  display_order: 10000
+  market: forex
+USDCHFmicro:
+  availability:
+  - eu
+  - row
+  display_name: USD/CHF micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+USDCNH:
+  availability:
+  - eu
+  - row
+  display_name: USD/CNH
+  display_order: 10000
+  market: forex
+USDJPY:
+  availability:
+  - eu
+  - row
+  display_name: USD/JPY
+  display_order: 4
+  market: forex
+  type: brief
+USDJPYmicro:
+  availability:
+  - eu
+  - row
+  display_name: USD/JPY micro
+  display_order: 10000
+  enabled: 0
+  market: forex
+USDMXN:
+  availability:
+  - eu
+  - row
+  display_name: USD/MXN
+  display_order: 10000
+  market: forex
+USDNOK:
+  availability:
+  - eu
+  - row
+  display_name: USD/NOK
+  display_order: 10000
+  market: forex
+USDPLN:
+  availability:
+  - eu
+  - row
+  display_name: USD/PLN
+  display_order: 10000
+  market: forex
+USDSEK:
+  availability:
+  - eu
+  - row
+  display_name: USD/SEK
+  display_order: 10000
+  market: forex
+USDZAR:
+  availability:
+  - eu
+  - row
+  display_name: USD/ZAR
+  display_order: 10000
+  market: forex
+US_100:
+  availability:
+  - eu
+  - row
+  display_name: US Tech 100
+  display_order: 2
+  market: indices
+  type: brief
+US_30:
+  availability:
+  - eu
+  - row
+  display_name: Wall Street 30
+  display_order: 1
+  market: indices
+  type: brief
+US_500:
+  availability:
+  - eu
+  - row
+  display_name: US 500
+  display_order: 10000
+  market: indices
+  type: brief
+V:
+  availability:
+  - eu
+  - row
+  display_name: Visa Inc
+  display_order: 10000
+  market: stocks
+Volatility 75 Index:
+  availability:
+  - row
+  display_name: Volatility 75 Index
+  display_order: 1
+  market: derived
+  type: brief
+Volatility 150 (1s) Index:
+  availability:
+  - eu
+  display_name: Volatility 150 (1s) Index
+  display_order: 3
+  market: derived
+  type: brief
+Volatility 250 (1s) Index:
+  availability:
+  - eu
+  display_name: Volatility 250 (1s) Index
+  display_order: 4
+  market: derived
+  type: brief
+WMT:
+  availability:
+  - eu
+  - row
+  display_name: Wal-Mart Stores Inc.
+  display_order: 10000
+  market: stocks
+WTI_OIL:
+  availability:
+  - eu
+  - row
+  display_name: West Texas Intermediate
+  display_order: 6
+  market: commodities
+  type: brief
+XAGUSD:
+  availability:
+  - eu
+  - row
+  display_name: Silver/USD
+  display_order: 2
+  market: commodities
+  type: brief
+XAUUSD:
+  availability:
+  - eu
+  - row
+  display_name: Gold/USD
+  display_order: 1
+  market: commodities
+  type: brief
+XCUUSD:
+  availability:
+  - eu
+  - row
+  display_name: Copper/USD
+  display_order: 5
+  market: commodities
+  type: brief
+XLMUSD:
+  availability:
+  - eu
+  - row
+  display_name: XLM/USD
+  display_order: 10000
+  market: cryptocurrency
+XMRUSD:
+  availability:
+  - eu
+  - row
+  display_name: XMR/USD
+  display_order: 10000
+  market: cryptocurrency
+XPDUSD:
+  availability:
+  - eu
+  - row
+  display_name: Palladium/USD
+  display_order: 4
+  market: commodities
+  type: brief
+XPTUSD:
+  availability:
+  - eu
+  - row
+  display_name: Platinum/USD
+  display_order: 3
+  market: commodities
+  type: brief
+XRPUSD:
+  availability:
+  - eu
+  - row
+  display_name: XRP/USD
+  display_order: 10000
+  market: cryptocurrency
+XTZUSD:
+  availability:
+  - eu
+  - row
+  display_name: XTZ/USD
+  display_order: 10000
+  market: cryptocurrency
+ZECUSD:
+  availability:
+  - eu
+  - row
+  display_name: ZEC/USD
+  display_order: 10000
+  market: cryptocurrency
+ZM:
+  availability:
+  - eu
+  - row
+  display_name: Zoom Video Communications
+  display_order: 10000
+  market: stocks

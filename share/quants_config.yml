@@ -1,0 +1,594 @@
+commission:
+  intraday:
+    historical_fixed: 0.02
+    historical_vol_meanrev: 0.10
+  digital_spread:
+    level_multiplier: 1.4
+  adjustment:
+    forward_start_factor: 1.5
+
+# The following limits are all uniformed to USD currency.
+# They will be dynamically exchanged to their currency with up to date exchange rate values.
+
+default_stake:
+  USD: 10
+  EUR: 10
+  AUD: 10
+  GBP: 10
+  BTC: 10
+  ETH: 10
+  LTC: 10
+  XRP: 10
+  USDC: 10
+  UST: 10
+  eUSDT: 10
+  tUSDT: 10
+
+bet_limits:
+  holiday_blackout_start: 345
+  holiday_blackout_end: 5
+  inefficient_period_payout_max:
+    USD: 200
+    EUR: 200
+    AUD: 200
+    GBP: 200
+    BTC: 200
+    ETH: 200
+    LTC: 200
+    XRP: 200
+    USDC: 200
+    UST: 200
+    eUSDT: 200
+    tUSDT: 200
+
+  min_payout:
+    default_landing_company:
+      default_market:
+        default_contract_category:
+          USD: 0.01
+          EUR: 0.01
+          AUD: 0.01
+          GBP: 0.01
+          BTC: 0.01
+          ETH:  0.01
+          LTC:  0.01
+          XRP: 0.01
+          USDC: 0.01
+          UST: 0.01
+          eUSDT: 0.01
+          tUSDT: 0.01
+        callputspread:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 1
+          ETH: 1
+          LTC: 1
+          XRP: 1
+          UST: 1
+          USDC: 1
+          eUSDT: 1
+          tUSDT: 1
+  max_payout:
+    default_landing_company:
+      default_market:
+        default_contract_category:
+          USD: 50000
+          EUR: 50000
+          AUD: 50000
+          GBP: 50000
+          BTC: 50000
+          ETH: 50000
+          LTC: 50000
+          XRP: 50000
+          USDC: 5000
+          UST: 5000
+          eUSDT: 5000
+          tUSDT: 5000
+        runs:
+          USD: 10000
+          EUR: 10000
+          AUD: 10000
+          GBP: 10000
+          BTC: 10000
+          ETH: 10000
+          LTC: 10000
+          XRP: 10000
+          USDC: 1000
+          UST: 1000
+          eUSDT: 1000
+          tUSDT: 1000
+        digits:
+          USD: 30000
+          EUR: 30000
+          AUD: 30000
+          GBP: 30000
+          BTC: 30000
+          ETH: 30000
+          LTC: 30000
+          XRP: 30000
+          USDC: 5000
+          UST: 5000
+          eUSDT: 5000
+          tUSDT: 5000
+  min_stake:
+    default_landing_company:
+      default_market:
+        default_contract_category:
+          USD: 0.5
+          EUR: 0.5
+          AUD: 0.5
+          GBP: 0.5
+          BTC: 0.5
+          ETH: 0.5
+          LTC: 0.5
+          XRP: 0.5
+          USDC: 0.5
+          UST: 0.5
+          eUSDT: 0.5
+          tUSDT: 0.5
+        multiplier:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 1
+          ETH: 1
+          LTC: 1
+          XRP: 1
+          USDC: 1
+          UST: 1
+          eUSDT: 1
+          tUSDT: 1
+        accumulator:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 1
+          ETH: 1
+          LTC: 1
+          XRP: 1
+          USDC: 1
+          UST: 1
+          eUSDT: 1
+          tUSDT: 1
+      synthetic_index:
+        default_contract_category:
+          USD: 0.35
+          EUR: 0.35
+          AUD: 0.35
+          GBP: 0.35
+          BTC: 0.35
+          ETH: 0.35
+          LTC: 0.35
+          XRP: 0.35
+          USDC: 0.35
+          UST: 0.35
+          eUSDT: 0.35
+          tUSDT: 0.35
+        multiplier:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 1
+          ETH: 1
+          LTC: 1
+          XRP: 1
+          USDC: 1
+          UST: 1
+          eUSDT: 1
+          tUSDT: 1
+        accumulator:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 1
+          ETH: 1
+          LTC: 1
+          XRP: 1
+          USDC: 1
+          UST: 1
+          eUSDT: 1
+          tUSDT: 1
+    maltainvest:
+      default_market:
+        default_contract_category:
+          USD: 5
+          EUR: 5
+          AUD: 5
+          GBP: 5
+          BTC: 5
+          ETH: 5
+          LTC: 5
+          XRP: 5
+          USDC: 5
+          UST: 5
+          eUSDT: 5
+          tUSDT: 5
+  max_stake:
+    default_landing_company:
+      default_market:
+        multiplier:
+          USD: 2000
+          EUR: 2000
+          AUD: 2000
+          GBP: 2000
+          BTC: 2000
+          ETH: 2000
+          LTC: 2000
+          XRP: 2000
+          USDC: 2000
+          UST: 2000
+          eUSDT: 2000
+          tUSDT: 2000
+        accumulator:
+          USD: 2000
+          EUR: 2000
+          AUD: 2000
+          GBP: 2000
+          BTC: 2000
+          ETH: 2000
+          LTC: 2000
+          XRP: 2000
+          USDC: 2000
+          UST: 2000
+          eUSDT: 2000
+          tUSDT: 2000
+  min_commission_amount:
+    default_contract_category:
+      USD: 0.02
+      EUR: 0.02
+      AUD: 0.02
+      GBP: 0.02
+      BTC: 0.02
+      ETH: 0.02
+      LTC: 0.02
+      XRP: 0.02
+      USDC: 0.02
+      UST: 0.02
+      eUSDT: 0.02
+      tUSDT: 0.02
+    callputspread:
+      USD: 0.05
+      EUR: 0.05
+      AUD: 0.05
+      GBP: 0.05
+      BTC: 0.05
+      ETH: 0.05
+      LTC: 0.05
+      XRP: 0.05
+      UST: 0.05
+      USDC: 0.05
+      eUSDT: 0.05
+      tUSDT: 0.05
+  min_order_amount:
+    USD: 0.1 # 0.1 dollar
+    EUR: 0.1
+    AUD: 0.1
+    GBP: 0.1
+    BTC: 0.1
+    ETH: 0.1
+    LTC: 0.1
+    XRP: 0.1
+    UST: 0.1
+    USDC: 0.1
+    eUSDT: 0.1
+    tUSDT: 0.1
+
+#Lookback option limits – the Value-at-risk approach
+#
+#In order to match the risk profile of lookback options with binary options, the 1% Value-at-risk (VaR) of each option and underlying are used as estimates the payoff of the option during adverse conditions – i.e. large movements on the underlying. The 1% VaR is defined such that the probability of losing more than the VaR is less than or equal to 1%.
+#
+#The VaRs are computed using simulations with a starting underlying price of 1. Hence, one should multiply it by the current underlying price to arrive at the current VaR of the lookback option – this works because lookback option payoffs are proportional to current underlying price.
+#
+#Assuming that 1% VaR is equal to the payout of binary options, we can use the following relationship to determine contract limit for each client:
+#
+#current_underlying_price * 1pc_VaR * client_contract_limit * contract_size = client_payout_limit
+#
+# var:
+#    intraday:
+#      R_100: 0.06415186562796626
+#      R_75: 0.047463777983804245
+#      R_50: 0.03120313936108904
+#      R_25: 0.015385016867331208
+#      R_10: 0.006103848574004506
+#    daily:
+#      R_100: 0.44644017285887516
+#      R_75: 0.3122480165035335
+#      R_50: 0.19371946771521417
+#      R_25: 0.09006447961871289
+#      R_10: 0.03444191548393187
+
+lookback_limits:
+  crypto: 100
+  fiat: 1
+#
+#Note:
+#multipliers by underlying are chosen as the smallest possible denomination {0.1,0.01,0.001,…}
+#where a unit price of a 1 minute lookback float call contract would be above {currency}0.5
+#based on the latest spot on Jun 4th 2020 1:46pm MYT as below
+#
+#The miminum multiplier below are for fiat. For cryptos, we will divide below numbers by 100;
+
+#
+#R_10 : 7,362
+#R_25 : 2,348
+#R_50 : 213
+#R_75 : 406,808
+#R_100: 1,401
+#1HZ10V:  8,345
+#1HZ25V:  398,554
+#1HZ50V:  309,050
+#1HZ75V:  200,900
+#1HZ100V: 8,796
+  min_multiplier:
+    R_10 : 1.0
+    R_25 : 1.0
+    R_50 : 1
+    R_75 : 0.005
+    R_100 : 0.5
+    1HZ10V: 1.0
+    1HZ25V: 0.01
+    1HZ50V: 0.005
+    1HZ75V: 0.005
+    1HZ100V: 0.1
+
+  open_position_limits:
+    USD: 300
+    EUR: 300
+    AUD: 300
+    GBP: 300
+    BTC: 300
+    ETH: 300
+    LTC: 300
+    XRP: 300
+    USDC: 300
+    UST: 300
+    eUSDT: 300
+    tUSDT: 300
+
+risk_profile:
+  no_business:
+      turnover:
+          USD: 0
+          EUR: 0
+          AUD: 0
+          GBP: 0
+          BTC: 0
+          ETH: 0
+          LTC: 0
+          XRP: 0
+          USDC: 0
+          UST: 0
+          eUSDT: 0
+          tUSDT: 0
+      payout:
+          USD: 0
+          EUR: 0
+          AUD: 0
+          GBP: 0
+          BTC: 0
+          ETH: 0
+          LTC: 0
+          XRP: 0
+          USDC: 0
+          UST: 0
+          eUSDT: 0
+          tUSDT: 0
+      multiplier:
+          USD: 0
+          EUR: 0
+          AUD: 0
+          GBP: 0
+          BTC: 0
+          ETH: 0
+          LTC: 0
+          XRP: 0
+          USDC: 0
+          UST: 0
+          eUSDT: 0
+          tUSDT: 0
+  extreme_risk:
+      turnover:
+          USD: 1000
+          EUR: 1000
+          AUD: 1000
+          GBP: 1000
+          BTC: 1000
+          ETH: 1000
+          LTC: 1000
+          XRP: 1000
+          USDC: 1000
+          UST: 1000
+          eUSDT: 1000
+          tUSDT: 1000
+      payout:
+          USD: 100
+          EUR: 100
+          AUD: 100
+          GBP: 100
+          BTC: 100
+          ETH: 100
+          LTC: 100
+          XRP: 100
+          USDC: 100
+          UST: 100
+          eUSDT: 100
+          tUSDT: 100
+      multiplier:
+          USD: 50
+          EUR: 50
+          AUD: 50
+          GBP: 50
+          BTC: 50
+          ETH: 50
+          LTC: 50
+          XRP: 50
+          USDC: 50
+          UST: 50
+          eUSDT: 50
+          tUSDT: 50
+  high_risk:
+      turnover:
+          USD: 5000
+          EUR: 5000
+          AUD: 5000
+          GBP: 5000
+          BTC: 5000
+          ETH: 5000
+          LTC: 5000
+          XRP: 5000
+          USDC: 5000
+          UST: 5000
+          eUSDT: 5000
+          tUSDT: 5000
+      payout:
+          USD: 1000
+          EUR: 1000
+          AUD: 1000
+          GBP: 1000
+          BTC: 1000
+          ETH: 1000
+          LTC: 1000
+          XRP: 1000
+          USDC: 1000
+          UST: 1000
+          eUSDT: 1000
+          tUSDT: 1000
+      multiplier:
+          USD: 200
+          EUR: 200
+          AUD: 200
+          GBP: 200
+          BTC: 200
+          ETH: 200
+          LTC: 200
+          XRP: 200
+          USDC: 200
+          UST: 200
+          eUSDT: 200
+          tUSDT: 200
+  moderate_risk:
+      turnover:
+          USD: 50000
+          EUR: 50000
+          AUD: 50000
+          GBP: 50000
+          BTC: 50000
+          ETH: 50000
+          LTC: 50000
+          XRP: 50000
+          USDC: 50000
+          UST: 50000
+          eUSDT: 50000
+          tUSDT: 50000
+      payout:
+          USD: 5000
+          EUR: 5000
+          AUD: 5000
+          GBP: 5000
+          BTC: 5000
+          ETH: 5000
+          LTC: 5000
+          XRP: 5000
+          USDC: 5000
+          UST: 5000
+          eUSDT: 5000
+          tUSDT: 5000
+      multiplier:
+          USD: 500
+          EUR: 500
+          AUD: 500
+          GBP: 500
+          BTC: 500
+          ETH: 500
+          LTC: 500
+          XRP: 500
+          USDC: 500
+          UST: 500
+          eUSDT: 500
+          tUSDT: 500
+  medium_risk:
+      turnover:
+          USD: 100000
+          EUR: 100000
+          AUD: 100000
+          GBP: 100000
+          BTC: 100000
+          ETH: 100000
+          LTC: 100000
+          XRP: 100000
+          USDC: 100000
+          UST: 100000
+          eUSDT: 100000
+          tUSDT: 100000
+      payout:
+          USD: 20000
+          EUR: 20000
+          AUD: 20000
+          GBP: 20000
+          BTC: 20000
+          ETH: 20000
+          LTC: 20000
+          XRP: 20000
+          USDC: 20000
+          UST: 20000
+          eUSDT: 20000
+          tUSDT: 20000
+      multiplier:
+          USD: 1000
+          EUR: 1000
+          AUD: 1000
+          GBP: 1000
+          BTC: 1000
+          ETH: 1000
+          LTC: 1000
+          XRP: 1000
+          USDC: 1000
+          UST: 1000
+          eUSDT: 1000
+          tUSDT: 1000
+  low_risk:
+      turnover:
+          USD: 500000
+          EUR: 500000
+          AUD: 500000
+          GBP: 500000
+          BTC: 500000
+          ETH: 500000
+          LTC: 500000
+          XRP: 500000
+          USDC: 500000
+          UST: 500000
+          eUSDT: 500000
+          tUSDT: 500000
+      payout:
+          USD: 50000
+          EUR: 50000
+          AUD: 50000
+          GBP: 50000
+          BTC: 50000
+          ETH: 50000
+          LTC: 50000
+          XRP: 50000
+          USDC: 50000
+          UST: 50000
+          eUSDT: 50000
+          tUSDT: 50000
+      multiplier:
+          USD: 2000
+          EUR: 2000
+          AUD: 2000
+          GBP: 2000
+          BTC: 2000
+          ETH: 2000
+          LTC: 2000
+          XRP: 2000
+          USDC: 2000
+          UST: 2000
+          eUSDT: 2000
+          tUSDT: 2000

@@ -1,0 +1,468 @@
+common:
+  1HZ10V:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 1000
+    min_multiplier: 100
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  1HZ25V:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 500
+    min_multiplier: 50
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  1HZ50V:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 200
+    min_multiplier: 20
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  1HZ75V:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 150
+    min_multiplier: 15
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  1HZ100V:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 100
+    min_multiplier: 10
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  1HZ150V:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 5
+    min_multiplier: 1
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  1HZ250V:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 5
+    min_multiplier: 1
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  R_10:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 1000
+    min_multiplier: 100
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  R_25:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 500
+    min_multiplier: 50
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  R_50:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 200
+    min_multiplier: 20
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  R_75:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 1.1
+    ticks_commission_up_intraday: 1.1
+    ticks_commission_up_daily: 1.1
+    ticks_commission_down_tick: 1.1
+    ticks_commission_down_intraday: 1.1
+    ticks_commission_down_daily: 1.1
+    max_multiplier: 150
+    min_multiplier: 15
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5
+
+  R_100:
+    num_of_barriers: 20
+    min_distance_from_spot: 300
+    ticks_commission_up_tick: 0.9
+    ticks_commission_up_intraday: 0.9
+    ticks_commission_up_daily: 0.9
+    ticks_commission_down_tick: 0.9
+    ticks_commission_down_intraday: 0.9
+    ticks_commission_down_daily: 0.9
+    max_multiplier: 100
+    min_multiplier: 10
+    max_multiplier_stake:
+      USD: 2000
+      EUR: 2000
+      AUD: 2000
+      GBP: 2000
+      BTC: 0.03
+      ETH: 0.5
+      LTC: 9
+      XRP: 3640
+      USDC: 2000
+      UST: 2000
+      eUSDT: 2000
+      tUSDT: 2000
+    min_multiplier_stake:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      BTC: 0.000015
+      ETH: 0.00025
+      LTC: 0.0045
+      XRP: 1.80
+      USDC: 1
+      UST: 1
+      eUSDT: 1
+      tUSDT: 1
+    max_open_position: 5

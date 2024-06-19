@@ -1,0 +1,9 @@
+default_domain: binary.com
+white_list:
+  - binary.com
+  - binary.me
+  - deriv.app
+  - deriv.com
+  - deriv.me
+  - deriv.be
+brand: binary

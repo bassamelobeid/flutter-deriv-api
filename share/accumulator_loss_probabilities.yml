@@ -1,0 +1,6 @@
+# Loss probability for each growth rate
+growth_rate_0.01: 0.015
+growth_rate_0.02: 0.023
+growth_rate_0.03: 0.033
+growth_rate_0.04: 0.0425
+growth_rate_0.05: 0.0535

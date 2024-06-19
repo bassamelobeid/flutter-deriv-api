@@ -1,0 +1,32 @@
+---
+common: &per_landing_company
+  R_10: &per_symbol_limits
+    max_open_positions: 1
+    max_daily_volume: 50000
+    max_aggregate_open_stake:
+      # this limit is defined per growth_rate
+      growth_rate_0.01: 3000 
+      growth_rate_0.02: 3000 
+      growth_rate_0.03: 3000 
+      growth_rate_0.04: 3500 
+      growth_rate_0.05: 3500 
+  R_25: *per_symbol_limits
+  R_50: *per_symbol_limits
+  R_75: *per_symbol_limits
+  R_100: *per_symbol_limits
+  1HZ10V: *per_symbol_limits
+  1HZ25V: *per_symbol_limits
+  1HZ50V: *per_symbol_limits
+  1HZ75V: *per_symbol_limits
+  1HZ100V: *per_symbol_limits
+  JD10: *per_symbol_limits
+  JD25: *per_symbol_limits
+  JD50: *per_symbol_limits
+  JD75: *per_symbol_limits
+  JD100: *per_symbol_limits
+  CRASH300N: *per_symbol_limits
+  CRASH500: *per_symbol_limits
+  CRASH1000: *per_symbol_limits
+  BOOM300N: *per_symbol_limits
+  BOOM500: *per_symbol_limits
+  BOOM1000: *per_symbol_limits

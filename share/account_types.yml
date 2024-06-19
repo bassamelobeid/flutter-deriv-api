@@ -1,0 +1,230 @@
+groups:
+  trader:
+    services:
+      - trade
+  wallet:
+    services:
+      - link_to_accounts
+  legacy:
+    services:
+      - transfer_without_link
+  p2p:
+    services:
+      - p2p
+  fiat_cashier:
+    services:
+      - fiat_cashier
+  crypto_cashier:
+    services:
+      - crypto_cashier  
+  affiliate:
+    services:
+      - affiliate_commissions
+  paymentagent:
+    services:
+      - paymentagent_transfer
+  paymentagent_client:
+    services:
+      - paymentagent_withdraw
+
+categories:
+  trading:
+    broker_codes:
+      svg: 
+        - CR
+      maltainvest:
+        - MF
+      virtual:
+        - VRTC
+    brands:
+      - deriv
+    groups:
+      - trader
+    account_opening:
+      - real
+      - demo
+    account_types:
+      standard:
+        platform: dtrade
+        linkable_wallet_types: &all_wallets_for_trading
+          - virtual
+          - doughflow
+          - crypto
+          - p2p
+          - paymentagent_client
+        linkable_to_different_currency: 0
+        regulations:
+          - svg
+          - maltainvest 
+          - virtual
+        transfers: all
+      binary:
+        platform: dtrade
+        linkable_wallet_types: *all_wallets_for_trading
+        linkable_to_different_currency: 0
+        regulations:
+          - svg
+          - maltainvest
+          - virtual
+        groups:
+          - legacy
+          - trader
+          - fiat_cashier
+          - crypto_cashier
+          - paymentagent
+          - paymentagent_client
+          - p2p
+          - affiliate
+        transfers: all
+      mt5:
+        platform: mt5
+        linkable_wallet_types:
+          - virtual
+          - doughflow
+          - p2p
+          - paymentagent_client
+        linkable_to_different_currency: 1
+        regulations:
+          - svg
+          - maltainvest
+          - virtual
+        currency_types:
+          - fiat
+        broker_codes: {}
+        transfers: all
+      derivez:
+        platform: derivez
+        linkable_wallet_types:
+          - virtual
+          - doughflow
+          - p2p
+          - paymentagent_client
+        linkable_to_different_currency: 1
+        regulations:
+          - svg
+          - virtual
+        currency_types:
+          - fiat
+        broker_codes: {}
+        transfers: all
+      dxtrade:
+        platform: dxtrade
+        linkable_wallet_types:
+          - virtual
+          - doughflow
+          - p2p
+          - paymentagent_client
+        linkable_to_different_currency: 1
+        regulations:
+          - svg
+          - virtual
+        currency_types:
+          - fiat
+        broker_codes: {}
+        transfers: all
+      ctrader:
+        platform: ctrader
+        linkable_wallet_types:
+          - virtual
+          - doughflow
+          - p2p
+          - paymentagent_client
+        linkable_to_different_currency: 1
+        regulations:
+          - svg
+          - virtual
+        currency_types:
+          - fiat
+        broker_codes: {}
+        transfers: all
+  wallet:
+    broker_codes:
+      svg:
+        - CRW
+      maltainvest:
+        - MFW
+      dsl:
+        - CRA
+      virtual:
+        - VRW
+    platform: dwallet
+    brands:
+      - deriv
+    groups:
+      - wallet
+    account_types:
+      doughflow:
+        currency_types:
+          - fiat
+        groups:
+          - fiat_cashier
+        regulations:
+          - svg
+          - maltainvest 
+        broker_codes:
+          svg:
+            - CRW
+          maltainvest:
+            - MFW
+        transfers: all
+        is_cashier: 1
+        is_enabled: 1
+      crypto:
+        account_opening:
+          - real
+        currency_types:
+          - crypto
+        groups:
+          - crypto_cashier
+        regulations:
+          - svg
+        transfers: all
+        is_cashier: 1
+        is_enabled: 1
+      p2p:
+        currencies:
+          - USD
+        regulations:
+          - svg
+        groups:
+          - p2p
+        transfers: deposit
+        is_enabled: 0
+      paymentagent:
+        groups:
+          - paymentagent
+        regulations:
+          - svg
+        transfers: deposit
+        is_enabled: 0
+      paymentagent_client:
+        account_opening:
+          - real
+        groups:
+          - paymentagent_client
+        regulations:
+          - svg
+        transfers: none
+        is_enabled: 0
+      affiliate:
+        account_opening:
+          - real
+        groups:
+          - affiliate
+        regulations:
+          - dsl
+        broker_codes:
+          dsl:
+            - CRA
+        transfers: none
+        is_enabled: 0
+      virtual:
+        currencies:
+          - USD
+        regulations:
+          - virtual
+        broker_codes:
+          virtual:
+            - VRW
+        transfers: all
+        is_enabled: 0

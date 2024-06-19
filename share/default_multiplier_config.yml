@@ -1,0 +1,714 @@
+---
+maltainvest:
+  frxGBPUSD:
+    multiplier_range: [30]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxEURGBP:
+    multiplier_range: [30]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxUSDCHF:
+    multiplier_range: [30]
+    commission: 0.00015
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxAUDUSD:
+    multiplier_range: [30]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxEURCAD:
+    multiplier_range: [30]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxGBPAUD:
+    multiplier_range: [30]
+    commission: 0.0004
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxUSDJPY:
+    multiplier_range: [30]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxEURUSD:
+    multiplier_range: [30]
+    commission: 0.00015
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxUSDCAD:
+    multiplier_range: [30]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxAUDJPY:
+    multiplier_range: [30]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxEURJPY:
+    multiplier_range: [30]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxGBPJPY:
+    multiplier_range: [30]
+    commission: 0.00025
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxEURAUD:
+    multiplier_range: [30]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  frxEURCHF:
+    multiplier_range: [30]
+    commission: 0.00025
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+  cryBTCUSD: &crypto_maltainvest
+    multiplier_range: [1, 2]
+    commission: 0.001
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      1: 0
+      2: 0
+    expiry: '7d'
+  cryETHUSD: *crypto_maltainvest
+  cryBNBUSD: *crypto_maltainvest
+  cryBCHUSD: *crypto_maltainvest
+  cryLTCUSD: *crypto_maltainvest
+  cryXRPUSD: *crypto_maltainvest
+  cryEOSUSD: *crypto_maltainvest
+  cryZECUSD: *crypto_maltainvest
+  cryXMRUSD: *crypto_maltainvest
+  cryDSHUSD: *crypto_maltainvest
+  1HZ200V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.00036
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  1HZ300V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.00053
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  1HZ150V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  1HZ250V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.0005
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  CRASH300N:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.00005
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  BOOM300N:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.00005
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+common:
+  R_10:
+    multiplier_range: [100, 200, 300, 500, 1000]
+    commission: 5.0366490434625e-05
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      100: 0
+      200: 0
+      300: 0
+      500: 0
+      1000: 0
+  R_25:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.000125916226086562
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      50: 0
+      100: 0
+      150: 0
+      250: 0
+      500: 0
+  R_50:
+    multiplier_range: [20, 40, 60, 100, 200]
+    commission: 0.000251832452173125
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      20: 0
+      40: 0
+      60: 0
+      100: 0
+      200: 0
+  R_75:
+    multiplier_range: [15, 30, 50, 75, 150]
+    commission: 0.000377748678259687
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      15: 0
+      30: 0
+      50: 0
+      75: 0
+      150: 0
+  R_100:
+    multiplier_range: [10, 20, 30, 50, 100]
+    commission: 0.000503664904346249
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      10: 0
+      20: 0
+      30: 0
+      50: 0
+      100: 0
+  1HZ10V:
+    multiplier_range: [100, 200, 300, 500, 1000]
+    commission: 3.56144869308907e-05
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      100: 0
+      200: 0
+      300: 0
+      500: 0
+      1000: 0
+  1HZ25V:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.000125916226086562
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+        50: 0
+        100: 0
+        150: 0
+        250: 0
+        500: 0
+  1HZ50V:
+    multiplier_range: [20, 40, 60, 100, 200]
+    commission: 0.000251832452173125
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      20: 0
+      40: 0
+      60: 0
+      100: 0
+      200: 0
+  1HZ75V:
+    multiplier_range: [15, 30, 50, 75, 150]
+    commission: 0.000377748678259687
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      15: 0
+      30: 0
+      50: 0
+      75: 0
+      150: 0
+  1HZ100V:
+    multiplier_range: [10, 20, 30, 50, 100]
+    commission: 0.000356144869308907
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      10: 0
+      20: 0
+      30: 0
+      50: 0
+      100: 0
+  CRASH1000:
+    multiplier_range: [100, 200, 300, 400]
+    commission: 0.00025
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      100: 10
+      200: 20
+      300: 30
+      400: 50
+  CRASH500:
+    multiplier_range: [100, 200, 300, 400]
+    commission: 0.00025
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      100: 10
+      200: 20
+      300: 30
+      400: 50
+  BOOM1000:
+    multiplier_range: [100, 200, 300, 400]
+    commission: 0.00025
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      100: 10
+      200: 20
+      300: 30
+      400: 50
+  BOOM500:
+    multiplier_range: [100, 200, 300, 400]
+    commission: 0.00025
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      100: 10
+      200: 20
+      300: 30
+      400: 50
+  stpRNG:
+    multiplier_range: [500, 1000, 2000, 3000, 4000]
+    commission: 0.00001
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      500: 0
+      1000: 0
+      2000: 0
+      3000: 0
+      4000: 0
+  frxGBPUSD:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      50: 0
+      100: 0
+      150: 0
+      250: 0
+      500: 0
+  frxEURGBP:
+    multiplier_range: [30, 50, 100, 150, 300]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+      50: 0
+      100: 0
+      150: 0
+      300: 0
+  frxUSDCHF:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.00015
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      50: 0
+      100: 0
+      150: 0
+      250: 0
+      500: 0
+  frxAUDUSD:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      50: 0
+      100: 0
+      150: 0
+      250: 0
+      500: 0
+  frxEURCAD:
+    multiplier_range: [20, 30, 50, 100, 200]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      20: 0
+      30: 0
+      50: 0
+      100: 0
+      200: 0
+  frxGBPAUD:
+    multiplier_range: [20, 30, 50, 100, 200]
+    commission: 0.0004
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      20: 0
+      30: 0
+      50: 0
+      100: 0
+      200: 0
+  frxUSDJPY:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      50: 0
+      100: 0
+      150: 0
+      250: 0
+      500: 0
+  frxEURUSD:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.00015
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      50: 0
+      100: 0
+      150: 0
+      250: 0
+      500: 0
+  frxUSDCAD:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      50: 0
+      100: 0
+      150: 0
+      250: 0
+      500: 0
+  frxAUDJPY:
+    multiplier_range: [20, 30, 50, 100, 200]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      20: 0
+      30: 0
+      50: 0
+      100: 0
+      200: 0
+  frxEURJPY:
+    multiplier_range: [30, 50, 100, 150, 300]
+    commission: 0.0002
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+      50: 0
+      100: 0
+      150: 0
+      300: 0
+  frxGBPJPY:
+    multiplier_range: [30, 50, 100, 150, 300]
+    commission: 0.00025
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      30: 0
+      50: 0
+      100: 0
+      150: 0
+      300: 0
+  frxEURAUD:
+    multiplier_range: [20, 30, 50, 100, 200]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      20: 0
+      30: 0
+      50: 0
+      100: 0
+      200: 0
+  frxEURCHF:
+    multiplier_range: [20, 30, 50, 100, 200]
+    commission: 0.00025
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      20: 0
+      30: 0
+      50: 0
+      100: 0
+      200: 0
+  WLDEUR:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.00015
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      50: 0
+      100: 0
+      150: 0
+      250: 0
+      500: 0
+  WLDUSD:
+    multiplier_range: [50, 100, 150, 250, 500]
+    commission: 0.00015
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      50: 0
+      100: 0
+      150: 0
+      250: 0
+      500: 0
+  WLDGBP:
+    multiplier_range: [30, 50, 100, 150, 300]
+    commission: 0.00020
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      30: 0
+      50: 0
+      100: 0
+      150: 0
+      300: 0
+  WLDAUD:
+    multiplier_range: [20, 30, 50, 100, 200]
+    commission: 0.00025
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      20: 0
+      30: 0
+      50: 0
+      100: 0
+      200: 0
+  WLDXAU:
+    multiplier_range: [15, 30, 50, 75, 150]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      15: 0
+      30: 0
+      50: 0
+      75: 0
+      150: 0
+  cryBTCUSD: &crypto_large_cap
+    multiplier_range: [10, 20, 30, 40, 50]
+    commission: 0.001
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      10: 0
+      20: 0
+      30: 0
+      40: 0
+      50: 0
+    expiry: '7d'
+  cryETHUSD: *crypto_large_cap
+  cryBNBUSD: &crypto_medium_cap
+    multiplier_range: [10, 20, 30]
+    commission: 0.0015
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      10: 0
+      20: 0
+      30: 0
+    expiry: '7d'
+  cryBCHUSD: *crypto_medium_cap
+  cryLTCUSD: *crypto_medium_cap
+  cryXRPUSD: *crypto_medium_cap
+  cryEOSUSD: &crypto_small_cap
+    multiplier_range: [5, 10]
+    commission: 0.01
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      5: 0
+      10: 0
+    expiry: '7d'
+  cryZECUSD: *crypto_small_cap
+  cryXMRUSD: *crypto_small_cap
+  cryDSHUSD: *crypto_small_cap
+  JD10:
+    multiplier_range: [100, 200, 300, 500, 1000]
+    commission: 0.000024
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      100: 10
+      200: 20
+      300: 30
+      500: 40
+      1000: 50
+  JD25:
+    multiplier_range: [50, 100, 150, 250 ,500]
+    commission: 0.000059
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      50: 10
+      100: 20
+      150: 30
+      250: 40
+      500: 50
+  JD50:
+    multiplier_range: [20, 40, 60, 100, 200]
+    commission: 0.000118
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      20: 10
+      40: 20
+      60: 30
+      100: 40
+      200: 50
+  JD75:
+    multiplier_range: [15, 30, 50, 75, 150]
+    commission: 0.000177
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      15: 10
+      30: 20
+      50: 30
+      75: 40
+      150: 50
+  JD100:
+    multiplier_range: [10, 20, 30, 50, 100]
+    commission: 0.000236
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      10: 10
+      20: 20
+      30: 30
+      50: 40
+      100: 50
+  1HZ200V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.00036
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  1HZ300V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.00053
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  1HZ150V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  1HZ250V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.0005
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  CRASH300N:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.00005
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  BOOM300N:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.00005
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0

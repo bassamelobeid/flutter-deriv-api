@@ -1,0 +1,44 @@
+---
+common: &per_landing_company
+  R_10: &per_symbol
+    max_payout:
+      USD: 10000
+      AUD: 10000
+      GBP: 10000
+      EUR: 10000
+      BTC: 0.5
+      ETH: 8
+      LTC: 100
+      XRP: 7280
+      USDC: 10000
+      UST: 10000
+      eUSDT: 10000
+      tUSDT: 10000
+    max_duration:
+      growth_rate_0.01: 300
+      growth_rate_0.02: 150
+      growth_rate_0.03: 90
+      growth_rate_0.04: 75
+      growth_rate_0.05: 60
+    growth_start_step: 1
+    growth_rate: [0.01, 0.02, 0.03, 0.04, 0.05]
+  R_25: *per_symbol
+  R_50: *per_symbol
+  R_75: *per_symbol
+  R_100: *per_symbol
+  1HZ10V: *per_symbol
+  1HZ25V: *per_symbol
+  1HZ50V: *per_symbol
+  1HZ75V: *per_symbol
+  1HZ100V: *per_symbol
+  JD10: *per_symbol
+  JD25: *per_symbol
+  JD50: *per_symbol
+  JD75: *per_symbol
+  JD100: *per_symbol
+  CRASH300N: *per_symbol
+  CRASH500: *per_symbol
+  CRASH1000: *per_symbol
+  BOOM300N: *per_symbol
+  BOOM500: *per_symbol
+  BOOM1000: *per_symbol

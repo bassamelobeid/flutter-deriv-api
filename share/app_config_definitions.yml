@@ -1,0 +1,2955 @@
+---
+cgi:
+  description: |
+    This section contains various parameters that determine behavior of code in cgi.
+    DO NOT USE any of these parameters in the /lib modules!!!
+  isa: section
+  contains:
+    cookie_name:
+      description: "Cookie names used"
+      isa: section
+      contains:
+        settings:
+          description: "Contains all ui settings for the current session"
+          isa: Str
+          default: "settings"
+        login:
+          description: "Main login cookie"
+          isa: Str
+          default: "login"
+        login_bo:
+          description: "Backoffice login cookie"
+          isa: Str
+          default: "staff"
+    allowed_languages:
+      description: "Allowed languages for this website"
+      isa: ArrayRef
+      default:
+        - EN
+        - RU
+        - ID
+      global: 1
+    supported_languages:
+      description: "Contains all the languages supported, contains both disabled or enabled"
+      isa: ArrayRef
+      default:
+        - EN
+        - ID
+        - RU
+        - MN
+        - ES
+        - FR
+        - IT
+        - PT
+        - PL
+        - DE
+        - ZH_CN
+        - VI
+        - ZH_TW
+        - TH
+        - TR
+        - KO
+        - AR
+        - BN
+        - SI
+        - SW
+    rtl_languages:
+      description: "Contains languages that need right to left support"
+      isa: ArrayRef
+      default:
+        - AR
+    terms_conditions_versions:
+      description: "Current version for terms and conditions per brand (brand name as key, version as value). WARNING: Clients from particular landing companies (IOM/Malta/Maltainvest) will be blocked from trading and accessing cashier when T&Cs are updated until they manually approve them."
+      isa: json_string
+      default: '{ "binary": "Version 48 2019-05-10", "deriv": "Version 4.2.0 2020-08-07", "deriv-EU": "Version 4.2.0 2020-08-07", "deriv-ROW": "Version 4.2.0 2020-08-07" }'
+      global: 1
+payments:
+  description: "Control parameters for cashier and other payment systems"
+  isa: section
+  contains:
+    categories:
+      description: "Keys are payment gateway code, array values are payment type codes"
+      isa: json_string
+      default: '{
+                "account_transfer": {
+                    "internal": [ "internal_transfer", "mt5_transfer", "dxtrade_transfer", "ctrader_transfer" ]
+                },
+                "affiliate_reward": {
+                    "internal": [ "affiliate_reward" ]
+                },
+                "arbitrary_markup": {
+                    "internal": [ "arbitrary_markup" ]
+                },
+                "bank_wire": {
+                    "external": [ "bank_money_transfer", "external_cashier"	]
+                },
+                "ctc" : {
+                    "external": [ "crypto_cashier" ]
+                },
+                "currency_conversion_transfer": {
+                    "internal": [ "internal_transfer" ]
+                },
+                "datacash": {
+                    "external": [ "credit_debit_card", "bacs" ]
+                },
+                "doughflow": {
+                    "external": [ "external_cashier" ]
+                },
+                "envoy_transfer": {
+                    "external": [ "bank_money_transfer" ]
+                }, 
+                "epg": {
+                    "external": [ "external_cashier" ]
+                },
+                "free_gift": {
+                    "internal": [ "free_gift" ]
+                },
+                "gift_certificate": {
+                    "internal": [ "internal_transfer" ]
+                },
+                "legacy_payment": {
+                    "internal": [ "account_transfer", "adjustment", "adjustment_purchase", "adjustment_sale", "cancellation", "closed_account", "commission_paid", "compacted_statement", "dxtrade_adjustment", "free_gift", "internal_transfer", "miscellaneous", "payment_fee", "recovery", "test_account", "testing", "voucher" ],
+                    "external": [ "bank_money_transfer", "credit_debit_card", "crypto_cashier", "ewallet", "local_cheque", "external_cashier"]
+                },
+                "moneta": {
+                    "external": [ "ewallet" ]
+                },
+                "moneybookers": {
+                    "external": [ "credit_debit_card", "ewallet" ]
+                },
+                "p2p": {
+                    "external": [ "internal_transfer" ]
+                },
+                "pacnet": {
+                    "external": [ "local_cheque" ]
+                },
+                "payment_agent_transfer": {
+                    "external": [ "internal_transfer" ]
+                },
+                "payment_fee": {
+                    "internal": [ "dormant_fee" , "payment_fee"]
+                },
+                "transactium_credit_debit_card": {
+                    "external": [ "credit_debit_card" ]
+                },
+                "western_union": {
+                    "external": [ "cash_transfer" ]
+                }
+              }'
+      global: 1
+    payment_methods:
+      isa: section
+      contains:
+        high_risk:
+          isa: json_string
+          default: '{"CreditCard": {"limit":5,"days":90,"siblings":[]}}'
+          description: High risk payment method settings
+          global: 1
+    payment_methods_with_poo:
+        description: "Proof of ownership can be requested for these payment methods"
+        isa: ArrayRef
+        default: ['VISA', 'MasterCard', 'Maestro', 'AdvCash', 'Astropay', 'Beyonic', 'D24Voucher', 'PIX', 'Skrill', 'Neteller', 'OnlineNaira', 'Webmoney', 'Zingpay', 'Sticpay', 'JetonWL']
+        global: 1
+    pa_sum_deposits_limit:
+      description: 'payment agent sum deposits threshold limit.'
+      isa: Num
+      global: 1
+      default: 200
+    payment_agent_residence_check_exclusion:
+      description: 'Email(s) of payment agents who are allowed to perform inter-country transfers and withdrawals.'
+      default: []
+      isa: ArrayRef
+      global: 1
+    payment_limits:
+      description: 'Staff limit for payment'
+      isa: json_string
+      default: '{"jy":"99999"}'
+      global: 1
+    reversible_balance_limits:
+      description: 'Percentage of reversible deposits a client is allowed to sell/withdraw.'
+      isa: section
+      contains:
+        ctc:
+          description: 'Percentage of reversible deposits available to withdraw via Crypto cashier.'
+          isa: Num
+          global: 1
+          default: 100
+        p2p:
+          description: 'Percentage of reversible deposits available to sell via P2P. Only applicable in countries where cashier is not blocked for P2P.'
+          isa: Num
+          global: 1
+          default: 100
+        pa_deposit:
+          description: 'Percentage of reversible deposits included in Payment Agent initial deposit requirement.'
+          isa: Num
+          global: 1
+          default: 0
+    reversible_deposits_lookback:
+      description: 'Number of days within which a deposit can be counted as reversible.'
+      isa: Num
+      global: 1
+      default: 180
+    p2p_withdrawal_limit:
+      description: 'Percentage of net P2P deposits (over previous p2p_deposits_lookback days) available to withdraw via Doughflow, internal transfer, and PA withdrawal.'
+      isa: Num
+      global: 1
+      default: 100
+    p2p_deposits_lookback:
+      description: 'Number of previous days over which to aggregate net P2P deposits for p2p_withdrawal_limit.'
+      isa: Num
+      global: 1
+      default: 180
+    custom_payment_accounts_limit_per_user:
+      description: 'Limits for allowed number of payment accounts per user, system default limit is used if custom limit is blank; format: {"binary_user_id": maximum_allowed_credit_cards}; example: {"1":5}'
+      isa: json_string
+      default: '{}'
+      global: 1
+    countries:
+      isa: section
+      description: Misc settings per country
+      contains:
+        poi_deposit_limits_per_payment_type:
+         description: A collection of doughflow payment type per country that will trigger POI request when the specified limit is breached in the period specified in hours
+         isa: json_string
+         default: '{"za":{"CreditCard":{"limit": 500, "days": 7}}}'
+         global: 1
+    autoapproval:
+      description: 'Payment autoapproval rules parameters'
+      isa: section
+      contains:
+        max_pending_total_enabled:
+          description: 'Enable Rule 1.2, to check the total amount of payouts'
+          isa: Bool
+          global: 1
+          default: 1
+        max_pending_total:
+          description: 'Value of x in: Rule 1.2: Total amount of payouts must be < x'
+          isa: Num
+          global: 1
+          default: 1000
+        grouped_allowed_payment_methods:
+          description: 'Grouped allowed payment methods (used in Rule 6.0 and 7.0).'
+          isa: json_string
+          global: 1
+          default: '[["AirTM"],["AstroPay"],["FasaPay"],["Jeton","JetonWL"],["NETeller","NETellerDT","NETellerPS"],["NganLuong"],["Onlinenaira"],["PayLivre"],["paysafe"],["PerfectM"],["Skrill","Skrill1tap"],["SticPay"],["WebMoney"],["ZingPay"]]'
+        check_most_used_payment_method_enabled:
+          description: 'Check the withdrawal payment method to match the one used to deposit the most in the past'
+          isa: Bool
+          global: 1
+          default: 1
+        payment_methods_withdrawal_unsupported:
+          description: 'Unsupported payment methods for withdrawals (used in Rule 7.0).'
+          isa: ArrayRef
+          global: 1
+          default:
+            - CardPayAPM
+            - Directa24S
+            - DragonPay
+            - DragonPhoenix
+            - Help2Pay
+            - OneRoadAPM
+            - OneVoucher
+            - PayTrust
+        restricted_client_statuses:
+          description: 'Restricted client statuses (used in Rule 2.1).'
+          isa: ArrayRef
+          global: 1
+          default:
+            - disabled
+            - unwelcome
+            - cashier_locked
+            - withdrawal_locked
+            - no_withdrawal_or_trading
+            - only_pa_withdrawals_allowed
+        disabled_sportsbooks:
+          description: 'Sportsbooks that are not enabled for autoapprovals, denoted by frontend name. (this config is shared across al autoapproval scripts)'
+          isa: ArrayRef
+          global: 1
+          default: []
+        max_profit_day_enabled:
+          description: 'Enable Rule 4.0, to check total profit in the last 24 hours'
+          isa: Bool
+          global: 1
+          default: 1
+        max_profit_day:
+          description: 'Value of x in: Rule 4.0: Total profit in the last 24 hours must be < x.'
+          isa: Num
+          global: 1
+          default: 2000
+        max_profit_month_enabled:
+          description: 'Enable Rule 4.1, to check total profit in the last 30 days'
+          isa: Bool
+          global: 1
+          default: 1
+        max_profit_month:
+          description: 'Value of x in: Rule 4.1: Total profit in the last 30 days must be < x.'
+          isa: Num
+          global: 1
+          default: 5000
+        min_pending_total_to_check_rule_5_enabled:
+          description: 'Enable to check the minimum total payouts needed to check rule 5 (note this does not disable rule 5)'
+          isa: Bool
+          global: 1
+          default: 1
+        min_pending_total_to_check_rule_5:
+          description: 'Value x to of total payouts needed to check rule 5. Where total payout must be <= x'
+          isa: Num
+          global: 1
+          default: 100
+        min_last_doughflow_deposit_percent_vs_mt5_transfers_enabled:
+          description: 'Enable Rule 5.0 (mt5): the sum of transfers to MT5 should be at least some percentage of the doughflow deposit amount'
+          isa: Bool
+          global: 1
+          default: 1
+        min_last_doughflow_deposit_percent_vs_mt5_transfers:
+          description: 'Minium ratio between the doughflow deposit and the mt5 transfers. (note 25% should be specifed as 0.25, therefore any x in x%, should be computed as x/100)'
+          isa: Num
+          global: 1
+          default: 0.25
+        min_last_doughflow_deposit_percent_vs_contracts_bought_enabled:
+          description: 'Enable Rule 5.0 (contracts bought): the sum of contracts bought should be at least some percentage of the last doughflow deposit amount'
+          isa: Bool
+          global: 1
+          default: 1
+        min_last_doughflow_deposit_percent_vs_contracts_bought:
+          description: 'Minimum ratio between the last doughflow deposit and the contracts bought. (note 25% should be specifed as 0.25, therefore any x in x%, should be computed as x/100)'
+          isa: Num
+          global: 1
+          default: 0.25
+        max_mt5_net_transfer_enabled:
+          description: 'Enable Rule 5.2, to check MT5 net transfers'
+          isa: Bool
+          global: 1
+          default: 1
+        max_mt5_net_transfer:
+          description: 'Value of x in: Rule 5.2: MT5 net transfer must be < x.'
+          isa: Num
+          global: 1
+          default: 5000
+        cft:
+          description: 'Payment autoapproval rules parameters for CFT'
+          isa: section
+          contains:
+            payment_methods:
+              description: 'Payments method list allowed for CFT auto approval'
+              isa: ArrayRef
+              global: 1
+              default:
+                - CCPayout
+                - CFT
+                - CreditCard
+            max_pending_total_enabled:
+              description: 'Enable CFT Rule 3, to check the total amount of payouts'
+              isa: Bool
+              global: 1
+              default: 1
+            max_pending_total:
+              description: 'Value of x in: CFT Rule 3: Total amount of payouts must be < x'
+              isa: Num
+              global: 1
+              default: 1000
+            restricted_client_statuses:
+              description: 'Restricted client statuses (used in CFT Rule 2).'
+              isa: ArrayRef
+              global: 1
+              default:
+                - disabled
+                - unwelcome
+                - cashier_locked
+                - withdrawal_locked
+                - no_withdrawal_or_trading
+                - only_pa_withdrawals_allowed
+            max_profit_day_enabled:
+              description: 'Enable CFT Rule 5, to check total profit in the last 24 hours'
+              isa: Bool
+              global: 1
+              default: 1
+            max_profit_day:
+              description: 'Value of x in: CFT Rule 5: Total profit in the last 24 hours must be < x.'
+              isa: Num
+              global: 1
+              default: 2000
+            max_profit_month_enabled:
+              description: 'Enable CFT Rule 5, to check total profit in the last 30 days'
+              isa: Bool
+              global: 1
+              default: 1
+            max_profit_month:
+              description: 'Value of x in: CFT Rule 5: Total profit in the last 30 days must be < x.'
+              isa: Num
+              global: 1
+              default: 5000
+            min_last_doughflow_deposit_percent_vs_mt5_transfers_enabled:
+              description: 'Enable Rule 5.0 (mt5): the sum of transfers to MT5 should be at least some percentage of the doughflow deposit amount'
+              isa: Bool
+              global: 1
+              default: 1
+            min_last_doughflow_deposit_percent_vs_mt5_transfers:
+              description: 'Minium ratio between the doughflow deposit and the mt5 transfers. (note 25% should be specifed as 0.25, therefore any x in x%, should be computed as x/100)'
+              isa: Num
+              global: 1
+              default: 0.25
+            min_last_doughflow_deposit_percent_vs_contracts_bought_enabled:
+              description: 'Enable Rule 5.0 (contracts bought): the sum of contracts bought should be at least some percentage of the last doughflow deposit amount'
+              isa: Bool
+              global: 1
+              default: 1
+            min_last_doughflow_deposit_percent_vs_contracts_bought:
+              description: 'Minimum ratio between the last doughflow deposit and the contracts bought. (note 25% should be specifed as 0.25, therefore any x in x%, should be computed as x/100)'
+              isa: Num
+              global: 1
+              default: 0.25
+            max_mt5_net_transfer_enabled:
+              description: 'Enable Rule 4, to check MT5 net transfers'
+              isa: Bool
+              global: 1
+              default: 1
+            max_mt5_net_transfer:
+              description: 'Value of x in: Rule 4: MT5 net transfer must be < x.'
+              isa: Num
+              global: 1
+              default: 5000             
+    p2p:
+      description: 'Peer-to-peer payment system'
+      isa: section
+      contains:
+        enabled:
+          description: 'Flag to control whether P2P cashier is active (can be overridden by system.suspend.p2p)'
+          isa: Bool
+          global: 1
+          default: 0
+        available:
+          description: 'Flag to control whether P2P cashier is available to all clients (if disabled, only p2p.clients are allowed)'
+          isa: Bool
+          global: 1
+          default: 1
+        order_timeout:
+          description: 'Number of seconds to order expiry after creation time'
+          isa: Int
+          global: 1
+          default: 3600
+        order_expiry_options:
+          description: 'List of order expiry values available for adverts'
+          isa: ArrayRef
+          global: 1
+          default: [900, 1800, 2700, 3600]
+        refund_timeout:
+          description: 'Number of days to wait before refunding a timed-out order automatically'
+          isa: Num
+          global: 1
+          default: 30
+        disputed_timeout:
+          description: 'Number of hours to wait before creating a LiveChat ticket for a disputed order'
+          isa: Num
+          global: 1
+          default: 24
+        dispute_response_time:
+          description: 'Maximum number of hours given to P2P clients to respond to their dispute email'
+          isa: Int
+          global: 1
+          default: 6
+        clients:
+          description: 'List of clients allowed to access P2P'
+          isa: ArrayRef
+          global: 1
+          default: []
+        available_for_currencies:
+          description: 'List of currencies for which P2P is available, currency code should be lower case'
+          isa: ArrayRef
+          global: 1
+          default: ['usd']
+        email_to:
+          description: "Internal email address to receive notifications for p2p events needing manual actions or review."
+          isa: Str
+          global: 1
+          default: "p2p-support@deriv.com"
+        escrow:
+          description: 'List of escrow accounts. There should be one per currency per landing company'
+          isa: ArrayRef
+          global: 1
+          default: []
+        restricted_countries:
+          description: 'List of countries for which P2P is not available, 2 letter lower case country codes.'
+          isa: ArrayRef
+          global: 1
+          default: []
+        cross_border_ads_restricted_countries:
+          description: 'List of countries for which cross border ad feature is not available, 2 letter lower case country codes.'
+          isa: ArrayRef
+          global: 1
+          default: []
+        limits:
+          description: 'Peer-to-peer payment system and client limits'
+          isa: section
+          contains:
+            count_per_day_per_client:
+              isa: Int
+              description: 'Maximum number of active orders an advertiser allowed to have in 24 hours'
+              default: 3
+              global: 1
+            maximum_advert:
+              isa: Num
+              description: 'Maximum amount per advert (in USD)'
+              default: 100
+              global: 1
+            maximum_order:
+              isa: Num
+              description: 'Maximum amount per order (in USD)'
+              default: 100
+              global: 1
+            maximum_ads_per_type:
+              isa: Int
+              description: 'Maximum number of active orders an advertiser may have for each type and currency pair combination.'
+              default: 3
+              global: 1
+        cancellation_grace_period:
+          isa: Int
+          description: 'A buyer may cancel an order within this number of minutes without negative consequences'
+          default: 10
+          global: 1
+        cancellation_barring:
+          description: 'P2P cancellation barring parameters'
+          isa: section
+          contains:
+            count:
+              isa: Int
+              description: 'Advertiser will be temporarily barred after marking this number of cancellations within the period'
+              default: 3
+              global: 1
+            period:
+              isa: Int
+              description: 'Number of hours within which to count cancellations'
+              default: 24
+              global: 1
+            bar_time:
+              isa: Int
+              description: 'Number of hours to bar advertiser'
+              default: 72
+              global: 1
+        fraud_blocking:
+          description: 'P2P fraud blocking parameters'
+          isa: section
+          contains:
+            buy_count:
+              isa: Num
+              description: 'Advertiser will be disabled after this number of buyer fraud incidents within the period'
+              default: 3
+              global: 1
+            buy_period:
+              isa: Num
+              description: 'Number of days within which to count buyer fraud incidents. 0 is lifetime.'
+              default: 0
+              global: 1
+            sell_count:
+              isa: Num
+              description: 'Advertiser will be disabled after this number of seller fraud incidents within the period'
+              default: 3
+              global: 1
+            sell_period:
+              isa: Num
+              description: 'Number of days within which to count seller fraud incidents. 0 is lifetime.'
+              default: 0
+              global: 1
+        payment_method_countries:
+          description: 'Payment method visibilty per country.'
+          isa: json_string
+          default: '{"bank_transfer": { "mode" : "exclude" }, "other": { "mode" : "exclude" }}'
+          global: 1
+        archive_ads_days:
+          description: 'Number of days after which dormant ads are set inactive. Process is disabled when value is 0.'
+          isa: Int
+          global: 1
+          default: 0
+        delete_ads_days:
+          description: 'Number of days after which inactive ads with no orders are deleted. Process is disabled when value is 0.'
+          isa: Int
+          global: 1
+          default: 0
+        payment_methods_enabled:
+          description: 'To be enabled when all FE apps have the ability to create and use advertiser payment methods.'
+          isa: Bool
+          global: 1
+          default: 0
+        country_advert_config:
+          description: 'Country setting for floating and fixed rate adverts.'
+          isa: json_string
+          default: '{}'
+          global: 1
+        currency_config:
+          description: 'Currency specific settings.'
+          isa: json_string
+          default: '{}'
+          global: 1
+        float_rate_global_max_range:
+          isa: Num
+          description: 'Total range of floating rate allowed for adverts unless overridden per country. E.g. 10 means -5% to +5%.'
+          default: 10
+          global: 1
+        float_rate_order_slippage:
+          isa: Num
+          description: 'Total allowed slippage from market rate when placing orders on floating rate ads. E.g. 1.0 means -0.5% to +0.5%.'
+          default: 1
+          global: 1
+        email_campaign_ids:
+          description: "IDs of Customer.io email Broadcast campaigns triggered by events."
+          isa: json_string
+          default: '{ "float_rate_notice": "210", "fixed_rate_disabled": "211", "float_rate_disabled": "212" }'
+          global: 1
+        review_period:
+          isa: Num
+          description: 'Period (in hours) after an order is completed during which users can create a review.'
+          default: 24
+          global: 1
+        transaction_verification_countries:
+          description: 'List of countries to include or exclude from order transaction verrification, per transaction_verification_countries_all setting. 2 letter lower case country codes.'
+          isa: ArrayRef
+          global: 1
+          default: []
+        transaction_verification_countries_all:
+          description: 'If enabled, all P2P countries will have order transaction enabled except countries in transaction_verification_countries setting. If disabled, only transaction_verification_countries will have order transaction verification.'
+          isa: Bool
+          global: 1
+          default: 0
+        feature_level:
+          isa: Int
+          description: 'Flag to enable new features. Currently, cross border ads are enabled at >= 2.'
+          default: 1
+          global: 1
+        create_order_chat:
+          description: 'To be enabled new version of order chat creating for FE.'
+          isa: Bool
+          global: 1
+          default: 0
+        fiat_deposit_restricted_countries:
+          description: "Countries where all fiat cashier deposits are excluded from P2P balance. Only internal transfers and P2P deposits will count towards P2P available balance in these countries, except for deposits earlier that lookback."
+          isa: ArrayRef
+          default: []
+          global: 1
+        fiat_deposit_restricted_lookback:
+          isa: Int
+          description: 'Fiat cashier deposits made during this number of days in the past are excluded for fiat_deposit_restricted_countries.'
+          default: 180
+          global: 1
+        block_trade:
+          description: 'P2P block trading parameters'
+          isa: section
+          contains:
+            enabled:
+              description: 'Enables block trading system-wide.'
+              isa: Bool
+              global: 1
+              default: 0
+            maximum_advert:
+              isa: Num
+              description: 'Maximum amount per block trade advert (in USD)'
+              default: 20000
+              global: 1
+        poa:
+          description: 'P2P POA settings'
+          isa: section
+          contains:
+            enabled:
+              description: 'Enables POA as requirement for all available countries '
+              isa: Bool
+              global: 1
+              default: 0
+            countries_includes:
+              description: 'List of countries which have mandatory POA, 2 letter lower case country codes. This is deactivated if global is enabled.'
+              isa: ArrayRef
+              global: 1
+              default: []
+            countries_excludes:
+              description: 'List of countries which do not require POA, 2 letter lower case country codes. This is activated if global is enabled.'
+              isa: ArrayRef
+              global: 1
+              default: []
+        advert_counterparty_terms:
+          description: 'Settings for advert counterparty terms'
+          isa: section
+          contains:
+            completion_rate_steps:
+              description: 'Front end ranges for minimum completion rate (0 - 100).'
+              isa: ArrayRef
+              global: 1
+              default: [50,70,90]
+            join_days_steps:
+              description: 'Front end ranges for minimum join days.'
+              isa: ArrayRef
+              global: 1
+              default: [15,30,60]
+            rating_steps:
+              description: 'Front end ranges for minimum rating (1.00 - 5.00).'
+              isa: ArrayRef
+              global: 1
+              default: [3,4,4.5]
+    crypto:
+      description: 'Cryptocurrencies related config'
+      isa: section
+      contains:
+        restricted_countries:
+          description: "Countries where crypto withdrawals are restricted, separated by comma. Clients in these countries must have made a prior crypto deposit. Country code can be in lower case."
+          isa: ArrayRef
+          default: []
+          global: 1
+        auto_update:
+          description: "Enable crypto withdrawal auto approve and reject"
+          isa: section
+          contains:
+            approve:
+              isa: Bool
+              description: "Enable this to start running auto approval service for crypto payouts"
+              default: 1
+              global: 1
+            approve_dry_run:
+              isa: Bool
+              description: "Flag to enable dry run for auto approval service for crypto payouts"
+              default: 0
+              global: 1
+            reject:
+              isa: Bool
+              description: "Enable this to start running auto reject service for crypto payouts"
+              default: 0
+              global: 1
+            reject_dry_run:
+              isa: Bool
+              description: "Flag to enable dry run for auto reject service for crypto payouts"
+              default: 0
+              global: 1
+            stable_payment_methods:
+              isa: json_string
+              description: "Stable payment methods config for client withdrawal"
+              default: '{"skrill" : "Skrill", "neteller" : "Neteller", "perfectm" : "Perfect Money", "fasapay" : "FasaPay", "paysafe" : "PaySafe", "sticpay" : "SticPay", "webmoney" : "Webmoney", "airtm" : "AirTM", "paylivre" : "Paylivre", "nganluong" : "NganLuong", "astropay" : "Astropay", "onlinenaira" : "Onlinenaira", "directa24s" : "Directa24", "zingpay" : "ZingPay", "pix" : "PIX", "payrtransfer" : "PayRTransfer", "advcash" : "Advcash", "upi" : "UPI", "beyonicmt" : "BeyonicMT", "imps" : "IMPS", "btc" : "BTCCOP", "ltc" : "BTCCOP", "eth" : "BTCCOP", "bch" : "BTCCOP", "solidpaywave" : "SolidPayWave", "verve" : "Verve", "help2pay" : "Help2pay", "p2p" : "Deriv P2P", "payment_agent_transfer" : "Payment Agent"}'
+              global: 1
+            max_profit_limit:
+              description: 'Maximum profit limit for crypto auto approval'
+              isa: section
+              contains:
+                day:
+                  description: 'Maximum profit limit in a day for crypto auto approval in USD'
+                  isa: Num
+                  global: 1
+                  default: 5000
+                month:
+                  description: 'Maximum profit limit in a month for crypto auto approval in USD'
+                  isa: Num
+                  global: 1
+                  default: 8000
+            lookback_time_cfd_net_transfer:
+              description: 'The timeframe to compute net CFD transfers.(Number of days)'
+              isa: Num
+              global: 1 
+              default: 180
+            max_cfd_net_transfer_limit:
+              description: 'The threshold limit for net CFD transfers in USD.'
+              isa: Num
+              global: 1
+              default: 5000
+            lookback_time_trading_activity:
+              description: 'The timeframe to compute trading activity. (Number of days)'
+              isa: Num
+              global: 1
+              default: 180
+        stablecoin:
+          description: "Crypto stablecoins limits"
+          isa: section
+          contains:
+            bounds:
+              isa: section
+              contains:
+                min:
+                  isa: Num
+                  description: Stablecoins minimum bound limit
+                  default: 0.97
+                  global: 1
+                max:
+                  isa: Num
+                  description: Stablecoins maximum bound limit
+                  default: 1.03
+                  global: 1
+    transfer_between_accounts:
+      description: 'Transfer between accounts config'
+      isa: section
+      contains:
+        daily_cumulative_limit:
+          isa: section
+          description: 'To impose a limit on the total amount can be transferred between platforms (both ways) per account'
+          contains:
+            enable:
+              isa: Num
+              description: 'Enables all limits for total amount of internal transfers per day. A limit is ignored when setting is non-postitive.'
+              default: 0
+              global: 1
+            between_accounts:
+              isa: Num
+              description: 'Daily transfer amount limit in USD between binary accounts, doughflow and crypto wallets.'
+              default: 100000
+              global: 1
+            between_wallets:
+              isa: Num
+              description: 'Daily transfer amount limit in USD between cashier wallets (doughflow, crypto) and peer payment wallets (p2p, payment agent).'
+              default: 100000
+              global: 1
+            dtrade:
+              isa: Num
+              description: 'Daily transfer amount limit in USD between DTrader (Deriv trading) accounts and wallets.'
+              default: 100000
+              global: 1
+            MT5:
+              isa: Num
+              description: 'Daily transfer amount limit in USD between MT5 accounts and binary accounts or wallets.'
+              default: 200000
+              global: 1
+            dxtrade:
+              isa: Num
+              description: 'Daily transfer amount limit in USD between Deriv X accounts and binary accounts or wallets.'
+              default: 50000
+              global: 1
+            derivez:
+              isa: Num
+              description: 'Daily transfer amount limit in USD between DerivEZ accounts and binary accounts or wallets.'
+              default: -1
+              global: 1
+            ctrader:
+              isa: Num
+              description: 'Limits the amount of daily transfers in USD between CTrader accounts and binary accounts or wallets.'
+              default: -1
+              global: 1
+            virtual:
+              isa: Num
+              description: 'Limits the amount of daily transfers in USD between all virtual accounts (wallets only).'
+              default: 1000000
+              global: 1
+        limits:
+          isa: section
+          description: 'Set a limit on the cumulative amount an unauthorised client can transfer between different currencies.'
+          contains:
+            between_accounts:
+              isa: Num
+              description: 'Number of daily transfers allowed between binary accounts, doughflow and crypto wallets.'
+              default: 3
+              global: 1
+            between_wallets:
+              isa: Num
+              description: 'Number of daily transfers allowed between cashier wallets (doughflow, crypto) and peer payment wallets (p2p, payment agent).'
+              default: 10
+              global: 1
+            dtrade:
+              isa: Num
+              description: 'Number of daily transfers allowed between DTrader (Deriv trading) accounts and wallets.'
+              default: 10
+              global: 1
+            MT5:
+              isa: Num
+              description: 'Number of daily transfers allowed between MT5 accounts and binary accounts or wallets.'
+              default: 6
+              global: 1
+            fiat_to_crypto:
+              isa: Num
+              description: 'Limits the cumulative amount for transferring Fiat to Crypto for unauthenticated clients. Amount is in USD.'
+              default: 200
+              global: 1
+            crypto_to_crypto:
+              isa: Num
+              description: 'Limits the cumulative amount for transferring Crypto to Crypto for unauthenticated clients. Amount is in USD.'
+              default: 1000
+              global: 1
+            crypto_to_fiat:
+              isa: Num
+              description: 'Limits the cumulative amount for transferring Crypto to Fiat for unauthenticated clients. Amount is in USD.'
+              default: 1000
+              global: 1
+            dxtrade:
+              isa: Num
+              description: 'Number of daily transfers allowed between between Deriv X accounts and binary accounts or wallets.'
+              default: 6
+              global: 1
+            derivez:
+              isa: Num
+              description: 'Number of daily transfers allowed between between DerivEZ accounts and binary accounts or wallets.'
+              default: 10
+              global: 1
+            ctrader:
+              isa: Num
+              description: 'Number of daily transfers allowed between CTrader accounts and binary accounts or wallets.'
+              default: 10
+              global: 1
+            virtual:
+              isa: Num
+              description: 'Number of daily transfers allowed between all virtual accounts (wallets only).'
+              default: 1000
+              global: 1          
+        exchange_rate_expiry:
+          isa: section
+          description: 'This is to set the maximum threshold on the age of exchange rate. Internal transfer will be suspended if the age of a particular exchange rate is greater than the threshold.'
+          contains:
+            fiat:
+              isa: Num
+              default: 86400 # 1 day
+              description: 'Expiry age for transfer between Fiat-Fiat.'
+              global: 1
+            fiat_weekend_holidays:
+              isa: Num
+              default: 259200 # 3 days
+              description: 'Expiry age for transfer between Fiat-Fiat when the market is closed on weekends.'
+              global: 1
+            crypto_stable:
+              isa: Num
+              default: 3600 # 1 hour
+              description: 'Expiry age for transfer between Crypto-Fiat and Crypto-Crypto where the crypto being traded is a stablecoin'
+              global: 1
+            crypto_non_stable:
+              isa: Num
+              default: 3600 # 1 hour
+              description: 'Expiry age for transfer between Crypto-Fiat and Crypto-Crypto where the crypto being traded is not a stablecoin'
+              global: 1
+        fees:
+          isa: section
+          description: 'Transfer fees for currency conversion'
+          contains:
+            by_currency:
+              description: 'Default transfer fee for individual currency pairs in percentage (bidirectional, first currency is fiat); example: {"USD_UST":1, "EUR_BTC":0.8}'
+              isa: json_string
+              default: '{}'
+              global: 1
+            default:
+              isa: section
+              description: 'Default values'
+              contains:
+                fiat_fiat:
+                  description: 'Default fee for transferring between a pair of fiat currencies in percentage (currently only for MT5 deposit/withdrawal)'
+                  isa: Num
+                  default: 1
+                  global: 1
+                fiat_crypto:
+                  description: 'Default fee for transferring from a fiat to a crypto currency in percentage'
+                  isa: Num
+                  default: 1
+                  global: 1
+                fiat_stable:
+                  description: 'Default fee for transferring from a fiat to stablecoin crypto currency in percentage'
+                  isa: Num
+                  default: 0.5
+                  global: 1
+                crypto_crypto:
+                  description: 'Default fee for transferring from a crypto to a crypto currency in percentage'
+                  isa: Num
+                  default: 2
+                  global: 1
+                crypto_fiat:
+                  description: 'Default fee for transferring from a crypto to a fiat currency in percentage'
+                  isa: Num
+                  default: 1
+                  global: 1
+                crypto_stable:
+                  description: 'Default fee for transferring from a crypto to a stablecoin in percentage'
+                  isa: Num
+                  default: 2
+                  global: 1
+                stable_crypto:
+                  description: 'Default fee for transferring from a stablecoin to a crypto currency in percentage'
+                  isa: Num
+                  default: 2
+                  global: 1
+                stable_fiat:
+                  description: 'Default fee for transferring from a stablecoin to a fiat currency in percentage'
+                  isa: Num
+                  default: 0.5
+                  global: 1
+                stable_stable:
+                  description: 'Default fee for transferring from a stablecoin to a stablecoin in percentage'
+                  isa: Num
+                  default: 2
+                  global: 1
+        minimum:
+          isa: section
+          description: 'To set the minimum amount of transferring between platforms'
+          contains:
+            default:
+              isa: Num
+              description: 'Default transfer minimum (in USD)'
+              default: 1
+              global: 1
+            MT5:
+              isa: json_string
+              description: 'Minimum amount for transferring between binary accounts and MT5 accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":1}}'
+              global: 1
+            dxtrade:
+              isa: json_string
+              description: 'Minimum amount for transferring between binary accounts and Deriv X accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":1}}'
+              global: 1
+            derivez:
+              isa: json_string
+              description: 'Minimum amount for transferring between binary accounts and DerivEZ accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":0.01}}'
+              global: 1
+            ctrader:
+              isa: json_string
+              description: 'Minimum amount for transferring between binary accounts and CTrader accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":0.01}}'
+              global: 1
+        maximum:
+          isa: section
+          description: 'Transfer maximum amount (default)'
+          contains:
+            default:
+              isa: Num
+              description: 'Maximum amount for transferring between accounts in USD'
+              default: 2500
+              global: 1
+            MT5:
+              isa: json_string
+              description: 'Maximum amount for transferring between binary accounts and MT5 accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":2500}}'
+              global: 1
+            dxtrade:
+              isa: json_string
+              description: 'Maximum amount for transferring between binary accounts and Deriv X accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":2500}}'
+              global: 1
+            derivez:
+              isa: json_string
+              description: 'Maximum amount for transferring between binary accounts and DerivEZ accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":15000}}'
+              global: 1
+            ctrader:
+              isa: json_string
+              description: 'Maximum amount for transferring between binary accounts and CTrader accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":15000}}'
+              global: 1
+    experimental_currencies_allowed:
+      description: "List of emails that allowed to deposit using experimental currencies"
+      isa: ArrayRef
+      default: []
+      global: 1
+    payment_agent_deposits_lookback:
+      description: 'Number of days in the past to aggregate net payment agent deposits to be excluded from cashier withdrawal. A value of 0 will disable this check.'
+      isa: Num
+      global: 1
+      default: 180       
+quants:
+  description: "Various quants' parameters"
+  isa: section
+  contains:
+    live_pricing_config:
+      description: "To configure symbols display on Deriv homepage by market."
+      isa: section
+      contains:
+        row:
+          description: "To configure symbols display on Deriv Rest of World (row) homepage by market."
+          isa: section
+          contains:
+            symbols:
+              description: "Define MT5 group and associated symbols configuration for homepage."
+              isa: json_string
+              default: '[{"symbols":[{"display_name":"AUD/USD","display_order":4,"market":"Forex Major","symbol":"AUDUSD"},{"symbol":"EURUSD","display_order":1,"display_name":"EUR/USD","market":"Forex Major"},{"market":"Forex Major","display_order":3,"display_name":"GBP/JPY","symbol":"GBPJPY"},{"symbol":"GBPUSD","display_name":"GBP/USD","display_order":2,"market":"Forex Major"},{"symbol":"USDCAD","display_name":"USD/CAD","display_order":5,"market":"Forex Major"},{"market":"Equities US","display_name":"Apple (APPL)","display_order":1,"symbol":"AAPL"},{"symbol":"DIS","market":"Equities US","display_name":"Walt Disney Co (DIS)","display_order":2},{"display_name":"Tesla (TSLA)","display_order":3,"market":"Equities US","symbol":"TSLA"},{"symbol":"US_30","market":"Stock Indices","display_name":"Wall Street 30","display_order":4},{"symbol":"US_100","display_name":"US Tech 100","display_order":5,"market":"Stock Indices"},{"display_name":"ADA/USD","display_order":5,"market":"Crypto","symbol":"ADAUSD"},{"symbol":"BTCUSD","market":"Crypto","display_name":"BTC/USD","display_order":1},{"symbol":"ETHUSD","display_order":2,"display_name":"ETH/USD","market":"Crypto"},{"market":"Crypto","display_name":"DSH/USD","display_order":3,"symbol":"DSHUSD"},{"market":"Crypto","display_order":4,"display_name":"DOG/USD","symbol":"DOGUSD"},{"symbol":"XAGUSD","market":"Metals","display_order":2,"display_name":"Silver/USD"},{"market":"Metals","display_name":"Gold/USD","display_order":1,"symbol":"XAUUSD"},{"symbol":"XPDUSD","market":"Metals","display_name":"Palladium/USD","display_order":3},{"display_name":"Copper/USD","display_order":4,"market":"Metals","symbol":"XCUUSD"},{"symbol":"WTI_OIL","display_order":5,"display_name":"West Texas Intermediate","market":"Energies"},{"display_order":1,"display_name":"SPDR S&P 500 (SPY)","market":"ETFs","symbol":"SPY.US"},{"market":"ETFs","display_order":2,"display_name":"Gold Miners (GDX)","symbol":"GDX.US"},{"display_name":"MSCI Emerging Markets (EEM)","display_order":3,"market":"ETFs","symbol":"EEM.US"},{"display_name":"US Natural Gas (UNG)","display_order":4,"market":"ETFs","symbol":"UNG.US"},{"display_name":"Tech Select Sector SPDR (XLK)","display_order":5,"market":"ETFs","symbol":"XLK.US"}],"group":"real\\p01_ts01\\financial\\bvi_std-hr_usd"},{"group":"real\\p01_ts01\\synthetic\\bvi_std-hr_usd","symbols":[{"market":"Crash Boom Indices","display_order":2,"display_name":"Crash 1000 Index","symbol":"Crash 1000 Index"},{"symbol":"EURUSD DFX 10 Index","market":"Derived Indices","display_order":3,"display_name":"EUR/USD DFX 10 Index"},{"symbol":"Jump 50 Index","display_name":"Jump 50 Index","display_order":4,"market":"Jump Indices"},{"symbol":"Range Break 200 Index","market":"Range Break","display_name":"Range Break 200 Index","display_order":5},{"display_name":"Volatility 75 Index","display_order":1,"market":"Volatility Indices","symbol":"Volatility 75 Index"}]}]'
+              global: 1
+        eu:
+          description: "To configure symbols display on Deriv Europe (eu) homepage by market."
+          isa: section
+          contains:
+            symbols:
+              description: "Define MT5 group and associated symbols configuration for homepage."
+              isa: json_string
+              default: '[{"symbols":[{"market":"Forex Major","display_order":4,"display_name":"AUD/USD","symbol":"AUDUSD"},{"symbol":"EURUSD","display_name":"EUR/USD","market":"Forex Major","display_order":1},{"display_order":3,"market":"Forex Major","display_name":"GBP/JPY","symbol":"GBPJPY"},{"symbol":"GBPUSD","display_name":"GBP/USD","market":"Forex Major","display_order":2},{"display_name":"USD/CAD","symbol":"USDCAD","market":"Forex Major","display_order":5},{"market":"Equities US","display_order":1,"symbol":"AAPL","display_name":"Apple (APPL)"},{"display_order":2,"market":"Equities US","symbol":"DIS","display_name":"Walt Disney Co (DIS)"},{"display_name":"Tesla (TSLA)","symbol":"TSLA","display_order":3,"market":"Equities US"},{"display_order":4,"market":"Stock Indices","display_name":"Wall Street 30","symbol":"US_30"},{"display_name":"US Tech 100","symbol":"US_100","market":"Stock Indices","display_order":5},{"display_name":"ADA/USD","symbol":"ADAUSD","market":"Crypto","display_order":5},{"display_name":"BTC/USD","symbol":"BTCUSD","display_order":1,"market":"Crypto"},{"display_name":"ETH/USD","symbol":"ETHUSD","market":"Crypto","display_order":2},{"display_order":3,"market":"Crypto","display_name":"DSH/USD","symbol":"DSHUSD"},{"display_order":4,"market":"Crypto","display_name":"DOG/USD","symbol":"DOGUSD"},{"market":"Metals","display_order":2,"display_name":"Silver/USD","symbol":"XAGUSD"},{"symbol":"XAUUSD","display_name":"Gold/USD","display_order":1,"market":"Metals"},{"symbol":"XPDUSD","display_name":"Palladium/USD","display_order":3,"market":"Metals"},{"market":"Metals","display_order":4,"display_name":"Copper/USD","symbol":"XCUUSD"},{"display_order":5,"market":"Energies","display_name":"West Texas Intermediate","symbol":"WTI_OIL"},{"display_name":"SPDR S&P 500 (SPY)","symbol":"SPY.US","market":"ETFs","display_order":1},{"display_name":"Gold Miners (GDX)","symbol":"GDX.US","display_order":2,"market":"ETFs"},{"display_name":"MSCI Emerging Markets (EEM)","symbol":"EEM.US","market":"ETFs","display_order":3},{"display_order":4,"market":"ETFs","symbol":"UNG.US","display_name":"US Natural Gas (UNG)"},{"symbol":"XLK.US","display_name":"Tech Select Sector SPDR (XLK)","market":"ETFs","display_order":5}],"group":"real\\p01_ts01\\financial\\bvi_std-hr_usd"},{"symbols":[{"symbol":"Volatility 150 (1s) Index","display_name":"Volatility 150 (1s) Index","market":"Volatility Indices","display_order":1},{"symbol":"Volatility 250 (1s) Index","display_name":"Volatility 250 (1s) Index","display_order":2,"market":"Volatility Indices"},{"display_order":3,"market":"Crash Boom Indices","symbol":"Boom 300 Index","display_name":"Boom 300 Index"},{"display_order":4,"market":"Crash Boom Indices","symbol":"Crash 300 Index","display_name":"Crash 300 Index"}],"group":"real\\p01_ts01\\synthetic\\bvi_std-hr_usd"}]'
+              global: 1
+    commission:
+      description: "Tunable factors for commissions"
+      isa: section
+      contains:
+        adjustment:
+          description: "BOM specific adjustments to manage risk."
+          isa: section
+          contains:
+            per_market_scaling:
+              description: "The per-market scaling factor for all commissions. (percent of commission)"
+              isa: section
+              contains:
+                forex:
+                  description: "The scaling factor for all forex commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
+                  isa: Num
+                  default: 100
+                  global: 1
+                indices:
+                  description: "The scaling factor for all indices commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
+                  isa: Num
+                  default: 100
+                  global: 1
+                commodities:
+                  description: "The scaling factor for all commodities commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
+                  isa: Num
+                  default: 100
+                  global: 1
+                synthetic_index:
+                  description: "The scaling factor for all synthetic index commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
+                  isa: Num
+                  default: 100
+                  global: 1
+                cryptocurrency:
+                  description: "The scaling factor for all cryptocurrency market commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
+                  isa: Num
+                  default: 100
+                  global: 1
+                config:
+                  description: "The scaling factor for all fake config market commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
+                  isa: Num
+                  default: 100
+                  global: 1
+            global_scaling:
+              description: "The scaling factor for all commissions. (percent of commission)"
+              isa: Num
+              default: 100
+              global: 1
+            lookback:
+              description: "The per-market scaling factor for all commissions. (percent of commission)"
+              isa: section
+              contains:
+                stake_percentage_commission:
+                  description: "The scaling factor for Turnover lookback commissions. (percent from Stake for Lookback to be paid to Affiliates. Our Expected Revenue from Lookback is roughly 2%, from Stake size on average. Hence assuming we are OK to pay 40% from our Expected Revenue, we will have the stake percentage as 0.8%.)"
+                  isa: Num
+                  default: 0.008
+                  global: 1
+    vanilla:
+      description: "Vanilla variables"
+      isa: section
+      contains:
+        per_symbol_config:
+          isa: section
+          contains:
+            R_10_intraday: &vanilla_default_config
+              isa: json_string
+              default: '{"delta_config" : [0.1,0.3,0.5,0.7,0.9],
+                         "vol_markup" : 0.025,
+                         "max_strike_price_choice" :5,
+                         "bs_markup" : 0,
+                         "min_number_of_contracts": {"USDC":0.1,"GBP":0.1,"tUSDT":0.1,"BTC":0.00000015,"EUR":0.1,"UST":0.1,"AUD":0.1,"eUSDT":0.1,"LTC":0.00045,"USD":0.1,"ETH":0.000025,"XRP":0.18},
+                         "max_number_of_contracts": {"USDC":1000,"GBP":1000,"tUSDT":1000,"BTC":0.015,"EUR":1000,"UST":1000,"AUD":1000,"eUSDT":1000,"LTC":4.5,"USD":1000,"ETH":0.25,"XRP":1800},
+                         "intraday":1,
+                         "max_open_position": 10,
+                         "max_daily_volume": 5000,
+                         "max_daily_pnl": 3000,
+                         "risk_profile":"low_risk",
+                         "spread_spot": 0
+                        }'
+              global: 1
+            R_25_intraday: *vanilla_default_config
+            R_50_intraday: *vanilla_default_config
+            R_75_intraday: *vanilla_default_config
+            R_100_intraday: *vanilla_default_config
+            1HZ10V_intraday: *vanilla_default_config
+            1HZ25V_intraday: *vanilla_default_config
+            1HZ50V_intraday: *vanilla_default_config
+            1HZ75V_intraday: *vanilla_default_config
+            1HZ100V_intraday: *vanilla_default_config
+            1HZ150V_intraday: *vanilla_default_config
+            1HZ250V_intraday: *vanilla_default_config
+            R_10_daily: &vanilla_default_config_daily
+              isa: json_string
+              default: '{"delta_config" : [0.1,0.3,0.5,0.7,0.9],
+                         "vol_markup" : 0.025,
+                         "max_strike_price_choice" :5,
+                         "bs_markup" : 0,
+                         "min_number_of_contracts": {"USDC":0.1,"GBP":0.1,"tUSDT":0.1,"BTC":0.00000015,"EUR":0.1,"UST":0.1,"AUD":0.1,"eUSDT":0.1,"LTC":0.00045,"USD":0.1,"ETH":0.000025,"XRP":0.18},
+                         "max_number_of_contracts": {"USDC":1000,"GBP":1000,"tUSDT":1000,"BTC":0.015,"EUR":1000,"UST":1000,"AUD":1000,"eUSDT":1000,"LTC":4.5,"USD":1000,"ETH":0.25,"XRP":1800},
+                         "intraday":0,
+                         "max_open_position": 10,
+                         "max_daily_volume": 5000,
+                         "max_daily_pnl": 3000,
+                         "risk_profile":"low_risk",
+                         "spread_spot": 0
+                        }'
+              global: 1
+            R_25_daily: *vanilla_default_config_daily
+            R_50_daily: *vanilla_default_config_daily
+            R_75_daily: *vanilla_default_config_daily
+            R_100_daily: *vanilla_default_config_daily
+            1HZ10V_daily: *vanilla_default_config_daily
+            1HZ25V_daily: *vanilla_default_config_daily
+            1HZ50V_daily: *vanilla_default_config_daily
+            1HZ75V_daily: *vanilla_default_config_daily
+            1HZ100V_daily: *vanilla_default_config_daily
+            1HZ150V_daily: *vanilla_default_config_daily
+            1HZ250V_daily: *vanilla_default_config_daily
+        fx_per_symbol_config:
+          isa: section
+          contains:
+            frxAUDUSD: &vanilla_fx_default_config
+              isa: json_string
+              global: 1
+              default: '{"maturities_allowed_days" : [1,2,3,4,5],
+                         "maturities_allowed_weeks" : [1,2,3,4,5,6,7,8,9],
+                         "bs_markup" : 0,
+                         "delta_config" : [0.1,0.3,0.5,0.7,0.9],
+                         "max_strike_price_choice" : 5,
+                         "min_number_of_contracts": {"USDC":0.1,"GBP":0.1,"tUSDT":0.1,"BTC":0.00000015,"EUR":0.1,"UST":0.1,"AUD":0.1,"eUSDT":0.1,"LTC":0.00045,"USD":0.1,"ETH":0.000025,"XRP":0.18},
+                         "max_number_of_contracts": {"USDC":1000,"GBP":1000,"tUSDT":1000,"BTC":0.015,"EUR":1000,"UST":1000,"AUD":1000,"eUSDT":1000,"LTC":4.5,"USD":1000,"ETH":0.25,"XRP":1800},
+                         "max_open_position": 10,
+                         "max_daily_volume": 5000,
+                         "max_daily_pnl": 3000,
+                         "risk_profile":"low_risk",
+                         "spread_spot":{"delta":{"0.1":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.3":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.5":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.7":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.9":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}}}}
+                         ,
+                         "spread_vol":{"delta":{"0.1":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.3":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.5":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.7":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}},"0.9":{"day":{"1":0,"2":0,"3":0,"4":0,"5":0},"week":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0}}}}
+                          }'
+            frxEURUSD: *vanilla_fx_default_config
+            frxGBPUSD: *vanilla_fx_default_config
+            frxUSDCAD: *vanilla_fx_default_config
+            frxUSDJPY: *vanilla_fx_default_config
+            frxXAUUSD: *vanilla_fx_default_config
+            frxXAGUSD: *vanilla_fx_default_config
+        risk_profile:
+          isa: section
+          global: 1
+          contains:
+            no_business:
+              isa: json_string
+              default: '{
+                        "USD": 0,
+                        "EUR": 0,
+                        "AUD": 0,
+                        "GBP": 0,
+                        "BTC": 0,
+                        "ETH": 0,
+                        "LTC": 0,
+                        "XRP": 0,
+                        "USDC": 0,
+                        "UST": 0,
+                        "eUSDT": 0,
+                        "tUSDT": 0
+                         }'
+              global: 1
+            extreme_risk:
+              isa: json_string
+              default: '{
+                        "USD": 50,
+                        "EUR": 50,
+                        "AUD": 50,
+                        "GBP": 50,
+                        "BTC": 0.0008,
+                        "ETH": 0.0125,
+                        "LTC": 0.2250,
+                        "XRP": 90,
+                        "USDC": 50,
+                        "UST": 50,
+                        "eUSDT": 50,
+                        "tUSDT": 50
+                         }'
+              global: 1
+            high_risk:
+              isa: json_string
+              default: '{
+                        "USD": 200,
+                        "EUR": 200,
+                        "AUD": 200,
+                        "GBP": 200,
+                        "BTC": 0.003,
+                        "ETH": 0.05,
+                        "LTC": 0.9,
+                        "XRP": 365,
+                        "USDC": 200,
+                        "UST": 200,
+                        "eUSDT": 200,
+                        "tUSDT": 200
+                        }'
+              global: 1
+            moderate_risk:
+              isa: json_string
+              default: '{
+                        "USD": 500,
+                        "EUR": 500,
+                        "AUD": 500,
+                        "GBP": 500,
+                        "BTC": 0.0075,
+                        "ETH": 0.125,
+                        "LTC": 2.25,
+                        "XRP": 910,
+                        "USDC": 500,
+                        "UST": 500,
+                        "eUSDT": 500,
+                        "tUSDT": 500
+                         }'
+              global: 1
+            medium_risk:
+              isa: json_string
+              default: '{
+                        "USD": 1000,
+                        "EUR": 1000,
+                        "AUD": 1000,
+                        "GBP": 1000,
+                        "BTC": 0.015,
+                        "ETH": 0.25,
+                        "LTC": 4.5,
+                        "XRP": 1820,
+                        "USDC": 1000,
+                        "UST": 1000,
+                        "eUSDT": 1000,
+                        "tUSDT": 1000
+                         }'
+              global: 1
+            low_risk:
+              isa: json_string
+              default: '{
+                        "USD": 2000,
+                        "EUR": 2000,
+                        "AUD": 2000,
+                        "GBP": 2000,
+                        "BTC": 0.03,
+                        "ETH": 0.5,
+                        "LTC": 9,
+                        "XRP": 3640,
+                        "USDC": 2000,
+                        "UST": 2000,
+                        "eUSDT": 2000,
+                        "tUSDT": 2000
+                         }'
+              global: 1
+        user_specific_limits:
+          isa: json_string
+          default: '{}'
+          global: 1
+        strike_price_range_markup:
+          isa: json_string
+          default: '{}'
+          global: 1
+        fx_spread_specific_time:
+          isa: json_string
+          default: '{}'
+          global: 1
+        affiliate_commission:
+          description: "Affiliate commission for vanilla options"
+          isa: section
+          contains:
+            financial:
+              description: "Financial vanilla options affiliate commission"
+              isa: Num
+              default: 0.4
+              global: 1
+            non_financial:
+              description: "Non-financial vanilla options affiliate commission"
+              isa: Num
+              default: 0.4
+              global: 1
+    accumulator:
+      description: "Accumulator variables"
+      isa: section
+      contains:
+        affiliate_commission:
+          description: "Affiliate commission for accumulator contracts"
+          isa: section
+          contains:
+            financial:
+              description: "Financial contracts accumulator affiliate commission"
+              isa: Num
+              default: 0.4
+              global: 1
+            non_financial:
+              description: "Non-financial accumulator contracts affiliate commission"
+              isa: Num
+              default: 0.4
+              global: 1
+    turbos:
+      description: "Turbos variables"
+      isa: section
+      contains:
+        affiliate_commission:
+          description: "Affiliate commission for turbos contracts"
+          isa: section
+          contains:
+            financial:
+              description: "Financial contracts turbos affiliate commission"
+              isa: Num
+              default: 0.4
+              global: 1
+            non_financial:
+              description: "Non-financial turbos contracts affiliate commission"
+              isa: Num
+              default: 0.4
+              global: 1
+    multiplier_affiliate_commission:
+      description: "Affiliate commission for multiplier contracts"
+      isa: section
+      contains:
+        financial:
+          description: "Financial contracts multiplier affiliate commission"
+          isa: Num
+          default: 0
+          global: 1
+        non_financial:
+          description: "Non-financial multiplier contracts affiliate commission"
+          isa: Num
+          default: 0
+          global: 1
+    mt5_affiliate_commission:
+      description: "Affiliate commission for MT5"
+      isa: section
+      contains:
+        enable:
+          description: "Flag to enable in-house commission calculation for MT5"
+          isa: Bool
+          default: 0
+          global: 1
+        enable_auto_payment:
+          description: "Flag to enable automatic commission payment for MT5"
+          isa: Bool
+          default: 0
+          global: 1
+        type:
+          description: "Affiliate commission for Deriv X"
+          isa: section
+          contains:
+            financial:
+              description: "Commission type for financial asset. E.g. volume or spread"
+              isa: Str
+              default: 'volume'
+              global: 1
+            synthetic:
+              description: "Commission type for synthetic asset. E.g. volume or spread"
+              isa: Str
+              default: 'volume'
+              global: 1
+    dxtrade_affiliate_commission:
+      description: "Affiliate commission for Deriv X"
+      isa: section
+      contains:
+        enable:
+          description: "Flag to enable in-house commission calculation for Deriv X"
+          isa: Bool
+          default: 0
+          global: 1
+        enable_auto_payment:
+          description: "Flag to enable automatic commission payment for Deriv X"
+          isa: Bool
+          default: 0
+          global: 1
+        type:
+          description: "Affiliate commission for Deriv X"
+          isa: section
+          contains:
+            financial:
+              description: "Commission type for financial asset. E.g. volume or spread"
+              isa: Str
+              default: 'volume'
+              global: 1
+            synthetic:
+              description: "Commission type for synthetic asset. E.g. volume or spread"
+              isa: Str
+              default: 'volume'
+              global: 1
+    ctrader_affiliate_commission:
+      description: "Affiliate commission for cTrader"
+      isa: section
+      contains:
+        enable:
+          description: "Flag to enable in-house commission calculation for cTrader"
+          isa: Bool
+          default: 0
+          global: 1
+        enable_auto_payment:
+          description: "Flag to enable automatic commission payment for cTrader"
+          isa: Bool
+          default: 0
+          global: 1
+        type:
+          description: "Affiliate commission for cTrader"
+          isa: section
+          contains:
+            financial:
+              description: "Commission type for financial asset. E.g. volume or spread"
+              isa: Str
+              default: 'volume'
+              global: 1
+            synthetic:
+              description: "Commission type for synthetic asset. E.g. volume or spread"
+              isa: Str
+              default: 'volume'
+              global: 1
+    suspend_deal_cancellation:
+      description: "Allow suspension of deal cancellation by market."
+      isa: section
+      contains:
+        forex:
+          description: "Suspend purchase of deal cancellation on multiplier for forex."
+          isa: Bool
+          default: 0
+          global: 1
+        synthetic_index:
+          description: "Suspend purchase of deal cancellation on multiplier for synthetic index."
+          isa: Bool
+          default: 0
+          global: 1
+        cryptocurrency:
+          description: "Suspend purchase of deal cancellation on multiplier for cryptocurrency."
+          isa: Bool
+          default: 1
+          global: 1
+    contract_types:
+      description: "Contract type specific variables"
+      isa: section
+      contains:
+        suspend_buy:
+          description: "Suspend buy only on these bet types (CALL, DIGITODD, ..)"
+          isa: ArrayRef
+          default: []
+          global: 1
+        suspend_trades:
+          description: "A list of contract types for which trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+        suspend_early_sellback:
+          description: "A list of contract types for which early sellback should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+    markets:
+      description: "Market-specific variables"
+      isa: section
+      contains:
+        suspend_trades:
+          description: "A list of markets for which trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+        suspend_buy:
+          description: "A list of markets for which purchase trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+        suspend_early_sellback:
+          description: "A list of contract types for which early sellback should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+    underlyings:
+      description: "Underlying-specific variables"
+      isa: section
+      contains:
+        disable_autoupdate_vol:
+          description: "Disable autoupdate volatility for the following underlyings, eg: frxGBPUSD"
+          isa: ArrayRef
+          default: []
+          global: 1
+        suspend_trades:
+          description: "A list of underlyings for which trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+        suspend_buy:
+          description: "A list of underlyings for which purchase trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+        suspend_early_sellback:
+          description: "A list of contract types for which early sellback should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+    callputspreads:
+      description: "call/put_spreads variables"
+      isa: section
+      contains:
+        disable_sellback:
+          description: "Suspend sellback for call/put spreads"
+          isa: Bool
+          default: 0
+          global: 1
+        minimum_allowed_sellback_duration:
+          description: "Sell back is not allowed if the remaining contract duration is less than or equal to specified time value (in seconds) "
+          isa: Num
+          default: 900
+          global: 1
+    custom_client_profiles:
+      description: "Custom client limits specification."
+      isa: json_string
+      global: 1
+      default: '{}'
+    custom_product_profiles:
+      description: "Custom limits specification."
+      isa: json_string
+      global: 1
+      default: '{}'
+    custom_volume_limits:
+      description: "Multiplier contracts volume limits."
+      isa: json_string
+      global: 1
+      default: '{}'
+    global_potential_loss_alert_threshold:
+      description: "Alert threshold for global potential loss (in decimal, e.g. 0.5 is equivalent to 50%)"
+      isa: Num
+      global: 1
+      default: 0.5
+    global_realized_loss_alert_threshold:
+      description: "Alert threshold for global realized loss (in decimal, e.g. 0.5 is equivalent to 50%)"
+      isa: Num
+      global: 1
+      default: 0.5
+    enable_hour_end_discount:
+      description: "A switch to turn off end of hour discount."
+      isa: Bool
+      global: 1
+      default: 1
+    enable_global_potential_loss:
+      description: "A switch to turn off global potential loss check."
+      isa: Bool
+      global: 1
+      default: 0
+    enable_global_realized_loss:
+      description: "A switch to turn off global realized loss check."
+      isa: Bool
+      global: 1
+      default: 0
+    user_potential_loss_alert_threshold:
+      description: "Alert threshold for user potential loss (in decimal, e.g. 0.5 is equivalent to 50%)"
+      isa: Num
+      global: 1
+      default: 0.5
+    user_realized_loss_alert_threshold:
+      description: "Alert threshold for user realized loss (in decimal, e.g. 0.5 is equivalent to 50%)"
+      isa: Num
+      global: 1
+      default: 0.5
+    enable_user_potential_loss:
+      description: "A switch to turn off user potential loss check."
+      isa: Bool
+      global: 1
+      default: 0
+    enable_user_realized_loss:
+      description: "A switch to turn off user realized loss check."
+      isa: Bool
+      global: 1
+      default: 0
+    ultra_short_duration:
+      description: "An ultra short expiry duration in seconds."
+      isa: Num
+      global: 1
+      default: 300
+compliance:
+  description: "Compliance related adjustable parameters"
+  isa: section
+  contains:
+    fake_names:
+      description: "Fake name detection settings"
+      isa: section
+      contains:
+        corporate_patterns:
+          description: "Keywords for indentifying corporate names. The symbol % can be used as wildcard (any number of characters)."
+          isa: ArrayRef
+          global: 1
+          default: ['company', 'ltd%', 'co', 'co.', '%club', 'consult%', '%limited', 'holding%', 'invest%', 'market%', 'forex%', 'fx%', '%academy', 'trader']
+        accepted_consonant_names:
+          description: "All-consonant names or family names are regarded as fake names, with the exception of this list."
+          isa: ArrayRef
+          global: 1
+          default: ['md']
+    payment_agents:
+      description: "Payment Agent settings"
+      isa: section
+      contains:
+        standard_risk_level:
+          description: "Standard risk will be applied when yearly PA transactions reach this amount (USD value)."
+          isa: Num
+          global: 1
+          default: 1000
+        high_risk_level:
+          description: "High risk will be applied when yearly PA transactions reach this amount (USD value)."
+          isa: Num
+          global: 1
+          default: 10000
+    sanctions:
+      description: "Sanctions dynamic settings"
+      isa: section
+      contains:
+        hmt_consolidated_url:
+          description: "The url to read the UK consolidated sanctions CSV file from. It will override the hardcoded value."
+          isa: Str
+          global: 1
+          default: ""
+    aml_risk_thresholds:
+      description: "AML risk level transaction thresholds (in EUR) for Deriv accounts"
+      isa: json_string
+      global: 1
+      default: '{"svg": {"yearly_standard": 10000, "yearly_high": 20000}, "maltainvest": {"yearly_standard": 10000, "yearly_high": 20000}}'
+    mt5_risk_thresholds:
+      description: "AML risk level transaction thresholds for MT5 accouts"
+      isa: json_string
+      global: 1
+      default: '{"labuan": {"yearly_standard": null, "yearly_high": null}, "bvi": {"yearly_standard": null, "yearly_high": null}, "vanuatu": {"yearly_standard": null, "yearly_high": null} }'
+    aml_jurisdiction_risk_rating:
+      description: "The jurisdiction risk ratings of landing companies, defined as arrays of standrd- and high-risk country codes"
+      isa: json_string
+      global: 1
+      default: '{"maltainvest": {"standard":[], "high":[]} }'
+    mt5_jurisdiction_risk_rating:
+      description: "The MT5 jurisdiction risk ratings of landing companies, mapping from landing company name to arrays for 'standard' and 'high'-risk country codes"
+      isa: json_string
+      global: 1
+      default: '{"labuan": {"standard":[], "high":[], "restricted":[]}, "vanuatu": {"standard":[], "high":[], "restricted":[]}, "bvi": {"standard":[], "high":[], "restricted":[]} }'
+    npj_country_list:
+      description: "2 character lowercase country code list for each landing company for which we need to exclude TIN verification ex : {'labuan': ['id'], 'bvi': ['id','my'],'vanuatu': ['id']}"
+      isa: json_string
+      global: 1
+      default: '{"labuan": [], "bvi": [], "vanuatu": [] }'
+    enhanced_due_diligence:
+      description: "Enhanced Due Diligence (EDD) settings"
+      isa: section
+      contains:
+        auto_lock:
+          description: "Enhanced due diligence (EDD) auto lock settings will be applied on clients with a certain threshold"
+          isa: Num
+          global: 1
+          default: 0
+        auto_lock_threshold:
+          description: "Enhanced due diligence (EDD) auto lock threshold that will be applied on clients"
+          isa: Num
+          global: 1
+          default: 20000
+    auto_anonymization_daily_limit:
+      description: "Maximum number of clients to be auto-anonymized every day. Anonymization of each client takes a lot of time, and this number will be fine tuned by observing the datadog metrics."
+      isa: Int
+      global: 1
+      default: 50
+    
+
+system:
+  description: "Various parameters determining core application functionality"
+  isa: section
+  contains:
+    onfido:
+      isa: section
+      contains:
+        global_daily_limit:
+          description: global daily limits for onfido requests
+          default: 5000
+          isa: Num
+          global: 1
+    suspend:
+      description: "To suspend internal transfer (both ways)"
+      isa: section
+      contains:
+        payout_freezing_funds:
+          description: "Suspend freezing funds on create payout for those landing companies that support it. On DoughFlow, the front end setting 'CRM Payout Requests Debited Upon Event' should be set to `REQUESTED` when  freezing funds is enabled, `INPROGRESS` otherwise"
+          isa: Bool
+          default: 1
+          global: 1
+        trading:
+          description: "Suspend buy or sell of all trades"
+          isa: Bool
+          default: 0
+          global: 1
+        payments:
+          description: "Suspend all payments we support"
+          isa: Bool
+          default: 0
+          global: 1
+        payments_graceful:
+          description: "Gracefully suspend new payouts or deposits"
+          isa: Bool
+          default: 0
+          global: 1
+        payment_agents:
+          description: "Suspend all payment agent transfers"
+          isa: Bool
+          default: 0
+          global: 1
+        payment_agents_in_countries:
+          description: "Suspend all payment agents in the selected countries"
+          isa: ArrayRef
+          default: []
+          global: 1
+        payment_agent_withdrawal_automation:
+          description: "Suspend the payment agent withdrawal automation"
+          isa: Bool
+          default: 1
+          global: 1
+        cryptocashier:
+          description: "Suspend crypto cashier only"
+          isa: Bool
+          default: 0
+          global: 1
+        cashier:
+          description: "Suspend fiat cashier only"
+          isa: Bool
+          default: 0
+          global: 1
+        cryptocurrencies:
+          description: "Suspend comma-separated list of currencies, set this configuration if you want to disable all functionalities to this currency"
+          isa: Str
+          default: ""
+          global: 1
+        cryptocurrencies_deposit:
+          description: "Deposit suspend comma-separated list of currencies, set this configuration if you want to block just deposits"
+          isa: ArrayRef
+          default: []
+          global: 1
+        cryptocurrencies_withdrawal:
+          description: "Withdrawal suspend comma-separated list of currencies, set this configuration if you want to block just withdrawals"
+          isa: ArrayRef
+          default: []
+          global: 1
+        experimental_currencies:
+          description: "List of experimental currencies"
+          isa: ArrayRef
+          default: []
+          global: 1
+        new_accounts:
+          description: "Suspend opening new accounts"
+          isa: Bool
+          default: 0
+          global: 1
+        expensive_api_calls:
+          description: "Suspend all expensive API calls - portfolio, profit_table, reality_check, statement"
+          isa: Bool
+          default: 0
+          global: 1
+        all_logins:
+          description: "Suspend all logins to the system"
+          isa: Bool
+          default: 0
+          global: 1
+        social_logins:
+          description: "Suspend social logins"
+          isa: Bool
+          default: 0
+          global: 1
+        logins:
+          description: "Suspend logins for a broker code (ex. VRTC,MX,CR)"
+          isa: ArrayRef
+          default: []
+          global: 1
+        transfer_between_accounts:
+          description: "Suspend all transfer between accounts be it between binary accounts or between binary and MT5 or vice versa"
+          isa: Bool
+          default: 0
+          global: 1
+        transfer_currencies:
+          description: "To suspend internal transfer on currency(ies) across all platforms"
+          isa: ArrayRef
+          default: []
+          global: 1
+        transfer_currency_pair:
+          description: "To suspend internal transfer on currency pairs across all platforms, the config will block the transfer bi-directionally ex: {\"currency_pairs\":[[\"USD\",\"ETH\"],[\"USD\",\"BTC\"]]}"
+          isa: json_string
+          default: '{"currency_pairs":[]}'
+          global: 1
+        onfido:
+          description: "Suspend Onfido"
+          isa: Bool
+          default: 0
+          global: 1
+        p2p:
+          description: "Suspend peer-to-peer cashier - this will override payments.p2p.enabled"
+          isa: Bool
+          default: 0
+          global: 1
+        universal_password:
+          description: "Suspend syncing binary account password to MT5 account passwords"
+          isa: Bool
+          default: 1
+          global: 1
+        wallets:
+          description: "Suspend Wallets - e.g. allow wallet-only RPC calls to be accessed by trading accounts"
+          isa: Bool
+          default: 1
+          global: 1
+        wallet_migration:
+          description: "Suspend initiation of wallet migration via the API"
+          isa: Bool
+          default: 1
+          global: 1
+        idv:
+          description: "Suspend all IDV identity verification"
+          isa: Bool
+          default: 0
+          global: 1
+        idv_countries:
+          description: "Suspend all IDV identity verification in the selected countries e.g. gh"
+          isa: ArrayRef
+          default: []
+          global: 1
+        idv_providers:
+          description: "Suspend all IDV identity verification by the selected providers e.g. smile_identity"
+          isa: ArrayRef
+          default: []
+          global: 1
+        idv_document_types:
+          description: "Suspend IDV identity verification for a specific document of specific country e.g. gh:drivers_license, in:pan"
+          isa: ArrayRef
+          default: []
+          global: 1
+        idv_triplets:
+          description: "Suspend IDV identity verification for a specific provider, country, document type combination e.g. identity_pass:ke:national_id"
+          isa: ArrayRef
+          default: []
+          global: 1
+        access_token_sharing:
+          description: "Suspend sharing OAuth token between third party apps"
+          isa: Bool
+          default: 0
+          global: 1
+        ctrader_oauth_api:
+          description: "Suspend OAuth API for cTrader integration"
+          isa: Bool
+          default: 0
+          global: 1
+        restrict_third_party_apps:
+          description: "Restrict third-party apps access to only pre-defined allowed environments"
+          isa: Bool
+          default: 0
+          global: 1
+        duplicate_poi_checks:
+          description: "Suspend duplicate POI document checks"
+          isa: Bool
+          default: 1
+          global: 1
+    services:
+      description: "Enable integrations with internal microservices"
+      isa: section
+      contains:
+        fraud_prevention:
+          description: "Enables integration with Fraud Prevention service"
+          description: "Enables integration with Fraud Prevention microservice"
+          isa: Bool
+          default: 0
+          global: 1
+        identity_verification:
+          description: "Enables integration with IDV microservice"
+          isa: Bool
+          default: 1
+          global: 1
+    directory:
+      description: "Configuration for system wide directories"
+      isa: section
+      contains:
+        db:
+          description: "Directory where we store legacy db stuff, primarily customer documents"
+          isa: Str
+          default: "/db"
+        feed:
+          description: "Directory where our feed files are stored"
+          isa: Str
+          default: "/feed"
+          global: 1
+    browser:
+        description: "Configuration checks for the client web browser"
+        isa: section
+        contains:
+            minimum_supported_chrome_version:
+                description: "Latest and workable Chome version for the Backoffice. Login will not allowed for the versions lower than this."
+                isa: Str
+                default: "87.0.4280"
+    mt5:
+      description: "Configuration for MT5"
+      isa: section
+      contains:
+        commission_transfer:
+          description: "Configuration for MT5 commission transfer script"
+          isa: section
+          contains:
+            max_lookback_days:
+              description: "The maximum lookback days to check technical account deals that are not transferred"
+              isa: Num
+              default : 30
+              global: 1
+            wait_between_requests:
+              description: "The delay between each request to MT5 (ms)"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Wait time between requests for p01_ts01"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p01_ts02:
+                  description: "Wait time between requests for p01_ts02"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p01_ts03:
+                  description: "Wait time between requests for p01_ts03"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p01_ts04:
+                  description: "Wait time between requests for p01_ts04"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p02_ts01:
+                  description: "Wait time between requests for p02_ts01"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p02_ts02:
+                  description: "Wait time between requests for p02_ts02"
+                  isa: Num
+                  default: 0
+                  global: 1
+                p03_ts01:
+                  description: "Wait time between requests for p03_ts01"
+                  isa: Num
+                  default: 0
+                  global: 1
+            concurrency:
+              description: "The number of concurrent requests to MT5"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Concurrent requests for p01_ts01"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p01_ts02:
+                  description: "Concurrent requests for p01_ts02"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p01_ts03:
+                  description: "Concurrent requests for p01_ts03"
+                  isa: Num
+                  default: 1
+                  global: 1
+                p01_ts04:
+                  description: "Concurrent requests for p01_ts04"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p02_ts01:
+                  description: "Concurrent requests for p02_ts01"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p02_ts02:
+                  description: "Concurrent requests for p02_ts02"
+                  isa: Num
+                  default: 6
+                  global: 1
+                p03_ts01:
+                  description: "Concurrent requests for p03_ts01"
+                  isa: Num
+                  default: 6
+                  global: 1  
+        parallel_run:
+          description: "Enable parallel running of MT5 Proxy (read only calls) with PHP script"
+          isa: Bool
+          default: 0
+          global: 1
+        load_balance:
+          description: "Load balancer for MT5 trader servers for regions."
+          isa: section
+          contains:
+            demo:
+              description: "Demo trade server load balancer configuration"
+              isa: section
+              contains:
+                all:
+                  description: "Demo trade server load balancer configuration for both synthetic and financial"
+                  isa: section
+                  contains:
+                    p01_ts01:
+                      description: "Weight for demo p01_ts01"
+                      isa: Num
+                      default: 50
+                      global: 1
+                    p01_ts02:
+                      description: "Weight for demo p01_ts02"
+                      isa: Num
+                      default: 50
+                      global: 1
+                    p01_ts03:
+                      description: "Weight for demo p01_ts03"
+                      isa: Num
+                      default: 0
+                      global: 1
+                derivez:
+                  description: "Demo trade server load balancer configuration for derivez"
+                  isa: section
+                  contains:
+                    p01_ts04:
+                      description: "Weight for demo p01_ts04"
+                      isa: Num
+                      default: 0
+                      global: 1
+            real:
+              description: "Real trade server load balancer configuration financial (contains old synthetic accounts too)"
+              isa: section
+              contains:
+                all:
+                  description: "Real trade server load balancer configuration for Europe financial and synthetic"
+                  isa: section
+                  contains:
+                    p01_ts01:
+                      description: "Weight for real p01_ts01"
+                      isa: Num
+                      default: 50
+                      global: 1
+                europe_synthetic:
+                  description: "Real trade server load balancer configuration for Europe synthetic"
+                  isa: section
+                  contains:
+                    p01_ts04:
+                      description: "Weight for real p01_ts04"
+                      isa: Num
+                      default: 50
+                      global: 1
+                africa_synthetic:
+                  description: "Real trade server load balancer configuration for Africa"
+                  isa: section
+                  contains:
+                    p01_ts02:
+                      description: "Weight for real p01_ts02"
+                      isa: Num
+                      default: 50
+                      global: 1
+                    p02_ts02:
+                      description: "Weight for real p02_ts02"
+                      isa: Num
+                      default: 50
+                      global: 1
+                asia_synthetic:
+                  description: "Real trade server load balancer configuration for asia"
+                  isa: section
+                  contains:
+                    p01_ts03:
+                      description: "Weight for real p01_ts03"
+                      isa: Num
+                      default: 100
+                      global: 1
+                    p03_ts01:
+                      description: "Weight for real p03_ts01"
+                      isa: Num
+                      default: 0
+                      global: 1
+                africa_derivez:
+                  description: "Real trade server load balancer configuration for africa derivez"
+                  isa: section
+                  contains:
+                    p02_ts01:
+                      description: "Weight for real p02_ts01"
+                      isa: Num
+                      default: 100
+                      global: 1
+        http_proxy:
+          description: "HTTP Proxy API switch config for MT5"
+          isa: section
+          contains:
+            demo:
+              description: "Demo HTTP Proxy API switch config for MT5"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Demo p01_ts01 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts02:
+                  description: "Demo p01_ts02 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts03:
+                  description: "Demo p01_ts03 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts04:
+                  description: "Demo p01_ts04 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+            real:
+              description: "Real HTTP Proxy API switch config for MT5"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Real p01_ts01 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts02:
+                  description: "Real p01_ts02 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts03:
+                  description: "Real p01_ts03 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts04:
+                  description: "Real p01_ts04 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p02_ts01:
+                  description: "Real p02_ts01 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p02_ts02:
+                  description: "Real p02_ts02 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p03_ts01:
+                  description: "Real p03_ts01 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+        suspend:
+          description: "Configuration for MT5 suspend"
+          isa: section
+          contains:
+            all:
+              description: "Suspend MT5 API calls on all trade servers"
+              isa: Bool
+              default: 0
+              global: 1
+            deposits:
+              description: "Suspend MT5 deposits on all trade servers"
+              isa: Bool
+              default: 0
+              global: 1
+            withdrawals:
+              description: "Suspend MT5 withdrawals on all trade servers"
+              isa: Bool
+              default: 0
+              global: 1
+            auto_Bbook_svg_financial:
+              description: "Suspend B-booking new sign-up for svg financial"
+              isa: Bool
+              default: 0
+              global: 1
+            auto_Bbook_bvi_financial:
+              description: "Suspend B-booking new sign-up for bvi financial"
+              isa: Bool
+              default: 0
+              global: 1
+            demo:
+              description: "Suspend MT5 API calls to demo group type"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Configuration to suspend mt5 p01_ts01"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p01_ts02:
+                  description: "Configuration to suspend mt5 p01_ts02"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts02"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p01_ts03:
+                  description: "Configuration to suspend mt5 p01_ts03"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts03"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p01_ts04:
+                  description: "Configuration to suspend mt5 p01_ts04"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts04"
+                      isa: Bool
+                      default: 0
+                      global: 1
+            real:
+              description: "Suspend MT5 API calls for real group type"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Configuration to suspend mt5 p01_ts01"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    deposits:
+                      description: "Suspend MT5 deposits on p01_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    withdrawals:
+                      description: "Suspend MT5 withdrawals on p01_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p01_ts02:
+                  description: "Configuration to suspend mt5 p01_ts02"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts02"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    deposits:
+                      description: "Suspend MT5 deposits on p01_ts02"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    withdrawals:
+                      description: "Suspend MT5 withdrawals on p01_ts02"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p01_ts03:
+                  description: "Configuration to suspend mt5 p01_ts03"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts03"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    deposits:
+                      description: "Suspend MT5 deposits on p01_ts03"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    withdrawals:
+                      description: "Suspend MT5 withdrawals on p01_ts03"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p01_ts04:
+                  description: "Configuration to suspend mt5 p01_ts04"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts04"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    deposits:
+                      description: "Suspend MT5 deposits on p01_ts04"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    withdrawals:
+                      description: "Suspend MT5 withdrawals on p01_ts04"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p02_ts01:
+                  description: "Configuration to suspend mt5 p02_ts01"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p02_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    deposits:
+                      description: "Suspend MT5 deposits on p02_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    withdrawals:
+                      description: "Suspend MT5 withdrawals on p02_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p02_ts02:
+                  description: "Configuration to suspend mt5 p02_ts02"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p02_ts02"
+                      isa: Bool
+                      default: 1
+                      global: 1
+                    deposits:
+                      description: "Suspend MT5 deposits on p02_ts02"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    withdrawals:
+                      description: "Suspend MT5 withdrawals on p02_ts02"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p03_ts01:
+                  description: "Configuration to suspend mt5 p03_ts01"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p03_ts01"
+                      isa: Bool
+                      default: 1
+                      global: 1
+                    deposits:
+                      description: "Suspend MT5 deposits on p03_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    withdrawals:
+                      description: "Suspend MT5 withdrawals on p03_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+        sync_user_with_mt5:
+          description: "Configuration for sync user with mt5 process"
+          isa: section
+          contains:
+            mt5_limit:
+              description: "The maximum binary user ids that the script can process for dmt5 accounts"
+              isa: Num
+              default: 10000
+              global: 1
+            derivez_limit:
+              description: "The maximum binary user ids that the script can process for derivez accounts"
+              isa: Num
+              default: 5000
+              global: 1
+        white_label_links:
+          description: "Configuration for MT5 white label links"
+          isa: section
+          contains:
+            bvi:
+              description: "White label links for Deriv (BVI) Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (bvi)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22631/mt5/derivbvi5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (bvi)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (bvi)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (bvi)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (bvi)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-bvi.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (bvi)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-bvi.deriv.com/terminal"
+                      global: 1
+            labuan:
+              description: "White label links for Deriv (FX) Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (labuan)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22680/mt5/derivfx5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (labuan)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (labuan)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (labuan)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (labuan)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-fx.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (labuan)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-fx.deriv.com/terminal"
+                      global: 1
+            maltainvest:
+              description: "White label links for Deriv Investments (Europe) Limited"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (maltainvest)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22632/mt5/derivmt5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (maltainvest)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (maltainvest)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (maltainvest)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (maltainvest)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-mt.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (maltainvest)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-mt.deriv.com/terminal"
+                      global: 1
+            svg:
+              description: "White label links for Deriv (SVG) LLC"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22698/mt5/derivsvg5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (svg)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (svg)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-svg.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (svg)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-svg.deriv.com/terminal"
+                      global: 1
+            vanuatu:
+              description: "White label links for Deriv (V) Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (vanuatu)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/22628/mt5/derivvu5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (vanuatu)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (vanuatu)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (vanuatu)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (vanuatu)"
+                      isa: Str
+                      default: "https://mt5-dev-real[platform]-web-vu.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (vanuatu)"
+                      isa: Str
+                      default: "https://mt5-real[platform]-web-vu.deriv.com/terminal"
+                      global: 1
+            none:
+              description: "White label download links for Deriv com Ltd"
+              isa: section
+              contains:
+                windows:
+                  description: "White label windows terminal download link (default)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/deriv.com.limited/mt5/deriv5setup.exe"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (default)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03"
+                  global: 1
+                android:
+                  description: "White label mobile Android download link (default)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/mobile/mt5/android?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03"
+                  global: 1
+                webtrader_url:
+                  description: "White label webtrader URLs (Deriv com Ltd)"
+                  isa: section
+                  contains:
+                    dev:
+                      description: "Development environment webtrader URL (default)"
+                      isa: Str
+                      default: "https://mt5-dev-demo-web.regentmarkets.com/terminal"
+                      global: 1
+                    prod:
+                      description: "Production webtrader URL (default)"
+                      isa: Str
+                      default: "https://mt5-demo-web.deriv.com/terminal"
+                      global: 1      
+        white_label:
+          description: "White label settings"
+          isa: section
+          contains:
+            notification:
+              description: "A flag to enable or disable the white label notification feature"
+              isa: Bool
+              default: 0
+              global: 1
+            download_links:
+              description: "Configuration for MT5 white label download links"
+              isa: section
+              contains:
+                bvi:
+                  description: "White label download links for Deriv (BVI) Ltd"
+                  isa: section
+                  contains:
+                    windows:
+                      description: "White label windows terminal download link (bvi)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/web/22631/mt5/derivbvi5setup.exe"
+                      global: 1
+                    ios:
+                      description: "White label mobile iOS download link (bvi)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03"
+                      global: 1
+                    android:
+                      description: "White label mobile Android download link (bvi)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03"
+                      global: 1
+                labuan:
+                  description: "White label download links for Deriv (Labuan) Ltd"
+                  isa: section
+                  contains:
+                    windows:
+                      description: "White label windows terminal download link (labuan)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/web/22680/mt5/derivfx5setup.exe"
+                      global: 1
+                    ios:
+                      description: "White label mobile iOS download link (labuan)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03"
+                      global: 1
+                    android:
+                      description: "White label mobile Android download link (labuan)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03"
+                      global: 1
+                maltainvest:
+                  description: "White label download links for Deriv (Maltainvest) Ltd"
+                  isa: section
+                  contains:
+                    windows:
+                      description: "White label windows terminal download link (maltainvest)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/web/22632/mt5/derivmt5setup.exe"
+                      global: 1
+                    ios:
+                      description: "White label mobile iOS download link (maltainvest)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03"
+                      global: 1
+                    android:
+                      description: "White label mobile Android download link (maltainvest)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03"
+                      global: 1  
+                svg:
+                  description: "White label download links for Deriv (SVG) Ltd"
+                  isa: section
+                  contains:
+                    windows:
+                      description: "White label windows terminal download link (svg)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/web/22698/mt5/derivsvg5setup.exe"
+                      global: 1
+                    ios:
+                      description: "White label mobile iOS download link (svg)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03"
+                      global: 1
+                    android:
+                      description: "White label mobile Android download link (svg)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03"
+                      global: 1
+                vanuatu:
+                  description: "White label download links for Deriv (Vanuatu) Ltd"
+                  isa: section
+                  contains:
+                    windows:
+                      description: "White label windows terminal download link (vanuatu)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/web/22628/mt5/derivvu5setup.exe"
+                      global: 1
+                    ios:
+                      description: "White label mobile iOS download link (vanuatu)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
+                      global: 1
+                    android:
+                      description: "White label mobile Android download link (vanuatu)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
+                      global: 1
+                none:
+                  description: "White label download links for Deriv com Ltd"
+                  isa: section
+                  contains:
+                    windows:
+                      description: "White label windows terminal download link (default)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/web/deriv.com.limited/mt5/deriv5setup.exe"
+                      global: 1
+                    ios:
+                      description: "White label mobile iOS download link (default)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/ios?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03"
+                      global: 1
+                    android:
+                      description: "White label mobile Android download link (default)"
+                      isa: Str
+                      default: "https://download.mql5.com/cdn/mobile/mt5/android?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03"
+                      global: 1      
+    dxtrade:
+      description: "Configuration for DXTrade"
+      isa: section
+      contains:
+        enable_all_market_type:
+          description: "Enable all market type for DXTrade new account creation"
+          isa : section
+          contains:
+            demo:
+              description: "Enable all market type for DXTrade new demo account creation"
+              isa : Bool
+              defaul: 0
+              global: 1
+            real:
+              description: "Enable all market type for DXTrade new real account creation"
+              isa : Bool
+              defaul: 0
+              global: 1
+        token_authentication:
+          description: "Enable token authentication for DerivX API calls"
+          isa : section
+          contains:
+            demo:
+              description: "Enable token authentication for demo DerivX API calls"
+              isa : Bool
+              defaul: 0
+              global: 1
+            real:
+              description: "Enable token authentication for real DerivX API calls"
+              isa : Bool
+              defaul: 0
+              global: 1
+        suspend:
+          description: "Suspend DXTrade features"
+          isa: section
+          contains:
+            all:
+              description: "Suspend all DXTrade API calls"
+              isa: Bool
+              default: 0
+              global: 1
+            demo:
+              description: "Suspend DXTrade demo accounts"
+              isa: Bool
+              default: 0
+              global: 1
+            real:
+              description: "Suspend DXTrade real accounts"
+              isa: Bool
+              default: 1
+              global: 1
+            user_exceptions:
+              description: 'List of emails of users who can always access suspended servers, e.g. user1@deriv.com,user2@deriv.com'
+              isa: ArrayRef
+              global: 1
+              default: []
+    ctrader:
+        description: "Configuration for cTrader"
+        isa: section
+        contains:
+          suspend:
+            description: "Suspend cTrader features"
+            isa: section
+            contains:
+              all:
+                description: "Suspend all cTrader API calls. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              demo:
+                description: "Suspend cTrader demo accounts. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              real:
+                description: "Suspend cTrader real accounts. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              deposits:
+                description: "Suspend cTrader deposits on all servers. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              withdrawals:
+                description: "Suspend cTrader withdrawals on all servers. 0 = Unsuspended; 1 = Suspended"
+                isa: Bool
+                default: 0
+                global: 1
+              user_exceptions:
+                description: 'List of emails of users who can always access suspended servers, e.g. user1@deriv.com,user2@deriv.com'
+                isa: ArrayRef
+                global: 1
+                default: []
+marketing:
+    description:  "Marketing Bonus Settings"
+    isa: section
+    contains:
+        bonus_dubious_countries:
+            description: "Countries where Bonuses must be more thoroughly vetted"
+            isa: ArrayRef
+            default: ['India', 'Indonesia']
+            global: 1
+        bonus_deposit_amount:
+            description: "The amount that needs to be deposited for bonus"
+            isa: Num
+            default: 100
+            global: 1
+        bonus_deposit_age:
+            description: "The deposit should  have been made with in this many days"
+            isa: Num
+            default: 30
+            global: 1
+        bonus_sign_up_age:
+            description: "The sign up should  have been done with in this many days"
+            isa: Num
+            default: 30
+            global: 1
+customerio:
+  description: "CustomerIO integration Settings"
+  isa: section
+  contains:
+    transactional_emails:
+      description: "if enabled events is sent as transactionals directly using cio"
+      isa: Bool
+      default: 0
+      global: 1
+    transactional_translations:
+      description: "if enabled cio translation cron will include transactional's 'trigger' tags (requires `transactional_emails` to be `zero` first)"
+      isa: Bool
+      default: 1
+      global: 1
+social_login:
+  description: "Social login configuration settings"
+  isa: section
+  contains:
+    use_oneall_web:
+      description: "if enabled, third-party OneAll provider will be used for social login on web platfrom, if disabled, Social Login Service will be used."
+      isa: Bool
+      default: 1
+      global: 1
+    use_oneall_mobile:
+      description: "if enabled, third-party OneAll provider will be used for social login on mobile platfrom, if disabled, Social Login Service will be used."
+      isa: Bool
+      default: 1
+      global: 1
+payment_agents:
+  description: "Payment Agents program settings"
+  isa: section
+  contains:
+    initial_deposit_per_country:
+      description: 'Initial deposit requirement per country'
+      isa: json_string
+      default: '{}'
+      global: 1
+oauth:
+  description: "BOM::OAuth dynamic settings "
+  isa: section
+  contains:
+    ctrader_api:
+      description: "cTrader OAuth API dynamic settings"
+      isa: section
+      contains:
+        white_listed_networks:
+          description: 'List of CIDRs which should have access to cTrader OAuth API, empty list disables IP check'
+          isa: ArrayRef
+          default: ['127.0.0.1/32']
+          global: 1
+anti_fraud:
+  description: "Anti Fraud configuration settings"
+  isa: section
+  contains:
+    duplicate_dob_phone:
+      description: "if enabled, when a client signs up with a 'Date of Birth' and 'Phone number' such that there exists another client with same 'Date of birth' and 'Phone number', then new client will have unwelcome status applied and anti-fraud will be notfied"
+      isa: Bool
+      default: 0
+      global: 1
+partners:
+  description: "Partners' configuration settings"
+  isa: section
+  contains:
+    enable_dynamic_works:
+      description: "Use Dynamic Works for affiliate integration"
+      isa: Bool
+      default: 0
+      global: 1
+email_verification:
+  description: "Settings for email verification configuration"
+  isa: section
+  contains:
+    suspend:
+      description: "Suspend email verification"
+      isa: section
+      contains:
+        virtual_accounts:
+          description: "Suspend email verification for creating virtual accounts"
+          isa: Bool
+          default: 0
+          global: 1
+feature_flags:
+  description: "Feature flags"
+  isa: section
+  contains:
+    auto_tin_approval:
+      description: "Checkbox in Backoffice approves empty Tax identification number if Tax Identification Number is not available"
+      isa: Bool
+      default: 0
+      global: 1

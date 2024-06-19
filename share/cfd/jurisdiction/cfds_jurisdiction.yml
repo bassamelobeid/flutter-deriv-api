@@ -1,0 +1,25 @@
+jurisdictions:
+  bvi:
+    proof_requirements: # Mimimum proof needed to start trading
+      - poi
+    grace_period:
+      enforced: true
+      days: 10
+  vanuatu:
+    proof_requirements:
+      - poi
+    grace_period:
+      enforced: true
+      days: 5
+  labuan:
+    proof_requirements:
+      - poi
+      - poa
+    grace_period:
+      enforced: false
+  maltainvest:
+    proof_requirements:
+      - poi
+      - poa
+    grace_period:
+      enforced: false

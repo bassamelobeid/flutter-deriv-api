@@ -1,0 +1,772 @@
+---
+- args:
+    array_test:
+    - node:roles
+    - node:tags
+    config: BOM::Config::node
+    expected_config:
+      feed_server:
+        fqdn: 0.0.0.0
+      local_redis_master: ''
+      node:
+        environment: some_env
+        operation_domain: some_domain
+        roles:
+        - some_role
+        tags:
+        - some_tag
+  name: node.yml
+- args:
+    config: BOM::Config::aes_keys
+    expected_config:
+      client_secret_answer: &aes_keys_common
+        '1': ''
+        default_keynum: 1
+      client_secret_iv: *aes_keys_common
+      email_verification_token: *aes_keys_common
+      feeds: *aes_keys_common
+      password_counter: *aes_keys_common
+      password_remote: *aes_keys_common
+      payment_agent: *aes_keys_common
+      web_secret: *aes_keys_common
+      jtoken_secret: *aes_keys_common
+  name: aes_keys.yml
+- args:
+    array_test:
+    - smartystreets:countries:plus
+    config: BOM::Config::third_party
+    expected_config:
+      acquired:
+        company_hashcode: ''
+      auth0:
+        api_uri: ''
+        client_id: ''
+        client_secret: ''
+      banxa:
+        api_key: ''
+        api_secret: ''
+        api_url: ''
+      bloomberg:
+        aws:
+          bucket: ''
+          log: ''
+          path: ''
+          profile: ''
+          upload_allowed: ''
+        password: ''
+        sftp_allowed: ''
+        user: ''
+      cellxperts:
+        base_uri: some env
+      close_io:
+        api_key: ''
+        api_url: ''
+      customerio:
+        api_key: ''
+        api_token: ''
+        api_uri: ''
+        site_id: ''
+      doughflow:
+        binary: ''
+        deriv: ''
+        environment: ''
+        passcode: ''
+      duosecurity:
+        akey: ''
+        ikey: ''
+        skey: ''
+      elevio:
+        account_secret: ''
+      eu_sanctions:
+        token: ''
+      isignthis:
+        notification_token: some env
+      myaffiliates:
+        aws_access_key_id: ''
+        aws_bucket: ''
+        aws_region: ''
+        aws_secret_access_key: ''
+        host: ''
+        pass: ''
+        user: ''
+      oneall:
+        binary:
+          private_key: ''
+          public_key: ''
+        deriv:
+          private_key: ''
+          public_key: ''
+      onfido:
+        authorization_token: ''
+        webhook_token: ''
+      proveid:
+        api_proxy: ''
+        api_uri: ''
+        experian_url: ''
+        password: ''
+        pdf_password: ''
+        pdf_username: ''
+        private_key: ''
+        public_key: ''
+        uat:
+          password: ''
+          private_key: ''
+          public_key: ''
+          username: ''
+        username: ''
+      qa_duosecurity:
+        ikey: ''
+        skey: ''
+      risk_screen:
+        api_key: ''
+        api_url: ''
+        port: ''
+      rudderstack:
+        base_uri: ''
+        write_key: ''
+      segment:
+        base_uri: ''
+        write_key: ''
+      sendbird:
+        api_token: ''
+        app_id: ''
+      smartystreets:
+        auth_id: ''
+        countries:
+          plus: []
+        licenses:
+          basic: ''
+          plus: ''
+        token: ''
+      smile_identity:
+        api_key: ''
+        api_url: ''
+        partner_id: ''
+      wyre:
+        api_account_id: ''
+        api_secret: ''
+        api_url: ''
+      zaig:
+        api_key: ''
+        api_url: ''
+  name: third_party.yml
+- args:
+    config: BOM::Config::randsrv
+    expected_config:
+      rand_server:
+        fqdn: ''
+        password: ''
+        port: ''
+  name: randsrv.yml
+- args:
+    config: BOM::Config::backoffice
+    expected_config:
+      directory:
+        tmp: ''
+        tmp_gif: ''
+      experian_document_s3:
+        aws_access_key_id: ''
+        aws_bucket: ''
+        aws_region: ''
+        aws_secret_access_key: ''
+      log:
+        deposit: ''
+        fsave_complete: ''
+        staff: ''
+        staff_dir: ''
+        withdraw_broker: ''
+  name: backoffice.yml
+- args:
+    config: BOM::Config::payment_agent
+    expected_config:
+      currency_specific_limits:
+        USDC: &currency_min_max
+          maximum: ''
+          minimum: ''
+        UST: *currency_min_max
+        eUSDT: *currency_min_max
+      minimum_topup_balance:
+        DEFAULT: ''
+      payment_limits:
+        crypto: *currency_min_max
+        fiat: *currency_min_max
+      transaction_limits:
+        transfer:
+          amount_in_usd_per_day: ''
+          transactions_per_day: ''
+        withdraw:
+          weekday:
+            amount_in_usd_per_day: ''
+            transactions_per_day: ''
+          weekend:
+            amount_in_usd_per_day: ''
+            transactions_per_day: ''
+  name: paymentagent_config.yml
+- args:
+    config: BOM::Config::crypto_api
+    expected_config:
+      host: ''
+      port: ''
+  name: cryptocurrency_api.yml
+- args:
+    array_test:
+    - white_list
+    config: BOM::Config::domain
+    expected_config:
+      brand: ''
+      default_domain: ''
+      white_list: []
+  name: domain.yml
+- args:
+    config: BOM::Config::s3
+    expected_config:
+      desk:
+        aws_access_key_id: ''
+        aws_bucket: ''
+        aws_region: ''
+        aws_secret_access_key: ''
+      document_auth:
+        aws_access_key_id: ''
+        aws_bucket: ''
+        aws_region: ''
+        aws_secret_access_key: ''
+  name: s3.yml
+- args:
+    config: BOM::Config::feed_rpc
+    expected_config:
+      writer:
+        feeddb_uri: ''
+  name: feed_rpc.yml
+- args:
+    config: BOM::Config::p2p_payment_methods
+    expected_config:
+      2checkout: &payment_method_details
+        display_name: ''
+        fields:
+          account:
+            display_name: ''
+        type: ''
+      543konse: *payment_method_details
+      access_money_wallet: *payment_method_details
+      airtel: *payment_method_details
+      alipay: *payment_method_details
+      apple_pay: *payment_method_details
+      atease: *payment_method_details
+      azimo: *payment_method_details
+      bank_transfer:
+        display_name: ''
+        fields:
+          account:
+            display_name: ''
+          bank_code:
+            display_name: ''
+            required: 0
+          bank_name:
+            display_name: ''
+          branch:
+            display_name: ''
+            required: ''
+        type: ''
+      bitpay: *payment_method_details
+      boss_revolution: *payment_method_details
+      broadpay: *payment_method_details
+      btc_smega: *payment_method_details
+      buyonline: *payment_method_details
+      carbon: *payment_method_details
+      cashenvoy: *payment_method_details
+      cassava_remit: *payment_method_details
+      cellulant: *payment_method_details
+      celpaid: *payment_method_details
+      clicknpay_africa: *payment_method_details
+      clickpesa: *payment_method_details
+      dpo: *payment_method_details
+      dusupay: *payment_method_details
+      ecobank_mobilemoney: *payment_method_details
+      ecocash: *payment_method_details
+      equitel: *payment_method_details
+      etranzact: *payment_method_details
+      ewallet_services_tanzania: *payment_method_details
+      exchange4free: *payment_method_details
+      firstmonie: *payment_method_details
+      flutterwave: *payment_method_details
+      fnb: *payment_method_details
+      fortis: *payment_method_details
+      gcb: *payment_method_details
+      glo: *payment_method_details
+      google_pay: *payment_method_details
+      gt_pay: *payment_method_details
+      halotel: *payment_method_details
+      hubtel: *payment_method_details
+      instacash: *payment_method_details
+      inter_pay: *payment_method_details
+      ipay: *payment_method_details
+      kazang: *payment_method_details
+      konga: *payment_method_details
+      mascom_my_zaka: *payment_method_details
+      mlipa: *payment_method_details
+      mnaira: *payment_method_details
+      mobicash: *payment_method_details
+      mobipay: *payment_method_details
+      moov: *payment_method_details
+      mpesa_tanzania: *payment_method_details
+      mtn_momo: *payment_method_details
+      myghpay: *payment_method_details
+      netpay: *payment_method_details
+      nettcash: *payment_method_details
+      noqodi: *payment_method_details
+      nownow: *payment_method_details
+      onemoney: *payment_method_details
+      opay: *payment_method_details
+      orange_money: *payment_method_details
+      other:
+        display_name: ''
+        fields:
+          account:
+            display_name: ''
+            required: 0
+          name:
+            display_name: ''
+        type: ''
+      paga: *payment_method_details
+      palmpay: *payment_method_details
+      paxful: *payment_method_details
+      payant: *payment_method_details
+      paygate: *payment_method_details
+      paynow: *payment_method_details
+      paypal: *payment_method_details
+      payserv: *payment_method_details
+      paystack: *payment_method_details
+      paytoday: *payment_method_details
+      pesapel: *payment_method_details
+      pocketmoni: *payment_method_details
+      posomoney: *payment_method_details
+      postdotnet: *payment_method_details
+      qash: *payment_method_details
+      qless: *payment_method_details
+      quickteller: *payment_method_details
+      realpay: *payment_method_details
+      rocket_remit: *payment_method_details
+      safaricom_mpesa: *payment_method_details
+      simplepay: *payment_method_details
+      skrill: *payment_method_details
+      solidpaywave: *payment_method_details
+      speedpay_mobile: *payment_method_details
+      sticpay: *payment_method_details
+      stripe: *payment_method_details
+      talkremit: *payment_method_details
+      tangaza_pesa: *payment_method_details
+      teasy_mobile_money: *payment_method_details
+      telecash: *payment_method_details
+      terrapay: *payment_method_details
+      tigo_pesa: *payment_method_details
+      tilt_africa: *payment_method_details
+      transferwise: *payment_method_details
+      united_bank_of_zambia_ewallet: *payment_method_details
+      unitylink: *payment_method_details
+      vcash: *payment_method_details
+      vodafone_cash: *payment_method_details
+      voguepay: *payment_method_details
+      wari: *payment_method_details
+      wave_mobile_money: *payment_method_details
+      webmoney: *payment_method_details
+      wechat_pay: *payment_method_details
+      xapit_zanaco: *payment_method_details
+      xendpay: *payment_method_details
+      xoom: *payment_method_details
+      xpress_money: *payment_method_details
+      yucash: *payment_method_details
+      yup_africa: *payment_method_details
+      zamlink: *payment_method_details
+      zamtel: *payment_method_details
+      zantel: *payment_method_details
+      zazu: *payment_method_details
+      zim_switch: *payment_method_details
+      zimpayments: *payment_method_details
+      zoona: *payment_method_details
+      zotapay: *payment_method_details
+      zympay: *payment_method_details
+  name: p2p_payment_methods.yml
+- args:
+    config: BOM::Config::cashier_config
+    expected_config:
+      doughflow:
+        sportsbooks:
+          dsl: ''
+          iom: ''
+          malta: ''
+          maltainvest: ''
+          samoa: ''
+          svg: ''
+          maltainvest: ''         
+  name: cashier.yml
+- args:
+    config: BOM::Config::redis_replicated_config
+    expected_config:
+      read: &redis_config
+        host: ''
+        password: ''
+        port: ''
+      write: *redis_config
+  name: redis-replicated.yml
+- args:
+    config: BOM::Config::redis_pricer_config
+    expected_config:
+      write: *redis_config
+  name: redis-pricer.yml
+- args:
+    config: BOM::Config::redis_pricer_subscription_config
+    expected_config:
+      write: *redis_config
+  name: redis-pricer-subscription.yml
+- args:
+    config: BOM::Config::redis_pricer_shared_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-pricer-shared.yml
+- args:
+    config: BOM::Config::redis_exchangerates_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-exchangerates.yml
+- args:
+    config: BOM::Config::redis_feed_config
+    expected_config:
+      fake-read: *redis_config
+      local: *redis_config
+      master-read: *redis_config
+      master-write: *redis_config
+      read: *redis_config
+      write: *redis_config
+  name: redis-feed.yml
+- args:
+    config: BOM::Config::redis_mt5_user_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-mt5user.yml
+- args:
+    config: BOM::Config::redis_events_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-events.yml
+- args:
+    config: BOM::Config::redis_rpc_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-rpc.yml
+- args:
+    config: BOM::Config::redis_transaction_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-transaction.yml
+- args:
+    config: BOM::Config::redis_limit_settings
+    expected_config:
+      global_settings: *redis_config
+      per_landing_company:
+        dsl: *redis_config
+        iom: *redis_config
+        malta: *redis_config
+        maltainvest: *redis_config
+        samoa: *redis_config
+        samoa-virtual: *redis_config
+        svg: *redis_config
+        virtual: *redis_config
+  name: redis-transaction-limits.yml
+- args:
+    config: BOM::Config::redis_auth_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-auth.yml
+- args:
+    config: BOM::Config::redis_expiryq_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-expiryq.yml
+- args:
+    config: BOM::Config::redis_p2p_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-p2p.yml
+- args:
+    config: BOM::Config::redis_ws_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: ws-redis.yml
+- args:
+    config: BOM::Config::mt5_account_types
+    expected_config:
+      demo01\financial\bvi_stp_usd: &mt5_account_details
+        account_type: ''
+        landing_company_short: ''
+        market_type: ''
+        server: ''
+        sub_account_type: ''
+      demo\bvi_financial_stp: *mt5_account_details
+      demo\p01_ts01\financial\bvi_stp_usd: *mt5_account_details
+      demo\p01_ts01\financial\labuan_stp_usd: *mt5_account_details
+      demo\p01_ts01\financial\maltainvest_std_eur: *mt5_account_details
+      demo\p01_ts01\financial\maltainvest_std_gbp: *mt5_account_details
+      demo\p01_ts01\financial\maltainvest_std_usd: *mt5_account_details
+      demo\p01_ts01\financial\svg_std-lim_usd: *mt5_account_details
+      demo\p01_ts01\financial\svg_std_usd: *mt5_account_details
+      demo\p01_ts01\financial\vanuatu_std_usd: *mt5_account_details
+      demo\p01_ts01\synthetic\svg_std_usd: *mt5_account_details
+      demo\p01_ts02\financial\bvi_stp_usd: *mt5_account_details
+      demo\p01_ts02\financial\labuan_stp_usd: *mt5_account_details
+      demo\p01_ts02\financial\maltainvest_std_eur: *mt5_account_details
+      demo\p01_ts02\financial\maltainvest_std_gbp: *mt5_account_details
+      demo\p01_ts02\financial\svg_std-lim_usd: *mt5_account_details
+      demo\p01_ts02\financial\svg_std_usd: *mt5_account_details
+      demo\p01_ts02\financial\vanuatu_std_usd: *mt5_account_details
+      demo\p01_ts02\synthetic\svg_std_usd: *mt5_account_details
+      demo_bvi_financial_financial_stp: *mt5_account_details
+      real\p01_ts01\financial\bvi_stp_usd: *mt5_account_details
+      real\p01_ts01\financial\labuan_stp_usd: *mt5_account_details
+      real\p01_ts01\financial\maltainvest_std-hr_eur: *mt5_account_details
+      real\p01_ts01\financial\maltainvest_std-hr_gbp: *mt5_account_details
+      real\p01_ts01\financial\maltainvest_std-hr_usd: *mt5_account_details
+      real\p01_ts01\financial\maltainvest_std-ab_eur: *mt5_account_details
+      real\p01_ts01\financial\maltainvest_std-ab_gbp: *mt5_account_details
+      real\p01_ts01\financial\maltainvest_std-ab_usd: *mt5_account_details
+      real\p01_ts01\financial\svg_std-hr_usd: *mt5_account_details
+      real\p01_ts01\financial\svg_std-lim_usd: *mt5_account_details
+      real\p01_ts01\financial\svg_std_usd: *mt5_account_details
+      real\p01_ts01\financial\vanuatu_std-hr_usd: *mt5_account_details
+      real\p01_ts01\synthetic\svg_std-hr_usd: *mt5_account_details
+      real\p01_ts01\synthetic\svg_std_usd\01: *mt5_account_details
+      real\p01_ts01\synthetic\svg_std_usd\02: *mt5_account_details
+      real\p01_ts01\synthetic\svg_std_usd\03: *mt5_account_details
+      real\p01_ts01\synthetic\svg_std_usd\04: *mt5_account_details
+      real\p01_ts02\financial\bvi_stp_usd: *mt5_account_details
+      real\p01_ts02\financial\labuan_stp_usd: *mt5_account_details
+      real\p01_ts02\financial\maltainvest_std-hr_eur: *mt5_account_details
+      real\p01_ts02\financial\maltainvest_std-hr_gbp: *mt5_account_details
+      real\p01_ts02\financial\maltainvest_std-hr_usd: *mt5_account_details
+      real\p01_ts02\financial\svg_std-hr_usd: *mt5_account_details
+      real\p01_ts02\financial\svg_std_usd: *mt5_account_details
+      real\p01_ts02\synthetic\seychelles_ibt_usd: *mt5_account_details
+      real\p01_ts02\synthetic\svg_std-hr_usd: *mt5_account_details
+      real\p01_ts02\synthetic\svg_std_usd\01: *mt5_account_details
+      real\p01_ts02\synthetic\svg_std_usd\02: *mt5_account_details
+      real\p01_ts02\synthetic\svg_std_usd\03: *mt5_account_details
+      real\p01_ts02\synthetic\svg_std_usd\04: *mt5_account_details
+      real\p01_ts03\financial\bvi_stp_usd: *mt5_account_details
+      real\p01_ts03\financial\labuan_stp_usd: *mt5_account_details
+      real\p01_ts03\financial\maltainvest_std-hr_eur: *mt5_account_details
+      real\p01_ts03\financial\maltainvest_std-hr_gbp: *mt5_account_details
+      real\p01_ts03\financial\maltainvest_std-hr_usd: *mt5_account_details
+      real\p01_ts03\financial\svg_std-hr_usd: *mt5_account_details
+      real\p01_ts03\financial\svg_std_usd: *mt5_account_details
+      real\p01_ts03\synthetic\seychelles_ibt_usd: *mt5_account_details
+      real\p01_ts03\synthetic\svg_std-hr_usd: *mt5_account_details
+      real\p01_ts03\synthetic\svg_std_usd\01: *mt5_account_details
+      real\p01_ts03\synthetic\svg_std_usd\02: *mt5_account_details
+      real\p01_ts03\synthetic\svg_std_usd\03: *mt5_account_details
+      real\p01_ts03\synthetic\svg_std_usd\04: *mt5_account_details
+      real\p01_ts04\financial\bvi_stp_usd: *mt5_account_details
+      real\p01_ts04\financial\labuan_stp_usd: *mt5_account_details
+      real\p01_ts04\financial\maltainvest_std-hr_eur: *mt5_account_details
+      real\p01_ts04\financial\maltainvest_std-hr_gbp: *mt5_account_details
+      real\p01_ts04\financial\maltainvest_std-hr_usd: *mt5_account_details
+      real\p01_ts04\financial\svg_std-hr_usd: *mt5_account_details
+      real\p01_ts04\financial\svg_std_usd: *mt5_account_details
+      real\p01_ts04\synthetic\seychelles_ibt_usd: *mt5_account_details
+      real\p01_ts04\synthetic\svg_std-hr_usd: *mt5_account_details
+      real\p01_ts04\synthetic\svg_std_usd\01: *mt5_account_details
+      real\p01_ts04\synthetic\svg_std_usd\02: *mt5_account_details
+      real\p01_ts04\synthetic\svg_std_usd\03: *mt5_account_details
+      real\p01_ts04\synthetic\svg_std_usd\04: *mt5_account_details
+      real\p02_ts02\financial\bvi_stp_usd: *mt5_account_details
+      real\p02_ts02\financial\labuan_stp_usd: *mt5_account_details
+      real\p02_ts02\financial\maltainvest_std-hr_eur: *mt5_account_details
+      real\p02_ts02\financial\maltainvest_std-hr_gbp: *mt5_account_details
+      real\p02_ts02\financial\maltainvest_std-hr_usd: *mt5_account_details
+      real\p02_ts02\financial\svg_std-hr_usd: *mt5_account_details
+      real\p02_ts02\financial\svg_std_usd: *mt5_account_details
+      real\p02_ts02\synthetic\seychelles_ib_usd: *mt5_account_details
+      real\p02_ts02\synthetic\seychelles_ibt_usd: *mt5_account_details
+      real\p02_ts02\synthetic\svg_std-hr_usd: *mt5_account_details
+      real\p02_ts02\synthetic\svg_std_usd\01: *mt5_account_details
+      real\p02_ts02\synthetic\svg_std_usd\02: *mt5_account_details
+      real\p02_ts02\synthetic\svg_std_usd\03: *mt5_account_details
+      real\p02_ts02\synthetic\svg_std_usd\04: *mt5_account_details
+  name: mt5_account_types.yml
+- args:
+    config: BOM::Config::redis_payment_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-payment.yml
+- args:
+    config: BOM::Config::redis_cfds_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-cfds.yml
+- args:
+    config: BOM::Config::redis_ctrader_config
+    expected_config:
+      read: *redis_config
+      write: *redis_config
+  name: redis-ctrader-bridge.yml
+- args:
+    config: BOM::Config::services_config
+    expected_config:
+      fraud_prevention:
+        enabled: ''
+        host: ''
+        port: ''
+      identity_verification:
+        enabled: ''
+        host: ''
+        port: ''
+  name: services.yml
+- args:
+    config: BOM::Config::paymentapi_config
+    expected_config:
+      secret: ''
+  name: paymentapi.yml
+- args:
+    config: BOM::Config::quants
+    expected_config:
+      bet_limits:
+        holiday_blackout_end: ''
+        holiday_blackout_start: ''
+        inefficient_period_payout_max: &quants_currency_list
+          AUD: ''
+          BTC: ''
+          ETH: ''
+          EUR: ''
+          GBP: ''
+          LTC: ''
+          USD: ''
+          USDC: ''
+          UST: ''
+          eUSDT: ''
+        max_payout:
+          default_landing_company:
+            default_market:
+              default_contract_category: *quants_currency_list
+              digits: *quants_currency_list
+              runs: *quants_currency_list
+        max_stake:
+          default_landing_company:
+            default_market:
+              multiplier: *quants_currency_list
+        min_commission_amount:
+          callputspread: *quants_currency_list
+          default_contract_category: *quants_currency_list
+        min_order_amount: *quants_currency_list
+        min_payout:
+          default_landing_company:
+            default_market:
+              callputspread: *quants_currency_list
+              default_contract_category: *quants_currency_list
+        min_stake:
+          default_landing_company:
+            default_market:
+              default_contract_category: *quants_currency_list
+              multiplier: *quants_currency_list
+            synthetic_index:
+              default_contract_category: *quants_currency_list
+              multiplier: *quants_currency_list
+          maltainvest:
+            default_market:
+              default_contract_category: *quants_currency_list
+      commission:
+        adjustment:
+          forward_start_factor: ''
+        digital_spread:
+          level_multiplier: ''
+        intraday:
+          historical_fixed: ''
+          historical_vol_meanrev: ''
+      default_stake: *quants_currency_list
+      lookback_limits:
+        crypto: ''
+        fiat: ''
+        min_multiplier:
+          1HZ100V: ''
+          1HZ10V: ''
+          1HZ25V: ''
+          1HZ50V: ''
+          1HZ75V: ''
+          R_10: ''
+          R_100: ''
+          R_25: ''
+          R_50: ''
+          R_75: ''
+        open_position_limits: *quants_currency_list
+      risk_profile:
+        extreme_risk:
+          multiplier: *quants_currency_list
+          payout: *quants_currency_list
+          turnover: *quants_currency_list
+        high_risk:
+          multiplier: *quants_currency_list
+          payout: *quants_currency_list
+          turnover: *quants_currency_list
+        low_risk:
+          multiplier: *quants_currency_list
+          payout: *quants_currency_list
+          turnover: *quants_currency_list
+        medium_risk:
+          multiplier: *quants_currency_list
+          payout: *quants_currency_list
+          turnover: *quants_currency_list
+        moderate_risk:
+          multiplier: *quants_currency_list
+          payout: *quants_currency_list
+          turnover: *quants_currency_list
+        no_business:
+          multiplier: *quants_currency_list
+          payout: *quants_currency_list
+          turnover: *quants_currency_list
+  name: quants_config.yml
+- args:
+    array_test:
+    - demo:p01_ts01:accounts
+    - demo:p01_ts02:accounts
+    - real:p01_ts01:accounts
+    - real:p01_ts02:accounts
+    - real:p01_ts03:accounts
+    - real:p01_ts04:accounts
+    - real:p02_ts02:accounts
+    config: BOM::Config::mt5_webapi_config
+    expected_config:
+      demo:
+        p01_ts01: &webapi_server_details
+          accounts:
+          - from: ''
+            to: ''
+          environment: ''
+          geolocation:
+            group: ''
+            location: ''
+            region: ''
+            sequence: ''
+          group_suffix: ''
+          manager:
+            login: ''
+            password: ''
+          server:
+            name: ''
+            port: ''
+        p01_ts02: *webapi_server_details
+      real:
+        p01_ts01: *webapi_server_details
+        p01_ts02: *webapi_server_details
+        p01_ts03: *webapi_server_details
+        p01_ts04: *webapi_server_details
+        p02_ts02: *webapi_server_details
+  name: mt5webapi.yml

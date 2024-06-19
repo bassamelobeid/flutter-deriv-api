@@ -1,0 +1,4 @@
+# Genearted by backend-utils/bin/generate_required_repos.pl at Mon Feb  5 23:32:32 2024 and maybe manually changed.
+# This file contains the orepositories that required to run tests of current repo.
+---
+- regentmarkets/bom-test
