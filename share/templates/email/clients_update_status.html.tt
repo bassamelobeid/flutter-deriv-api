@@ -1,0 +1,27 @@
+<tr>
+    <td bgcolor="#ffffff" align="left" style="padding: 40px 30px 10px 30px;" class="mobile-lowsidepadding darkmodelowblack">
+
+<h2>Following high-risk clients are set withdrawal_locked & allow_document_upload because of pending authentication or FA.<br/><br/></h2>
+<table border='1'>
+  <tr><th>Client-DB</th></tr>
+  <tr><td>[% landing_company.upper %]</td></tr>
+</table>
+<br/><br/>
+
+<table border='1'>
+ <tr>
+    <th>operation</th>
+    <th>corresponding MT loginids</th>
+    <th>corresponding loginIDs / accounts</th>
+ </tr>
+[% FOREACH aml_updated_clients  %]
+   <tr>
+       <td>withdrawal locked</td>
+       <td>[% mt_ids %]</td>
+       <td>[% login_ids | replace(',', ', ') %]</td>
+   </tr>
+[% END %]
+</table>
+
+</td>
+</tr>

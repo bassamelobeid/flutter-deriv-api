@@ -1,0 +1,16 @@
+<p>An underage client has been detected by our system: [% loginid %]</p>'
+
+<p>The following loginids have balance:<p>
+<ul>
+    [% IF have_balance.size %]
+        [% FOR sibling IN have_balance %]
+            <li><b>[% sibling.loginid %]:</b> [% sibling.balance %] [% sibling.currency %]</li>
+        [% END %]
+    [% ELSE %]
+        <li><b>None</b></li>
+    [% END %]
+</ul>
+
+[% IF from_client %]
+<p>The client tried to authenticate underage documents from [% from_client.loginid %]</p>
+[% END %]

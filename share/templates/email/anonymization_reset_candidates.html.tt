@@ -1,0 +1,30 @@
+<style>
+ th {
+  background-color: lightgray;
+ }
+</style>
+
+
+<tr>
+<td bgcolor="#ffffff" align="left" style="padding: 40px 30px 10px 30px;" class="mobile-lowsidepadding darkmodelowblack">
+
+ The clients in the table bellow are the anonymization canidates that had gone through the compliance 
+ review with `approved` or `postponed` status; but they were removed from 
+ the list of candidates for their recent activities. As a resultthey wont appear the 
+auto-anonymization confirmation page in backoffie anymore.
+
+<table>
+ <tbody>
+  <tr>
+     <th>Loginids</th><th>Confirmation status</th><th>Staff</th><th>Confirmation reason</th>
+  </tr>
+  [% FOREACH row IN data -%]
+  <tr>
+     <td>[% row.loginids -%]</td><td>[% row.compliance_confirmation -%]</td><td>[% row.compliance_confirmation_staff -%]</td><td>[% row.compliance_confirmation_reason -%]</td>
+  </tr>
+  [% END -%]
+ </tbody>
+</table>
+
+</td>
+</tr>

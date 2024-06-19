@@ -1,0 +1,53 @@
+reset_password_request: #original event social_login is equal to 1 OR social_login doesn't exist
+  - reset_password_request: #transactional event
+      social_login: 0 #conditions
+  - reset_password_request: #transactional event
+      social_login:
+        exists: 0
+  - reset_password_request:
+      social_login: ""
+  - reset_password_request_social:
+      social_login: 1
+reset_password_confirmation:
+  - reset_password_confirmation:
+      email:
+        exists: 1
+account_reactivated:
+  - account_reactivated:
+      new_campaign:
+        exists: 1
+p2p_archived_ad:
+  - p2p_archived_ad:
+      loginid:
+        exists: 1
+      adverts:
+        exists: 1
+verify_change_email:
+  - verify_change_email:
+      verification_uri:
+        exists: 1
+mt5_signup:
+  - mt5_signup_demo:
+      brand: deriv
+      account_type: demo
+      mt5_server_environment: deriv-demo
+  - mt5_signup_derived:
+      brand: deriv
+      account_type: gaming
+      type_label:
+        contains: synthetic
+      mt5_loginid:
+        contains: mtr
+  - mt5_signup_financial:
+      brand: deriv
+      account_type: financial
+      mt5_server_environment:
+        not_contains:
+          - deriv-demo
+      sub_account_type:
+        contains:
+          - financial
+          - financial_stp
+trading_platform_account_created:
+  - svg_all_derivx_signup:
+      platform: dxtrade

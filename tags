@@ -1,0 +1,339 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+AFFILIATE_CHUNK_SIZE	lib/BOM/Event/Actions/MyAffiliate.pm	/^use constant AFFILIATE_CHUNK_SIZE => 300;$/;"	c
+APPLICANT_CHECK_LOCK_PREFIX	lib/BOM/Event/Actions/Client.pm	/^use constant APPLICANT_CHECK_LOCK_PREFIX => 'ONFIDO::APPLICANT_CHECK_LOCK::';$/;"	c
+APPLICANT_CHECK_LOCK_TTL	lib/BOM/Event/Actions/Client.pm	/^use constant APPLICANT_CHECK_LOCK_TTL    => 30;$/;"	c
+APPLICANT_ONFIDO_TIMING	lib/BOM/Event/Actions/Client.pm	/^use constant APPLICANT_ONFIDO_TIMING     => 'ONFIDO::APPLICANT::TIMING::';$/;"	c
+APPLICANT_ONFIDO_TIMING_TTL	lib/BOM/Event/Actions/Client.pm	/^use constant APPLICANT_ONFIDO_TIMING_TTL => 86400;$/;"	c
+BINARY_CUSTOMER	lib/BOM/Event/Services/Track.pm	/^use constant BINARY_CUSTOMER => 1;$/;"	c
+BOM::Event::Actions::Anonymization	lib/BOM/Event/Actions/Anonymization.pm	/^package BOM::Event::Actions::Anonymization;$/;"	p
+BOM::Event::Actions::App	lib/BOM/Event/Actions/App.pm	/^package BOM::Event::Actions::App;$/;"	p
+BOM::Event::Actions::Authentication	lib/BOM/Event/Actions/Authentication.pm	/^package BOM::Event::Actions::Authentication;$/;"	p
+BOM::Event::Actions::Client	lib/BOM/Event/Actions/Client.pm	/^package BOM::Event::Actions::Client;$/;"	p
+BOM::Event::Actions::Client::DisputeNotification	lib/BOM/Event/Actions/Client/DisputeNotification.pm	/^package BOM::Event::Actions::Client::DisputeNotification;$/;"	p
+BOM::Event::Actions::Client::IdentityVerification	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^package BOM::Event::Actions::Client::IdentityVerification;$/;"	p
+BOM::Event::Actions::Client::Status	lib/BOM/Event/Actions/Client/Status.pm	/^package BOM::Event::Actions::Client::Status;$/;"	p
+BOM::Event::Actions::Common	lib/BOM/Event/Actions/Common.pm	/^package BOM::Event::Actions::Common;$/;"	p
+BOM::Event::Actions::Contract	lib/BOM/Event/Actions/Contract.pm	/^package BOM::Event::Actions::Contract;$/;"	p
+BOM::Event::Actions::CryptoCashier	lib/BOM/Event/Actions/CryptoCashier.pm	/^package BOM::Event::Actions::CryptoCashier;$/;"	p
+BOM::Event::Actions::CustomerIO	lib/BOM/Event/Actions/CustomerIO.pm	/^package BOM::Event::Actions::CustomerIO;$/;"	p
+BOM::Event::Actions::CustomerStatement	lib/BOM/Event/Actions/CustomerStatement.pm	/^package BOM::Event::Actions::CustomerStatement;$/;"	p
+BOM::Event::Actions::Email	lib/BOM/Event/Actions/Email.pm	/^package BOM::Event::Actions::Email;$/;"	p
+BOM::Event::Actions::MT5	lib/BOM/Event/Actions/MT5.pm	/^package BOM::Event::Actions::MT5;$/;"	p
+BOM::Event::Actions::MyAffiliate	lib/BOM/Event/Actions/MyAffiliate.pm	/^package BOM::Event::Actions::MyAffiliate;$/;"	p
+BOM::Event::Actions::P2P	lib/BOM/Event/Actions/P2P.pm	/^package BOM::Event::Actions::P2P;$/;"	p
+BOM::Event::Actions::User	lib/BOM/Event/Actions/User.pm	/^package BOM::Event::Actions::User;$/;"	p
+BOM::Event::Listener	lib/BOM/Event/Listener.pm	/^package BOM::Event::Listener;$/;"	p
+BOM::Event::NotificationsService	lib/BOM/Event/NotificationsService.pm	/^package BOM::Event::NotificationsService;$/;"	p
+BOM::Event::Process	lib/BOM/Event/Process.pm	/^package BOM::Event::Process;$/;"	p
+BOM::Event::QueueHandler	lib/BOM/Event/QueueHandler.pm	/^package BOM::Event::QueueHandler;$/;"	p
+BOM::Event::Script::OnfidoRetry	lib/BOM/Event/Script/OnfidoRetry.pm	/^package BOM::Event::Script::OnfidoRetry;$/;"	p
+BOM::Event::Services	lib/BOM/Event/Services.pm	/^package BOM::Event::Services;$/;"	p
+BOM::Event::Services::Track	lib/BOM/Event/Services/Track.pm	/^package BOM::Event::Services::Track;$/;"	p
+BOM::Event::Utility	lib/BOM/Event/Utility.pm	/^package BOM::Event::Utility;$/;"	p
+CLIENT	lib/BOM/Event/Actions/Client.pm	/^                CLIENT:$/;"	l
+COLOR_NONE	lib/BOM/Event/Actions/MT5.pm	/^use constant COLOR_NONE                => -1;$/;"	c
+COLOR_RED	lib/BOM/Event/Actions/MT5.pm	/^use constant COLOR_RED                 => 255;$/;"	c
+DAYS_TO_EXPIRE	lib/BOM/Event/Actions/MT5.pm	/^use constant DAYS_TO_EXPIRE            => 14;$/;"	c
+DAY_IN_SECONDS	lib/BOM/Event/NotificationsService.pm	/^use constant DAY_IN_SECONDS => 24 * 60 * 60;$/;"	c
+DEFAULT_QUEUE_WAIT_TIME	lib/BOM/Event/QueueHandler.pm	/^use constant DEFAULT_QUEUE_WAIT_TIME => 10;$/;"	c
+DF_ANONYMIZATION_KEY	lib/BOM/Event/Actions/Anonymization.pm	/^use constant DF_ANONYMIZATION_KEY               => 'DF_ANONYMIZATION_QUEUE';$/;"	c
+DF_ANONYMIZATION_MAX_RETRY	lib/BOM/Event/Actions/Anonymization.pm	/^use constant DF_ANONYMIZATION_MAX_RETRY         => 3;$/;"	c
+DF_ANONYMIZATION_RETRY_COUNTER_KEY	lib/BOM/Event/Actions/Anonymization.pm	/^use constant DF_ANONYMIZATION_RETRY_COUNTER_KEY => 'DF_ANONYMIZATION_RETRY_COUNTER::';$/;"	c
+DF_ANONYMIZATION_RETRY_TTL	lib/BOM/Event/Actions/Anonymization.pm	/^use constant DF_ANONYMIZATION_RETRY_TTL         => 3600;$/;"	c
+DOCUMENT_UPLOAD_STATUS	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^use constant DOCUMENT_UPLOAD_STATUS => {$/;"	c
+EPOCH_IN_DAY	lib/BOM/Event/Actions/CustomerStatement.pm	/^use constant EPOCH_IN_DAY    => EPOCH_IN_HOUR * 24;$/;"	c
+EPOCH_IN_HOUR	lib/BOM/Event/Actions/CustomerStatement.pm	/^use constant EPOCH_IN_HOUR   => EPOCH_IN_MINUTE * EPOCH_IN_MINUTE;$/;"	c
+EPOCH_IN_MINUTE	lib/BOM/Event/Actions/CustomerStatement.pm	/^use constant EPOCH_IN_MINUTE => 60;$/;"	c
+ERROR_MESSAGE_MAPPING	lib/BOM/Event/Actions/Anonymization.pm	/^use constant ERROR_MESSAGE_MAPPING => {$/;"	c
+FORGED_DOCUMENT_EMAIL_LOCK	lib/BOM/Event/Actions/Client.pm	/^use constant FORGED_DOCUMENT_EMAIL_LOCK                        => 'FORGED::EMAIL::LOCK::';$/;"	c
+GENERIC_DD_STATS_KEY	lib/BOM/Event/Utility.pm	/^use constant GENERIC_DD_STATS_KEY => 'bom.events.exception';$/;"	c
+IDV_UPLOAD_TIMEOUT_SECONDS	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^use constant IDV_UPLOAD_TIMEOUT_SECONDS => 30;$/;"	c
+ITEM	lib/BOM/Event/QueueHandler.pm	/^                ITEM:$/;"	l
+ITEM	lib/BOM/Event/QueueHandler.pm	/^        ITEM:$/;"	l
+LOGIN	lib/BOM/Event/Actions/Client.pm	/^    LOGIN:$/;"	l
+M	Makefile	/^M=[ -t 1 ] && echo -e 'making \\033[01;33m$@\\033[00m' || echo 'making $@'$/;"	m
+MAXIMUM_JOB_TIME	lib/BOM/Event/QueueHandler.pm	/^use constant MAXIMUM_JOB_TIME => 30;$/;"	c
+NUMBER_OF_RETRIES	lib/BOM/Event/QueueHandler.pm	/^use constant NUMBER_OF_RETRIES => 5;$/;"	c
+ONE_DAY	bin/handling_IB_sync_for_affiliates.pl	/^use constant ONE_DAY => 24 * 60 * 60;$/;"	c
+ONE_WEEK	bin/migrate_poi_poa_resubmission_flags.pl	/^use constant ONE_WEEK => 86400 * 7;    # In seconds$/;"	c
+ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';$/;"	c
+ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX	lib/BOM/Event/Actions/Common.pm	/^use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';$/;"	c
+ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT}                 \/\/ 24 * 60 * 60;$/;"	c
+ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY    => 'ONFIDO::APPLICANT_CONTEXT::ID::';$/;"	c
+ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';$/;"	c
+ONFIDO_CHECK_EXCEEDED_KEY	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';$/;"	c
+ONFIDO_DAILY_LIMIT_FLAG	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_DAILY_LIMIT_FLAG                           => 'ONFIDO_DAILY_LIMIT_FLAG::';$/;"	c
+ONFIDO_DOCUMENT_ID_PREFIX	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';$/;"	c
+ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX    => 'ONFIDO::IS_A_RESUBMISSION::ID::';$/;"	c
+ONFIDO_LIMIT_TIMEOUT	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_LIMIT_TIMEOUT                   => $ENV{ONFIDO_LIMIT_TIMEOUT} \/\/ 24 * 60 * 60;$/;"	c
+ONFIDO_PENDING_REQUEST_PREFIX	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_PENDING_REQUEST_PREFIX   => 'ONFIDO::PENDING::REQUEST::';$/;"	c
+ONFIDO_PENDING_REQUEST_TIMEOUT	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_PENDING_REQUEST_TIMEOUT  => 20 * 60;$/;"	c
+ONFIDO_REPORT_KEY_PREFIX	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';$/;"	c
+ONFIDO_REQUEST_COUNT_KEY	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';$/;"	c
+ONFIDO_REQUEST_PER_USER_PREFIX	lib/BOM/Event/Actions/Authentication.pm	/^use constant ONFIDO_REQUEST_PER_USER_PREFIX         => 'ONFIDO::REQUEST::PER::USER::';$/;"	c
+ONFIDO_REQUEST_PER_USER_PREFIX	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_REQUEST_PER_USER_PREFIX  => 'ONFIDO::REQUEST::PER::USER::';$/;"	c
+ONFIDO_REQUEST_PER_USER_TIMEOUT	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_REQUEST_PER_USER_TIMEOUT => BOM::User::Onfido::timeout_per_user();$/;"	c
+ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX	lib/BOM/Event/Actions/Authentication.pm	/^use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';$/;"	c
+ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';$/;"	c
+ONFIDO_RESUBMISSION_COUNTER_TTL	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_RESUBMISSION_COUNTER_TTL        => 2592000;                                                             # 30 days (in seconds)$/;"	c
+ONFIDO_SUPPORTED_COUNTRIES_KEY	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';$/;"	c
+ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} \/\/ 7 * 86400;    # 1 week$/;"	c
+ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX  => 'ONFIDO::UNSUPPORTED::COUNTRY::EMAIL::PER::USER::';$/;"	c
+ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT} \/\/ 24 * 60 * 60;$/;"	c
+ONFIDO_UPLOAD_TIMEOUT_SECONDS	lib/BOM/Event/Actions/Client.pm	/^use constant ONFIDO_UPLOAD_TIMEOUT_SECONDS                     => 30;$/;"	c
+P	Makefile	/^P=\/etc\/rmg\/bin\/prove -lrv --timer$/;"	m
+PAYMENT_ACCOUNT_LIMIT_REACHED_KEY	lib/BOM/Event/Actions/Client.pm	/^use constant PAYMENT_ACCOUNT_LIMIT_REACHED_KEY                 => 'PAYMENT_ACCOUNT_LIMIT_REACHED';$/;"	c
+PAYMENT_ACCOUNT_LIMIT_REACHED_TTL	lib/BOM/Event/Actions/Client.pm	/^use constant PAYMENT_ACCOUNT_LIMIT_REACHED_TTL                 => 86400;                                                    # one day$/;"	c
+PENDING_ITEMS_COUNT	lib/BOM/Event/QueueHandler.pm	/^use constant PENDING_ITEMS_COUNT => 100;$/;"	c
+PENDING_POA_EMAIL_LOCK	lib/BOM/Event/Actions/Common.pm	/^use constant PENDING_POA_EMAIL_LOCK => "PENDING::POA::EMAIL::LOCK::";$/;"	c
+PENDING_POA_EMAIL_LOCK_TTL	lib/BOM/Event/Actions/Common.pm	/^use constant PENDING_POA_EMAIL_LOCK_TTL => 604800;$/;"	c
+PERL5OPT	Makefile	/^	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t\/' \/etc\/rmg\/bin\/prove --timer --norc --ignore-exit -rl t\/BOM\/ t\/unit\/$/;"	m
+POI_DEFINITION	lib/BOM/Event/Actions/Authentication.pm	/^use constant POI_DEFINITION => {$/;"	c
+PROVE	Makefile	/^PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p$/;"	m
+REQUESTS_PER_CYCLE	lib/BOM/Event/QueueHandler.pm	/^use constant REQUESTS_PER_CYCLE => 5000;$/;"	c
+RESULT_STATUS	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^use constant RESULT_STATUS => {$/;"	c
+SECONDS_IN_DAY	lib/BOM/Event/Actions/Client.pm	/^use constant SECONDS_IN_DAY                                    => 86400;$/;"	c
+SECONDS_IN_DAY	lib/BOM/Event/Actions/MT5.pm	/^use constant SECONDS_IN_DAY            => 86400;$/;"	c
+SEPARATOR	lib/BOM/Event/NotificationsService.pm	/^use constant SEPARATOR      => '::';$/;"	c
+SHUTDOWN_TIMEOUT	lib/BOM/Event/Listener.pm	/^use constant SHUTDOWN_TIMEOUT => 60;$/;"	c
+SR_30_DAYS_EXP	lib/BOM/Event/Actions/Client.pm	/^use constant SR_30_DAYS_EXP => 86400 * 30;$/;"	c
+SR_CHECK_TIMEOUT	lib/BOM/Event/Actions/Client.pm	/^use constant SR_CHECK_TIMEOUT                                  => 5;$/;"	c
+STAT_KEY_PREFIX	lib/BOM/Event/Actions/Client/DisputeNotification.pm	/^use constant STAT_KEY_PREFIX => "event.dispute_notification.";$/;"	c
+STREAM	lib/BOM/Event/QueueHandler.pm	/^    STREAM:$/;"	l
+TEMPLATE_PREFIX_PATH	lib/BOM/Event/Actions/Client/DisputeNotification.pm	/^use constant TEMPLATE_PREFIX_PATH => "\/home\/git\/regentmarkets\/bom-events\/share\/templates\/email\/";$/;"	c
+TEMPLATE_PREFIX_PATH	lib/BOM/Event/Actions/Common.pm	/^use constant TEMPLATE_PREFIX_PATH => "\/home\/git\/regentmarkets\/bom-events\/share\/templates\/email\/";$/;"	c
+TESTS	Makefile	/^TESTS=test unit syntax$/;"	m
+TRANSACTION_HANDLERS	lib/BOM/Event/Actions/CryptoCashier.pm	/^use constant TRANSACTION_HANDLERS => {$/;"	c
+TTL_FORGED_DOCUMENT_EMAIL_LOCK	lib/BOM/Event/Actions/Client.pm	/^use constant TTL_FORGED_DOCUMENT_EMAIL_LOCK                    => 600;$/;"	c
+TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER	lib/BOM/Event/Actions/Client.pm	/^use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;                                                          # 10 days in seconds$/;"	c
+USER	lib/BOM/Event/Actions/Client.pm	/^        USER:$/;"	l
+USER_RIGHT_ENABLED	lib/BOM/Event/Actions/MT5.pm	/^use constant USER_RIGHT_ENABLED        => 0x0000000000000001;$/;"	c
+USER_RIGHT_TRADE_DISABLED	lib/BOM/Event/Actions/MT5.pm	/^use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;$/;"	c
+VERIFICATION_TIMEOUT	lib/BOM/Event/Actions/Client.pm	/^use constant VERIFICATION_TIMEOUT => 60;$/;"	c
+_add_metric_on_exception	lib/BOM/Event/Utility.pm	/^sub _add_metric_on_exception {$/;"	s
+_add_to_loop	lib/BOM/Event/QueueHandler.pm	/^sub _add_to_loop {$/;"	s
+_api	lib/BOM/Event/Services/Track.pm	/^sub _api {$/;"	s
+_apply_side_effects	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^sub _apply_side_effects {$/;"	s
+_authentication	lib/BOM/Event/Actions/Authentication.pm	/^sub _authentication {$/;"	s
+_clear_cached_context	lib/BOM/Event/Actions/Client.pm	/^sub _clear_cached_context {$/;"	s
+_convert_caller_to_array_of_tags	lib/BOM/Event/Utility.pm	/^sub _convert_caller_to_array_of_tags {$/;"	s
+_create_context	lib/BOM/Event/Services/Track.pm	/^sub _create_context {$/;"	s
+_create_error	lib/BOM/Event/Actions/MT5.pm	/^sub _create_error {$/;"	s
+_create_traits	lib/BOM/Event/Services/Track.pm	/^sub _create_traits {$/;"	s
+_daemon_run	bin/binary_notifications_daemon.pl	/^sub _daemon_run {$/;"	s
+_detect_mime_type	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^sub _detect_mime_type {$/;"	s
+_email_client_age_verified	lib/BOM/Event/Actions/Common.pm	/^sub _email_client_age_verified {$/;"	s
+_freeze_chat_channel	lib/BOM/Event/Actions/P2P.pm	/^sub _freeze_chat_channel {$/;"	s
+_generate_csv	lib/BOM/Event/Actions/MyAffiliate.pm	/^sub _generate_csv {$/;"	s
+_get_advertiser_channel_name	lib/BOM/Event/Actions/P2P.pm	/^sub _get_advertiser_channel_name {$/;"	s
+_get_clean_loginids	bin/handling_IB_sync_for_affiliates.pl	/^sub _get_clean_loginids {$/;"	s
+_get_clean_loginids	lib/BOM/Event/Actions/MyAffiliate.pm	/^sub _get_clean_loginids {$/;"	s
+_get_document_details	bin/back_populate_missing_onfido_docs_to_s3.pl	/^sub _get_document_details {$/;"	s
+_get_document_details	lib/BOM/Event/Actions/Client.pm	/^sub _get_document_details {$/;"	s
+_get_document_final_status	lib/BOM/Event/Actions/Client.pm	/^sub _get_document_final_status {$/;"	s
+_get_ib_affiliate_id_from_token	lib/BOM/Event/Actions/MT5.pm	/^sub _get_ib_affiliate_id_from_token {$/;"	s
+_get_mt5_account_type_config	lib/BOM/Event/Actions/MT5.pm	/^sub _get_mt5_account_type_config {$/;"	s
+_get_mt5_agent_account_id	lib/BOM/Event/Actions/MT5.pm	/^sub _get_mt5_agent_account_id {$/;"	s
+_get_provider	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^sub _get_provider {$/;"	s
+_handle_acquired	lib/BOM/Event/Actions/Client/DisputeNotification.pm	/^sub _handle_acquired {$/;"	s
+_handle_isignthis	lib/BOM/Event/Actions/Client/DisputeNotification.pm	/^sub _handle_isignthis {$/;"	s
+_http	lib/BOM/Event/Actions/Client.pm	/^    sub _http {$/;"	s
+_http	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^    sub _http {$/;"	s
+_is_identical_group	lib/BOM/Event/Actions/MT5.pm	/^sub _is_identical_group {$/;"	s
+_is_transactional	lib/BOM/Event/Services/Track.pm	/^sub _is_transactional {$/;"	s
+_messages_to_hashref	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^sub _messages_to_hashref {$/;"	s
+_notify_onfido_unsupported_document	lib/BOM/Event/Actions/Client.pm	/^sub _notify_onfido_unsupported_document {$/;"	s
+_onfido	bin/back_populate_onfido_to_db.pl	/^    sub _onfido {$/;"	s
+_onfido	lib/BOM/Event/Actions/Client.pm	/^    sub _onfido {$/;"	s
+_p2p_dispute_resolution	lib/BOM/Event/Services/Track.pm	/^sub _p2p_dispute_resolution {$/;"	s
+_p2p_order_track	lib/BOM/Event/Services/Track.pm	/^sub _p2p_order_track {$/;"	s
+_p2p_properties	lib/BOM/Event/Services/Track.pm	/^sub _p2p_properties {$/;"	s
+_prepare_params_for_update	lib/BOM/Event/Actions/Anonymization.pm	/^sub _prepare_params_for_update {$/;"	s
+_process_email	lib/BOM/Event/Actions/Client/DisputeNotification.pm	/^sub _process_email {$/;"	s
+_publish_orders_to_channels	lib/BOM/Event/Actions/P2P.pm	/^sub _publish_orders_to_channels {$/;"	s
+_record_mt5_transfer	lib/BOM/Event/Actions/MT5.pm	/^sub _record_mt5_transfer {$/;"	s
+_redis_events_read	lib/BOM/Event/Actions/Client.pm	/^    sub _redis_events_read {$/;"	s
+_redis_events_write	lib/BOM/Event/Actions/Client.pm	/^    sub _redis_events_write {$/;"	s
+_redis_events_write	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^    sub _redis_events_write {$/;"	s
+_redis_mt5user_read	lib/BOM/Event/Actions/Client.pm	/^    sub _redis_mt5user_read {$/;"	s
+_redis_payment_write	lib/BOM/Event/Actions/Anonymization.pm	/^    sub _redis_payment_write {$/;"	s
+_redis_replicated_read	lib/BOM/Event/Actions/Client.pm	/^    sub _redis_replicated_read {$/;"	s
+_redis_replicated_write	lib/BOM/Event/Actions/Client.pm	/^    sub _redis_replicated_write {$/;"	s
+_redis_replicated_write	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^    sub _redis_replicated_write {$/;"	s
+_resolve_error_messages	lib/BOM/Event/Actions/Client/IdentityVerification.pm	/^sub _resolve_error_messages {$/;"	s
+_retrieve_transaction_history	lib/BOM/Event/Actions/CustomerStatement.pm	/^sub _retrieve_transaction_history {$/;"	s
+_save_request_context	lib/BOM/Event/Actions/Client.pm	/^sub _save_request_context {$/;"	s
+_send_CS_email_POA_pending	lib/BOM/Event/Actions/Common.pm	/^sub _send_CS_email_POA_pending {$/;"	s
+_send_anonymization_report	lib/BOM/Event/Actions/Anonymization.pm	/^sub _send_anonymization_report {$/;"	s
+_send_authentication_report	lib/BOM/Event/Actions/Authentication.pm	/^sub _send_authentication_report {$/;"	s
+_send_closure_email	lib/BOM/Event/Actions/MT5.pm	/^sub _send_closure_email {$/;"	s
+_send_email_statement	lib/BOM/Event/Actions/CustomerStatement.pm	/^sub _send_email_statement {$/;"	s
+_send_mt5_rescind_report	lib/BOM/Event/Actions/MT5.pm	/^sub _send_mt5_rescind_report {$/;"	s
+_send_multiplier_dc_notification	lib/BOM/Event/NotificationsService.pm	/^sub _send_multiplier_dc_notification {$/;"	s
+_send_multiplier_expiry_notification	lib/BOM/Event/NotificationsService.pm	/^sub _send_multiplier_expiry_notification {$/;"	s
+_send_reset_candidates_report	lib/BOM/Event/Actions/Anonymization.pm	/^sub _send_reset_candidates_report {$/;"	s
+_send_shared_payment_method_email	lib/BOM/Event/Actions/Client.pm	/^sub _send_shared_payment_method_email {$/;"	s
+_send_track_request	lib/BOM/Event/Services/Track.pm	/^sub _send_track_request {$/;"	s
+_send_transactional_request	lib/BOM/Event/Services/Track.pm	/^sub _send_transactional_request {$/;"	s
+_set_all_sibling_status	lib/BOM/Event/Actions/Client.pm	/^sub _set_all_sibling_status {$/;"	s
+_set_smarty_streets_validated	lib/BOM/Event/Actions/Client.pm	/^sub _set_smarty_streets_validated {$/;"	s
+_shared_payment_reason	lib/BOM/Event/Actions/Client.pm	/^sub _shared_payment_reason {$/;"	s
+_smarty_license	lib/BOM/Event/Actions/Client.pm	/^sub _smarty_license {$/;"	s
+_smartystreets	lib/BOM/Event/Actions/Client.pm	/^    sub _smartystreets {$/;"	s
+_time_to_iso_8601	lib/BOM/Event/Services/Track.pm	/^sub _time_to_iso_8601 {$/;"	s
+_validate_event	lib/BOM/Event/Services/Track.pm	/^sub _validate_event {$/;"	s
+_validate_order_for_channel	lib/BOM/Event/Actions/P2P.pm	/^sub _validate_order_for_channel {$/;"	s
+account_closure	lib/BOM/Event/Services/Track.pm	/^sub account_closure {$/;"	s
+account_opening_new	lib/BOM/Event/Actions/Client.pm	/^sub account_opening_new {$/;"	s
+account_reactivated	lib/BOM/Event/Actions/Client.pm	/^sub account_reactivated {$/;"	s
+actions	lib/BOM/Event/Process.pm	/^sub actions {$/;"	s
+advert_created	lib/BOM/Event/Actions/P2P.pm	/^sub advert_created {$/;"	s
+advert_updated	lib/BOM/Event/Actions/P2P.pm	/^sub advert_updated {$/;"	s
+advertiser_cancel_at_fault	lib/BOM/Event/Actions/P2P.pm	/^sub advertiser_cancel_at_fault {$/;"	s
+advertiser_created	lib/BOM/Event/Actions/P2P.pm	/^sub advertiser_created {$/;"	s
+advertiser_online_status	lib/BOM/Event/Actions/P2P.pm	/^sub advertiser_online_status {$/;"	s
+advertiser_temp_banned	lib/BOM/Event/Actions/P2P.pm	/^sub advertiser_temp_banned {$/;"	s
+advertiser_updated	lib/BOM/Event/Actions/P2P.pm	/^sub advertiser_updated {$/;"	s
+affiliate_sync_initiated	bin/handling_IB_sync_for_affiliates.pl	/^sub affiliate_sync_initiated {$/;"	s
+app_deleted	lib/BOM/Event/Actions/App.pm	/^sub app_deleted {$/;"	s
+app_registered	lib/BOM/Event/Actions/App.pm	/^sub app_registered {$/;"	s
+app_updated	lib/BOM/Event/Actions/App.pm	/^sub app_updated {$/;"	s
+archived_ad	lib/BOM/Event/Actions/P2P.pm	/^sub archived_ad {$/;"	s
+authenticated_with_scans	lib/BOM/Event/Actions/Client.pm	/^sub authenticated_with_scans {$/;"	s
+bulk_authentication	lib/BOM/Event/Actions/Authentication.pm	/^sub bulk_authentication {$/;"	s
+category	lib/BOM/Event/Listener.pm	/^sub category { return shift->{category} }$/;"	s
+category	lib/BOM/Event/QueueHandler.pm	/^sub category { return shift->{category} \/\/ 'generic' }$/;"	s
+chat_received	lib/BOM/Event/Actions/P2P.pm	/^sub chat_received {$/;"	s
+check_name_changes_after_first_deposit	lib/BOM/Event/Actions/Client.pm	/^sub check_name_changes_after_first_deposit {$/;"	s
+clean_data_for_logging	lib/BOM/Event/QueueHandler.pm	/^sub clean_data_for_logging {$/;"	s
+client_promo_codes_upload	lib/BOM/Event/Actions/Client.pm	/^sub client_promo_codes_upload {$/;"	s
+configure	lib/BOM/Event/QueueHandler.pm	/^sub configure {$/;"	s
+consumer_group	lib/BOM/Event/QueueHandler.pm	/^sub consumer_group {$/;"	s
+consumer_name	lib/BOM/Event/QueueHandler.pm	/^sub consumer_name {$/;"	s
+crypto_cashier_transaction_updated	lib/BOM/Event/Actions/CryptoCashier.pm	/^sub crypto_cashier_transaction_updated {$/;"	s
+crypto_deposit_email	lib/BOM/Event/Actions/Client.pm	/^sub crypto_deposit_email {$/;"	s
+crypto_withdrawal_email	lib/BOM/Event/Actions/Client.pm	/^sub crypto_withdrawal_email {$/;"	s
+crypto_withdrawal_rejected_email_v2	lib/BOM/Event/Actions/Client.pm	/^sub crypto_withdrawal_rejected_email_v2 {$/;"	s
+customerio	lib/BOM/Event/Services.pm	/^sub customerio {$/;"	s
+deposit_handler	lib/BOM/Event/Actions/CryptoCashier.pm	/^sub deposit_handler {$/;"	s
+dequeue_dc_notifications	lib/BOM/Event/NotificationsService.pm	/^sub dequeue_dc_notifications {$/;"	s
+dequeue_notifications	lib/BOM/Event/NotificationsService.pm	/^sub dequeue_notifications {$/;"	s
+derivx_account_deactivated	lib/BOM/Event/Actions/Client.pm	/^sub derivx_account_deactivated {$/;"	s
+dispute_expired	lib/BOM/Event/Actions/P2P.pm	/^sub dispute_expired {$/;"	s
+dispute_notification	lib/BOM/Event/Actions/Client/DisputeNotification.pm	/^sub dispute_notification {$/;"	s
+document_upload	lib/BOM/Event/Services/Track.pm	/^sub document_upload {$/;"	s
+dp_successful_login	lib/BOM/Event/Services/Track.pm	/^sub dp_successful_login {$/;"	s
+email_statement	lib/BOM/Event/Actions/CustomerStatement.pm	/^sub email_statement {$/;"	s
+email_subscription	lib/BOM/Event/Actions/App.pm	/^sub email_subscription {$/;"	s
+email_subscription	lib/BOM/Event/Services/Track.pm	/^sub email_subscription {$/;"	s
+exception_logged	lib/BOM/Event/Utility.pm	/^sub exception_logged {$/;"	s
+execute_remove_status	lib/BOM/Event/Actions/Client/Status.pm	/^sub execute_remove_status {$/;"	s
+execute_set_status	lib/BOM/Event/Actions/Client/Status.pm	/^sub execute_set_status {$/;"	s
+get_action_mappings	lib/BOM/Event/Process.pm	/^sub get_action_mappings {$/;"	s
+get_pairs	bin/handling_IB_sync_for_affiliates.pl	/^sub get_pairs {$/;"	s
+handle_crypto_withdrawal	lib/BOM/Event/Actions/Client.pm	/^sub handle_crypto_withdrawal {$/;"	s
+handle_under_age_client	lib/BOM/Event/Actions/Common.pm	/^sub handle_under_age_client {$/;"	s
+handler	lib/BOM/Event/Listener.pm	/^sub handler { return shift->{handler} }$/;"	s
+host_name	lib/BOM/Event/QueueHandler.pm	/^sub host_name {$/;"	s
+http	lib/BOM/Event/Services.pm	/^sub http {$/;"	s
+http_idv	lib/BOM/Event/Services.pm	/^sub http_idv {$/;"	s
+initialize_request_counter	lib/BOM/Event/QueueHandler.pm	/^sub initialize_request_counter { shift->{request_counter} \/\/= 0; return undef; }$/;"	s
+job_processor	lib/BOM/Event/QueueHandler.pm	/^sub job_processor {$/;"	s
+link_affiliate_client	lib/BOM/Event/Actions/Client.pm	/^sub link_affiliate_client {$/;"	s
+login	lib/BOM/Event/Actions/User.pm	/^sub login {$/;"	s
+login	lib/BOM/Event/Services/Track.pm	/^sub login {$/;"	s
+maximum_job_time	lib/BOM/Event/Listener.pm	/^sub maximum_job_time { return shift->{maximum_job_time} }$/;"	s
+maximum_job_time	lib/BOM/Event/QueueHandler.pm	/^sub maximum_job_time { return (shift->{maximum_job_time} \/\/ MAXIMUM_JOB_TIME) }$/;"	s
+mt5_archived_account_reset_trading_password	lib/BOM/Event/Actions/MT5.pm	/^sub mt5_archived_account_reset_trading_password {$/;"	s
+mt5_inactive_account_closed	lib/BOM/Event/Actions/MT5.pm	/^sub mt5_inactive_account_closed {$/;"	s
+mt5_inactive_account_closed	lib/BOM/Event/Services/Track.pm	/^sub mt5_inactive_account_closed {$/;"	s
+mt5_inactive_account_closure_report	lib/BOM/Event/Actions/MT5.pm	/^sub mt5_inactive_account_closure_report {$/;"	s
+mt5_inactive_notification	lib/BOM/Event/Actions/MT5.pm	/^sub mt5_inactive_notification {$/;"	s
+mt5_inactive_notification	lib/BOM/Event/Services/Track.pm	/^sub mt5_inactive_notification {$/;"	s
+mt5_password_changed	lib/BOM/Event/Actions/MT5.pm	/^sub mt5_password_changed {$/;"	s
+multiplier_hit_type	lib/BOM/Event/Actions/Contract.pm	/^sub multiplier_hit_type {$/;"	s
+multiplier_hit_type	lib/BOM/Event/Services/Track.pm	/^sub multiplier_hit_type {$/;"	s
+multiplier_near_dc_notification	lib/BOM/Event/Actions/Contract.pm	/^sub multiplier_near_dc_notification {$/;"	s
+multiplier_near_dc_notification	lib/BOM/Event/Services/Track.pm	/^sub multiplier_near_dc_notification {$/;"	s
+multiplier_near_expire_notification	lib/BOM/Event/Actions/Contract.pm	/^sub multiplier_near_expire_notification {$/;"	s
+multiplier_near_expire_notification	lib/BOM/Event/Services/Track.pm	/^sub multiplier_near_expire_notification {$/;"	s
+new	lib/BOM/Event/Listener.pm	/^sub new {$/;"	s
+new	lib/BOM/Event/NotificationsService.pm	/^sub new {$/;"	s
+new	lib/BOM/Event/Process.pm	/^sub new {$/;"	s
+new_mt5_signup	lib/BOM/Event/Actions/MT5.pm	/^sub new_mt5_signup {$/;"	s
+new_mt5_signup	lib/BOM/Event/Services/Track.pm	/^sub new_mt5_signup {$/;"	s
+notifiy_compliance_mt5_over8K	lib/BOM/Event/Actions/MT5.pm	/^sub notifiy_compliance_mt5_over8K {$/;"	s
+onfido	lib/BOM/Event/Services.pm	/^sub onfido {$/;"	s
+order_chat_create	lib/BOM/Event/Actions/P2P.pm	/^sub order_chat_create {$/;"	s
+order_created	lib/BOM/Event/Actions/P2P.pm	/^sub order_created {$/;"	s
+order_expired	lib/BOM/Event/Actions/P2P.pm	/^sub order_expired {$/;"	s
+p2p_advert_orders_updated	lib/BOM/Event/Actions/P2P.pm	/^sub p2p_advert_orders_updated {$/;"	s
+p2p_advertiser_approval_changed	lib/BOM/Event/Actions/P2P.pm	/^sub p2p_advertiser_approval_changed {$/;"	s
+p2p_adverts_updated	lib/BOM/Event/Actions/P2P.pm	/^sub p2p_adverts_updated {$/;"	s
+p2p_order_buyer_has_paid	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_buyer_has_paid {$/;"	s
+p2p_order_cancelled	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_cancelled {$/;"	s
+p2p_order_created	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_created {$/;"	s
+p2p_order_dispute	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_dispute {$/;"	s
+p2p_order_dispute_complete	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_dispute_complete {$/;"	s
+p2p_order_dispute_fraud_complete	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_dispute_fraud_complete {$/;"	s
+p2p_order_dispute_fraud_refund	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_dispute_fraud_refund {$/;"	s
+p2p_order_dispute_refund	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_dispute_refund {$/;"	s
+p2p_order_expired	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_expired {$/;"	s
+p2p_order_seller_has_released	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_seller_has_released {$/;"	s
+p2p_order_timeout_refund	lib/BOM/Event/Services/Track.pm	/^sub p2p_order_timeout_refund {$/;"	s
+payops_event_update_account_status	lib/BOM/Event/Actions/Client.pm	/^sub payops_event_update_account_status {$/;"	s
+process	lib/BOM/Event/Process.pm	/^sub process {$/;"	s
+profile_change	lib/BOM/Event/Actions/User.pm	/^sub profile_change {$/;"	s
+profile_change	lib/BOM/Event/Services/Track.pm	/^sub profile_change {$/;"	s
+qualifying_payment_check	lib/BOM/Event/Actions/Client.pm	/^sub qualifying_payment_check {$/;"	s
+queue	lib/BOM/Event/Listener.pm	/^sub queue { return shift->{queue} }$/;"	s
+queue_name	lib/BOM/Event/QueueHandler.pm	/^sub queue_name { return shift->{queue} }$/;"	s
+queue_wait_time	lib/BOM/Event/QueueHandler.pm	/^sub queue_wait_time { return (shift->{queue_wait_time} \/\/ DEFAULT_QUEUE_WAIT_TIME) }$/;"	s
+redis	lib/BOM/Event/QueueHandler.pm	/^sub redis {$/;"	s
+redis_events_read	lib/BOM/Event/Services.pm	/^sub redis_events_read {$/;"	s
+redis_events_write	lib/BOM/Event/Services.pm	/^sub redis_events_write {$/;"	s
+redis_mt5user	lib/BOM/Event/Services.pm	/^sub redis_mt5user {$/;"	s
+redis_payment_write	lib/BOM/Event/Services.pm	/^sub redis_payment_write {$/;"	s
+redis_record_mt5_transfer	lib/BOM/Event/Actions/MT5.pm	/^sub redis_record_mt5_transfer {$/;"	s
+redis_replicated_read	lib/BOM/Event/Services.pm	/^sub redis_replicated_read {$/;"	s
+redis_replicated_write	lib/BOM/Event/Services.pm	/^sub redis_replicated_write {$/;"	s
+retry_interval	lib/BOM/Event/Listener.pm	/^sub retry_interval { return (shift->{retry_interval} \/\/ 0) * 1000; }$/;"	s
+retry_interval	lib/BOM/Event/QueueHandler.pm	/^sub retry_interval { return shift->{retry_interval} \/\/ 0 }$/;"	s
+rudderstack	lib/BOM/Event/Services.pm	/^sub rudderstack {$/;"	s
+run	lib/BOM/Event/Listener.pm	/^sub run {    ## no critic (RequireFinalReturn)$/;"	s
+running_parallel	lib/BOM/Event/Listener.pm	/^sub running_parallel { return shift->{running_parallel} \/\/ 0 }$/;"	s
+segment	lib/BOM/Event/Services.pm	/^sub segment {$/;"	s
+self_tagging_affiliates	lib/BOM/Event/Actions/Client.pm	/^sub self_tagging_affiliates {$/;"	s
+send_client_email_track_event	lib/BOM/Event/Actions/Email.pm	/^sub send_client_email_track_event {$/;"	s
+send_email_generic	lib/BOM/Event/Actions/Email.pm	/^sub send_email_generic {$/;"	s
+services	lib/BOM/Event/QueueHandler.pm	/^sub services {$/;"	s
+set_financial_assessment	lib/BOM/Event/Services/Track.pm	/^sub set_financial_assessment {$/;"	s
+should_shutdown	lib/BOM/Event/QueueHandler.pm	/^sub should_shutdown {$/;"	s
+shutdown_time_out	lib/BOM/Event/Listener.pm	/^sub shutdown_time_out { return shift->{shutdown_time_out} \/\/ SHUTDOWN_TIMEOUT }$/;"	s
+signup	lib/BOM/Event/Services/Track.pm	/^sub signup {$/;"	s
+smartystreets	lib/BOM/Event/Services.pm	/^sub smartystreets {$/;"	s
+social_responsibility_check	lib/BOM/Event/Actions/Client.pm	/^sub social_responsibility_check {$/;"	s
+streams	lib/BOM/Event/Listener.pm	/^sub streams { return shift->{streams} }$/;"	s
+streams	lib/BOM/Event/QueueHandler.pm	/^sub streams { return shift->{streams}->@* }$/;"	s
+sync_info	lib/BOM/Event/Actions/MT5.pm	/^sub sync_info {$/;"	s
+timeout_refund	lib/BOM/Event/Actions/P2P.pm	/^sub timeout_refund {$/;"	s
+track_account_closure	lib/BOM/Event/Actions/Client.pm	/^sub track_account_closure {$/;"	s
+track_account_reactivated	lib/BOM/Event/Actions/Client.pm	/^sub track_account_reactivated {$/;"	s
+track_p2p_order_event	lib/BOM/Event/Actions/P2P.pm	/^sub track_p2p_order_event {$/;"	s
+track_payment_deposit	lib/BOM/Event/Actions/Client.pm	/^sub track_payment_deposit {$/;"	s
+track_profile_change	lib/BOM/Event/Actions/User.pm	/^sub track_profile_change {$/;"	s
+track_signup	lib/BOM/Event/Actions/Client.pm	/^sub track_signup {$/;"	s
+transfer_between_accounts	lib/BOM/Event/Services/Track.pm	/^sub transfer_between_accounts {$/;"	s
+trigger_cio_broadcast	lib/BOM/Event/Actions/Common.pm	/^sub trigger_cio_broadcast {$/;"	s
+update_local_currencies	lib/BOM/Event/Actions/P2P.pm	/^sub update_local_currencies {$/;"	s
+update_loginid_status	lib/BOM/Event/Actions/MT5.pm	/^sub update_loginid_status {$/;"	s
+verify_false_profile_info	lib/BOM/Event/Actions/User.pm	/^sub verify_false_profile_info {$/;"	s
+withdrawal_handler	lib/BOM/Event/Actions/CryptoCashier.pm	/^sub withdrawal_handler {$/;"	s
+withdrawal_limit_reached	lib/BOM/Event/Actions/Client.pm	/^sub withdrawal_limit_reached {$/;"	s
+withdrawal_rejected_handler	lib/BOM/Event/Actions/CryptoCashier.pm	/^sub withdrawal_rejected_handler {$/;"	s
+worker_index	lib/BOM/Event/Listener.pm	/^sub worker_index { return shift->{worker_index} }$/;"	s
