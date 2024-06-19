@@ -1,0 +1,272 @@
+---
+mini:
+    merlin:
+        NUM:
+            UPORDOWN:
+                avg: 0.0465
+                max: 0.105
+            ONETOUCH:
+                avg: 0.019
+                max: 0.0484
+            NOTOUCH:
+                avg: 0.0233
+                max: 0.6358
+            CALL:
+                avg: 0.0041
+                max: 0.0417
+            RANGE:
+                avg: 0.0224
+                max: 0.1414
+        BASE:
+            UPORDOWN:
+                avg: 0.045
+                max: 0.1058
+            ONETOUCH:
+                avg: 0.0326
+                max: 0.2718
+            NOTOUCH:
+                avg: 0.0194
+                max: 0.6395
+            CALL:
+                avg: 0.012
+                max: 0.0791
+            RANGE:
+                avg: 0.0255
+                max: 0.177
+    sdfx:
+        MAJOR_BASE:
+            ONETOUCH:
+                avg: 0.0265
+                max: 0.1484
+            NOTOUCH:
+                avg: 0.0429
+                max: 0.1002
+            CALL:
+                avg: 0.0126
+                max: 0.0478
+            PUT:
+                avg: 0.0121
+                max: 0.1366
+            RANGE:
+                avg: 0.0553
+                max: 0.1366
+        MAJOR_NUM:
+            ONETOUCH:
+                avg: 0.0269
+                max: 0.1476
+            CALL:
+                avg: 0.0148
+                max: 0.064
+            PUT:
+                avg: 0.0122
+                max: 0.0671
+        MINOR_BASE:
+            UPORDOWN:
+                avg: 0.0432
+                max: 0.1877
+            ONETOUCH:
+                avg: 0.027
+                max: 0.1492
+            NOTOUCH:
+                avg: 0.0229
+                max: 0.0579
+            CALL:
+                avg: 0.0125
+                max: 0.0296
+            PUT:
+                avg: 0.0177
+                max: 0.0656
+            RANGE:
+                avg: 0.0577
+                max: 0.1008
+        MINOR_NUM:
+            ONETOUCH:
+                avg: 0.0269
+                max: 0.1507
+            CALL:
+                avg: 0.0104
+                max: 0.036
+            PUT:
+                avg: 0.0178
+                max: 0.0654
+    sdeq:
+        DJI:
+            ONETOUCH:
+                avg: 0.0232
+                max: 0.1684
+            CALL:
+                avg: 0.0054
+                max: 0.0142
+        FCHI:
+            ONETOUCH:
+                avg: 0.0216
+                max: 0.1511
+            CALL:
+                avg: 0.0025
+                max: 0.0182
+        SPC:
+            ONETOUCH:
+                avg: 0.0229
+                max: 0.0642
+            CALL:
+                avg: 0.028
+                max: 0.9501
+        N225:
+            ONETOUCH:
+                avg: 0.0094
+                max: 0.1764
+            CALL:
+                avg: 0.0013
+                max: 0.0078
+        SSECOMP:
+            RANGE:
+                avg: 0.0290
+                max: 0.0791
+        FTSE:
+            EXPIRYRANGE:
+                avg: 0.004
+                max: 0.0227
+    ovra:
+        BASE:
+            NT:
+                avg: 0.0145
+                max: 0.1183
+            Digital:
+                avg: 0.0057
+                max: 0.0806
+            OT:
+                avg: 0.0133
+                max: 0.1443
+            DNT:
+                avg: 0.0058
+                max: 0.3567
+            DOT:
+                avg: 0.0131
+                max: 0.297
+        NUM:
+            NT:
+                avg: 0.0064
+                max: 0.087
+            Digital:
+                avg: 0.0057
+                max: 0.0799
+            OT:
+                avg: 0.0133
+                max: 0.1451
+            DNT:
+                avg: 0.0053
+                max: 0.2326
+            DOT:
+                avg: 0.0131
+                max: 0.297
+full:
+    sdfx:
+        BASE:
+            UPORDOWN:
+                avg: 0.0557
+                max: 0.0875
+            ONETOUCH:
+                avg: 0.0236
+                max: 0.1724
+            NOTOUCH:
+                avg: 0.0224
+                max: 0.1768
+            CALL:
+                avg: 0.0097
+                max: 0.0552
+            PUT:
+                avg: 0.0101
+                max: 0.0450
+            RANGE:
+                avg: 0.0249
+                max: 0.1309
+        NUM:
+            ONETOUCH:
+                avg: 0.0212
+                max: 0.1213
+            CALL:
+                avg: 0.0095
+                max: 0.0559
+            PUT:
+                avg: 0.0099
+                max: 0.0464
+    ovra:
+        BASE:
+            NT:
+                avg: 0.0117
+                max: 0.1692
+            Digital:
+                avg: 0.0058
+                max: 0.0472
+            OT:
+                avg: 0.0465
+                max: 0.1879
+            DNT:
+                avg: 0.0110
+                max: 0.3579
+            DOT:
+                avg: 0.0108
+                max: 0.3815
+        NUM:
+            NT:
+                avg: 0.0113
+                max: 0.1405
+            Digital:
+                avg: 0.0056
+                max: 0.0475
+            OT:
+                avg: 0.0113
+                max: 0.1409
+            DNT:
+                avg: 0.0107
+                max: 0.2311
+            DOT:
+                avg: 0.0104
+                max: 0.2308
+    sdeq:
+        BASE:
+            EXPIRYRANGE:
+                avg: 0.0076
+                max: 0.0277
+            ONETOUCH:
+                avg: 0.0183
+                max: 0.1871
+            CALL:
+                avg: 0.0052
+                max: 0.0319
+            RANGE:
+                avg: 0.0329
+                max: 0.0829
+    merlin:
+        NUM:
+            UPORDOWN:
+                avg: 0.02734
+                max: 0.2571
+            ONETOUCH:
+                avg: 0.01630
+                max: 0.12354
+            NOTOUCH:
+                avg: 0.01454
+                max: 0.12384
+            CALL:
+                avg: 0.00652
+                max: 0.04108
+            RANGE:
+                avg: 0.02721
+                max: 0.02571
+        BASE:
+            UPORDOWN:
+                avg: 0.02521
+                max: 0.25692
+            ONETOUCH:
+                avg: 0.01275
+                max: 0.12507
+            NOTOUCH:
+                avg: 0.01201
+                max: 0.12541
+            CALL:
+                avg: 0.01398
+                max: 0.11090
+            RANGE:
+                avg: 0.02614
+                max: 0.256919

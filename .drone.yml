@@ -1,0 +1,187 @@
+kind: pipeline
+type: docker
+name: OVRA benchmark
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: OVRA_benchmark test
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make OVRA_benchmark
+
+---
+kind: pipeline
+type: docker
+name: SDEQ_benchmark_OTC_DJI
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: SDEQ_benchmark_OTC_DJI test
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make SDEQ_benchmark_OTC_DJI
+
+---
+kind: pipeline
+type: docker
+name: SDEQ_benchmark_OTC_FCHI
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: SDEQ_benchmark_OTC_FCHI test
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make SDEQ_benchmark_OTC_FCHI
+
+---
+kind: pipeline
+type: docker
+name: SDEQ_benchmark_OTC_FTSE
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: SDEQ_benchmark_OTC_FTSE test
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make SDEQ_benchmark_OTC_FTSE
+
+---
+kind: pipeline
+type: docker
+name: SDEQ_benchmark_SSECOMP
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: SDEQ_benchmark_SSECOMP test
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make SDEQ_benchmark_SSECOMP
+
+---
+kind: pipeline
+type: docker
+name: SDFX_benchmark_major
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: SDFX_benchmark_major test
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make SDFX_benchmark_major
+
+---
+kind: pipeline
+type: docker
+name: SDFX_benchmark_minor
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: SDFX_benchmark_minor test
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make SDFX_benchmark_minor
+
+---
+kind: pipeline
+type: docker
+name: syntax
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: syntax test
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make syntax
+
+---
+kind: pipeline
+type: docker
+name: merlin_benchmark
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: merlin_benchmark test
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make merlin_benchmark

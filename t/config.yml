@@ -1,0 +1,1285 @@
+---
+underlying_dataset: ['frxGBPUSD', 'frxEURCHF', 'frxAUDJPY', 'frxEURUSD', 'frxUSDCAD']
+payout: 100
+volsurface:
+    frxAUDJPY:
+        cutoff: "New York 10:00"
+        creation_date: "23-JAN-12 21:00GMT"
+        surface_data:
+            "1Y":
+               vol_spread:
+                   50: 0.005
+               smile:
+                   25: 0.13332
+                   50: 0.15767
+                   75: 0.20128
+            "4M":
+               vol_spread:
+                   50: 0.01
+               smile:
+                  25: 0.1103
+                  50: 0.13082
+                  75: 0.1533
+            "3M":
+               vol_spread:
+                   50: 0.006
+               smile:
+                   25: 0.11321
+                   50: 0.12736
+                   75: 0.15123
+            "3W":
+               vol_spread:
+                   50: 0.012
+               smile:
+                   25: 0.11054
+                   50: 0.11214
+                   75: 0.12063
+            "1W":
+               vol_spread:
+                   50: 0.018
+               smile:
+                   25: 0.10246
+                   50: 0.1025
+                   75: 0.10446
+            "2W":
+               vol_spread:
+                   50: 0.011
+               smile:
+                   25: 0.10383
+                   50: 0.10602
+                   75: 0.11084
+            "6M":
+               vol_spread:
+                   50: 0.005
+               smile:
+                   25: 0.11968
+                   50: 0.14043
+                   75: 0.17268
+            "ON":
+               vol_spread:
+                   50: 0.072
+               smile:
+                   25: 0.1029
+                   50: 0.11
+                   75: 0.1049
+            "2M":
+               vol_spread:
+                   50: 0.007
+               smile:
+                   25: 0.10867
+                   50: 0.12075
+                   75: 0.13569
+            "1M":
+               vol_spread:
+                   50: 0.009
+               smile:
+                   25: 0.10677
+                   50: 0.11285
+                   75: 0.12179
+            "9M":
+               vol_spread:
+                   50: 0.006
+               smile:
+                   25: 0.12784
+                   50: 0.15023
+                   75: 0.18823
+    frxEURCHF:
+        cutoff: "New York 10:00"
+        creation_date: "23-JAN-12 21:00GMT"
+        surface_data:
+           "1Y":
+               vol_spread:
+                   50: 0.008
+               smile:
+                   25: 0.0762
+                   50: 0.09007
+                   75: 0.12857
+           "4M":
+               vol_spread:
+                   50: 0.017
+               smile:
+                   25: 0.0718
+                   50: 0.0725
+                   75: 0.08458
+           "3M":
+               vol_spread:
+                   50: 0.004
+               smile:
+                   25: 0.06232
+                   50: 0.06063
+                   75: 0.07307
+           "3W":
+               vol_spread:
+                   50: 0.023
+               smile:
+                   25: 0.05529
+                   50: 0.04767
+                   75: 0.05221
+           "1W":
+               vol_spread:
+                   50: 0.016
+               smile:
+                   25: 0.0381
+                   50: 0.0306
+                   75: 0.0331
+           "2W":
+               vol_spread:
+                   50: 0.013
+               smile:
+                   25: 0.04613
+                   50: 0.0415
+                   75: 0.04725
+           "6M":
+               vol_spread:
+                   50: 0.005
+               smile:
+                   25: 0.0695
+                   50: 0.0732
+                   75: 0.09375
+           "ON":
+               vol_spread:
+                   50: 0.061
+               smile:
+                   25: 0.05653
+                   50: 0.05
+                   75: 0.05153
+           "2M":
+               vol_spread:
+                   50: 0.005
+               smile:
+                   25: 0.06022
+                   50: 0.05872
+                   75: 0.07085
+           "1M":
+               vol_spread:
+                   50: 0.004
+               smile:
+                   25: 0.04853
+                   50: 0.04535
+                   75: 0.05278
+           "9M":
+               vol_spread:
+                   50: 0.007
+               smile:
+                   25: 0.07561
+                   50: 0.08418
+                   75: 0.11174
+    frxGBPUSD:
+        cutoff: "New York 10:00"
+        creation_date: "23-JAN-12 21:00GMT"
+        surface_data:
+           "1Y":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.10425
+                   50: 0.10725
+                   75: 0.12075
+           "4M":
+               vol_spread:
+                   50: 0.004
+               smile:
+                   25: 0.09365
+                   50: 0.09666
+                   75: 0.1053
+           "3M":
+               vol_spread:
+                   50: 0.002
+               smile:
+                   25: 0.08906
+                   50: 0.09124
+                   75: 0.10006
+           "3W":
+               vol_spread:
+                   50: 0.007
+               smile:
+                   25: 0.08121
+                   50: 0.08179
+                   75: 0.08588
+           "1W":
+               vol_spread:
+                   50: 0.01
+               smile:
+                   25: 0.07625
+                   50: 0.075
+                   75: 0.07725
+           "2W":
+               vol_spread:
+                   50: 0.004
+               smile:
+                   25: 0.07776
+                   50: 0.07776
+                   75: 0.08226
+           "4M":
+               vol_spread:
+                   50: 0.002
+               smile:
+                   25: 0.09631
+                   50: 0.09925
+                   75: 0.11081
+           "ON":
+               vol_spread:
+                   50: 0.038
+               smile:
+                   25: 0.0925
+                   50: 0.09
+                   75: 0.0925
+           "2M":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.08644
+                   50: 0.08725
+                   75: 0.09394
+           "1M":
+               vol_spread:
+                   50: 0.002
+               smile:
+                   25: 0.08088
+                   50: 0.0815
+                   75: 0.08688
+           "9M":
+               vol_spread:
+                   50: 0.002
+               smile:
+                   25: 0.10198
+                   50: 0.10423
+                   75: 0.11698
+    frxUSDCAD:
+        cutoff: "New York 10:00"
+        creation_date: "23-JAN-12 21:00GMT"
+        surface_data:
+           "1Y":
+               vol_spread:
+                   50: 0.001
+               smile:
+                   25: 0.1157
+                   50: 0.101
+                   75: 0.0932
+           "4M":
+               vol_spread:
+                   50: 0.004
+               smile:
+                   25: 0.1046
+                   50: 0.09313
+                   75: 0.08828
+           "3M":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.09875
+                   50: 0.0885
+                   75: 0.08425
+           "3W":
+               vol_spread:
+                   50: 0.006
+               smile:
+                   25: 0.08926
+                   50: 0.08339
+                   75: 0.08117
+           "1W":
+               vol_spread:
+                   50: 0.008
+               smile:
+                   25: 0.0807
+                   50: 0.07775
+                   75: 0.0782
+           "2W":
+               vol_spread:
+                   50: 0.007
+               smile:
+                   25: 0.08631
+                   50: 0.08187
+                   75: 0.08131
+           "6M":
+               vol_spread:
+                   50: 0.002
+               smile:
+                   25: 0.10812
+                   50: 0.09575
+                   75: 0.09037
+           "ON":
+               vol_spread:
+                   50: 0.03
+               smile:
+                   25: 0.10425
+                   50: 0.09975
+                   75: 0.09925
+           "2M":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.09611
+                   50: 0.08749
+                   75: 0.08386
+           "1M":
+               vol_spread:
+                   50: 0.001
+               smile:
+                   25: 0.08895
+                   50: 0.08227
+                   75: 0.0797
+           "9M":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.11255
+                   50: 0.09944
+                   75: 0.0948
+    frxEURUSD:
+        cutoff: "New York 10:00"
+        creation_date: "23-JAN-12 21:00GMT"
+        surface_data:
+           "1Y":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.12425
+                   50: 0.131
+                   75: 0.14862
+           "4M":
+               vol_spread:
+                   50: 0.004
+               smile:
+                   25: 0.11957
+                   50: 0.12425
+                   75: 0.13623
+           "3M":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.11505
+                   50: 0.12025
+                   75: 0.13193
+           "3W":
+               vol_spread:
+                   50: 0.006
+               smile:
+                   25: 0.10976
+                   50: 0.11079
+                   75: 0.11636
+           "1W":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.105
+                   50: 0.10575
+                   75: 0.11
+           "2W":
+               vol_spread:
+                   50: 0.004
+               smile:
+                   25: 0.11081
+                   50: 0.11175
+                   75: 0.11544
+           "6M":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.12
+                   50: 0.126
+                   75: 0.1405
+           "ON":
+               vol_spread:
+                   50: 0.028
+               smile:
+                   25: 0.122
+                   50: 0.119
+                   75: 0.1195
+           "2M":
+               vol_spread:
+                   50: 0.002
+               smile:
+                   25: 0.11511
+                   50: 0.1195
+                   75: 0.12923
+           "1M":
+               vol_spread:
+                   50: 0.003
+               smile:
+                   25: 0.11217
+                   50: 0.11525
+                   75: 0.12167
+           "9M":
+               vol_spread:
+                   50: 0.002
+               smile:
+                   25: 0.12263
+                   50: 0.129
+                   75: 0.14513
+exchange:
+    EURONEXT_OTC:
+        recorded_date: "23-JAN-12 21:00GMT"
+        holidays:
+            1-Jan-13: New Year's Day
+            29-Mar-13: Good Friday
+            1-Apr-13: Easter Monday
+            1-May-13: Labour Day
+            25-Dec-13: Christmas Day
+            26-Dec-13: Christmas Holiday
+            2013-12-20: "pseudo-holiday"
+            2013-12-23: "pseudo-holiday"
+            2013-12-24: "pseudo-holiday"
+            2013-12-27: "pseudo-holiday"
+            2013-12-30: "pseudo-holiday"
+            2013-12-31: "pseudo-holiday"
+            1-Jan-14: New Year's Day
+            18-Apr-14: Good Friday
+            21-Apr-14: Easter Monday
+            1-May-14: Labour Day
+            25-Dec-14: Christmas Day
+            26-Dec-14: Christmas Holiday
+            2014-01-02: "pseudo-holiday"
+            2014-01-03: "pseudo-holiday"
+        market_times:
+            dst:
+              daily_close: 15h30m
+              daily_open: 7h
+              daily_settlement: 18h30m
+            early_closes:
+              23-Dec-11: 14h35m
+              24-Dec-09: 13h
+              24-Dec-10: 13h
+              30-Dec-11: 14h35m
+              31-Dec-09: 13h
+              31-Dec-10: 13h
+              24-Dec-12: 13h
+              31-Dec-12: 13h
+              24-Dec-13: 13h
+              31-Dec-13: 13h
+              24-Dec-14: 13h
+              31-Dec-14: 13h
+            standard:
+              daily_close: 16h30m
+              daily_open: 8h
+              daily_settlement: 19h30m
+            partial_trading:
+              dst_open: 7h
+              dst_close: 13h05m
+              standard_open: 8h
+              standard_close: 14h05m
+    LSE_OTC:
+        recorded_date: "23-JAN-12 21:00GMT"
+        holidays:
+            1-Jan-13: New Year's Day
+            29-Mar-13: Good Friday
+            1-Apr-13: Easter Monday
+            6-May-13: Early May Bank Holiday
+            27-May-13: Late May Bank Holiday
+            26-Aug-13: Summer Bank Holiday
+            25-Dec-13: Christmas Day
+            26-Dec-13: Boxing Day
+            2013-12-20: "pseudo-holiday"
+            2013-12-23: "pseudo-holiday"
+            2013-12-24: "pseudo-holiday"
+            2013-12-27: "pseudo-holiday"
+            2013-12-30: "pseudo-holiday"
+            2013-12-31: "pseudo-holiday"
+            1-Jan-14: New Year's Day
+            18-Apr-14: Good Friday
+            21-Apr-14: Easter Monday
+            5-May-14: Early May Bank Holiday
+            26-May-14: Late May Bank Holiday
+            25-Aug-14: Summer Bank Holiday
+            25-Dec-14: Christmas Day
+            26-Dec-14: Boxing Day
+            2014-01-02: "pseudo-holiday"
+            2014-01-03: "pseudo-holiday"
+        market_times:
+            dst:
+              daily_close: 15h30m
+              daily_open: 7h
+              daily_settlement: 18h30m
+            early_closes:
+              31-Dec-12: 12h30m
+              24-Dec-12: 12h30m
+              30-Dec-11: 12h30m
+              23-Dec-11: 12h30m
+              24-Dec-09: 12h30m
+              24-Dec-10: 12h30m
+              31-Dec-09: 12h30m
+              31-Dec-10: 12h30m
+              24-Dec-13: 12h30m
+              31-Dec-13: 12h30m
+              24-Dec-14: 12h30m
+              31-Dec-14: 12h30m
+            standard:
+              daily_close: 16h30m
+              daily_open: 8h
+              daily_settlement: 19h30m
+            partial_trading:
+              dst_open: 7h
+              dst_close: 11h30m
+              standard_open: 8h
+              standard_close: 12h30m
+    NYSE_OTC:
+        recorded_date: "23-JAN-12 21:00GMT"
+        holidays:
+            1-Jan-13: New Years Day
+            21-Jan-13: Martin Luther King, Jr. Day
+            18-Feb-13: Washington's Birthday (also known as Presidents' Day)
+            29-Mar-13: Good Friday
+            27-May-13: Memorial Day
+            4-Jul-13: Independence Day
+            2-Sep-13: Labor Day
+            28-Nov-13: Thanksgiving Day
+            25-Dec-13: Christmas Day
+            2013-12-20: "pseudo-holiday"
+            2013-12-23: "pseudo-holiday"
+            2013-12-24: "pseudo-holiday"
+            2013-12-26: "pseudo-holiday"
+            2013-12-27: "pseudo-holiday"
+            2013-12-30: "pseudo-holiday"
+            2013-12-31: "pseudo-holiday"
+            1-Jan-14: New Years Day
+            20-Jan-14: Martin Luther King, Jr. Day
+            17-Feb-14: Washington's Birthday
+            18-Apr-14: Good Friday
+            26-May-14: Memorial Day
+            4-Jul-14: Independence Day
+            1-Sep-14: Labor Day
+            27-Nov-14: Thanksgiving Day
+            25-Dec-14: Christmas
+            2014-01-02: "pseudo-holiday"
+            2014-01-03: "pseudo-holiday"
+        market_times:
+            dst:
+              daily_close: 20h
+              daily_open: 13h30m
+              daily_settlement: 22h59m59s
+            early_closes:
+              24-Dec-12: 18h
+              23-Nov-12: 18h
+              3-Jul-12: 17h
+              25-Nov-11: 18h
+              26-Nov-10: 18h
+              3-Jul-13: 17h
+              29-Nov-13: 18h
+              24-Dec-13: 18h
+              28-Nov-14: 18h
+              3-Jul-14: 17h
+              24-Dec-14: 18h
+            standard:
+              daily_close: 21h
+              daily_open: 14h30m
+              daily_settlement: 23h59m59s
+            partial_trading:
+              dst_open: 13h30m
+              dst_close: 17h
+              standard_open: 14h30m
+              standard_close: 18h
+    SBF:
+        recorded_date: "23-JAN-12 21:00GMT"
+        holidays:
+            1-Jan-13: New Year's Day
+            29-Mar-13: Good Friday
+            1-Apr-13: Easter Monday
+            1-May-13: Labour Day
+            25-Dec-13: Christmas Day
+            26-Dec-13: Christmas Holiday
+            2013-12-20: "pseudo-holiday"
+            2013-12-23: "pseudo-holiday"
+            2013-12-24: "pseudo-holiday"
+            2013-12-27: "pseudo-holiday"
+            2013-12-30: "pseudo-holiday"
+            2013-12-31: "pseudo-holiday"
+            1-Jan-14: New Year's Day
+            18-Apr-14: Good Friday
+            21-Apr-14: Easter Monday
+            1-May-14: Labour Day
+            25-Dec-14: Christmas Day
+            26-Dec-14: Christmas Holiday
+            2014-01-02: "pseudo-holiday"
+            2014-01-03: "pseudo-holiday"
+        market_times:
+            dst:
+              daily_close: 15h30m
+              daily_open: 7h
+              daily_settlement: 18h30m
+            early_closes:
+              23-Dec-11: 14h35m
+              24-Dec-09: 13h
+              24-Dec-10: 13h
+              30-Dec-11: 14h35m
+              31-Dec-09: 13h
+              31-Dec-10: 13h
+              24-Dec-12: 13h
+              31-Dec-12: 13h
+              24-Dec-13: 13h
+              31-Dec-13: 13h
+              24-Dec-14: 13h
+              31-Dec-14: 13h
+            standard:
+              daily_close: 16h30m
+              daily_open: 8h
+              daily_settlement: 19h30m
+            partial_trading:
+              dst_open: 7h
+              dst_close: 13h05m
+              standard_open: 8h
+              standard_close: 14h05m
+    NYSE_SPC_OTC:
+        recorded_date: "23-JAN-12 21:00GMT"
+        holidays:
+            1-Jan-13: New Years Day
+            21-Jan-13: Martin Luther King, Jr. Day
+            18-Feb-13: Washington's Birthday (also known as Presidents' Day)
+            29-Mar-13: Good Friday
+            27-May-13: Memorial Day
+            4-Jul-13: Independence Day
+            2-Sep-13: Labor Day
+            28-Nov-13: Thanksgiving Day
+            25-Dec-13: Christmas Day
+            2013-12-20: "pseudo-holiday"
+            2013-12-23: "pseudo-holiday"
+            2013-12-24: "pseudo-holiday"
+            2013-12-26: "pseudo-holiday"
+            2013-12-27: "pseudo-holiday"
+            2013-12-30: "pseudo-holiday"
+            1-Jan-14: New Years Day
+            20-Jan-14: Martin Luther King, Jr. Day
+            17-Feb-14: Washington's Birthday
+            18-Apr-14: Good Friday
+            26-May-14: Memorial Day
+            4-Jul-14: Independence Day
+            1-Sep-14: Labor Day
+            27-Nov-14: Thanksgiving Day
+            25-Dec-14: Christmas
+            2014-01-02: "pseudo-holiday"
+            2014-01-03: "pseudo-holiday"
+        market_times:
+            dst:
+              daily_close: 20h
+              daily_open: 13h30m
+              daily_settlement: 22h59m59s
+            early_closes:
+              24-Dec-12: 18h
+              23-Nov-12: 18h
+              3-Jul-12: 17h
+              25-Nov-11: 18h
+              26-Nov-10: 18h
+              3-Jul-13: 17h
+              29-Nov-13: 18h
+              24-Dec-13: 18h
+              28-Nov-14: 18h
+              3-Jul-14: 17h
+              24-Dec-14: 18h
+            standard:
+              daily_close: 21h
+              daily_open: 14h30m
+              daily_settlement: 23h59m59s
+            partial_trading:
+              dst_open: 13h30m
+              dst_close: 17h
+              standard_open: 14h30m
+              standard_close: 18h
+    TSE_OTC:
+        recorded_date: "23-JAN-12 21:00GMT"
+        holidays:
+            1-Jan-13: New Year's Day
+            2-Jan-13: Bank Holiday
+            3-Jan-13: Bank Holiday
+            14-Jan-13: Coming of age Day
+            11-Feb-13: National Foundation Day
+            20-Mar-13: Vernal Equinox Day
+            29-Apr-13: Showa Day
+            3-May-13: Constitution Day
+            6-May-13: Children's Day
+            15-Jul-13: Marine Day
+            16-Sep-13: Respect for the aged Day
+            23-Sep-13: Autumnal Equinox Day
+            14-Oct-13: Health Sport Day
+            4-Nov-13: Culture Day
+            23-Dec-13: Emperor's Birthday
+            31-Dec-13: New Year's Eve
+            2013-12-20: "pseudo-holiday"
+            2013-12-24: "pseudo-holiday"
+            2013-12-26: "pseudo-holiday"
+            2013-12-27: "pseudo-holiday"
+            2013-12-30: "pseudo-holiday"
+            1-Jan-14: New Year's Day
+            2-Jan-14: Bank Holiday
+            3-Jan-14: Bank Holiday
+            13-Jan-14: Coming of Age Day
+            11-Feb-14: National Foundation Day
+            21-Mar-14: Vernal Equinox Day
+            29-Apr-14: Showa Day
+            5-May-14: Children's Day
+            6-May-14: Greenery Day
+            21-Jul-14: Marine Day
+            15-Sep-14: Respect for the aged Day
+            23-Sep-14: Autumnal Equinox Day
+            13-Oct-14: Health Sport Day
+            3-Nov-14: Culture Day
+            24-Nov-14: Labor Thanksgiving
+            23-Dec-14: Emperor's Birthday
+            31-Dec-14: New Year's eve
+            2014-01-02: "pseudo-holiday"
+            2014-01-03: "pseudo-holiday"
+        market_times:
+            early_closes: {}
+            standard:
+              afternoon_open: 3h30m
+              daily_close: 6h
+              daily_open: 0s
+              daily_settlement: 9h
+              morning_close: 2h30m
+            partial_trading: {}
+    SSE:
+        recorded_date: "23-JAN-12 21:00GMT"
+        holidays:
+            1-Jan-13: New Year's Day
+            2-Jan-13: New Year's Day
+            3-Jan-13: New Year's Day
+            11-Feb-13: Lunar New Year
+            12-Feb-13: Lunar New Year
+            13-Feb-13: Lunar New Year
+            14-Feb-13: Lunar New Year
+            15-Feb-13: Lunar New Year
+            4-Apr-13: Ching Ming Festival
+            5-Apr-13: Ching Ming Festival
+            29-Apr-13: Labour Day
+            30-Apr-13: Labour Day
+            1-May-13: Labour Day
+            10-Jun-13: Dragon Boat Festival
+            11-Jun-13: Dragon Boat Festival
+            12-Jun-13: Tuen Ng Festival
+            19-Sep-13: Mid Autumn Festival
+            20-Sep-13: Day after Mid Autumn Festival
+            1-Oct-13: National Day
+            2-Oct-13: National Day
+            3-Oct-13: National Day
+            4-Oct-13: National Day
+            7-Oct-13: National Day
+            2013-12-20: "pseudo-holiday"
+            2013-12-23: "pseudo-holiday"
+            2013-12-24: "pseudo-holiday"
+            2013-12-26: "pseudo-holiday"
+            2013-12-27: "pseudo-holiday"
+            2013-12-30: "pseudo-holiday"
+            2013-12-31: "pseudo-holiday"
+            1-Jan-14: New Year's Day
+            30-Jan-14: Lunar New Year
+            31-Jan-14: Lunar New Year
+            3-Feb-14: Lunar New Year
+            4-Feb-14: Lunar New Year
+            5-Feb-14: Lunar New Year
+            7-Feb-14: Lunar New Year
+            1-May-14: Labour Day
+            2-Jun-14: Tuen Ng Festival
+            8-Sep-14: Mid-autumn Festival
+            1-Oct-14: National Day
+            2-Oct-14: National Day
+            3-Oct-14: National Day
+            2014-01-02: "pseudo-holiday"
+            2014-01-03: "pseudo-holiday"
+        market_times:
+            early_closes: {}
+            standard:
+              afternoon_open: 5h
+              daily_close: 7h
+              daily_open: 1h30m
+              morning_close: 3h30m
+              daily_settlement: 10h
+            partial_trading: {}
+currency_config:
+    JPY:
+        daycount: 360
+        holidays:
+            3-Jan-11: Market Holiday
+            10-Jan-11: Coming of Age day
+            11-Feb-11: National Foundation Day
+            21-Mar-11: Vernal Equinox Day
+            29-Apr-11: Showa Day
+            3-May-11: Constitution Memorial Day
+            4-May-11: Greenery Day
+            5-May-11: Children's Day
+            18-Jul-11: Marine Day
+            19-Sep-11: Respect for the Aged Day
+            23-Sep-11: Autummal Equinox
+            10-Oct-11: Health and Sports Day
+            3-Nov-11: Culture Day
+            23-Nov-11: Labor Thanksgiving Day
+            2011-12-23: Emperor's Birthday
+            2012-01-02: Market Holiday
+            2012-01-03: Market Holiday
+            2012-01-09: Coming-of-age Day
+            2012-03-20: Vernal Equinox Day
+            2012-04-30: Showa Day
+            2012-05-03: Constitution Memorial Day
+            2012-05-04: Greenery Day
+            2012-07-16: Marine Day
+            2012-09-17: Respect for the Aged Day
+            2012-10-08: Health and Sports Day
+            2012-11-23: Labor Thanksgiving Day
+            2012-12-24: Emperor's Birthday
+            2012-12-31: Market Holiday
+            2013-01-01: New Year's Day
+            2013-01-02: New Year's Day
+            2013-01-03: Bank Holiday
+            2013-01-14: Coming-of-age Day
+            2013-02-11: National Foundation Day
+            2013-03-20: Vernal Equinox Day
+            2013-04-29: Showa Day
+            2013-05-03: Constitution Memorial Day
+            2013-05-04: Greenery Day
+            2013-05-06: Children's Day (obs)
+            2013-07-15: Marine Day
+            2013-09-16: Respect-for-the-aged Day
+            2013-09-23: Autumnal Equinox Day
+            2013-10-14: Health-sports Day
+            2013-11-23: Labor Thanksgiving Day
+            2013-12-23: Emperor's Birthday
+            2013-12-24: 0.5
+            2013-12-31: Bank Holiday
+            2014-01-01: New Year's Day
+            2014-01-02: Bank Holiday
+            2014-01-03: Bank Holiday
+            2014-01-13: Coming of Age Day
+            2014-02-11: National Foundation Day
+            2014-03-21: Vernal Equinox Day
+            2014-04-29: Showa Day
+            2014-05-05: Children's Day
+            2014-05-06: Greenery Day
+            2014-07-21: Marine Day
+            2014-09-15: Respect for the aged Day
+            2014-09-23: Autumnal Equinox Day
+            2014-10-13: Health Sport Day
+            2014-11-03: Culture Day
+            2014-11-24: Labor Thanksgiving
+            2014-12-23: Emperor's Birthday
+            2014-12-24: 0.5
+            2014-12-31: New Year's eve
+    EUR:
+        daycount: 360
+        holidays:
+            2010-12-31: 0.5
+            22-Apr-11: Good Friday
+            25-Apr-11: Easter Monday
+            2011-12-26: Christmas Holiday
+            2012-04-06: Good Friday
+            2012-04-09: Easter Monday
+            2012-05-01: Labour Day
+            2012-12-24: 0.5
+            2012-12-25: Christmas Holiday
+            2012-12-26: Boxing Day
+            2012-12-31: 0.5
+            2013-01-01: Holiday
+            2013-04-01: Holiday
+            2013-12-24: 0.5
+            2013-12-25: Holiday
+            2013-12-26: Holiday
+            2013-12-31: 0.5
+            2014-01-01: New Year's Day
+            2014-04-18: Good Friday
+            2014-04-21: Easter Monday
+            2014-05-01: Labour Day
+            2014-12-24: 0.5
+            2014-12-25: Christmas Day
+            2014-12-26: Christmas Day
+            2014-12-31: 0.5
+    CHF:
+        daycount: 360
+        holidays:
+            22-Apr-11: Good Friday
+            25-Apr-11: Easter Monday
+            2-Jun-11: Ascension
+            13-Jun-11: Whit Monday
+            1-Aug-11: National Day
+            2011-12-26: St.Stephen's Day
+            2012-01-02: New Year's Day
+            2012-04-06: Good Friday
+            2012-04-09: Easter Monday
+            2012-05-01: Labour Day
+            2012-05-17: Ascension
+            2012-05-28: Whit Monday
+            2012-08-01: National Day
+            2012-12-24: 0.5
+            2012-12-25: Christmas Day
+            2012-12-26: Boxing Day
+            2012-12-31: New Year's Eve
+            2013-01-01: New Year's Day
+            2013-03-29: Good Friday
+            2013-04-01: Easter Monday
+            2013-05-09: Ascension
+            2013-05-20: Whit Monday
+            2013-08-01: National Day
+            2013-12-24: 0.5
+            2013-12-25: Christmas Day
+            2013-12-26: Boxing Day
+            2013-12-31: 0.5
+            2014-01-01: New Year's day
+            2014-04-18: Good Friday
+            2014-04-21: Easter Monday
+            2014-05-29: Ascension Day
+            2014-06-09: Whit Monday
+            2014-08-01: National Day
+            2014-12-24: 0.5
+            2014-12-25: Christmas 
+            2014-12-26: St. Stephen's day
+            2014-12-31: 0.5
+    SEK:
+        daycount: 360
+        holidays:
+            6-Jan-11: Epiphany
+            22-Apr-11: Good Friday
+            25-Apr-11: Easter Monday
+            2-Jun-11: Ascension
+            6-Jun-11: Swedish National Day
+            24-Jun-11: Midsummer Holiday
+            2011-12-26: Christmas
+            2012-01-06: Epiphany
+            2012-04-06: Good Friday
+            2012-04-09: Easter Monday
+            2012-05-01: Labour Day
+            2012-05-17: Ascension
+            2012-06-06: National day
+            2012-06-22: Midsummer holiday
+            2012-12-24: Christmas Eve
+            2012-12-25: Christmas
+            2012-12-26: Boxing Day
+            2012-12-31: New Year's Eve
+            2013-01-01: New Year's Day
+            2013-01-06: Epiphany
+            2013-03-29: Good Friday
+            2013-03-31: Easter
+            2013-04-01: Easter Monday
+            2013-05-01: Labour Day
+            2013-05-19: Pentecost
+            2013-05-20: Holiday
+            2013-06-06: National day
+            2013-06-22: Midsummer holiday
+            2013-11-02: All Saints Day
+            2013-12-24: Christmas Eve
+            2013-12-25: Christmas Day
+            2013-12-26: Boxing Day
+            2013-12-31: 0.5
+            2014-01-01: New Year's Day
+            2014-01-06: Epiphany
+            2014-04-18: Good Friday
+            2014-04-21: Easter Monday
+            2014-05-01: Labour Day
+            2014-05-29: Ascension
+            2014-06-06: National Day
+            2014-06-20: Midsummer Holiday
+            2014-12-24: Christmas Eve
+            2014-12-25: Christmas Day
+            2014-12-26: Boxing Day
+            2014-12-31: New Year's Eve
+    NOK:
+        daycount: 360
+        holidays:
+            2011-04-21: Maundy Thursday
+            2011-04-22: Good Friday
+            2011-04-25: Easter Monday
+            2011-05-17: Constitution Day
+            2011-06-02: Ascension
+            2011-06-13: Pentecost
+            2011-12-26: Boxing Day
+            2012-04-05: Maundy Thursday
+            2012-04-06: Good Friday
+            2012-04-09: Easter Monday
+            2012-05-01: Labour Day
+            2012-05-17: Ascension Day
+            2012-05-28: Whit Monday
+            2012-12-25: Christmas
+            2012-12-26: St. Stephen's Day
+            2013-01-01: New Year's Day
+            2013-03-28: Maundy Thursday
+            2013-03-29: Good Friday
+            2013-04-01: Easter Monday
+            2013-05-01: Labour Day
+            2013-05-09: Ascension Day
+            2013-05-17: Constitution Day
+            2013-05-20: WhitMonday
+            2013-12-24: Christmas Eve
+            2013-12-25: Christmas Day
+            2013-12-26: Boxing Day
+            2013-12-31: 0.5
+            2014-01-01: New Year's Day
+            2014-04-17: Maundy Thursday
+            2014-04-18: Good Friday
+            2014-04-21: Easter Monday
+            2014-05-01: Labour Day
+            2014-05-29: Ascension
+            2014-06-09: Whit Monday
+            2014-12-24: Christmas Eve
+            2014-12-25: Christmas
+            2014-12-26: Boxing Day
+            2014-12-31: 0.5
+    GBP:
+        daycount: 365
+        holidays:
+            3-Jan-11: New Year's Day
+            22-Apr-11: Good Friday
+            25-Apr-11: Easter Monday
+            29-Apr-11: Royal Wedding
+            2-May-11: May Day
+            30-May-11: Spring Bank Holiday
+            29-Aug-11: Summer Bank Holiday
+            2011-12-26: Christmas Day
+            2011-12-27: Boxing Day
+            2012-01-02: New Year
+            2012-04-06: Good Friday
+            2012-04-09: Easter Monday
+            2012-05-07: Early May
+            2012-06-04: Spring Bank Holiday
+            2012-06-05: Queen's Diamond Jubilee
+            2012-08-27: Summer Bank Holiday
+            2012-12-24: 0.5
+            2012-12-25: Christmas Day
+            2012-12-26: Boxing Day
+            2012-12-31: 0.5
+            2013-01-01: Bank Holiday
+            2013-03-29: Good Friday
+            2013-04-01: Easter Monday
+            2013-05-06: May Day
+            2013-05-27: Spring Bank Holiday
+            2013-08-26: Summer Bank Holiday
+            2013-12-24: 0.5
+            2013-12-25: Christmas Day
+            2013-12-26: Boxing Day
+            2013-12-31: 0.5
+            2014-01-01: New Year's Day
+            2014-04-18: Good Friday
+            2014-04-21: Easter Monday
+            2014-05-05: Early May Bank Holiday
+            2014-05-26: Late May Bank Holiday
+            2014-08-25: Summer Bank Holiday
+            2014-12-24: 0.5
+            2014-12-25: Christmas Day
+            2014-12-26: Boxing Day
+            2014-12-31: 0.5
+    CAD:
+        daycount: 365
+        holidays:
+            3-Jan-11: New Year's Day
+            21-Feb-11: Family Day
+            22-Apr-11: Good Friday
+            23-May-11: Victoria Day
+            1-Jul-11: Canada Day
+            1-Aug-11: Civic Holiday
+            5-Sep-11: Labour Day
+            10-Oct-11: Thanksgiving Day
+            2011-12-26: Christmas Day
+            2011-12-27: Boxing Day
+            2012-01-02: New Year's Day
+            2012-02-20: Family Day
+            2012-04-06: Good Friday
+            2012-05-21: Victoria Day
+            2012-07-02: Canada Day
+            2012-08-06: Civic Holiday
+            2012-09-03: Labour Day
+            2012-10-08: Thanksgiving Day
+            2012-11-12: Remembrance Day
+            2012-12-25: Chirstmas Day
+            2012-12-26: Boxing Day
+            2013-01-01: New Year's Day
+            2013-02-18: Family Day
+            2013-03-29: Good Friday
+            2013-05-20: Victoria Day
+            2013-07-01: Canada Day
+            2013-08-05: Civic Holiday
+            2013-09-02: Labor Day
+            2013-10-14: Thanksgiving Day
+            2013-11-11: Remembrance Day
+            2013-12-24: 0.5
+            2013-12-25: Chirstmas Day
+            2013-12-26: Boxing Day
+            2013-12-31: 0.5
+            2014-01-01: New Year's Day
+            2014-02-17: Family Day
+            2014-04-18: Good Friday
+            2014-05-19: Victoria Day
+            2014-07-01: Canada Day
+            2014-08-04: Civic Holiday
+            2014-09-01: Labour Day
+            2014-10-13: Thanksgiving Day
+            2014-11-11: Remembrance Day
+            2014-12-24: 0.5
+            2014-12-25: Christmas Day
+            2014-12-26: Boxing Day
+            2014-12-31: 0.5
+    AUD:
+        daycount: 365
+        holidays:
+            3-Jan-11: New Year's Day
+            26-Jan-11: Australia Day
+            22-Apr-11: Good Friday
+            25-Apr-11: Easter Monday
+            26-Apr-11: Public holiday
+            13-Jun-11: Queen's Birthday Holiday
+            2011-12-26: Christmas Day
+            2011-12-27: Boxing Day
+            2012-01-02: New Year's Day
+            2012-01-26: Australia Day
+            2012-04-06: Good Friday
+            2012-04-09: Easter Monday
+            2012-04-25: Anzac Day
+            2012-06-11: Queen's Birthday Holiday
+            2012-08-06: Bank Holiday
+            2012-10-01: Labour Day
+            2012-12-24: 0.5
+            2012-12-25: Christmas Day
+            2012-12-26: Boxing Day
+            2012-12-31: 0.5
+            2013-01-01: New Year's Day
+            2013-01-28: Australia Day Holiday
+            2013-03-29: Good Friday
+            2013-04-01: Easter Monday
+            2013-04-25: Anzac Day
+            2013-06-10: Queen's Birthday Holiday
+            2013-08-05: Bank Holiday
+            2013-10-07: Labour Day
+            2013-12-24: 0.5
+            2013-12-25: Christmas Day
+            2013-12-26: Boxing Day
+            2013-12-31: 0.5
+            2014-01-01: New Year's Day
+            2014-01-27: Australia Day
+            2014-04-18: Good Friday
+            2014-04-21: Easter Monday
+            2014-04-25: ANZAC Day
+            2014-06-09: Queen's Birthday
+            2014-08-04: Bank Holiday
+            2014-12-24: 0.5
+            2014-12-25: Christmas Day
+            2014-12-26: Boxing Day
+            2014-12-31: 0.5
+    PLN:
+        daycount: 365
+        holidays:
+            2011-01-06: Epiphany
+            2011-04-25: Easter Monday
+            2011-05-03: Constitution Day
+            2011-06-23: Corpus Christi Day
+            2011-08-15: Assumption Day
+            2011-11-01: All Saints Day
+            2011-11-11: Independence Day
+            2011-12-26: Chirstmas Holiday
+            2012-01-06: Epiphany
+            2012-04-09: Easter Monday
+            2012-05-01: Labour Day
+            2012-05-03: Constitution Day
+            2012-06-07: Corpus Christi Day
+            2012-08-15: Assumption Day
+            2012-11-01: All Saints Day
+            2012-12-25: Christmas Day
+            2012-12-26: Christmas Holiday
+            2013-01-01: New Year's Day
+            2013-04-01: Easter Monday
+            2013-05-01: Labour Day
+            2013-05-03: Constitution Day
+            2013-05-30: Corpus Christi Day
+            2013-08-15: Assumption Day
+            2013-11-01: All Saints Day
+            2013-11-11: Independence Day
+            2013-12-24: 0.5
+            2013-12-25: Christmas Day
+            2013-12-26: Christmas Holiday
+            2013-12-31: 0.5
+            2014-01-01: New Year's Day
+            2014-01-06: Epiphany
+            2014-04-18: Good Friday
+            2014-04-21: Easter Monday
+            2014-05-01: Labor Day
+            2014-06-19: Corpus Christi
+            2014-08-15: Assumption of Mary
+            2014-11-01: All Saints' Day
+            2014-11-11: Independence Day
+            2014-12-25: Christmas Day
+            2014-12-26: Boxing Day           
+    NZD:
+        daycount: 365
+        holidays:
+            3-Jan-11: New Year's Day
+            4-Jan-11: New Year's Holiday
+            22-Apr-11: Good Friday
+            25-Apr-11: Easter Monday
+            6-Jun-11: Queen's Birthday
+            24-Oct-11: Labour Day
+            2011-12-26: Chirstmas Holiday
+            2011-12-27: Boxing Day
+            2012-01-02: New Year's Day
+            2012-01-03: New Year's Day
+            2012-01-23: Wellington Anniversary
+            2012-01-30: Auckland Anniversary
+            2012-02-06: Waitangi Day
+            2012-04-06: Good Friday
+            2012-04-09: Easter Monday
+            2012-04-25: Anzac Day
+            2012-06-04: Queen's Birthday
+            2012-10-22: Labour Day
+            2012-12-25: Christmas Day
+            2012-12-26: Boxing Day
+            2013-01-01: New Year's Day
+            2013-01-02: New Year's Holiday
+            2013-01-21: Wellington Anniversary Day
+            2013-01-28: Auckland Anniversary
+            2013-02-06: Waitangi Day
+            2013-03-29: Good Friday
+            2013-04-01: Easter Monday
+            2013-04-25: Anzac Day
+            2013-06-03: Queen's Birthday
+            2013-10-28: Labour Day
+            2013-12-24: 0.5
+            2013-12-25: Christmas Day
+            2013-12-26: Boxing Day
+            2013-12-31: 0.5
+            2014-01-01: New Year's Day
+            2014-01-02: New Year's Day
+            2014-01-20: Wellington Anniversary Day
+            2014-01-27: Auckland Anniversary
+            2014-02-06: Waitangi Day
+            2014-04-18: Good Friday
+            2014-04-21: Easter Monday
+            2014-04-25: Anzac Day
+            2014-06-02: Queen's Birthday
+            2014-10-27: Labour Day
+            2014-12-24: 0.5
+            2014-12-25: Christmas Day
+            2014-12-26: Boxing Day
+    CZK:
+        daycount: 360
+        holidays:
+            2011-04-25: Easter Monday
+            2011-07-05: Ss. Cyril and Meth
+            2011-07-06: Jan Hus
+            2011-09-28: Day Of Czech State
+            2011-10-28: Independence Day
+            2011-11-17: Day Of Fight For Fr
+            2011-12-26: Christmas Day
+            2012-04-09: Easter Monday
+            2012-05-01: Labour Day
+            2012-05-08: Liberation day
+            2012-07-05: Ss. Cyril and Methodius
+            2012-07-06: Jan Hus
+            2012-09-28: Day of Czech Statehood
+            2012-12-24: Christmas Eve
+            2012-12-25: Christmas
+            2012-12-26: Christmas holiday
+            2013-03-31: Easter Day
+            2013-07-06: Jan Hus
+            2013-09-28: Day of Czech Statehood
+            2013-11-17: Day of Fight For Freedom
+            2013-12-24: 0.5
+            2013-12-31: 0.5
+            2014-01-01: New Year's Day
+            2014-04-21: Easter Monday
+            2014-05-01: Labour Day
+            2014-05-08: Liberation Day
+            2014-10-28: Independence Day
+            2014-11-17: Day of Fight For Freedom
+            2014-12-24: Christmas Eve
+            2014-12-25: Christmas 
+            2014-12-26: Chirstmas Holiday
+            2014-12-31: 0.5
+    XAU:
+        daycount: 360
+        holidays:
+            2013-12-24: 0.5
+            2013-12-25: Christmas Day
+            2013-12-31: 0.5
+            2014-12-24: 0.5
+            2014-12-25: Christmas Day
+            2014-12-31: 0.5                                                                                                                              
