@@ -1,0 +1,17 @@
+*.bak
+*.bs
+*.o
+*.sw?
+*.tidyup
+*~
+.DS_Store
+.idea
+.last_cover_stats
+_build/
+cover_db/
+id_dsa
+id_rsa
+inc/
+nytprof.out
+statics/javascript/data
+tags

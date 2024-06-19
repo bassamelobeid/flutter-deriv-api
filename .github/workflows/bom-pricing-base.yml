@@ -1,0 +1,23 @@
+name: Repository Tests (bom-pricing)
+on:
+  workflow_call:
+    inputs:
+      debianci_image:
+        description: 'Docker image where the jobs should be run'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-bom-pricing
+  cancel-in-progress: true
+jobs:
+  core_unit_syntax_diff:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
+    secrets: inherit
+    # We wanted to skip 'syntax_diff' during DT, but some tests within it for this repo can't be skipped.
+    # Thus, set 'need_syntax_diff' to 'true' to execute 'syntax_diff' during DT.
+    with:
+      debianci_image: ${{ inputs.debianci_image }}
+      repository: regentmarkets/bom-core/bom-pricing
+      dependent_test: 'true'
+      need_syntax_diff: 'true'

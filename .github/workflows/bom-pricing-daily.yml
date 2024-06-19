@@ -1,0 +1,28 @@
+name: Daily workflow (bom-pricing)
+run-name: Daily workflow (bom-pricing)
+on:
+  workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: '24 11 * * *'
+jobs:
+  syntax_unit:
+    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-pricing
+  core:
+    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-pricing
+  publish_test_results:
+    needs: [ core , syntax_unit ]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload results to DataDog
+        uses: regentmarkets/github-actions/datadog-publish@master
+        with:
+          datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
+          service-name: bom-pricing

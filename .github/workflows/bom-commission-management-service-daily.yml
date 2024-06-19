@@ -1,0 +1,30 @@
+name: Daily workflow (bom-commission-management-service)
+run-name: Daily workflow (bom-commission-management-service)
+on:
+  schedule:
+    - cron: '2 20 * * *'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ vars.DEBIAN_CI }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-commission-management-service
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-commission-management-service
+      - name: Run tests
+        run: |
+          source /etc/profile.d/perl5.sh
+          make test

@@ -1,0 +1,27 @@
+name: Build workflow (bom-test)
+run-name: Build workflow (bom-test)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths: 
+      - 'bom-test/**'
+      - '.github/workflows/bom-test-build.yml'
+  pull_request:
+    paths: 
+      - 'bom-test/**'
+      - '.github/workflows/bom-test-build.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  core_unit_syntax_diff:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-test
+  dependent:
+    if: ${{ github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/bom-test-dependent.yml
+    secrets: inherit

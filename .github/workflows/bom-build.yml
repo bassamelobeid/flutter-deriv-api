@@ -1,0 +1,34 @@
+name: Build workflow (bom)
+run-name: Build workflow (bom)
+env:
+  PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
+on:
+  workflow_dispatch: 
+  push:
+    branches:
+      - master
+    paths: 
+      - 'bom/**'
+      - '.github/workflows/bom-build.yml'
+  pull_request:
+    paths: 
+      - 'bom/**'
+      - '.github/workflows/bom-build.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  syntax_diff_unit:
+    uses: regentmarkets/github-actions/.github/workflows/syntax_diff_unit.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom
+  core:
+    uses: ./.github/workflows/bom-base.yml
+    secrets: inherit
+    with:
+      need_upload_result: true
+  dependent:
+    if: ${{ github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/bom-dependent.yml
+    secrets: inherit

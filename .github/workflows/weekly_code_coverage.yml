@@ -1,0 +1,197 @@
+name: Weekly code coverage workflow
+run-name: Weekly code coverage workflow
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 7 * * 6'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  binary-websocket-api:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ vars.DEBIAN_CI }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/binary-websocket-api
+    env:
+      LOG_LEVEL: debug
+      RPC_CONFIG: /home/git/regentmarkets/bom-core/bom-rpc/rpc.conf.travis
+      WEBSOCKET_CONFIG: /home/git/regentmarkets/bom-core/binary-websocket-api/websocket.conf.example
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      COVERALLS_PARALLEL: true
+      COVERALLS_FLAG_NAME: binary-websocket-api
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/binary-websocket-api
+      - name: code cover tests
+        run: make cover
+      - name: schema_suite tests
+        run: make cover_websocket_tests sub_test=schema_suite
+      - name: security tests
+        run: make cover_websocket_tests sub_test=security
+      - name: accounts tests
+        run: make cover_websocket_tests sub_test=accounts
+      - name: misc tests
+        run: make cover_websocket_tests sub_test=misc
+      - name: p2p tests
+        run: make cover_websocket_tests sub_test=p2p
+      - name: pricing tests
+        run: make cover_websocket_tests sub_test=pricing
+      - name: backends tests
+        run: make cover_websocket_tests sub_test=backends
+      - name: upload coverage report
+        run: cover -report coveralls
+  bom-config:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-config
+      parallel: true
+      flag_name: bom-config
+  bom-events:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-events
+      parallel: true
+      flag_name: bom-events
+  bom-feed-plugin:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-feed-plugin
+      parallel: true
+      flag_name: bom-feed-plugin
+  bom-market:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-market
+      parallel: true
+      flag_name: bom-market
+  bom-marketdataautoupdater:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-marketdataautoupdater
+      parallel: true
+      flag_name: bom-marketdataautoupdater
+  bom-myaffiliates:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-myaffiliates
+      parallel: true
+      flag_name: bom-myaffiliates
+  bom-oauth:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-oauth
+      parallel: true
+      flag_name: bom-oauth
+      env_vars: |
+        OAUTH_CONFIG=/home/git/regentmarkets/bom-core/bom-oauth/oauth.conf.example
+  bom-paymentapi:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-paymentapi
+      parallel: true
+      flag_name: bom-paymentapi
+  bom-platform:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-platform
+      parallel: true
+      flag_name: bom-platform
+  bom-postgres:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-postgres
+      parallel: true
+      flag_name: bom-postgres
+  bom-pricing:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-pricing
+      parallel: true
+      flag_name: bom-pricing
+  bom-rpc:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-rpc
+      parallel: true
+      flag_name: bom-rpc
+      env_vars: |
+       RPC_CONFIG=/home/git/regentmarkets/bom-core/bom-rpc/rpc.conf.travis
+  bom-rules:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-rules
+      parallel: true
+      flag_name: bom-rules
+  bom-transaction:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-transaction
+      parallel: true
+      flag_name: bom-transaction
+  bom-user:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-user
+      parallel: true
+      flag_name: bom-user
+  bom:
+    uses: regentmarkets/github-actions/.github/workflows/code_coverage.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom
+      parallel: true
+      flag_name: bom
+  finish:
+    needs: 
+      - binary-websocket-api
+      - bom-config
+      - bom-events
+      - bom-feed-plugin
+      - bom-market
+      - bom-marketdataautoupdater
+      - bom-myaffiliates
+      - bom-oauth
+      - bom-paymentapi
+      - bom-platform
+      - bom-postgres
+      - bom-pricing
+      - bom-rpc
+      - bom-rules
+      - bom-transaction
+      - bom-user
+      - bom
+    # Run this job as long as some dependent jobs succeed. Otherwise, the build status in Coveralls will remain pending.
+    if: always() && contains(needs.*.result, 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close parallel build
+        uses: coverallsapp/github-action@3dfc5567390f6fa9267c0ee9c251e4c8c3f18949 #v2
+        with:
+          parallel-finished: true
+          carryforward: "binary-websocket-api,bom-config,bom-events,bom-feed-plugin,bom-market,bom-marketdataautoupdater,bom-myaffiliates,bom-oauth,bom-paymentapi,bom-platform,bom-postgres,bom-pricing,bom-rpc,bom-rules,bom-transaction,bom-user,bom"

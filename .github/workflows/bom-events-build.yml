@@ -1,0 +1,23 @@
+name: Build workflow (bom-events)
+run-name: Build workflow  (bom-events)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths: 
+      - 'bom-events/**'
+      - '.github/workflows/bom-events-build.yml'
+  pull_request:
+    paths:
+      - 'bom-events/**'
+      - '.github/workflows/bom-events-build.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  core_unit_syntax_diff:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-events

@@ -1,0 +1,32 @@
+name: Build workflow (bom-user)
+run-name: Build workflow (bom-user)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - master
+    paths: 
+      - 'bom-user/**'
+      - '.github/workflows/bom-user-build.yml'
+  pull_request:
+    paths: 
+      - 'bom-user/**'
+      - '.github/workflows/bom-user-build.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  syntax_diff_unit:
+    uses: regentmarkets/github-actions/.github/workflows/syntax_diff_unit.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-user
+  core:
+    uses: ./.github/workflows/bom-user-base.yml
+    secrets: inherit
+    with:
+      need_upload_result: true
+  dependent:
+    if: ${{ github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/bom-user-dependent.yml
+    secrets: inherit

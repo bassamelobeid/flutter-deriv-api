@@ -1,0 +1,50 @@
+name: Dependent Tests (bom-config)
+
+on:
+  workflow_call:
+jobs:
+  check_existing_test:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.is_dt_exists.outputs.result }}
+    steps:
+      - name: Check existing test
+        id: is_dt_exists
+        uses: regentmarkets/github-actions/check-existing-test@master
+        with:
+          DT_list: 'bom-platform bom-rpc bom-postgres bom-pricing bom-transaction bom bom-user'
+  bom-platform:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-platform') }}
+    uses: ./.github/workflows/bom-platform-base.yml
+    secrets: inherit
+  bom-rpc:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-rpc') }}
+    uses: ./.github/workflows/bom-rpc-base.yml
+    secrets: inherit
+  bom-postgres:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-postgres') }}
+    uses: ./.github/workflows/bom-postgres-base.yml
+    secrets: inherit
+  bom-pricing:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-pricing') }}
+    uses: ./.github/workflows/bom-pricing-base.yml
+    secrets: inherit
+  bom:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom') }}
+    uses: ./.github/workflows/bom-base.yml
+    secrets: inherit
+  bom-transaction:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-transaction') }}
+    uses: ./.github/workflows/bom-transaction-base.yml
+    secrets: inherit
+  bom-user:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-user') }}
+    uses: ./.github/workflows/bom-user-base.yml
+    secrets: inherit

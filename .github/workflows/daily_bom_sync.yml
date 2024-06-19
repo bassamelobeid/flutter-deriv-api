@@ -1,0 +1,67 @@
+name: Daily sync with master branch
+run-name: Daily sync with master branch
+on:
+  workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: '0 16 * * *' # This is MYT 12:00 AM everyday. would be midnight in Malaysia time
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout bom-core
+        uses: actions/checkout@v4
+        with:
+          repository: regentmarkets/bom-core
+          ref: master
+          token: ${{ secrets.DAILY_SYNC_PAT }}
+
+      - name: set ssh-agent
+        uses: regentmarkets/github-actions/ssh-agent@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+      - name: Run sync script to sync all bom-* repos
+        env:
+          GITHUB_TOKEN: ${{ secrets.DAILY_SYNC_PAT }}
+        run: |
+          # Main idea came from this gist: https://gist.github.com/kaveh-deriv/ddc31c00756503d3d889fbe76caeca3b
+          # We create temp folder to store all the repos and then merge them into one repo and push it to the main repo
+          rm -rf bom-temp
+          mkdir bom-temp
+          cd bom-temp
+
+          git init --initial-branch=master
+          git config --global user.name "gh-actions-bot"
+          git config --global user.email "gh-actions-bot@deriv.com"
+
+          touch README; git add .;git commit -am 'README'
+          for i in p2p binary-websocket-api bom bom-backoffice bom-commission-management-service bom-config bom-events bom-market bom-marketdataautoupdater bom-myaffiliates bom-oauth bom-paymentapi bom-platform bom-postgres bom-pricing bom-quant-benchmark bom-rpc bom-rules bom-test bom-transaction bom-user bom-websocket-tests bom-feed-plugin 
+          do
+              echo $i
+
+              # merge the external repo
+              git remote add $i git@github.com:regentmarkets/$i.git
+              git fetch $i
+              git merge $i/master --no-commit --allow-unrelated-histories
+              STAGED_FILES=$(git diff --cached --name-only|cut -d'/' -f1|sort|uniq)
+              git commit -am "merging $i"
+              mkdir -p $i
+              for f in $STAGED_FILES
+              do
+                  git mv $f $i/
+              done
+              git commit -am "moving staged files to $i"
+              git remote remove $i 
+          done
+
+          git remote add origin "https://${{ secrets.DAILY_SYNC_PAT }}@github.com/${{ github.repository }}.git"
+          
+          # copy the github actions files and .gitignore
+          cp ../.gitignore .
+          cp -r ../.github .
+          
+          git add -A
+          git commit -am "merging all repos" --no-verify
+          git checkout master
+          git push -f origin master

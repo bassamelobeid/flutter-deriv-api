@@ -1,0 +1,28 @@
+name: Daily workflow (p2p)
+run-name: Daily workflow (p2p)
+on:
+  workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: '35 11 * * *'
+jobs:
+  syntax:
+    uses: regentmarkets/github-actions/.github/workflows/syntax.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/p2p
+  core:
+    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/p2p
+  publish_test_results:
+    needs: [syntax, core]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload results to DataDog
+        uses: regentmarkets/github-actions/datadog-publish@master
+        with:
+          datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
+          service-name: p2p

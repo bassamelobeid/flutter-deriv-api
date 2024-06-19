@@ -1,0 +1,40 @@
+name: Daily workflow (binary-websocket-api)
+run-name: Daily workflow (binary-websocket-api)
+env:
+  PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
+on:
+  workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: '13 11 * * *'
+jobs:
+  core:
+    uses: ./.github/workflows/binary-websocket-api-base.yml
+    secrets: inherit
+    with:
+      need_upload_result: true
+  publish_test_results:
+    needs: [core]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set result file paths
+        id: path
+        run: |
+          export FILE_PATH="./home/git/regentmarkets/bom-core/bom-websocket-tests/v3/**/*.xml ./home/git/regentmarkets/bom-core/bom-websocket-tests/v3/pricing/**/*.xml"
+          export FILE_PATH="$FILE_PATH ./home/git/regentmarkets/bom-core/bom-websocket-tests/v3/security/**/*.xml ./t/**/*.xml "
+          export FILE_PATH="$FILE_PATH ./home/git/regentmarkets/bom-core/bom-websocket-tests/v3/misc/**/*.xml"
+          echo "test-path=$FILE_PATH" >> "$GITHUB_OUTPUT"
+      - name: Upload results to DataDog
+        uses: regentmarkets/github-actions/datadog-publish@master
+        with:
+          datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
+          service-name: binary-websocket-api
+  update_docs:
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    with:
+      need_service: false
+      need_upload_result: false
+      test_name: update_docs
+      repository: regentmarkets/bom-core/binary-websocket-api
+    secrets: inherit

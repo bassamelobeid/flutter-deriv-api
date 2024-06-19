@@ -1,0 +1,235 @@
+name: Repository tests (bom-quant-benchmark)
+on:
+  workflow_call:
+    inputs:
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-bom-quant-benchmark
+  cancel-in-progress: true
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-quant-benchmark
+      - name: Code structure and syntax
+        run: make syntax
+  merlin:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+      - name: Merlin
+        run: make merlin_benchmark
+  SDFX_benchmark_major:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-quant-benchmark
+      - name: SDFX benchmark major
+        run: make SDFX_benchmark_major
+  SDFX_benchmark_minor:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-quant-benchmark
+      - name: SDFX benchmark minor
+        run: make SDFX_benchmark_minor
+  SDEQ_benchmark_OTC_DJI:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-quant-benchmark
+      - name: SDEQ benchmark OTC_DJI
+        run: make SDEQ_benchmark_OTC_DJI
+  SDEQ_benchmark_OTC_FCHI:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-quant-benchmark
+      - name: SDEQ benchmark OTC_FCHI
+        run: make SDEQ_benchmark_OTC_FCHI
+  SDEQ_benchmark_SSECOMP:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-quant-benchmark
+      - name: SDEQ benchmark SSECOMP
+        run: make SDEQ_benchmark_SSECOMP
+  SDEQ_benchmark_OTC_FTSE:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-quant-benchmark
+      - name: SDEQ benchmark OTC_FTSE
+        run: make SDEQ_benchmark_OTC_FTSE
+  OVRA_benchmark:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-quant-benchmark
+      - name: OVRA benchmark
+        run: |
+          for i in $(seq 1 12); do echo -n "."; sleep 300; done &
+          make OVRA_benchmark
+  SDEQ_benchmark_OTC_SPC:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-quant-benchmark
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-quant-benchmark
+      - name: SDEQ benchmark OTC_SPC
+        run: make SDEQ_benchmark_OTC_SPC

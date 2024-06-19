@@ -1,0 +1,27 @@
+name: Build workflow (bom-marketdataautoupdater)
+run-name: Build workflow (bom-marketdataautoupdater)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths: 
+      - 'bom-marketdataautoupdater/**'
+      - '.github/workflows/bom-marketdataautoupdater-build.yml'
+  pull_request:
+    paths: 
+      - 'bom-marketdataautoupdater/**'
+      - '.github/workflows/bom-marketdataautoupdater-build.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  core_unit_syntax_diff:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-marketdataautoupdater
+  dependent:
+    if: ${{ github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/bom-marketdataautoupdater-dependent.yml
+    secrets: inherit

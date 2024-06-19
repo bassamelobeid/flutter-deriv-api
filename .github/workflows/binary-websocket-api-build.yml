@@ -1,0 +1,32 @@
+name: Build workflow (binary-websocket-api)
+run-name: Build workflow (binary-websocket-api)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths: 
+      - 'binary-websocket-api/**'
+      - '.github/workflows/binary-websocket-api-build.yml'
+  pull_request:
+    paths:
+      - 'binary-websocket-api/**'
+      - '.github/workflows/binary-websocket-api-build.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  core:
+    uses: ./.github/workflows/binary-websocket-api-base.yml
+    secrets: inherit
+    with:
+      need_upload_result: true
+  update_docs:
+    if: github.ref == 'refs/heads/master'
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    with:
+      need_service: false
+      need_upload_result: false
+      test_name: update_docs
+      repository: regentmarkets/bom-core/binary-websocket-api
+    secrets: inherit

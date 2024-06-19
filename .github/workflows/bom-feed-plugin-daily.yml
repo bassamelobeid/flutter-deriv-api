@@ -1,0 +1,16 @@
+name: Daily workflow (bom-feed-plugin)
+run-name: Daily workflow (bom-feed-plugin)
+on:
+  schedule:
+    - cron: '47 20 * * *'
+jobs:
+  syntax:
+    uses: regentmarkets/github-actions/.github/workflows/syntax.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-feed-plugin
+  core:
+    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-feed-plugin

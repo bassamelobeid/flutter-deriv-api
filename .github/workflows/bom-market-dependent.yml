@@ -1,0 +1,35 @@
+name : Dependent Tests (bom-market)
+
+on:
+  workflow_call:
+jobs:
+  check_existing_test:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.is_dt_exists.outputs.result }}
+    steps:
+      - name: Check existing test
+        id: is_dt_exists
+        uses: regentmarkets/github-actions/check-existing-test@master
+        with:
+          DT_list: 'bom-rpc bom-pricing bom-transaction bom-marketdataautoupdater'
+  bom-rpc:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-rpc') }}
+    uses: ./.github/workflows/bom-rpc-base.yml
+    secrets: inherit
+  bom-pricing:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-pricing') }}
+    uses: ./.github/workflows/bom-pricing-base.yml
+    secrets: inherit
+  bom-transaction:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-transaction') }}
+    uses: ./.github/workflows/bom-transaction-base.yml
+    secrets: inherit
+  bom-marketdataautoupdater:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-marketdataautoupdater') }}
+    uses: ./.github/workflows/bom-marketdataautoupdater-base.yml
+    secrets: inherit

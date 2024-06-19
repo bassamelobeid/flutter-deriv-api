@@ -1,0 +1,30 @@
+name: Dependent Tests (bom-transaction)
+
+on:
+  workflow_call:
+jobs:
+  check_existing_test:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.is_dt_exists.outputs.result }}
+    steps:
+      - name: Check existing test
+        id: is_dt_exists
+        uses: regentmarkets/github-actions/check-existing-test@master
+        with:
+          DT_list: 'bom-rpc binary-websocket-api bom-events'
+  bom-rpc:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-rpc') }}
+    uses: ./.github/workflows/bom-rpc-base.yml
+    secrets: inherit
+  binary-websocket-api:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'binary-websocket-api') }}
+    uses: ./.github/workflows/binary-websocket-api-base.yml
+    secrets: inherit
+  bom-events:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-events') }}
+    uses: ./.github/workflows/bom-events-base.yml
+    secrets: inherit

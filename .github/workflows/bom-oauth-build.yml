@@ -1,0 +1,29 @@
+name: Build workflow (bom-oauth)
+run-name: Build workflow (bom-oauth)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths: 
+      - 'bom-oauth/**'
+      - '.github/workflows/bom-oauth-build.yml'
+  pull_request:
+    paths: 
+      - 'bom-oauth/**'
+      - '.github/workflows/bom-oauth-build.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  core_unit_syntax_diff:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
+    secrets: inherit
+    with:
+      repository: regentmarkets/bom-core/bom-oauth
+      env_vars: |
+        OAUTH_CONFIG=/home/git/regentmarkets/bom-core/bom-oauth/oauth.conf.example
+  dependent:
+    if: ${{ github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/bom-oauth-dependent.yml
+    secrets: inherit
