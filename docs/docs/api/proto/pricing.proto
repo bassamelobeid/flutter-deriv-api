@@ -1,0 +1,87 @@
+// Pricer calculates prices for contracts.
+service Pricer {
+    rpc AskPrice (AskPriceRequest) returns (AskPriceResponse) {}
+    rpc AskPriceStream (AskPriceStreamRequest) returns (stream AskPriceStreamResponse) {}
+    rpc BidPrice (BidPriceRequest) returns (BidPriceResponse) {}
+    rpc BidPriceStream (BidPriceStreamRequest) returns (stream BidPriceStreamResponse) {}
+}
+
+// Messages defined below are neither final nor complete and the details are going to change
+
+// Decimal represents decimal value
+message Decimal {
+    // String representation of a decimal value
+    // The ENBF grammar is:
+    //
+    //     DecimalString =
+    //       [Sign] Significand;
+    //
+    //     Sign = '+' | '-';
+    //
+    //     Significand =
+    //       Digits ['.'] [Digits] | [Digits] '.' Digits;
+    //
+    //     Digits = { '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' };
+    string value = 1;
+}
+
+// Tick represents price of the underlying at specific point in time
+message Tick {
+    // symbol 
+    string symbol = 1;
+    int64  epoch_us = 2;
+    Decimal quote = 3;
+}
+
+// AskPriceRequest contains a request for calculating ask price
+message AskPriceRequest {
+    string contract_type = 1;
+    string underlying = 2;
+    // contract_parameters contains encoded contract parameters specific for the contract_type
+    bytes contract_parameters = 3;
+    // return additional details for analysis
+    bool with_details = 4;
+}
+
+// AskPriceResponse contains ask price for the contract
+message AskPriceResponse {
+    string contract_type = 1;
+    // contract_parameters contains encoded contract parameters specific for the contract_type
+    bytes contract_parameters = 2;
+    // the tick we used to calculate the price
+    Tick pricing_tick = 3;
+    // price
+    Decimal ask_price = 4;
+    Decimal payout = 5;
+    Decimal number_of_contracts = 6;
+    string currency = 7;
+    // details of the price calculation for analysis
+    bytes details = 8;
+}
+
+// AskPriceStreamRequest contains a request for calculating ask price and streaming updates
+message AskPriceStreamRequest {
+    string contract_type = 1;
+    string underlying = 2;
+    bytes contract_parameters = 3;
+    bool with_details = 4;
+    // price update is sent on every tick for underlying but if there was no
+    // ticks, then update sent at lease every update_interval seconds
+    int64 update_interval_sec = 5;
+}
+
+// AskPriceStreamResponse contains an update for the ask price
+message AskPriceStreamResponse {
+    string contract_type = 1;
+    // contract_parameters contains encoded contract parameters specific for the contract_type
+    bytes contract_parameters = 2;
+    // the tick we used to calculate the price
+    Tick pricing_tick = 3;
+    // price
+    Decimal ask_price = 4;
+    Decimal payout = 5;
+    Decimal number_of_contracts = 6;
+    string currency = 7;
+    // details of the price calculation for analysis
+    bytes details = 8;
+}

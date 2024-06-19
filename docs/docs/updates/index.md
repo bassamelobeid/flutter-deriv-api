@@ -1,0 +1,74 @@
+# Updates
+
+## Status
+
+### 2024-06-12
+
+- Initial version of offerings service is ready and currently under testing.
+
+### 2024-05-31
+
+- Offerings service is partially ready, we have implemented offerings validation
+
+### 2024-05-12
+
+- We have a [dedicated space in Click Up](https://app.clickup.com/20696747/v/g/kqknb-686695) now
+- Work on offerings service is moving forward, we are working on a logic for querying available offerings at the moment
+- We did some work to improve performance of the current pricing daemon
+
+### 2024-05-02
+
+We started working on phase one of the pricing service. See our plan in [the
+roadmap](../roadmap/index.md). At the moment we're implementing the offering
+service, that would allow us to validate offerings.
+
+### 2024-04-18
+
+We are making progress. We have a clear understanding of the end goal in
+principle, an architectural design for the pricing and market data services,
+and a roadmap for going forward.
+
+### 2024-03-31
+
+Still trying to separate the core repository (`bom-pricing`) from dependency on non-service-related code and data.
+
+## Website
+
+### 2024-05-31
+
+- Updated Roadmap, API, Active projects and KPIs
+
+### 2024-05-21
+
+- Added KPIs, Active projects, updated Roadmap
+
+### 2024-05-12
+
+- [The roadmap](../roadmap/index.md) document has been updated.
+- [The API](../api/index.md) document has been updated.
+
+### 2024-05-02
+
+[The roadmap](../roadmap/index.md) document has been updated.
+
+### 2024-04-18
+
+Created the current pricing [dataflow chart](../api/dataflow.md) to help unmask dependencies
+
+Updated the [Pricing Service Lexicon](../resources/lexicon.md) to better reflect usage among the team and code
+
+### 2024-04-17
+
+Added an architectural C4 diagram to the [API Future Plan](../api/index.md#future-plan)
+
+### 2024-04-04
+
+Created the [API Future Plan](../api/index.md#future-plan) reflecting our current team thinking and goals
+
+### 2024-03-28
+
+Created the [Pricing Service Lexicon](../resources/lexicon.md) to help align vocabulary when discussing the service
+
+### 2024-03-21
+
+Created a website for our business service.
