@@ -1,0 +1,6 @@
+---
+- postgres-chronicle
+- postgres-client
+- postgres-feed
+- redis
+- redis-replicated
