@@ -1,0 +1,6 @@
+- postgres-auth
+- postgres-chronicle
+- postgres-client
+- postgres-feed
+- postgres-user
+- redis-replicated

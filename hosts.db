@@ -1,0 +1,7 @@
+127.0.0.1       replica-cr replica-cr.regentmarkets.com
+127.0.0.1       replica-mx replica-mx.regentmarkets.com
+127.0.0.1       replica-mlt replica-mlt.regentmarkets.com
+127.0.0.1       replica-vr replica-vr.regentmarkets.com
+127.0.0.1       replica-mf replica-mf.regentmarkets.com
+127.0.0.1        replica-dc replica-dc.regentmarkets.com
+127.0.0.1        replica-jp replica-jp.regentmarkets.com

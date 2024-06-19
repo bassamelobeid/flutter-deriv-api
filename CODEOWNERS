@@ -1,0 +1,5 @@
+# Used to define people who can approve changes before we merge to master.
+# See https://blog.github.com/2017-07-06-introducing-code-owners/ for more details.
+
+*.sql @regentmarkets/Core @regentmarkets/dba
+
