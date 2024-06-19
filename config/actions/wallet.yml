@@ -1,0 +1,90 @@
+new_wallet:
+  description: Contains rules to be applied on real wallet opening or account reactivation
+  ruleset:
+    - user.email_is_verified
+    - wallet.client_type_is_not_binary
+    - client.residence_is_not_empty
+    - profile.residence_cannot_be_changed
+    - residence.is_signup_allowed
+    - residence.account_type_is_available
+    - residence.not_restricted
+    - residence.account_type_is_available_for_real_account_opening
+    - landing_company.currency_is_allowed
+    - currency.is_currency_suspended
+    - currency.experimental_currency
+    - landing_company.accounts_limit_not_reached
+    - user.has_no_real_clients_without_currency
+    - landing_company.required_fields_are_non_empty
+    - landing_company.p2p_availability
+    - client.signup_immutable_fields_not_changed
+    - profile.date_of_birth_complies_minimum_age
+    - profile.both_secret_question_and_answer_required
+    - profile.valid_profile_countries
+    - profile.valid_promo_code
+    - self_exclusion.sibling_account_not_excluded
+    - profile.valid_non_pep_declaration_time
+    - currency.is_available_for_new_account
+    - client.check_duplicate_account
+    - type: conditional
+      on: landing_company
+      rules_per_value:
+        maltainvest:
+          - profile.no_pobox_in_address
+          - financial_asssessment.account_opening_validation
+          - financial_asssessment.appropriateness_test
+          - profile.tax_information_is_mandatory
+          - client.resident_self_declaration
+    - type: conditional
+      on: residence
+      rules_per_value:
+        gb:
+          - profile.address_postcode_mandatory
+          - client.forbidden_postcodes
+
+activate_wallet:
+  description: Contains rules to be applied on real wallet opening or account reactivation
+  ruleset:
+    - type: conditional
+      on: landing_company
+      rules_per_value:
+        virtual:
+          - residence.not_restricted
+          - client.residence_is_not_empty
+          - landing_company.accounts_limit_not_reached
+        default:
+          - user.email_is_verified
+          - wallet.client_type_is_not_binary
+          - client.residence_is_not_empty
+          - profile.residence_cannot_be_changed
+          - residence.is_signup_allowed
+          - residence.account_type_is_available
+          - residence.not_restricted
+          - residence.account_type_is_available_for_real_account_opening
+          - landing_company.currency_is_allowed
+          - currency.is_currency_suspended
+          - currency.experimental_currency
+          - landing_company.accounts_limit_not_reached
+          - user.has_no_real_clients_without_currency
+          - landing_company.required_fields_are_non_empty
+          - landing_company.p2p_availability
+          - client.signup_immutable_fields_not_changed
+          - profile.date_of_birth_complies_minimum_age
+          - profile.both_secret_question_and_answer_required
+          - profile.valid_profile_countries
+          - profile.valid_promo_code
+          - profile.valid_non_pep_declaration_time
+          - self_exclusion.sibling_account_not_excluded
+          - currency.is_available_for_reactivation
+          - client.check_duplicate_account
+          - type: conditional
+            on: landing_company
+            rules_per_value:
+              maltainvest: 
+                - profile.no_pobox_in_address
+                - profile.tax_information_is_mandatory
+          - type: conditional
+            on: residence
+            rules_per_value:
+              gb:
+                - profile.address_postcode_mandatory
+                - client.forbidden_postcodes

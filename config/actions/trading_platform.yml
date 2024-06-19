@@ -1,0 +1,52 @@
+new_trading_account:
+  description: Contains rules to be applied on trading platform account opening
+  ruleset:
+    - client.not_disabled
+    - client.has_currency_set
+    - residence.is_signup_allowed
+    - trading_account.should_match_landing_company
+    - trading_account.should_be_age_verified
+    - trading_account.allowed_currency
+    - trading_account.client_account_type_should_be_supported
+    - type: conditional
+      on: account_type
+      rules_per_value:
+        real:
+          - landing_company.required_fields_are_non_empty
+          - trading_account.client_should_be_real
+          - trading_account.client_support_account_creation
+          - trading_account.should_complete_financial_assessment
+          - trading_account.should_provide_tax_details
+          - self_exclusion.sibling_account_not_excluded
+        demo:
+          - trading_account.client_should_be_legacy_or_virtual_wallet
+          
+trading_account_deposit:
+  description: Contains rules to be applied on deposit to trading platform accounts
+  ruleset:
+    - transfers.experimental_currency_email_whitelisted
+    - transfers.currency_should_match
+    - transfers.limits
+    - type: conditional
+      on: account_type
+      rules_per_value:
+        real:
+          - transfers.landing_companies_are_the_same
+        demo:
+          - pass
+    
+trading_account_withdrawal:
+  description: Contains rules to be applied on withdrawal from trading platform accounts
+  ruleset:
+    - transfers.experimental_currency_email_whitelisted
+    - transfers.currency_should_match
+    - transfers.limits
+    - type: conditional
+      on: account_type
+      rules_per_value:
+        real:
+          - transfers.landing_companies_are_the_same
+        demo:
+          - pass
+
+

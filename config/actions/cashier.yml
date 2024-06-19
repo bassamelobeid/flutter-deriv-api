@@ -1,0 +1,178 @@
+transfer_between_accounts:
+  description: Rules to be applied for transfer_between_accounts. Note this action always runs together with account_transfer action.
+  arguments: 
+    - loginid
+    - loginid_from
+    - loginid_to
+    - amount
+    - currency
+  ruleset:
+    - client.not_disabled
+    - type: conditional
+      on: is_external_from
+      rules_per_value:
+        0:    
+        - type: group
+          argument_mapping:
+            loginid: loginid_from
+            action: "'withdrawal'"
+          ruleset:
+            - cashier.is_not_locked
+            - client.no_withdrawal_locked_status
+            - client.no_withdrawal_or_trading_lock_status
+            - cashier.profile_requirements
+    - type: conditional
+      on: is_external_to
+      rules_per_value:
+        0:                
+        - type: group
+          argument_mapping:
+            loginid: loginid_to
+          ruleset:
+            - cashier.is_not_locked
+    - currency.known_currencies_allowed
+    - transfers.amount_is_valid
+
+paymentagent_withdraw:
+  description: Rules applied on payment agent withdraw
+  arguments:
+    - loginid_client
+    - loginid_to
+    - currency
+    - amount
+    - dry_run
+    - source_bypass_verification
+  ruleset:
+    - type: group
+      argument_mapping:
+        loginid_from: loginid_client
+        loginid_to: loginid_pa
+      ruleset: transfers.same_account_not_allowed
+    - type: group
+      argument_mapping:
+        loginid: loginid_client
+      ruleset:
+        - paymentagent.pa_allowed_in_landing_company
+        - client.is_not_internal_client
+        - trading_account.should_complete_financial_assessment # better to be renamed - it is not exclusive to trading accounts
+    - type: group
+      rule_group: cashier_validation
+      argument_mapping:
+        loginid: loginid_client
+        action: "'withdrawal'"
+        is_internal: "'0'"
+        has_deposits : "'1'"
+        amount: amount
+        currency: currency
+    - type: group
+      tag: client
+      argument_mapping:
+        loginid: loginid_client
+      ruleset:
+        - payment.currency_matches_account
+    - type: group
+      argument_mapping:
+        loginid: loginid_pa
+      tag: pa
+      ruleset: 
+        - paymentagent.is_authorized
+        - payment.currency_matches_account
+        - client.not_disabled
+        - client.no_unwelcome_status
+        - cashier.is_not_locked
+        - client.documents_not_expired
+    - type: group
+      argument_mapping:
+        loginid_from: loginid_client
+        loginid_to: loginid_pa
+      ruleset: 
+        - transfers.landing_companies_are_the_same
+    - type: conditional
+      on: dry_run
+      rules_per_value:
+        0:
+          - type: group
+            rule_group: validate_payment
+            argument_mapping:
+              loginid: loginid_client
+              action: "'withdrawal'"
+              is_internal: "'0'"
+              payment_type: "'paymentagent_withdraw'"
+              amount: amount
+              currency: currency
+          - type: group
+            rule_group: validate_payment
+            argument_mapping:
+              loginid: loginid_pa
+              action: "'deposit'"
+              is_internal: "'0'"
+              payment_type: "'paymentagent_withdraw'"
+              amount: amount
+              currency: currency
+    - paymentagent.amount_is_within_pa_limits
+    - type: group
+      argument_mapping:
+        loginid: loginid_client
+        action: "'withdraw'"
+      ruleset:
+        - paymentagent.daily_transfer_limits
+        - client.is_not_virtual
+        - paymentagent.paymentagent_withdrawal_allowed
+
+paymentagent_transfer:
+  description: A set of rules to be applied on paymentagent create
+  required_arguments:
+    - loginid_pa
+    - loginid_client
+    - currency
+    - amount
+  ruleset:
+    - paymentagent.accounts_are_not_the_same
+    - type: group
+      description: an anonymous group for mapping <loginid_pa> to <loginid> for some rules.
+      tag: pa
+      argument_mapping:
+        loginid: loginid_pa
+        action: "'withdrawal'"
+      ruleset:
+        - paymentagent.is_authorized
+        - client.is_not_virtual
+        - paymentagent.pa_allowed_in_landing_company
+        - cashier.profile_requirements
+    - type: group
+      argument_mapping:
+        loginid_from: loginid_pa
+        loginid_to: loginid_client
+      ruleset: transfers.landing_companies_are_the_same
+    - paymentagent.amount_is_within_pa_limits
+    - type: group
+      rule_group: validate_payment
+      tag: pa
+      argument_mapping:
+        loginid: loginid_pa
+        action: "'withdrawal'"
+        is_internal: "'0'"
+        payment_type: "'paymentagent_transfer'"
+        amount: amount
+        currency: currency
+    - type: group
+      rule_group: validate_payment
+      tag: client
+      argument_mapping:
+        loginid: loginid_client
+        action: "'deposit'"
+        is_internal: "'0'"
+        payment_type: "'paymentagent_transfer'"
+        amount: amount
+        currency: currency
+    - type: group
+      argument_mapping:
+        loginid: loginid_pa
+        action: "'transfer'"
+      ruleset: paymentagent.daily_transfer_limits
+
+cashier_validation:
+  description: A temporary action for deposit and withdrawal validation. It will be removed after the enclosed rule group is integrated into all upper-level actions.
+  ruleset:
+  - type: group
+    rule_group: cashier_validation

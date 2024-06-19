@@ -1,0 +1,54 @@
+cashier_validation:
+  description: Validates deposit and withdrawal
+  required_arguments:
+    - loginid
+    - action
+    - is_internal
+  ruleset:
+    - currency.experimental_currency
+    - client.residence_is_not_empty
+    - client.has_currency_set
+    - cashier.is_not_locked
+    - client.not_disabled
+    - landing_company.currency_is_allowed
+    - cashier.is_account_type_allowed
+    - paymentagent.action_is_allowed
+    - client.potential_fraud_age_verified
+    - type: conditional
+      on: is_internal
+      rules_per_value:
+        0:
+          - type: conditional
+            on: action
+            rules_per_value:
+              withdrawal:
+                - financial_asssessment.completed
+    - client.documents_not_expired
+    - type: conditional
+      on: landing_company
+      rules_per_value:
+        maltainvest:
+          type: conditional
+          on: has_deposits
+          rules_per_value:
+            0:
+              - client.financial_risk_approval_status
+              - client.crs_tax_information_status
+            1:
+              - client.fully_authenticated
+              - client.financial_risk_approval_status
+              - client.crs_tax_information_status
+        default:
+          - client.check_max_turnover_limit
+    - type: conditional
+      on: action
+      rules_per_value:
+        deposit:
+          - self_exclusion.not_self_excluded
+          - client.no_unwelcome_status
+          - cashier.profile_requirements
+        withdrawal:
+          - client.no_withdrawal_or_trading_lock_status
+          - client.no_withdrawal_locked_status
+          - client.high_risk_authenticated
+          - cashier.profile_requirements

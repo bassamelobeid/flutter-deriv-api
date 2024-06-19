@@ -1,0 +1,38 @@
+account_transfer:
+  description: Contains rules to be applied on all sibling account transfers
+  ruleset:
+    - transfers.same_account_not_allowed
+    - transfers.real_to_virtual_not_allowed
+    - transfers.account_type_capability
+    - transfers.legacy_and_wallet
+    - transfers.between_trading_accounts
+    - transfers.wallet_links
+    - transfers.authorized_client_is_legacy_virtual
+    - paymentagent.action_is_allowed
+    - transfers.daily_count_limit
+    - transfers.daily_total_amount_limit
+    - transfers.currency_should_match
+    - type: conditional
+      on: transfer_type
+      rules_per_value:
+        'internal':
+          - transfers.client_loginid_client_from_loginid_mismatch
+          - transfers.same_landing_companies
+          - currency.account_currency_is_legal          
+          - type: group
+            argument_mapping:
+              loginid: loginid_from
+            ruleset:
+              - client.not_disabled
+              - client.has_currency_set
+          - type: group
+            argument_mapping:
+              loginid: loginid_to
+            ruleset:
+              - client.not_disabled
+              - client.no_unwelcome_status
+              - client.has_currency_set
+          - transfers.no_different_fiat_currencies
+          - transfers.crypto_exchange_rates_availability
+          - transfers.clients_are_not_transfer_blocked  
+          - transfers.residence_or_country_restriction  

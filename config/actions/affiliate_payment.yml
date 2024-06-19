@@ -1,0 +1,61 @@
+validate_affiliate_payment:
+  description: validate affiliate payments which is done through batch process payments it has both rules_group 01_cashier and 02_payment combined and excluded the rules want to bypass. 
+  required_arguments:
+    - loginid
+    - action
+    - is_internal
+    - amount
+    - currency
+  ruleset:
+    - currency.experimental_currency
+    - client.residence_is_not_empty
+    - client.has_currency_set
+    #-[1] cashier.is_not_locked
+    - client.not_disabled
+    - landing_company.currency_is_allowed
+    - client.potential_fraud_age_verified
+    - cashier.profile_requirements
+    #- type: conditional
+    #  on: is_internal
+    #  rules_per_value:
+    #    0:
+    #      - type: conditional
+    #        on: action
+    #        rules_per_value:
+    #          withdrawal:
+    #            -[5] financial_asssessment.completed
+    #-[3] client.documents_not_expired
+    - type: conditional
+      on: landing_company
+      rules_per_value:
+        maltainvest:
+          - client.fully_authenticated
+          - client.financial_risk_approval_status
+          - client.crs_tax_information_status
+        #default:
+          #-[6] client.check_max_turnover_limit
+    - type: conditional
+      on: action
+      rules_per_value:
+        #deposit:
+          #-[7] self_exclusion.not_self_excluded
+          #-[2] client.no_unwelcome_status
+          #-[moved up ^] cashier.profile_requirements
+        withdrawal:
+          - client.no_withdrawal_or_trading_lock_status
+          - client.no_withdrawal_locked_status
+          - client.high_risk_authenticated
+          #-[moved up ^] cashier.profile_requirements
+    - payment.currency_matches_account
+    - type: conditional
+      on: action
+      rules_per_value:
+        deposit:
+          #-[4] deposit.total_balance_limits
+          - deposit.periodical_balance_limits
+        withdrawal:
+          - client.account_is_not_empty
+          - withdrawal.less_than_balance
+          - withdrawal.only_unfrozen_balance
+          - withdrawal.landing_company_limits
+          - withdrawal.p2p_and_payment_agent_deposits

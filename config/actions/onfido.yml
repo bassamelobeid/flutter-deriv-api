@@ -1,0 +1,5 @@
+check_results:
+  description: Contains rules to be applied when Onfido provides results for a check
+  ruleset:
+    - onfido.check_name_comparison
+    - onfido.check_dob_conformity
