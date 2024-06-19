@@ -1,0 +1,38 @@
+<script>
+  \$(document).ready(function() {
+        \$('input[name="bulk_clientloginids"]').hide();
+        \$('input[name="client_loginid"]').hide();
+        \$('label[name="bulk_login_IDs"]').hide();
+        \$('label[name="login_IDs"]').hide();
+        \$("#transtype").change(function(){   
+                 if (\$("#transtype option:selected").val() == "UPDATECLIENTDETAILS") {
+                    \$('input[name="bulk_clientloginids"]').hide();
+                    \$('input[name="client_loginid"]').attr('required',1);
+                    \$('input[name="client_loginid"]').show();
+                    \$('input[name="client_email"]').attr('required',1);
+                    \$('input[name="client_email"]').show();
+                    \$('label[name="bulk_login_IDs"]').hide();
+                    \$('label[name="client_email_message"]').show();
+                    \$('label[name="login_IDs"]').show();
+                } else if (\$("#transtype option:selected").val() == "UPDATECLIENT_DETAILS_BULK"){
+                    \$('input[name="bulk_clientloginids"]').show();
+                    \$('input[name="client_loginid"]').removeAttr('required');
+                    \$('input[name="client_email"]').removeAttr('required');
+                    \$('input[name="client_email"]').hide();
+                    \$('input[name="client_loginid"]').hide();
+                    \$('label[name="bulk_login_IDs"]').show();
+                    \$('label[name="client_email_message"]').hide();
+                    \$('label[name="login_IDs"]').hide();
+                } else {
+                    \$('input[name="bulk_clientloginids"]').hide();
+                    \$('input[name="client_loginid"]').removeAttr('required');
+                    \$('input[name="client_email"]').removeAttr('required');
+                    \$('input[name="client_email"]').hide();
+                    \$('input[name="client_loginid"]').hide();
+                    \$('label[name="bulk_login_IDs"]').hide();
+                    \$('label[name="client_email_message"]').hide();
+                    \$('label[name="login_IDs"]').hide();
+                }
+            });      
+        });
+</script>

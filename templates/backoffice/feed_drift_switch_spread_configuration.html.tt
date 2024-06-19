@@ -1,0 +1,143 @@
+<form id='feed_drift_switch_spread_configuration' >
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<h2>Latest config for Drift Switch Index</h2>
+<table class="small border hover alternate full-width">
+  <tr>
+    <th>Attribute</th>
+    <th>Value</th>
+  </tr>
+  [% FOREACH key IN existing_config.keys.sort %]
+  <tr>
+    <td>[% key %]</td>
+    <td>
+        <table class="small border hover alternate full-width">
+            [% FOREACH index_params IN existing_config.$key.keys.sort %]
+            <tr>
+                <td>[% index_params %]</td>
+                <td>[% existing_config.$key.$index_params %]</td>
+            </tr>
+            [% END %]
+        </table>
+    </td>
+  </tr>
+  [% END %]
+</table>
+<hr>
+<table>
+    <tr>
+        <td>Symbol: </td>
+        <td>
+            <select name="symbol" >
+                <option value='DSI10'>DSI10</option>
+                <option value='DSI20'>DSI20</option>
+                <option value='DSI30'>DSI30</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <b> Parameters  </b>
+        </td>
+    </tr>
+    <tr>
+        <td>Commission Min </td>
+        <td><input type="number" name="commission_0" value="[% existing_config.commission_0 %]" ></input></td>
+    </tr>
+    <tr>
+        <td>Commission Max </td>
+        <td><input type="number" name="commission_1" value="[% existing_config.commission_1 %]" ></input></td>
+    </tr>
+    <tr>
+        <td>Perf (In decimal)</td>
+        <td><input type="number" name="perf" value="[% existing_config.perf %]" ></input></td>
+    </tr>
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveSpreadForDriftSwitch()" value="Update Commission"></td>
+        <td class="save_feed_drift_switch_spread_configuration"></td>
+    </tr>
+</table>
+</form>
+
+
+<script>
+var feed_drift_switch_spread_configuration_upload_url = "[% feed_drift_switch_spread_configuration_upload_url | none %]";
+var maximum_commission_DSI10 = "[% maximum_commission.DSI10 | none %]";
+var maximum_commission_DSI20 = "[% maximum_commission.DSI20 | none %]";
+var maximum_commission_DSI30 = "[% maximum_commission.DSI30 | none %]";
+var maximum_perf = "[% maximum_perf | none %]";
+
+function SaveSpreadForDriftSwitch(){
+
+    var el = \$('#feed_drift_switch_spread_configuration');
+
+    var result       = el.find('.save_feed_drift_switch_spread_configuration');
+    var symbol       = el.find('select[name="symbol"]').val();
+    var commission_0 = Number(el.find('input[name="commission_0"]').val());
+    var commission_1 = Number(el.find('input[name="commission_1"]').val());
+    var perf         = Number(el.find('input[name="perf"]').val());
+
+    var max_commission_for_symbol;
+
+    var double_confirm;
+
+    if (symbol == 'DSI10') {
+        double_confirm            = (commission_0 > maximum_commission_DSI10) ||
+                                    (commission_1 > maximum_commission_DSI10) ||
+                                    (perf > maximum_perf);
+        max_commission_for_symbol = maximum_commission_DSI10;
+    } else if (symbol == 'DSI20') {
+        double_confirm            = (commission_0 > maximum_commission_DSI20) ||
+                                    (commission_1 > maximum_commission_DSI20) ||
+                                    (perf > maximum_perf);
+        max_commission_for_symbol = maximum_commission_DSI20;
+    } else if (symbol == 'DSI30') {
+        double_confirm            = (commission_0 > maximum_commission_DSI30) ||
+                                    (commission_1 > maximum_commission_DSI30) ||
+                                    (perf > maximum_perf);
+        max_commission_for_symbol = maximum_commission_DSI30;
+    } else {
+        alert('Unknown chosen symbol');
+        return;
+    }
+
+    if (double_confirm) {
+        var pop_up = confirm("Some of the input value exceeds the recommended value. \n" +
+                             "(Recommended maximum Commission Min : " + max_commission_for_symbol + ")\n" +
+                             "(Recommended maximum Commission Max : " + max_commission_for_symbol + ")\n" +
+                             "(Recommended maximum perf : " + maximum_perf + ")\n" +
+                             "Please check again or click OK to proceed.");
+        if (pop_up) {
+            SaveValues(el, result, symbol, commission_0, commission_1, perf);
+        } else {
+            alert('Operation Cancelled');
+        }
+    } else {
+        SaveValues(el, result, symbol, commission_0, commission_1, perf);
+    }
+}
+
+function SaveValues(el, result, symbol, commission_0, commission_1, perf){
+
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: feed_drift_switch_spread_configuration_upload_url,
+        data: {
+            save_feed_drift_switch_spread_configuration: 1,
+            symbol: symbol,
+            commission_0: commission_0,
+            commission_1: commission_1,
+            perf: perf
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('Spread for Drift Switch Index updated successfully').css('color', 'var(--green-2)');
+            }
+        }
+    });
+}
+
+</script>

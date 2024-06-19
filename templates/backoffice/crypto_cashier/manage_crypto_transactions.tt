@@ -1,0 +1,592 @@
+[% USE date %]
+
+[% MACRO make_link(text, url, max_length) BLOCK %]
+[% IF text %]
+    <a class="link" href="[% url %]" target="_blank">[% max_length ? text.substr(0, max_length) _ '...' : text %]</a>
+[% ELSE %]
+    &nbsp;
+[% END %]
+[% END %]
+
+[% BLOCK info %]
+<tr>
+    <th>[% title %]:</th>
+    <td>
+        [% IF type == 'date' %]
+            [% content && date.format(content, '%Y-%m-%d %T') | none %]
+        [% ELSE %]
+            [% content | none %]
+        [% END %]
+    </td>
+</tr>
+[% END %]
+
+[% BLOCK bulk_verify_controls %]
+<table>
+    <tr>
+        <td class="bg-lightgrey selection_display_text">None selected</td>
+        <td>
+            <form action="[% controller_url %]" onsubmit="return bulkConfirm();" method="POST" class="bulk_actions">
+                <input type="hidden" name="currency" value="[%currency%]" />
+                <input type="hidden" name="view_action" value="withdrawals" />
+                <input type="hidden" class="selected_transactions" name="selected_transactions" value="" />
+                <button class="btn btn--secondary" name="action" value="bulkSave" disabled>Bulk Remark</button>
+                <button class="btn btn--primary" name="action" value="bulkReject" disabled>Bulk Reject</button>
+                <button class="btn btn--primary" name="action" value="bulkVerify" disabled>Bulk Verify</button>
+            </form>
+        </td>
+    </tr>
+</table>
+[% END %]
+
+[% BLOCK status_links %]
+    [%
+        status_list = {
+            deposits    => [ 'new', 'pending', 'confirmed', 'error' ],
+            withdrawals => [ 'pending', 'verified', 'rejected', 'cancelled', 'processing', 'performing_blockchain_txn', 'sent', 'reverting', 'reverted', 'error' ],
+        };
+        status_names = {
+            performing_blockchain_txn => 'Performed blockchain',
+            error                     => 'Errored',
+        };
+    %]
+
+    [% IF status_list.$view_action %]
+        [% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&show_one_authorised=' _ show_one_authorised _ '&view_action=' _ view_action _ '&show_priority_withdrawals=' _ show_priority_withdrawals %]
+        <div class="link-group status-group">
+            <span>View by Transaction Status:</span>
+            [% FOREACH status IN status_list.$view_action %]
+                <a class="link [% view_type == status && 'selected' %]" href="[% url_base %]&view_type=[% status %]">[% status_names.$status || status.ucfirst %]</a>
+            [% END %]
+        </div>
+    [% END %]
+[% END %]
+
+[% BLOCK pagination %]
+    <div class="row grd-parent grd-grid-12">
+        <div class="grd-grid-2 left-aligned">
+            [% IF pagination.prev_url %]
+                <a href="[% pagination.prev_url | none %]" class="link" onclick="paginateLink(this)">&laquo; Newer</a>
+            [% ELSE %]
+                <strong>(Start)</strong>
+            [% END %]
+        </div>
+        <div class="grd-grid-8 center-aligned">
+            [% IF transactions.size > 0 %]
+                <strong>Showing transactions: [% pagination.range %]</strong>
+            [% END %]
+        </div>
+        <div class="grd-grid-2 right-aligned">
+            [% IF pagination.next_url %]
+                <a href="[% pagination.next_url | none %]" class="link" onclick="paginateLink(this)">Older &raquo;</a>
+            [% ELSE %]
+                <strong>(End)</strong>
+            [% END %]
+        </div>
+    </div>
+[% END %]
+<style>
+    .status-group {
+        margin: 5px 0 10px;
+        border: 1px solid var(--bg-primary-light);
+        line-height: 30px;
+    }
+    .status-group span {
+        background: var(--bg-secondary-light);
+        display: inline-block;
+        line-height: 30px;
+        padding: 2px 10px;
+    }
+    .status-group a.selected {
+        color: var(--color-red);
+    }
+    .warning_tag {
+        color: var(--color-red);
+        font-weight:bold;
+        text-align: center;
+        background-color: #FFFF00;
+    }
+    table tr.selected, table tr.selected:hover {
+        background-color: var(--color-yellow);
+    }
+    .selection_display_text {
+        padding: 0 10px;
+    }
+    /* remove nested table row colors */
+    table tr td table tr, table tr td table tr input {
+        background: none !important;
+    }
+    a.selected {
+        text-decoration: underline;
+        text-transform: uppercase;
+    }
+    /* Default color for light mode */
+    .priority-withdrawal-color {
+        background-color: lavender !important;
+    }
+    /* Dark mode */
+    [data-theme="dark"] .priority-withdrawal-color {
+        background-color: darkslateblue !important;
+    }
+</style>
+<a name="transactions"></a>
+<div class="card">
+    <div class="card__label toggle collapsed">
+        Status descriptions
+    </div>
+    <div class="card__content">
+<table class="small border">
+    <thead>
+        <tr>
+            <th>Status</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        [% IF view_action == 'deposits' || view_action == 'search' %]
+            [% IF view_action == 'search' %]
+                 <tr><th align="left" colspan="2"><b>Deposit:</b></th></tr>
+            [% END %]
+            <tr>
+                <td>New</td>
+                <td>List transactions with new addresses i.e no blockchain transaction has been performed</td>
+            </tr>
+            <tr>
+                <td>Pending</td>
+                <td>List transactions that are on blockchain but not yet confirmed (we wait for 3 confirmations)</td>
+            </tr>
+            <tr>
+                <td>Confirmed</td>
+                <td>List transactions that are confirmed on blockchain and client account should be credited</td>
+            </tr>
+            <tr>
+                <td>Error</td>
+                <td>List errored out transaction, reason would be specified in error info.</td>
+            </tr>
+        [% END %]
+        [% IF view_action == 'withdrawals' || view_action == 'search' %]
+            [% IF view_action == 'search' %]
+                <tr><th align="left" colspan="2"><b>Withdrawal:</b></th></tr>
+            [% END %]
+            <tr>
+                <td>Pending</td>
+                <td>List withdrawal requests initiated by client</td>
+            </tr>
+            <tr>
+                <td>Verified</td>
+                <td>List withdrawal requests verified by payments team after validation</td>
+            </tr>
+            <tr>
+                <td>Rejected</td>
+                <td>List withdrawal requests rejected by payments team after validation</td>
+             </tr>
+            <tr>
+                <td>Cancelled</td>
+                <td>List withdrawal requests cancelled by the client before transactions were verified</td>
+             </tr>
+             <tr>
+                <td>Processing</td>
+                <td>List withdrawal requests where client account is debited but blockchain transaction is not yet confirmed</td>
+             </tr>
+             <tr>
+                <td>Performing Blockchain Transaction</td>
+                <td>List withdrawal requests where we initiated blockchain transaction. Please note that this is intermediate status and transaction should not be here for long. This status is set just before we make blockchain transaction. If you see transaction in this for long then we need to investigate it.</td>
+             </tr>
+             <tr>
+                <td>Sent</td>
+                <td>List withdrawal requests finally processed i.e debit and both blockchain completed</td>
+             </tr>
+             <tr>
+                <td>Reverting</td>
+                <td>List withdrawal requests where client waited too long, we are returning the funds.</td>
+             </tr>
+             <tr>
+                <td>Reverted</td>
+                <td>List withdrawal requests where client waited too long, we returned the funds and credited the client back.</td>
+             </tr>
+            <tr>
+                <td>Error</td>
+                <td>List errored out transaction, reason would be specified in error info.</td>
+            </tr>
+        [% END %]
+    </tbody>
+</table>
+    </div>
+</div>
+
+[% IF view_action == 'withdrawals' and transactions.size > 0 %]
+    <p>The estimation fee is done before we send the transaction so it can have a small difference from the final fee.</p>
+[% END %]
+
+[% INCLUDE status_links %]
+
+[% IF update_errors.keys.size %]
+    <div class="error">
+        <strong>An error occurred while updating the following transaction(s):</strong>
+        <ul class="error">
+            [% FOR id IN update_errors.keys.sort %]
+                <li><strong>ID [% id %]:</strong> [% update_errors.$id %]</li>
+            [% END %]
+        </ul>
+    </div>
+    <br />
+[% END %]
+
+[% IF transactions.size == 0 %]
+
+    [% PROCESS pagination %]
+    <p>There are no such transactions.</p>
+[% ELSE %]
+    [% IF view_type == 'pending' && view_action == 'withdrawals' %]
+        [% PROCESS bulk_verify_controls %]
+    [% END %]
+
+    [% PROCESS pagination %]
+
+    <div class="row scrollable">
+    <table class="full-width border alternate">
+        <thead>
+            <tr>
+                [% IF view_action == 'search' %]
+                    <th>Status</th>
+                [% END %]
+                [% IF view_type == 'pending' && view_action == 'withdrawals' %]
+                    <th></th>
+                [% END %]
+                <th>Blockchain Info</th>
+                <th>Payment Info</th>
+                <th>Date</th>
+                [% IF view_action == 'withdrawals' || view_action == 'search' %]
+                    <th>Verification</th>
+                [% END %]
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+        [% FOREACH trx IN transactions %]
+            <tr id="[% 'row_' _ trx.id %]" [% IF trx.is_priority %] class="priority-withdrawal-color" [% END %]>
+                [% IF view_action == 'search' %]
+                    <td valign="top">
+                        <b>[% trx.type FILTER ucfirst %]: </b>
+                        [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
+                    </td>
+                [% END %]
+                [% IF view_type == 'pending' && trx.type == 'withdrawal' && view_action == 'withdrawals' %]
+                    <td>
+                       <input type="checkbox" value="[% trx.id %]" id="check_[% trx.id %]" data-amount="[% trx.amount %]" data-loginid="[% trx.loginid %]" data-exchange_rate="[% trx.exchange_rate %]" data-amount_usd="[% trx.amount_usd %]" onclick="bulkToggleSelected(this)" />
+                    </td>
+                [% END %]
+                <td valign="top">
+                    <table class="small"><tbody>
+                        [% IF trx.is_internal == 1 %]
+                        <tr><td>&nbsp;</td><td><span class="warning_tag">INTERNAL TRANSFER</span></td></tr>
+                        [% END %]
+                        <tr><th>Address:</th><td>[% make_link(trx.address, trx.explorer_url.address) | none %]</td></tr>
+                        <tr><th>Blockchain ID:</th><td>[% make_link(trx.hash, trx.explorer_url.transaction, 6) | none %]</td></tr>
+                    </tbody></table>
+                </td>
+                <td valign="top">
+                    <table class="small"><tbody>
+                        <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.amount_usd %])</td></tr>
+                        [% IF trx.type == 'deposit' %]
+                            [% WRAPPER info title='Amount Credited' %]
+                            [% trx.currency_code %] [% trx.client_amount %] (USD [% trx.usd_client_amount || 'not available' %])
+                            [% END %]
+                        [% END %]
+                        [% IF trx.type == 'withdrawal' && (trx.status == 'PROCESSING' ||  trx.status == 'SENT')%]
+                            [% WRAPPER info title='Amount Debited' %][% trx.currency_code %] [% trx.client_amount %] (USD [% trx.usd_client_amount || 'not available' %])[% END %]
+                        [% END %]
+                        <tr>
+                            <th>Client:</th>
+                            <td>
+                                [% IF trx.loginid %]
+                                    [% trx.loginid %]<br />
+                                    <a class="link" href="[% trx.statement_link %]" target="_blank">Statement</a><br />
+                                    <a class="link" href="[% trx.profit_link %]" target="_blank">Profit</a>
+                                [% END %]
+                            </td>
+                            <td>
+                                [% IF trx.loginid %]
+                                    <button class="btn btn--primary" onClick="viewFiatStatement(this, '[% trx.loginid %]', '[% broker %]', '[% fetch_url %]')"> FIAT Statement</button>
+                                [% END %]
+                            </td>
+                            <td></td>
+                        </tr>
+                        <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
+                    [% IF trx.is_external %]
+                        <tr><th tooltip="3rd-party Payment Processor's Identification Number">Trace ID:</th><td>[% trx.trace_id %]</td></tr>
+                    [% END %]
+                    [% IF trx.type == 'withdrawal' %]
+                        <tr><th>Estimated Fee:</th><td>[% trx.estimated_fee %]</td></tr>
+                        <tr><th>Transaction Fee:</th><td>[% trx.fee %]</td></tr>
+                        <tr><th>Is Priority Withdrawal:</th><td>[% IF trx.is_priority %] Yes [% ELSE %] No [% END %]</td></tr>
+                    [% END %]
+                    </tbody></table>
+                </td>
+                <td valign="top">
+                    <table class="small"><tbody>
+                        [% INCLUDE info title='ID' content=trx.id %]
+                        [% INCLUDE info type='date' title='Creation' content=trx.creation_date %]
+                    [% IF trx.type == 'deposit' %]
+                        [% INCLUDE info type='date' title='Pending'   content=trx.status_history.PENDING %]
+                        [% INCLUDE info type='date' title='Confirmed' content=trx.status_history.CONFIRMED %]
+                    [% ELSIF trx.type == 'withdrawal' %]
+                        [% INCLUDE info type='date' title='Verified'              content=trx.status_history.VERIFIED %]
+                        [% INCLUDE info type='date' title='Rejected'              content=trx.status_history.REJECTED %]
+                        [% INCLUDE info type='date' title='Cancelled'             content=trx.status_history.CANCELLED %]
+                        [% INCLUDE info type='date' title='Processing'            content=trx.status_history.PROCESSING %]
+                        [% INCLUDE info type='date' title='Performing Blockchain' content=trx.status_history.PERFORMING_BLOCKCHAIN_TXN %]
+                        [% INCLUDE info type='date' title='Sent'                  content=trx.status_history.SENT %]
+                        [% INCLUDE info type='date' title='Reverting'             content=trx.status_history.REVERTING %]
+                        [% INCLUDE info type='date' title='Reverted'              content=trx.status_history.REVERTED %]
+                    [% END %]
+                    </tbody></table>
+                </td>
+                [% IF trx.type == 'withdrawal' %]
+                    <td valign="top">
+                        <table class="small"><tbody>
+                            <tr><th>Authorisers:</th><td>[% trx.authorisers.join(', ') %]</td></tr>
+                            <tr><th>Client Status:</th><td>[% trx.client_status %]</td></tr>
+                        </tbody></table>
+                        <br/>
+                        [% IF trx.status == 'LOCKED' %]
+                        <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
+                            <input type="hidden" name="id" value="[% trx.id %]"/>
+                            <input type="hidden" name="broker" value="[% broker %]"/>
+                            <input type="hidden" name="address" value="[% trx.address %]"/>
+                            <input type="hidden" name="currency" value="[% trx.currency_code %]"/>
+                            <input type="hidden" name="amount" value="[% trx.amount %]"/>
+                            <input type="hidden" name="loginid" value="[% trx.loginid %]"/>
+                            <input type="hidden" name="view_action" value="withdrawals"/>
+                            <input type="hidden" name="amount_usd" value="[% trx.amount_usd %]" />
+                            <input type="hidden" name="authorisers" value="[% trx.authorisers.join(', ') %]" />
+                            <input type="hidden" name="exchange_rate" value="[% trx.exchange_rate %]" />
+                            [% IF trx.app_id %]
+                                <input type="hidden" name="app_id" value="[% trx.app_id %]"/>
+                            [% END %]
+                            <label>Set Remark:</label>
+                            <div class="row">
+                                <textarea style="width:100%;" name="remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" oninput="bulkUpdateRemark(this)"></textarea>
+                            </div>
+                            <div class="row" >
+                            <input class="btn btn--primary" type="submit" name="action" value="Save"/>
+                            [% IF trx.is_withdrawal_locked %]
+                                <span class="warning_tag">The client withdrawal is locked</span>
+                            [% ELSIF trx.authorisers and trx.authorisers.grep("^$staff\$").size > 0 %]
+                                <input class="btn btn--disabled" type="submit" name="action" value="Verify" disabled="disabled"/>
+                            [% ELSE %]
+                                <input class="btn btn--primary" type="submit" name="action" value="Verify"/>
+                            [% END %]
+                            </div>
+
+                            <select class="row"  name="rejection_reason" data-trxid="[% trx.id %]" onchange="bulkUpdateReason(this)">
+                                <option value="">--- Select Rejection Reason ---</option>
+                                [% FOREACH option IN rejection_reasons %]
+                                    <option value="[% option.index %]">[% option.reason %]</option>
+                                [% END %]
+                            </select>
+                            <div class="row custom_rejection_remark" style="display:none;">
+                                 <textarea style="width:100%;" class="other_reason_field"  placeholder="Write your reason" name="other_reason" value="other"></textarea>
+                            </div>
+                                <input class="btn btn--secondary" type="submit" name="action" value="Reject"/>
+                        </form>
+                        [% END %]
+                    </td>
+                [% ELSIF view_action == 'search' && trx.type == 'deposit' %]
+                    [% #Empty Verification cell for deposit transactions in search listing %]
+                    <td></td>
+                [% END %]
+                <td valign="top">
+                    <table class="small"><tbody>
+                        <tr><th>Remark:</th><td>[% trx.remark %]</td></tr>
+                        <tr><th>Error:</th><td>[% trx.error_text %]</td></tr>
+                    </tbody></table>
+                </td>
+            </tr>
+        [% END %]
+        </tbody>
+    </table>
+    </div>
+    [% PROCESS pagination %]
+    [% IF view_type == 'pending' && view_action == 'withdrawals' %]
+        [% PROCESS bulk_verify_controls %]
+    [% END %]
+[% END %]
+
+<script>
+
+function viewFiatStatement(elem, loginID, brokerCode, fetchURL) {
+    var td_result = elem.parentNode.nextElementSibling;
+    td_result.innerHTML = "<span class='success'> Fetching ..</span>";
+
+    \$.ajax({
+        url: fetchURL,
+        data: {
+            fiat_details: 1,
+            login_id: loginID,
+            broker_code: brokerCode,
+        },
+        success: function(data) {
+           try {
+               var fiat = \$.parseJSON(data);
+               if (fiat.loginid)
+                  td_result.innerHTML = "<a class='link' href='" + fiat.statement + "' target='_blank'> " + fiat.loginid + "</a>";
+               else
+                  td_result.innerHTML = "no fiat";
+           }
+           catch(err) {
+               td_result.innerHTML = "<span class='error'>Error</span>";
+           }
+        },
+        error: function(xhr, status, error){
+           td_result.innerHTML = "<span class='error'>Error</span>";
+        }
+    });
+}
+
+// ----- Bulk Actions -----
+const selected_transactions = {};
+
+function bulkToggleSelected(el_chk) {
+    const trx_id      = el_chk.value;
+    const is_selected = el_chk.checked;
+    const el_row      = el_chk.closest('tr');
+
+    el_row.classList[is_selected ? 'add' : 'remove']('selected');
+
+    if (is_selected) {
+        selected_transactions[trx_id] = {
+            amount          : el_chk.getAttribute('data-amount'),
+            loginid         : el_chk.getAttribute('data-loginid'),
+            remark          : el_row.querySelector('textarea[name="remark"]').value.trim(),
+            rejection_reason: el_row.querySelector('select[name="rejection_reason"]').value,
+            other_reason    : el_row.querySelector('textarea[name="other_reason"]').value.trim(),
+            amount_usd      : el_chk.getAttribute('data-amount_usd'),
+            exchange_rate   : el_chk.getAttribute('data-exchange_rate')
+        };
+    } else {
+        delete selected_transactions[trx_id];
+    }
+    bulkUpdateForm();
+}
+
+function bulkUpdateRemark(el_remark) {
+    const trx_id = el_remark.getAttribute('data-trxid');
+    if (selected_transactions[trx_id]) {
+        selected_transactions[trx_id].remark = el_remark.value.trim();
+        bulkUpdateForm();
+    }
+}
+
+function bulkUpdateReason(el_rejection_reason) {
+    const trx_id = el_rejection_reason.getAttribute('data-trxid');
+
+    const is_other = el_rejection_reason.value === 'other';
+    const el_tr   = el_rejection_reason.closest('tr');
+
+    el_tr.querySelector('.custom_rejection_remark').style.display = is_other ? 'block' : 'none';
+    el_tr.querySelector('.other_reason_field').required = is_other;
+
+    if (selected_transactions[trx_id]) {
+        selected_transactions[trx_id].rejection_reason = el_rejection_reason.value;
+        bulkUpdateForm();
+    }
+}
+
+function bulkUpdateForm() {
+    // Populate hidden value
+    document.querySelectorAll('.selected_transactions').forEach((el_hidden) => {
+        el_hidden.value = JSON.stringify(selected_transactions);
+    });
+
+    // Update the message
+    const bulk_data              = bulkCalculate();
+    const trx_count              = bulk_data.trx_count;
+    const has_sufficient_remarks = bulk_data.remarks_count === trx_count;
+    const has_sufficient_reasons = bulk_data.reasons_count === trx_count;
+
+    const pluralForm     = (name, count) => `\${name}\${count > 1 ? 's' : ''}`;
+    const createCountMsg = (name, count, is_ok) => `<span style="color: \${is_ok ? 'darkgreen' : 'darkred'};"><b>\${count}</b> \${pluralForm(name, count)}</span>`;
+
+    const message_text = trx_count
+        ? `<b>\${bulk_data.trx_count}</b> \${pluralForm('Transaction', trx_count)} selected
+            (
+                \${createCountMsg('Remark',           bulk_data.remarks_count, has_sufficient_remarks)},
+                \${createCountMsg('Rejection reason', bulk_data.reasons_count, has_sufficient_reasons)}
+            ).
+            Total amount is: <b>\${bulk_data.total_amount} [% currency %]</b>`
+        : 'None selected';
+    document.querySelectorAll('.selection_display_text').forEach((el_selection_text) => {
+        el_selection_text.innerHTML = message_text;
+    });
+
+    document.querySelectorAll('.bulk_actions button').forEach((el_btn) => {
+        const should_enable = trx_count
+            && (el_btn.value !== 'bulkSave'   || has_sufficient_remarks)  // remark button
+            && (el_btn.value !== 'bulkReject' || has_sufficient_reasons); // reject button
+
+        el_btn[should_enable ? 'removeAttribute' : 'setAttribute']('disabled', 'disabled');
+        el_btn[should_enable || !trx_count ? 'removeAttribute' : 'setAttribute']('tooltip', 'Required data not entered!');
+    });
+}
+
+function bulkCalculate() {
+    const trx_ids_list = Object.keys(selected_transactions);
+
+    let decimal_places = 0;
+    let total_amount   = 0;
+    let remarks_count  = 0;
+    let reasons_count  = 0;
+
+    trx_ids_list.forEach((trx_id) => {
+        decimal_places = decimal_places || (selected_transactions[trx_id].amount.split('.')[1] || '').length;
+        total_amount  += parseFloat(selected_transactions[trx_id].amount);
+        remarks_count += !!selected_transactions[trx_id].remark.length;
+        reasons_count += !!selected_transactions[trx_id].rejection_reason.length;
+    });
+
+    return {
+        remarks_count,
+        reasons_count,
+        trx_count   : trx_ids_list.length,
+        total_amount: total_amount.toFixed(decimal_places),
+    };
+}
+
+function bulkConfirm() {
+    try {
+        const bulk_data = bulkCalculate();
+
+        if (!bulk_data.trx_count) {
+            alert('Error: No transaction selected.');
+            return false;
+        }
+
+        for (let trx_id in selected_transactions) {
+            let checkbox = document.getElementById('check_' + trx_id);
+
+            bulkToggleSelected(checkbox);
+
+            if (selected_transactions[trx_id]['rejection_reason'] == 'other' && selected_transactions[trx_id]['other_reason'] == '' ){
+                alert('Error: rejection reason is empty.');
+                return false;
+            }
+        }
+
+        return confirm(
+            `Are you sure you want to perform Bulk action as below?
+            - Selected transactions: \${bulk_data.trx_count}
+                (Remarks: \${bulk_data.remarks_count}, Rejection reasons: \${bulk_data.reasons_count})
+            - Total Amount: \${bulk_data.total_amount} [% currency %]`
+        );
+    } catch (e) {
+        return false;
+    }
+}
+
+function paginateLink(el_link) {
+    if(!Object.keys(selected_transactions).length) return;
+    if (!confirm("Navigating to another page causes deselecting the currently selected rows. Do you want to proceed?")) window.event.preventDefault();
+}
+
+</script>

@@ -1,0 +1,56 @@
+<form id='per_symbol_limits'>
+<table class="small full-width hover alternate border">
+    <thead>
+    <tr align="center">
+        <th>Symbol</th>
+        <th>Max Open Positions</th>
+        <th>Max Daily Volume</th>
+        <th>Max Aggregate Open Stake</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN existing_config %]
+    <tr align="center" id="[% data.symbol %]-accumulator_config">
+        <td>[% data.symbol %]</td>
+        <td><input type="number" name="max_open_positions" value="[% data.max_open_positions %]" data-lpignore="true" size="5"/></td>
+        <td><input type="number" name="max_daily_volume" value="[% data.max_daily_volume %]" data-lpignore="true" size="5"/></td>
+        <td><input type="text" name="max_aggregate_open_stake" value="[% data.max_aggregate_open_stake %]" data-lpignore="true" size="35"/></td>
+        <td><button onClick="SaveAccumulatorLimits('[% data.symbol %]')" type="button" class="btn btn--primary">Save</button></td>
+        <td class="accumulator_config_result"></td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+</form>
+
+
+<script>
+var accumulator_upload_url = "[% accumulator_upload_url | none %]";
+
+function SaveAccumulatorLimits(symbol) {
+    var el = \$('#per_symbol_limits').find('tr#' + symbol + '-accumulator_config');
+    var result = el.find('td.accumulator_config_result');
+    result.text('processing ...');
+
+    \$.ajax({
+        url: accumulator_upload_url,
+        data: {
+            save_accumulator_per_symbol_limits: 1,
+            symbol: symbol,
+            max_open_positions: el.find('input[name="max_open_positions"]').val(),
+            max_daily_volume: el.find('input[name="max_daily_volume"]').val(),
+            max_aggregate_open_stake: el.find('input[name="max_aggregate_open_stake"]').val(),
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('saved').css('color', 'var(--color-green)');
+            }
+        }
+    });
+
+}
+
+</script>

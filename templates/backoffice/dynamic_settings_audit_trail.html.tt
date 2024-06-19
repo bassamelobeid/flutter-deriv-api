@@ -1,0 +1,54 @@
+[% USE date %]
+
+[% IF referrer %]
+<a class="btn btn--secondary" href="[% request.url_for('backoffice/' _ referrer) %]">Back</a>
+[% END %]
+
+<div style="display: block; overflow-x: auto; white-space: nowrap;">
+<table class="small alternate" style="white-space: nowrap;">
+    [% IF history.size %]
+    <thead>
+        <tr>
+            <th>Author</th>
+            <th>Timestamp</th>
+            [% FOREACH col IN cols %]
+                <th>[% col %]</th>
+            [% END %]                    
+            </tr>
+        </tr>
+    </thead>
+    <tbody>
+        [% FOREACH record IN history %]
+            <tr>
+                    <td>
+                        [% record.staff || 'N/A' %]
+                    </td>
+                    <td>            
+                        [% date.format(record.stamp, '%a, %d %b %Y %T') %]
+                    </td>
+                    [% n = loop.next %]
+                    [% FOREACH col IN cols %]
+                    <td [% IF record.data.$col != n.data.$col %]class="bg-highlight"[% END %]>[% record.data.$col %]</td>
+                    [% END %]                    
+            </tr>
+        [% END %]
+    </tbody>
+    [% ELSE %]
+    <tbody><tr><td><p class="error"><b>No history.</b></p></td></tr></tbody>
+    [% END %]    
+    <tfoot>
+        <tr>
+            <td>
+                [% IF prev.defined %]
+                    <a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=[% setting %]&offset=[% prev %]&referrer=[% referrer %]">Show previous records</a>
+                [% END %]
+            </td>
+            <td style="text-align:right;">
+                [% IF next.defined %]
+                    <a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=[% setting %]&offset=[% next %]&referrer=[% referrer %]">Show more records</a>
+                [% END %]
+            </td>   
+        </tr>
+    </tfoot>
+</table>
+<div>

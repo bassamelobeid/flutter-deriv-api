@@ -1,0 +1,129 @@
+<form id='commission_affiliate_payment_update'>
+    <p>If you want to update multiple affiliate payment details, please separate the id with ','</p>
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+    <table>
+        <tr>
+            <td><label for="affiliate_provider">Affiliate platform:</label></td>
+            <td>
+                <select name="affiliate_provider">
+                    [% FOREACH prov IN affiliate_provider %]
+                        <option value="[% prov %]">[% prov %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Affiliate ID: </td>
+            <td><input type="text" name="affiliate_id" ></input></td>
+            <td>** Support comma separated affiliate id</td>
+        </tr>
+        <tr>
+            <td>Payment loginid: </td>
+            <td><input type="text" name="payment_loginid"></input></td>
+            <td>** Currently only supports Deriv's loginid. Support comma separated payment loginid</td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="SaveAffiliatePaymentDetails()" value="Update"></td>
+            <td class="save_affiliate_payment"></td>
+        </tr>
+    </table>
+</form>
+
+<form id="affiliate_info_preview">
+    <p>Affiliate account information preview:</p>
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+    <table>
+        <tr>
+            <td><label for="affiliate_provider">Affiliate platform:</label></td>
+            <td>
+                <select name="affiliate_provider">
+                    [% FOREACH prov IN affiliate_provider %]
+                        <option value="[% prov %]">[% prov %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Affiliate ID: </td>
+            <td><input type="text" name="affiliate_id" ></input></td>
+            <td>** Support comma separated affiliate id</td>
+        </tr>
+        <tr>
+            <td>OR Binary user ID: </td>
+            <td><input type="text" name="binary_user_id"></input></td>
+            <td>** Support comma separated binary user id</td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="AffiliateInfoPreview()" value="Preview"></td>
+            <td class="info_preview"></td>
+        </tr>
+    </table>
+</form>
+
+<div id="affiliate_preview">
+</div>
+
+<script>
+var upload_url = "[% upload_url | none %]";
+
+function AffiliateInfoPreview(){
+    var el = \$('#affiliate_info_preview');
+    var result = el.find('.info_preview');
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: upload_url,
+        data: {
+            preview_affiliate_info: 1,
+            affiliate_id: el.find('input[name="affiliate_id"]').val(),
+            binary_user_id: el.find('input[name="binary_user_id"]').val(),
+            provider: el.find('select[name="affiliate_provider"]').val()
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('ok').css('color', 'var(--color-green)');
+                var div = \$('div#affiliate_preview');
+                var table = '<table><tr><th>Binary user ID</th><th>External Affiliate ID</th><th>Payment loginid</th><th>Currency</th></tr>';
+                for (var i=0; i < config.length; i++) {
+                    table += '<tr>';
+                    table += '<td>'+ config[i][0] +'</td>';
+                    table += '<td>'+ config[i][1] +'</td>';
+                    table += '<td>'+ config[i][2] +'</td>';
+                    table += '<td>'+ config[i][3] +'</td>';
+                    table +='</tr>';
+                }
+                table += '</table>';
+                div.empty();
+                div.append(table);
+            }
+        }
+    });
+}
+
+function SaveAffiliatePaymentDetails(){
+    var el = \$('#commission_affiliate_payment_update');
+    var result = el.find('.save_affiliate_payment');
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: upload_url,
+        data: {
+            save_affiliate_payment: 1,
+            affiliate_id: el.find('input[name="affiliate_id"]').val(),
+            payment_loginid: el.find('input[name="payment_loginid"]').val(),
+            provider: el.find('select[name="affiliate_provider"]').val()
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('saved').css('color', 'var(--green-2)');
+            }
+        }
+    });
+}
+</script>

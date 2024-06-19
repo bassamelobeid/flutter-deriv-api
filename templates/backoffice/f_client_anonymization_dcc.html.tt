@@ -1,0 +1,12 @@
+<p>
+    DCC: (single click to copy)<br>
+    <div class="dcc-code copy-on-click"> [% dcc_code %]
+    </div><script>initCopyText()</script><br>
+    This code is valid for 1 hour from now: UTC [% utc_date %]<br>
+    Creator: [% clerk %] <br>
+</p>
+
+[% IF client_login_id %]
+    <p>Note: [% client_login_id %] is [% salutation %] [% first_name %] [% last_name %] 
+    current email is [% email %]</p>
+[% END %]

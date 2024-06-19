@@ -1,0 +1,4 @@
+<div id=[% id %]>
+    [% content | none %]
+</div>
+<script> \$(function() { \$("#[% id %]").jstree({ "themes" :  { theme: "bom", "dots" : false, "icons" : false }, "plugins" : [ "themes", "html_data" ], "core":  { "initially_open": ['tree_'+\$('#[% initially_open %]').val()]}})}); </script>

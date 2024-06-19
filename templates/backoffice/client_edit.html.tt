@@ -1,0 +1,1335 @@
+<style type="text/css">
+table#client_edit {
+    width: 100%;
+}
+table#client_edit td {
+    padding: 4px;
+}
+.label {
+    width: 25%;
+    text-align: right;
+    text-transform: uppercase;
+}
+.label.top {
+    vertical-align: top;
+}
+.bg-lightgrey {
+    text-transform: uppercase;
+    padding: 8px 16px;
+    font-weight: bold;
+}
+</style>
+
+<script>
+var validation_info = {
+[% FOREACH field IN text_validation_info.keys %]
+    [% field %]: {
+        [% pattern = text_validation_info.$field.pattern %]
+        pattern: String.raw`[% pattern.replace('`', '\`') %]`,
+        message: "[% text_validation_info.$field.message %]",
+        is_valid: [% IF text_validation_info.$field.is_valid %] 1 [% ELSE %] 0 [% END %],
+    },
+[% END %]
+};
+
+function escape_regex(s) {
+    return s.replace(/[\/\\^\$*+?.()|[\]{}]/g, '\\\$&');
+}
+
+function init_text_validations() {
+    for (let field in validation_info) {
+        let search = document.getElementsByName(field);
+        if (!search) {
+            console.log(`Error initializing text validations: element \${field} not found`);
+            continue;
+        }
+        let element = search[0];
+        // an extra \ added by backend code for escaping the raw string quotation mark is removed here (otherwise regex validation will break)
+        let pattern =  validation_info[field].pattern.replace("\\`", "`");
+
+        if (!validation_info[field].is_valid){
+            element.classList.add('error');
+        }
+
+        let value = escape_regex(element.value);
+        // let the current value be accepted anyway
+        element.pattern = `^\${value}\$|\${pattern}`;
+        element.title = validation_info[field].message;
+    }
+};
+
+window.addEventListener('DOMContentLoaded', init_text_validations, false);
+</script>
+
+[% yes_no_options = [{value => 1, text => 'yes'} {value => 0, text => 'no'}] %]
+
+<table border="0" width="100%" id="client_edit" onload="init_text_validations()">
+    <tr>
+        <td class="label">Balance</td>
+        <td>: <b class="error">[% balance %] [% client.default_account.currency_code %]</b></td>
+    </tr>
+    <tr>
+        <td class="label">Email</td>
+        <td>: <b class="copy-on-click">[% client.email %]</b>&nbsp;<a class="btn btn--primary" href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">Edit client's email</a></td>
+    </tr>
+    <tr>
+        <td class="label">Social Signup</td>
+        <td>: <b>[% IF has_social_signup  %]YES[% ELSE %]NO[% END %]</b></td>
+    </tr>
+    <tr>
+        <td class="label">Login Lock</td>
+        [% IF login_locked_until %]
+        <td>: <b class="error">Locked until [% login_locked_until %]</b></td>
+        [% ELSIF too_many_attempts %]
+        <td>: <b class="error">Locked temporary due to many failed attempts</b></td>
+        [% ELSE %]
+        <td>: <b>Not locked</b></td>
+        [% END %]
+    </tr>
+    <tr>
+        <td class="label">BROKER</td>
+        <td>: <b>[% client.broker %]</b> <input type="hidden" name="edit_client_loginid" value="[% client.loginid %]"></td>
+    </tr>
+    <tr>
+        <td class="label">Currency</td>
+        <td>: <b>[% client.default_account.currency_code || 'NO CURRENCY HAS BEEN SET BY CLIENT' %]</b></td>
+    </tr>
+    [% IF show_risk_approval %]
+        <tr>
+            <td class="label"> AML JURISDICTION RISK CLASSIFICATION </td>
+            <td>: <b>[% client_aml_jurisdiction_risk %]</b></td>
+        </tr>
+    [% END %]
+    <tr>
+[%-
+        last_check = client.sanctions_check;
+-%]
+        <td class="label">Last sanctions check run</td>
+        <td>: [% last_check.tstmp %] [% last_check.type == 'R' ? 'Registration' : 'Cron'%]</td>
+    </tr>
+    [% IF show_non_pep_declaration_time %]
+        <tr>
+            <td class="label">Non-PEP/RCA self-declaration</td>
+            <td style="text-align:left;">
+                : <input type="checkbox" id='non_pep_declaration' [% IF non_pep_declaration_time %]checked[% END %] disabled="disabled"/>
+                <label for="non_pep_declaration">[% IF non_pep_declaration_time %] [% non_pep_declaration_time %] [% END %] </label>
+            </td>
+        </tr>
+    [% END %]
+    [% IF show_fatca_declaration_time %]
+        <tr>
+            <td class="label">FATCA self-declaration</td>
+            <td style="text-align:left;">
+                : <input type="checkbox" id='fatca_declaration' [% IF fatca_declaration %]checked[% END %] disabled="disabled"/>
+                <label for="fatca_declaration">[% IF fatca_declaration_time %] [% fatca_declaration_time %] [% END %] </label>
+            </td>
+        </tr>
+    [% END %]
+    [% IF resident_self_declaration %]
+        <tr>
+            <td class="label">[% client_residence %] Resident Declaration</td>
+            <td style="text-align:left;">
+            : [% client.date_joined %]
+            </td>
+        </tr>
+    [% END %]
+    <tr>
+        <td class="label">Client's Professional status</td>
+        <td>: <b>[% professional_status %]</b> </td>
+    </tr>
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#MY AFFILIATE INFO</td>
+    </tr>
+    <tr>
+        <td class="label">Affiliate Token</td>
+        <td>:
+        [% IF client.myaffiliates_token %]
+            [% client.myaffiliates_token %] (This is the token <strong>currently registered</strong> with MyAffiliates.)
+        [% ELSE %]
+            <strong>None</strong>
+        [% END %]
+        <a class="btn btn--primary" href="[% request.url_for('backoffice/f_client_affiliate_details.cgi', {loginid => client.loginid , broker = client.broker }) %]">View affiliate details</a>
+        <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/f_change_affiliates_token.cgi', {loginid => client.loginid , affiliate_token = client.myaffiliates_token }) %]">Edit affiliate token</a>
+        <a  class="btn btn--primary" href="[% request.url_for('backoffice/f_ib_affiliate.cgi', {loginid => client.loginid}) | url %]">IB Affiliate status</a>
+        </td>
+    </tr>
+    [% IF is_staff_compliance %]
+    <tr>
+        <td class="label" style="vertical-align:middle">RISK DISCLAIMER RESUBMISSION</td>
+        <td>:
+        [% IF risk_disclaimer_updated_at %]
+            requested at <b>[% risk_disclaimer_updated_at %]</b> (by [% risk_disclaimer_updated_by %])
+        [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label" style="vertical-align:middle">SEND RISK DISCLAIMER RESUBMISSION EMAIL</td>
+        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" style="vertical-align:middle" name="risk_disclaimer_email_myaff_checkbox" />
+        [% risk_disclaimer_email_myaff_checkbox %]
+            <span id="risk_disclaimer_email_myaff_checkbox_toggle" [% IF risk_disclaimer_email_myaff_checkbox %] style="display:inline" [% ELSE %]  style="display:none" [% END %]>    
+            
+            <label for="risk_disclaimer_email_myaff_language">Select language:</label>
+            <select name="risk_disclaimer_email_myaff_language">
+                <option value="EN" selected>English</option>
+                <option value="ID">Indonesian</option>
+                <option value="PT">Portuguese</option>
+                <option value="ES">Spanish</option>
+                <option value="RU">Russian</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label"></td>
+        <td>
+            <button type="submit" name="force_coc_acknowledgement_myaff" value="1" class="btn btn--primary">Force COC acknowledgement</button>
+        </td>
+    </tr>
+    
+    [% END %]
+    <tr>
+        <td class="label"></td>
+        <td>
+            <a class="btn btn--primary" href="[% request.url_for('backoffice/affiliate_reputation_details.cgi', {loginID => client.loginid , broker = client.broker }) %]">Affiliate reputation details</a>
+        </td>
+    </tr>
+    [% IF dynamic_works_enabled %]
+        [% INCLUDE 'backoffice/partners/partner_info.html.tt' client=client %]
+    [% END %]
+    
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#AML SCREENING</td>
+    </tr>
+    <tr>
+    <td class="label"></td>
+    <td>
+        Screening reason (custom text): 
+        <select id='screening_reason_select' name='screening_reason_select'>
+            <option value=""></option>
+            [% FOREACH reason IN screening_reasons%]
+                <option value="[% reason %]"> [% reason %] </option>
+            [% END %]
+        </select>
+        <button name="request_risk_screen" type="submit" class="btn btn--primary" value="1"
+            [% IF !is_compliance || client.is_virtual %] disabled=1 [% END %]
+        > Request Screening </button>
+        <button name="show_aml_screen_table" type="submit" class="btn btn--primary" value="1">Show All Screenings</button>
+
+    </td>
+    </tr>
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Identity</td>
+    </tr>
+    <tr>
+        <td class="label">MrMs</td>
+        <td>:
+            <select name="salutation">
+            [% FOREACH salutation = salutation_options %]
+                [% IF salutation ==  client.salutation %]
+                    <option value="[% salutation %]" selected="selected">[% salutation %]</option>
+                [% ELSE %]
+                    <option value="[% salutation %]">[% salutation %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">First Name</td>
+        <td>: <input type="text" name="first_name" value="[% client.first_name %]" size="50" data-lpignore="true" /> [% client.first_name %]</td>
+    </tr>
+    <tr>
+        <td class="label">Last Name</td>
+        <td>: <input type="text" name="last_name" value="[% client.last_name %]" size="50" data-lpignore="true" /> [% client.last_name %]</td>
+    </tr>
+    <tr>
+        <td class="label">Date of Birth</td>
+        <td>:
+            <select name="dob_day">[% dob_day_options | none %]</select>
+            <select name="dob_month">[% dob_month_options | none %]</select>
+            <select name="dob_year">[% dob_year_options | none %]</select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Birth Place</td>
+        <td>:
+            <select name="place_of_birth">
+                [% IF client.place_of_birth == "" %]
+                    <option value="" selected="selected">Select place of birth</option>
+                [% ELSE %]
+                    <option value="">Select place of birth</option>
+                [% END %]
+
+            [% FOREACH country = countries %]
+                [% IF country_codes.$country == client.place_of_birth %]
+                    <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
+                [% ELSE %]
+                    <option value="[% country_codes.$country %]">[% country %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Citizen</td>
+        <td>:
+            <select name="citizen">
+                [% IF client.citizen == "" %]
+                    <option value="" selected="selected">Select Citizen</option>
+                [% ELSE %]
+                    <option value="">Select Citizen</option>
+                [% END %]
+
+            [% FOREACH country = countries %]
+                [% IF country_codes.$country == client.citizen %]
+                   <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
+                [% ELSE %]
+                   <option value="[% country_codes.$country %]">[% country %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Postal address</td>
+    </tr>
+    [% IF address_verification_status OR smarty_street_status %]
+        <tr>
+            <td class="label">Status</td>
+            <td>: 
+                [% IF address_verification_status %]
+                    <span class="bg-highlight">[% address_verification_status.reason || 'Address verified' %]</span>
+                [% END %]
+                [% IF smarty_street_status %]
+                    <span class="bg-skyblue">[% smarty_street_status.reason || 'Smarty Streets' %]</span>
+                [% END %]
+            </td>
+        </tr>
+    [% END %]
+    <tr>
+        <td class="label">Address 1</td>
+        <td>: <input type="text" name="address_1" value="[% client.address_1 %]" size="50" data-lpignore="true" /> [% client.address_1 %]</td>
+    </tr>
+    <tr>
+        <td class="label">Address 2</td>
+        <td>: <input type="text" name="address_2" value="[% client.address_2 %]" size="50" data-lpignore="true" /> [% client.address_2 %]</td>
+    </tr>
+    <tr>
+        <td class="label">Town/City</td>
+        <td>: <input type="text" name="city" value="[% client.city %]" size="50" data-lpignore="true" /> [% client.city %]</td>
+    </tr>
+    <tr>
+        <td class="label">State/Province</td>
+        <td>: <select name="state">[% state_options | none %]</select> [% client_state %]</td>
+    </tr>
+    <tr>
+        <td class="label">Postcode</td>
+        <td>: <input type="text" name="address_postcode" value="[% client.postcode %]" size="10" data-lpignore="true" /></td>
+    </tr>
+    <tr>
+        <td class="label">Residence</td>
+        <td>:
+            <select name="residence" onChange="residence_change(this);">
+                [% IF client.residence == "" %]
+                    <option value="" selected="selected">Select Residence</option>
+                [% ELSE %]
+                    <option value="">Select Residence</option>
+                [% END %]
+
+            [% FOREACH country = countries %]
+                [% IF country_codes.$country == client.residence %]
+                   <option value="[% country_codes.$country %]" selected="selected" id="original_residence">[% country %]</option>
+                [% ELSE %]
+                   <option value="[% country_codes.$country %]">[% country %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    [% PROCESS backoffice/client_mifir.html.tt %]
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#TAX INFORMATION</td>
+    </tr>
+    <tr>
+        <td class="label top">Tax Residence</td>
+        <td>:
+            <select name="tax_residence" multiple>
+                <option value="">Not selected</option>
+            [% FOREACH country IN countries %]
+                <option value="[% country_codes.$country %]"
+                    [% IF tax_residence.size AND tax_residence.grep(country_codes.$country).size %] selected="selected" [% END %]>
+                    [% country %]
+                </option>
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Currently selected</td>
+        <td>: <strong>[% tax_residences_countries_name %]</strong></td>
+    </tr>
+    <tr>
+        <td class="label">Tax Identification Number</td>
+        <td>:
+            [% IF is_npj %]
+            <input style="font-weight: bold;" type="text" name="tax_identification_number" value="NPJ country" size="15" data-lpignore="true" readonly />
+            [% END %]
+            [% IF NOT is_npj %]
+            <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="15" data-lpignore="true" />
+            [% END %]
+            [% IF is_valid_tin %]
+                <span class="success">Tax format is correct</span>
+            [% END %]
+            [% IF auto_tin_approval_enabled and is_tin_manually_approved %]
+                <span class="success">TIN is manually approved. Entering TIN will make the manual approval to be removed</span>    
+            [% END %]
+            [% IF tin_validation_required AND not is_valid_tin AND not is_npj %]
+                <span class="error">Tax format is not provided or invalid</span>
+            [% END %]
+            
+        </td>
+    </tr>
+    <tr>
+        [% IF auto_tin_approval_enabled %]
+            <td class="label">Approve TIN as TIN Not Available</td>
+        [% ELSE %]
+            <td class="label">Tax Identification Number Not Available</td>
+        [% END %]
+        <td>:
+            [% IF auto_tin_approval_enabled %]
+                <input type="checkbox" onclick="toggle_checkbox(this)" name="tin_not_available" value="1" [% IF  is_tin_manually_approved %] checked [% END %]  />
+                [% IF tax_identification_number %]
+                    <span class="success">Tax Identification Number is available and approving TIN manually will clear the tax identification number</span>    
+                [% END %]
+            [% ELSE %]
+                <input type="checkbox" onclick="toggle_checkbox(this)" name="tin_not_available" value="1" />
+            [% END %]
+        </td>
+    </tr>
+    [% IF tin_validation_required %]
+        <tr>
+            <td class="label">Tax Identification Format</td>
+            <td>: [% tin_format_info %]</td>
+        </tr>
+        <tr>
+            <td class="label">Tips</td>
+            <td>: X = letter, 9 = digit, / = or </td>
+        </tr>
+    [% END %]
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#KYC/IDENTITY VERIFICATION</td>
+    </tr>
+    <tr>
+        <td class="label">AML Risk Classification</td>
+        <td>:
+            <select name="client_aml_risk_classification" [% IF not is_staff_compliance %] disabled [% END %]>
+                [% FOREACH risk_classification = aml_risk_levels %]
+                    <option value="[% risk_classification.value %]" [% IF risk_classification.value == client.aml_risk_classification %] selected="selected" [% END %]>[% risk_classification.name %]</option>
+                [% END %]
+            </select>
+        </td>
+    </tr>
+    [% IF show_social_responsibility_client %]
+    <tr>
+        <td class="label">Social Responsibility Status</td>
+        [%
+            social_responsibility_options = [
+                { 'value' => 'low', details => 'Low risk'},
+                { 'value' => 'high', details => 'At risk'},
+                { 'value' => 'manual override high', details => 'At risk - Manual override'},
+                { 'value' => 'problem trader', details => 'Problem Trader'}
+            ]
+        %]
+        <td>:
+            <select name="client_social_responsibility_check">
+                [% FOREACH social_responsibility = social_responsibility_options %]
+                    <option value="[% social_responsibility.value %]" [% IF social_responsibility.value == social_responsibility_risk_status %] selected="selected" [% END %]> [% social_responsibility.details %]</option>
+                [% END %]
+            </select>
+            [% IF social_responsibility_risk_status == 'high' && social_responsibility_risk_status_start_date && social_responsibility_risk_status_end_date %] 
+            <b class="error">From: [% social_responsibility_risk_status_start_date %] To: [% social_responsibility_risk_status_end_date %]</b> 
+            [% END %]
+        </td>
+    </tr>
+    [% END %]
+    <tr>
+        <td class="label">Age Verified</td>
+        <td>:
+            <select name="age_verification" id="age_verification" [% IF client.is_virtual %]disabled[% END %]>
+                [% client_age_verified = client.status.age_verification %]
+                [% IF client_age_verified %]
+                    <option value="yes" selected="selected">YES BY ([% latest_poi_by %])</option>
+                [% ELSE %]
+                    <option value="yes" selected="selected">YES</option>
+                [% END %]
+                <option value="no" [% UNLESS client_age_verified %]selected="selected"[% END %]>NO</option>
+            </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td class="label top">Age Verified Status</td>
+            <td style='display:inline-flex;'>:&nbsp;<table class="collapsed hover alternate">
+            <tr>
+                <th>IDV</th>
+                <th>Onfido</th>
+                <th>Manual</th>
+            </tr>
+                <td>[% idv_status %]</td>
+                <td>[% onfido_status %]</td>
+                <td>[% manual_status %]</td>
+        </table>
+        </td>
+    </tr>
+
+    <tr>
+        <td style='text-align: right;' colspan='2'><hr/></td>
+    </tr>
+
+    <tr>
+        <td>
+            <b style='color: darkorange;'>IDV</b>
+            Submissions left: [% idv_submissions_left %]</br>
+            [% IF idv_submissions_left == 0 %]
+            <button name="idv_reset" onclick="return confirm('This will reset the IDV attempts counter of the client, do you want to proceed?')">Reset Now</button>
+            [% END %]
+        </td>
+         [% IF idv_pending_lock <= 0 %] 
+            [% IF idv_submissions_left > 0 %]
+                <td><button name="run_idv_check" type="submit" class="btn btn--primary" value="1">Run IDV Check</button></td>
+            [% ELSE %]
+                <td><button name="run_idv_check" type="submit" class="btn btn--primary" value="1" disabled>No IDV submissions left</button></td>
+            [% END %]
+        [% ELSE %] 
+            <td><button name="run_idv_check" type="submit" class="btn btn--primary" value="1" disabled>Pending IDV Check</button></td>
+        [% END %] 
+        
+    </tr>
+
+    <tr>
+        <td colspan=2>
+        <table class="collapsed hover alternate">
+            <tr>
+                <th>Document Number</th>
+                <th>Document Type</th>
+                <th>Issuing Country</th>
+                <th>Expiration Date</th>
+                <th>Status</th>
+                <th>Status Messages</th>
+                <th>Updated At</th>
+                <th>Full Name</th>
+                <th>Date of Birth</th>
+            </tr>
+            [% IF idv_records.size > 0 %]
+                [% FOREACH record IN idv_records %]
+                    <tr>
+                        <td>
+                            [% IF record.portal_uri %]<a class='link' target='_blank' href='[% record.portal_uri %]'> [% END %]
+                            [% record.document_number %]
+                            [% IF record.portal_uri %]</a> [% END %]
+                        </td>
+                        <td>[% record.document_type %]</td>
+                        <td>[% record.issuing_country %]</td>
+                        <td>[% record.document_expiration_date %]</td>
+                        <td>[% record.status FILTER upper %]</td>
+                        <td>
+                            [% IF record.status_messages.size > 0 %]
+                                <ul>
+                                [% FOREACH msg IN record.status_messages %]
+                                    <li>[% msg %]</li>
+                                [% END %]
+                                </ul>
+                            [% END %]
+                        </td>
+                        <td>[% record.updated_at %]</td>
+                        <td title='[% record.tooltip %]'>[% record.full_name %]</td>
+                        <td title='[% record.tooltip %]'>[% record.dob %]</td>
+                    </tr>
+                [% END %]
+            [% ELSE %]
+                <tr><td colspan='7' class='center'>No IDV records.</td></tr>
+            [% END %]
+        </table>
+        </td>
+    </tr>
+
+    <tr>
+        <td style='text-align: right;' colspan='2'><hr/></td>
+    </tr>
+
+    <tr>
+        <td style="vertical-align: top;" class='label'><b style='color: blue;'>ONFIDO</b></td>
+        <td>:
+            [% IF onfido_check_result %]
+                <a href="[% onfido_check_url %]" target="_blank">
+                    [% onfido_check_result FILTER upper %]
+                </a>
+
+                [% IF onfido_pdf_url %]<br/>
+                    &nbsp; <a href="[% onfido_pdf_url %]" target="_blank">PDF</a>
+                [% END %]
+
+                [% IF onfido_reported_properties %]
+                    <table width="100%" class='collapsed hover alternate'>
+                        <thead>
+                            <tr>
+                                <th>&nbsp;</th>
+                                <th>Profile</th>
+                                <th>Reported</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            [% FOREACH field IN [ 'first_name', 'last_name', 'date_of_birth' ] %]
+                                <tr>
+                                    <td>[% field.replace('_', ' ').ucfirst %]</td>
+                                    <td>[% client.$field %]</td>
+                                    <td>[% onfido_reported_properties.item(field) || 'Not reported' %]</td>
+                                </tr>
+                            [% END %]
+                        </tbody>
+                    </table>
+                [% END %]
+            [% ELSIF onfido_suspended %]
+                <strong style="color: red;">
+                        Onfido is suspended
+                </strong>
+            [% ELSE %]
+                <strong>
+                        Check not performed
+                </strong>
+            [% END %]
+        </td>
+    </tr>
+
+    [% IF client.status.poi_name_mismatch && client.latest_poi_by.0 == 'onfido' %]
+        <tr>
+            <td class="label" style='color: blue;'>ONFIDO NAME MISMATCH</td>
+            <td>
+                [% FOREACH prop IN onfido_reported_properties.keys %]
+                    <b>[% prop %]:</b> [% onfido_reported_properties.item(prop) %]<br/>
+                [% END %]
+            </td>
+        </tr>
+    [% END %]
+
+    <tr>
+        <td class="label"></td>
+        <td>
+            Submissions left: [% onfido_submissions_left %]
+            [% IF onfido_submissions_reset %]
+                (will reset at [% onfido_submissions_reset.datetime_ddmmmyy_hhmmss_TZ %])
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label"></td>
+        <td>
+            [% UNLESS onfido_pending_request %]
+                [% IF onfido_supported_country %]
+                    <button name="run_onfido_check" type="submit" class="btn btn--primary" value="1">Run Onfido Check</button>
+                [% ELSE %]
+                    <button disabled class="btn btn--primary" value="1">Onfido is not supported on this country</button>
+                [% END %]
+            [% ELSE %]
+                <button disabled class="btn btn--primary" value="1">There is a pending Onfido request</button>
+            [% END %]
+        </td>
+    </tr>
+
+    <tr>
+        <td class="label" style="vertical-align:middle; color: blue;">Allow POI Resubmission</td>
+        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %] />
+        <span id="allow_onfido_resubmission_toggle" [% IF onfido_resubmission %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
+        <label for="poi_reasons">REASON:</label>
+        <select name="poi_reason" onchange="kyc_reason_changed()">
+                <option value="unselected"  [% IF onfido_resubmission && onfido_resubmission=="unselected" %] selected [% END %] > Please Select </option>
+                [% FOREACH option IN poi_reasons %]
+                  <option value="[% option.index %]" [% IF onfido_resubmission && onfido_resubmission==option.index %] selected [% END %] >[% option.reason %]</option>
+                [% END %]
+                <option value="other"  [% IF onfido_resubmission && onfido_resubmission=="other" %] selected [% END %] > Other </option>
+            </select>
+        </span>
+        </td>
+    </tr>
+    <tr>
+        <td class="label" style='color: blue;'>Resubmission Counter</td>
+        <td>: [% onfido_resubmission_counter %]</td>
+    </tr>
+
+    <tr>
+        <td class="label">ID Authentication</td>
+        [%
+            authentication_options = [
+                {'value' => '', 'short_name' => '', 'details' => 'Please select to update' },
+                {'value' => 'CLEAR_ALL', 'short_name' => 'no', 'details' => 'Not authenticated' },
+                {'value' => 'ID_DOCUMENT', 'short_name' => 'scans', 'details' => 'Authenticated with scans' },
+                {'value' => 'ID_NOTARIZED', 'short_name' => 'notarized','details' => 'Authenticated with Notarized docs' },
+                {'value' => 'ID_PO_BOX', 'short_name' => 'po_box','details' => 'Authenticated with PO BOX verified' },
+                {'value' => 'ID_ONLINE', 'short_name' => 'online', 'details' => 'Authenticated with online verification' },
+                {'value' => 'IDV_ADDRESS', 'short_name' => 'idv_address', 'details' => 'IDV authenticated with address' },
+                {'value' => 'IDV_PHOTO', 'short_name' => 'idv_photo', 'details' => ' IDV authenticated with photo' },
+                {'value' => 'IDV', 'short_name' => 'idv', 'details' => 'IDV authenticated with POA scan' },
+                {'value' => 'NEEDS_ACTION',  'short_name' => 'needs_action', 'details' => 'Needs Action' }
+           ];
+           authentication_status = client.authentication_status;
+        %]
+        <td id="verification">:
+            <select name="client_authentication" onchange="update_age_verification(this.value)">
+                [% FOREACH authentication = authentication_options %]
+                    <option value="[% authentication.value %]" [% IF authentication.short_name == authentication_status %]selected="selected"[% END %]>[% authentication.details %]</option>
+                [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label" style="vertical-align:middle">Allow POA Resubmission</td>
+        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poa_resubmission" value="1" [% IF poa_resubmission_allowed %] checked="checked" [% END %]>
+        <span id="allow_poa_resubmission_toggle" [% IF poa_resubmission_allowed %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
+        <label for="poa_reasons">REASON:</label>
+        <select name="poa_reason" onchange="kyc_reason_changed()" >
+                <option value="unselected"  [% IF poa_resubmission_allowed && poa_resubmission_allowed=="unselected" %] selected [% END %] > Please Select </option>
+                [% FOREACH option IN poa_reasons %]
+                  <option value="[% option.index %]" [% IF poa_resubmission_allowed && poa_resubmission_allowed==option.index %] selected [% END %] >[% option.reason %]</option>
+                [% END %]
+                <option value="other"  [% IF poa_resubmission_allowed && poa_resubmission_allowed=="other" %] selected [% END %] > Other </option>
+            </select>
+        </span>
+        </td>
+    </tr>
+    [% IF broker_code == 'CR' %]
+    <tr>
+        <td class="label" style="vertical-align:middle">Address Mismatch</td>     
+           <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="address_mismatch" value="1" [% IF poa_address_mismatch %] checked="checked" [% END %]/>
+            <span id="address_mismatch_toggle" [% IF poa_address_mismatch %] style="display:inline" [% ELSE %] style="display:none" [% END %]>
+                <input name="expected_address" type="text" [% IF poa_address_mismatch %] display="inline" value="[% expected_address %]" [% END %]/>
+            </span>
+        </td>
+    </tr>
+    [% END %]
+
+    <tr title="if poi/poa resubmission is checked by checking this and after clicking the save button, an email will be sent to the client to resubmit documents">
+        <td class="label" style="vertical-align:middle">KYC EMAIL</td>
+        <td>:<input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
+    </tr>
+
+    [% IF poo_access %] 
+        <tr>
+            <td class="bg-lightgrey" colspan="2">#Proof of Ownership</td>
+        </tr>
+        <tr>
+            <td>
+                <table>
+                    [% IF doughflow_methods.size %]
+                        <tr>
+                            <th><input type="checkbox" name="checkbox-master" onclick="return selectAll()" class='check1'></th>
+                            <th>Payment Method</th>
+                        </tr>
+                        [% FOR pm IN doughflow_methods %]
+                            <tr>
+                                <td><input type="checkbox" name='poo[[% pm.2 %]]' value="[% pm.1 %]" class='check2'></td>
+                                <td> [% pm.1 %] </td>
+                            </tr>
+                        [% END %]
+                        <tr>
+                            <td class="label">&nbsp;</td>
+                            <td>
+                                <button name="request_poo" type="submit" class="btn btn--primary" value="1">Request POO</button>
+                            </td>
+                            <br>
+                        </tr>
+                    [% ELSE %]
+                        <tr>
+                            <td> Client has no doughflow transactions </td>
+                        </tr>
+                    [% END %]
+                </table>
+            </td>
+        </tr>
+        <br>
+        [% IF proof_of_ownership_list.size %]
+            <td class="label" colspan="2">
+                <table width="100%" class="collapsed hover alternate">
+                <form method="POST">
+                    <tr>
+                        <th>Payment Method</th>
+                        <th>Comment</th>
+                        <th>Status</th>
+                        <th>Requested At</th>
+                        <th>Uploaded At</th>
+                        <th>Documents</th>
+                        <th>Details</th>
+                        <th>Actions</th>
+                    </tr>
+                    [% FOR poo IN proof_of_ownership_list %]
+                        <tr>
+                            <td>[% poo.payment_method %]</td>
+                            <td><textarea rows="1" type="text" name="poo_comment_[% poo.id %]" size="15" data-lpignore="true">[% poo.comment %]</textarea></td>
+                            <td>[% poo.status %]</td>
+                            <td>[% poo.creation_time %]</td>
+                            <td>[% poo.uploaded_time || '<i>upload pending</i>' | none %]</td>
+                            <td style="text-align:left;">
+                                [% IF poo.documents.empty %]
+                                    <i>No documents uploaded</i>
+                                [% ELSE %]
+                                    <ul style="list-style-type:none;padding-inline-start:8px;">
+                                        [% FOR doc IN poo.documents %]
+                                            <li> ► <a target="_blank" class="link" href="#" data-poo-doc-id="[% doc %]">[% doc %]</a></li>
+                                        [% END %]
+                                    <ul>
+                                [% END %]
+                            </td>
+                            <td style="text-align:left;">
+                                [% IF poo.payment_method_details.keys.empty %]
+                                    <i>No details</i>
+                                [% ELSE %]
+                                    <ul style="list-style-type:none;padding-inline-start:8px;">
+                                    [% FOR key IN poo.payment_method_details.keys %]
+                                        <li> ► <b>[% key %]:</b> [% poo.payment_method_details.$key %]</li>
+                                    [% END %]
+                                    </ul>
+                                [% END %]
+                            </td>
+                            <td>
+                                [% IF poo.status != 'pending' %]
+                                    <button class="btn btn--primary" name="verify_proof_of_ownership" value="[% poo.id %]">
+                                        Verify
+                                    </button>
+                                    <button class="btn btn--secondary" name="reject_proof_of_ownership" value="[% poo.id %]">
+                                        Reject
+                                    </button>
+                                    <button class="btn btn--secondary" name="delete_proof_of_ownership" value="[% poo.id %]">
+                                        Delete
+                                    </button>      
+                                [% ELSE %]
+                                    <i>Waiting for upload</i>
+                                    <button class="btn btn--primary" name="delete_proof_of_ownership" value="[% poo.id %]">
+                                        Delete
+                                    </button>      
+                                [% END %]
+                            </td>
+                        </tr>
+                    [% END %]
+                    <tr>
+                        <td></td>
+                        <td colspan="7"><button name="save_comments" type="submit" class="btn btn--primary" value="1">Save Comments</button></td>
+                    </tr>
+                </form>
+                </table>
+            </td>
+        [% END %]
+        <br>
+
+        <tr>
+            <td class="bg-lightgrey" colspan="2">#Proof of Income</td>
+        </tr>
+        <tr>
+            <td class="label"></td>
+            <td>
+                Submissions left: [% poinc_submissions_left %]
+            </td>
+        </tr>
+        <tr>
+            <td class="label" style="vertical-align:middle">Allow Proof of Income Resubmission</td>
+                <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poinc_resubmission" value="1" [% IF poinc_resubmission_allowed %] checked="checked" [% END %]>
+                <span id="allow_poinc_resubmission_toggle" [% IF poinc_resubmission_allowed %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
+                    <label for="poinc_reasons">REASON:</label>
+                    <select name="poinc_reason" >
+                            <option value="unselected"  [% IF poinc_resubmission_allowed && poinc_resubmission_allowed=="unselected" %] selected [% END %] > Please Select </option>
+                            [% FOREACH option IN poinc_reasons %]
+                                <option value="[% option.index %]" [% IF poinc_resubmission_allowed && poinc_resubmission_allowed==option.index %] selected [% END %] >[% option.reason %]</option>
+                            [% END %]
+                            <option value="other"  [% IF poinc_resubmission_allowed && poinc_resubmission_allowed=="other" %] selected [% END %] > Other </option>
+                    </select>
+                </span>
+            </td>
+        </tr>
+
+        <tr>
+            <td class="label" >Resubmission Counter</td>
+            <td>: [% poinc_resubmission_count %]</td>
+        </tr>
+    [% END %]
+
+    <tr>
+        <td class="label" colspan="2"><hr/></td>
+    </tr>
+
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Documents</td>
+    </tr>
+    <tr>
+        <td class="label">Expired POI documents</td>
+        <td>:
+            <b>[% IF expired_poi_docs %] Yes [% ELSE %] No [% END %]</b>
+        </td>
+    </tr>
+    <tr>
+        <script>
+            function resizeDocumentsWrapper() {
+                const main_title = document.getElementById('main_title');
+                const documents_wrapper = document.getElementById('documents_wrapper');
+                documents_wrapper.style.width = (main_title.offsetWidth - 64) + 'px';
+            }
+
+            (function() {
+                document.addEventListener("DOMContentLoaded", resizeDocumentsWrapper);
+            })();
+        </script>
+        <td colspan="2">
+            <p style="overflow-x: scroll; padding-bottom: 16px" id="documents_wrapper">
+            [%
+                IF show_uploaded_documents;
+                THEN;
+                    '<span style="padding: 4px">Expiry/issue date format: <b>yyyy-mm-dd</b></span>' | none;
+                    show_uploaded_documents | none;
+                ELSE;
+                    "There are no uploaded documents for $client.loginid - $client.full_name";
+                END
+            %]
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Account Opening Reason</td>
+        <td>:
+            [% IF client.is_virtual %]
+                [% client.account_opening_reason %]
+            [% ELSE %]
+                <select name="account_opening_reason">
+                <option value="" [% IF client.account_opening_reason == '' %]selected="selected"[% END %]></option>
+                    [% FOREACH reason IN account_opening_reasons %]
+                        <option value="[% reason %]" [% IF reason == client.account_opening_reason %]selected="selected"[% END %]>[% reason %]</option>
+                    [% END %]
+                </select>
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Communication Addresses</td>
+    </tr>
+    <tr>
+        <td class="label">Tel</td>
+        <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" data-lpignore="true" /> Note: this number's intl. code can be: <b>[% client_phone_country %]</b></td>
+    </tr>
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Secrets</td>
+    </tr>
+    <tr>
+        <td class="label">Secret question</td>
+        <td>: <input type="text" name="secret_question" value="[% client.secret_question %]" size="50" data-lpignore="true" /> [% secret_question %]</td>
+
+    </tr>
+    <tr>
+        <td class="label">Secret answer</td>
+        [% IF can_decode_secret_answer %]
+            <td>: <input type="text" name="secret_answer" value="[% secret_answer %]" size="50" data-lpignore="true" /> [% secret_answer %]</td>
+        [% ELSE %]
+            <td class="error"> Not able to decode secret answer. </td>
+        [% END %]
+    </tr>
+    <tr>
+        <td class="label">IP security</td>
+        <td>: <input type="text" name="restricted_ip_address" value="[% client.restricted_ip_address %]" size="50" data-lpignore="true" /></td>
+    </tr>
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Promotional Code</td>
+    </tr>
+    [% IF currency_type != 'crypto' %]
+        <tr>
+           [% maybe_disabled = promo_code_access ? '' : 'disabled' %]
+           [% maybe_auth_msg = promo_code_access ? '' : '[Staff authorization required]' %]
+
+            <td class="label">Promotional code</td>
+            <td>:
+                <input type="text" name="promo_code" [% maybe_disabled %] value="[% client.promo_code %]" size="20" data-lpignore="true" />
+                <label class="label">Description:</label>[% client.client_promo_code.promotion.description %]
+                <a class="btn btn--primary" href="[% request.url_for('backoffice/promocode_edit.cgi', {promocode=>client.promo_code}) %]">Edit</a>
+                [% IF maybe_auth_msg %]<span class="error"><b>[% maybe_auth_msg %]</b></span>[% END %]
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Claim status</td>
+
+            [%
+                promo_code_options = [
+                    {'value' => 'NOT_CLAIM', 'details' => 'not claimed' }
+                    {'value' => 'CLAIM', 'details' => 'claimed' }
+                    {'value' => 'APPROVAL', 'details' => 'pending approval' }
+                    {'value' => 'REJECT', 'details' => 'rejected' }
+                    {'value' => 'CANCEL', 'details' => 'cancelled' }
+                ]
+            %]
+
+            <td>:
+                <select name="promo_code_status" [% maybe_disabled %]>
+                    [% IF not client.promo_code_status %]
+                        <option value="" selected="selected">no status</option>
+                    [% ELSE %]
+                        <option value="">no status</option>
+                    [% END %]
+
+                    [% FOREACH status = promo_code_options %]
+                        [% IF client.promo_code_status == status.value %]
+                            <option value="[% status.value %]" selected="selected">[% status.details %]</option>
+                        [% ELSE %]
+                            <option value="[% status.value %]">[% status.details %]</option>
+                        [% END %]
+                    [% END %]
+                </select>
+                [% IF maybe_auth_msg %]<span class="error"><b>[% maybe_auth_msg %]</b></span>[% END %]
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Apply date</td>
+            <td>: [% client.promo_code_apply_date %] [% maybe_auth_msg %]
+                [% IF maybe_auth_msg %]<span class="error"><b>[% maybe_auth_msg %]</b></span>[% END %]
+            </td>
+        </tr>
+        <tr>
+            <td class="label"></td>
+            <td><a class="btn btn--primary" href="[% request.url_for('backoffice/f_client_bonus_check.cgi') %]?loginID=[% client.loginid %]">Check/approve bonus</a></td>
+        </tr>
+    [% ELSE %]
+        <tr>
+         <td></td>
+         <td style="padding: 4px 8px;">Not applicable for crypto account</td>
+        </tr>
+    [% END %]
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Marketing</td>
+    </tr>
+    <tr>
+        <td class="label">Source</td>
+        <td>: [% client.source%]</td>
+    </tr>
+
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#WITHDRAWAL VIA PAYMENT AGENT</td>
+    </tr>
+    <tr>
+      <td class="label">
+        <input type="checkbox" name="pa_withdrawal_explicitly_allowed" id="chk_pa_withdrawal_explicitly_allowed" value="1" [% IF cashier_allow_payment_agent_status %]checked[% END %]/>
+      </td>
+       <td><label for="chk_pa_withdrawal_explicitly_allowed">Check this to explicitly allow payment agent withdrawal for the client that deposited through external cashier like the premier cashier.</label></td>
+    </tr>
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Misc</td>
+    </tr>
+    <tr>
+        <td class="label">Latest environment</td>
+        <td>: [% client.latest_environment %]</td>
+    </tr>
+    <tr>
+        <td class="label">Date joined</td>
+        <td>: [% client.date_joined %]<td>
+    </tr>
+    [% IF show_funds_message %]
+        <tr>
+            <td class="label"><input type="checkbox" [% IF ukgc_funds_status %]checked[% END %] disabled="disabled"/></td>
+            <td>The client acknowledges the funds level of protection are: medium</td>
+        </tr>
+    [% END %]
+    [% IF show_tnc_status %]
+        <tr>
+            <td class="label top">T&C acceptance</td>
+            <td style='display:inline-flex;'>:&nbsp;<table class="collapsed border">[% FOR brand IN tnc_versions.keys.sort %]
+                [% version = tnc_versions.$brand %]
+                <tr><td>[% brand %] ([% version %])</td><td>[% IF tnc_status.$brand.version == version %]<b>Yes</b> at [% tnc_status.$brand.stamp %][% ELSE %]<b>No </b> ([% IF tnc_status.$brand.version %]Bound by [% tnc_status.$brand.version %][% ELSE %]None[% END %])[% END %]</td></tr>
+            [% END %]
+            </table></td>
+        </tr>
+    [% END %]
+    [% IF show_risk_approval %]
+        <tr>
+            <td class="label"><input type="checkbox" [% IF financial_risk_status %]checked[% END %] disabled="disabled"/></td>
+            <td>Client acknowledges financial risk?</td>
+        </tr>
+    [% END %]
+    [% IF crs_tin_information %]
+        <tr>
+            <td class="label"><input type="checkbox" checked disabled="disabled"/></td>
+            <td>Client confirmed tax information at [% crs_tin_information %]</td>
+        </tr>
+    [% END %]
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Client Categorization</td>
+    </tr>
+    [% IF show_allow_professional_client %]
+        <tr>
+            <td class="label">
+                <input type="radio" name="client_categorization" value="elective_professional" [% IF professional_status == 'Approved' %]checked[% END %]/>
+            </td>
+            <td>Mark client as an Elective Professional investor</td>
+        </tr>
+        <tr>
+            <td class="label">
+                <input type="radio" name="client_categorization" value="per_se_professional" [% IF is_per_se_professional == 1 %]checked[% END %]/>
+            </td>
+            <td>Mark client as a Per Se Professional investor</td>
+        </tr>
+            <td class="label">
+                <input type="radio" name="client_categorization" value="retail" [% IF professional_status != 'Approved' && is_per_se_professional != 1 %]checked[% END %]/>
+            </td>
+            <td> Mark client as a Retail </td>
+        </tr>
+        <tr>
+            <td class="label">
+                <input type="radio" name="client_categorization" value="counterparty" [% IF eligible_counterparty == 1 %]checked[% END %]/>
+            </td>
+            <td> Mark client as a Eligible Counterparty </td>
+        </tr>
+        <tr>
+            <td class="label">
+                <input type="radio" name="client_categorization" value="partner" [% IF is_partner == 1 %]checked[% END %]/>
+            </td>
+            <td> Mark client as a Partner </td>
+        </tr>
+    [% ELSE %]
+        <tr>
+            <td class="label">Facility is not available</td>
+        </tr>
+    [% END %]
+</table>
+<script type="text/javascript" language="javascript">
+function get_checked_files() {
+    var checkboxes = document.getElementsByClassName('files_checkbox');
+    var doc_array = [];
+    for (var i=0, n=checkboxes.length;i<n;i++)
+    {
+        if (checkboxes[i].checked)
+        {
+            let match = checkboxes[i].value.match(/([0-9]+)-([A-Z0-9]+)-(.+)/);
+            doc_array.push(match[3]);
+        }
+    }
+    if (doc_array.length > 0){
+        return confirm('Are you sure you want to delete:\n\n' + doc_array.join('\n'));
+    } else {
+        alert('No files selected');
+        return false;
+    }
+}
+
+function get_issue_date(doc_id) {
+    return document.getElementsByName('issue_date_' + doc_id)[0].value;
+}
+
+function get_issuance(doc_id) {
+    return document.getElementsByName('issuance_' + doc_id)[0].value;
+}
+
+function get_to_verify_files() {
+    const checkboxes = document.getElementsByClassName('files_checkbox');
+
+    const doc_id = [];
+    const doc_array = [];
+    const doc_is_poa = [];
+    
+    for (var i=0, n=checkboxes.length;i<n;i++)
+    {
+        if (checkboxes[i].checked)
+        {
+            let match = checkboxes[i].value.match(/([0-9]+)-([A-Z0-9]+)-(.+)/);
+            doc_id.push(match[1]);
+            doc_array.push(match[3]);
+            
+            doc_is_poa.push(checkboxes[i].getAttribute('data-is-poa'));
+        }
+    }
+
+    if (doc_array.length > 0){
+        for (var i=0, n=doc_array.length;i<n;i++) {
+            if (doc_is_poa[i] == '1') {
+                let date = get_issue_date(doc_id[i]);
+                let issuance = get_issuance(doc_id[i]);
+
+                let validation = validate_issuance(date, issuance);
+
+                if (!validation) {
+                    return false;
+                }
+            }
+        }
+        return confirm('Are you sure you want to verify:\n\n' + doc_array.join('\n') + '\n\nVerified documents will be taken into consideration for authentication checkups (including expiry)');
+    } else {
+        alert('No files selected');
+        return false;
+    }
+}
+
+function validate_issuance(date, issuance) {
+    if ((!date || date.length == 0) && issuance === 'issuance_date'){
+        alert("Issue date is required.\n");
+        return false;
+    }
+    else if (date) {
+        let issue_date = new Date(date);
+        if(issue_date == 'Invalid Date'){
+            alert("Invalid issue date. Please match the requested format.\n");
+            return false;
+        }  
+        else if(issue_date > new Date()){
+            alert("Issue date must be a past date.\n");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function get_to_reject_files() {
+    var checkboxes = document.getElementsByClassName('files_checkbox');
+    var doc_array = [];
+    for (var i=0, n=checkboxes.length;i<n;i++)
+    {
+        if (checkboxes[i].checked)
+        {
+            let match = checkboxes[i].value.match(/([0-9]+)-([A-Z0-9]+)-(.+)/);
+            doc_array.push(match[3]);
+        }
+    }
+    if (doc_array.length > 0){
+        return confirm('Are you sure you want to reject:\n\n' + doc_array.join('\n') + '\n\nRejected documents will not be taken into consideration for authentication checkups (including expiry)');
+    } else {
+        alert('No files selected');
+        return false;
+    }
+}
+
+function get_to_address_mismatch_files() {
+    const checkboxes = document.getElementsByClassName('files_checkbox');
+    const doc_array = [];
+    for (var i=0, n=checkboxes.length;i<n;i++)
+    {
+        if (checkboxes[i].checked)
+        {
+            let match = checkboxes[i].value.match(/([0-9]+)-([A-Z0-9]+)-(.+)/);
+            doc_array.push(match[3]);
+            let date = get_issue_date(match[1]);
+            let issuance = get_issuance(match[1]);
+
+            let validation = validate_issuance(date, issuance);
+
+            if (!validation) {
+                return false;
+            }
+        }
+    }
+    if (doc_array.length > 0){
+        return confirm('Are you sure you want to mark as address mismatch and verify:\n\n' + doc_array.join('\n') + '\n\nVerified documents will be taken into consideration for authentication checkups (including issuance)');
+    } else {
+        alert('No files selected');
+        return false;
+    }
+}
+
+function residence_change(sel) {
+
+    var disallow_residence_change = {
+        country:[
+        [% FOREACH field IN disallow_residence_change %]
+            "[% field %]",
+        [% END %]
+        ],
+    };
+    
+    var e = document.getElementById("original_residence");
+    var original_residence = e.text;
+
+    var new_residence = sel.options[sel.selectedIndex].text;
+
+    if (disallow_residence_change.country.includes(new_residence)){
+        alert("Change of residence to " + new_residence + " is not allowed");
+        sel.selectedIndex = e.index;
+    }else if (!confirm("Client's original residence is " + original_residence + "\n\nAre you sure you want to change to " + new_residence + "?")) {
+        // Always return to the original residence
+        sel.selectedIndex = e.index;
+    }
+}
+
+function update_age_verification(auth_status) {
+    var age_verification_status = [% IF client_age_verified %] 'yes' [% ELSE %] 'no' [% END %];
+    var age_verification_element = document.getElementById('age_verification');
+    age_verification_element.value = (auth_status == 'ID_DOCUMENT' || auth_status == 'ID_NOTARIZED' || auth_status == 'ID_ONLINE' || auth_status == 'ID_PO_BOX') ? 'yes' : age_verification_status;
+
+    if ((auth_status == 'IDV_PHOTO' || auth_status == 'IDV') && [% is_idv_validated ? 0 : 1 %]){
+        alert("Client has no IDV POI verified! \nShould not grant Authenticated with IDV");
+        return false
+    }
+
+    if (age_verification_element.value !== age_verification_status) {
+        age_verification_element.classList.add('data-changed');
+    }
+    else {
+        age_verification_element.classList.remove('data-changed');
+    }
+}
+
+function toggle_checkbox(checkbox) {
+    if (checkbox.checked){
+         document.getElementById(checkbox.name + "_toggle").style.display = "inline";
+           } else {
+        document.getElementById(checkbox.name + "_toggle").style.display = "none";
+    }
+}
+
+function kyc_reason_changed() {
+    document.getElementsByName("kyc_email_checkbox")[0].disabled = false;
+    let poi_selection = document.getElementsByName("poi_reason")[0].value;
+    let poa_selection = document.getElementsByName("poa_reason")[0].value;
+     if ((poi_selection == "other" || poi_selection == "unselected")
+        && (poa_selection == "other" || poa_selection == "unselected")) {
+     document.getElementsByName("kyc_email_checkbox")[0].checked = false;
+     document.getElementsByName("kyc_email_checkbox")[0].disabled = true;
+    }
+}
+
+\$(document).ready(function() {
+
+    [% IF  onfido_resubmission_counter && onfido_submissions_left == 0 %]
+        \$('input[name="allow_onfido_resubmission"]').attr('disabled', true);
+    [% ELSE %]
+        \$('input[name="allow_onfido_resubmission"]').removeAttr("disabled");
+    [% END %]
+  });
+
+</script>
+
+<script>
+    // snatch the url and display text from the documents link section
+    const poolinks = document.querySelectorAll('[data-poo-doc-id]');
+
+    poolinks.forEach(link => {
+        const id = link.getAttribute('data-poo-doc-id');
+        const doclink = document.querySelector('[data-document-id="' + id + '"]');
+
+        if (doclink) {
+            link.innerHTML = doclink.innerHTML;
+            link.href = doclink.getAttribute('href');
+        } else {
+            link.parentNode.removeChild(link); // doc is still uploading or some error occured on the upload process
+        }
+    }); 
+</script>
+
+<script>
+function selectAll () {
+ var master = document.querySelector('.check1');
+ if (master.checked) {
+         var inputs = document.querySelectorAll('.check2');
+        for (var i = 0; i < inputs.length; i++) {
+            inputs[i].checked = true;
+            inputs[i].classList = 'check2 data-changed';
+        }
+    
+ }
+ else {
+    
+        var inputs = document.querySelectorAll('.check2');
+        for (var i = 0; i < inputs.length; i++) {
+            inputs[i].checked = false;
+        }
+ }
+}
+  
+
+</script>

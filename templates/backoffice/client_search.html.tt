@@ -1,0 +1,72 @@
+<body>
+<div style="text-align: center;">
+<br><br>
+<form action="[% url %]" method="post">
+        <input type="text" size="14" name="partialfname" placeholder="First Name" onfocus="this.select()" value="[% params.first_name %]" data-lpignore="true" />
+        <input type="text" size="14" name="partiallname" placeholder="Last Name" onfocus="this.select()" value="[% params.last_name %]" data-lpignore="true" />
+        <input type="text" size="20" name="partialemail" placeholder="Email" onfocus="this.select()" value="[% params.email %]" data-lpignore="true" />
+        <input type="text" size="20" name="phone" placeholder="phone" onfocus="this.select()" value="[% params.phone %]" data-lpignore="true" />
+        <input type="text" size="20" name="date_of_birth" placeholder="DOB YYYY-MM-DD" onfocus="this.select()" value="[% params.date_of_birth %]" class="datepick" pattern="^\d{4}-\d{2}-\d{2}\$" data-lpignore="true" />
+        <input type="text" size="20" name="broker" placeholder="Broker" onfocus="this.select()" value="[% broker %]" data-lpignore="true" />
+        <input type="submit" class="btn btn--primary" value="Search" />
+</form>
+<p>Note: For best results, enter either only the Client's first name or last name</p>
+
+
+[% IF results.size %]
+<table class="center alternate hover" width="90%">
+    <thead>
+        <tr>
+            <th align="left" >Login ID</th>
+            <th>Salutation</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Currency</th>
+            <th>Account Status</th>
+            <th>Last Login</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Citizen</th>
+            <th>Date Joined</th>
+            <th>DOB</th>
+        </tr>
+    </thead>
+    <tbody>
+    [% FOR result = results %]
+        <tr>
+            <td align="left" ><a class="link" href="[% request.url_for( 'backoffice/f_clientloginid_edit.cgi', {loginID => result.loginid}) %]">[% result.loginid %]</td>
+            <td>[% result.salutation %]</td>
+            <td>[% result.first_name %]</td>
+            <td>[% result.last_name %]</td>
+            <td>[% result.email %]</td>
+            <td>[% result.currency_code %]</td>
+            <td>[% result.status_code %]</td>
+            <td align="center">[% result.last_login || '---' %] </td>
+            <td>[% result.phone %]</td>
+            <td>
+                [% IF result.address_line_1 %] [% result.address_line_1 %] </br> [% END %]
+                [% IF result.address_line_2 %] [% result.address_line_2 %] </br> [% END %]
+                [% IF result.address_city %] [% result.address_city %] </br> [% END %]
+                [% IF result.address_state %] [% result.address_state %] [% END %]
+            </td>
+            <td>[% result.citizen %]</td>
+            <td>[% result.date_joined %]</td>
+            <td>[% result.date_of_birth %]</td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+[% ELSE %]
+<p>No match</p>
+[% END %]
+
+</div>
+
+<script type="text/javascript" language="javascript">
+\$(document).ready(function() {
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+});
+</script>
+
+</body>

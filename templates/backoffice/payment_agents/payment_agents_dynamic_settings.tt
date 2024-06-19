@@ -1,0 +1,57 @@
+[% IF message %]<p class="success">[% message %]</p><hr/>[% END %]
+[% IF error %]<p class="error">[% error %]</p><hr/>[% END %]
+
+<form action="[% request.url_for('backoffice/payment_agents_dynamic_settings.cgi') %]" method="post">
+    <h3>Configuration per Country.</h3>
+    <p>Each country has a specific configuration, otherwise fallbacks to its default.</p>
+    <table class="small alternate">
+        <thead>
+            <tr>
+                <th>Country</th>
+                <th>Country Code</th>
+
+                [% FOREACH key IN per_country_keys.keys.sort %]
+                    <th>[% per_country_keys.$key.name %]</th>
+                [% END %]
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Default</td>
+                <td>&nbsp;</td>
+
+                [% FOREACH key IN per_country_keys.keys.sort %]
+                    <td><input step="0.01" type="[% per_country_keys.$key.type %]" name="[% key %][default]" value="[% default_country_settings.$key %]" /></td>
+                [% END %]
+                <td></td>
+            </tr>
+
+            [% FOREACH country IN per_country_settings.keys.sort %]
+                <tr>
+                    <td>[% per_country_settings.$country.country %]</td>
+                    <td>[% country %]</td>
+
+                    [% FOREACH key IN per_country_keys.keys.sort %]
+                        <td><input step="0.01" type="[% per_country_keys.$key.type %]" name="[% key %][[% country %]]" value="[% per_country_settings.$country.settings.$key %]" /></td>
+                    [% END %]
+                    <td><input type="checkbox" name="delete[[% country %]]" value="1"> Delete</td>
+                </tr>         
+            [% END %]
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>Add Country</td>
+                <td><input type="text" name="new" value="" maxlength="2" /></td>
+
+                [% FOREACH key IN per_country_keys.keys.sort %]
+                    <td><input step="0.01" type="[% per_country_keys.$key.type %]" name="[% key %][new]" value="" /></td>
+                [% END %]
+            </tr>
+            <tr>
+                <td colspan="2"><button class="btn btn--primary" value="1" name="save">Save</button></td>
+                <td style="text-align:right;" colspan="2"><a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=payment_agents.initial_deposit_per_country&referrer=payment_agents_dynamic_settings.cgi">See history of changes</a></td>
+            </tr>
+        </tfoot>
+    </table>
+    <input type="hidden" name="revision" value="[% revision %]"/>
+</form>

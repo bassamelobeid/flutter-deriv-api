@@ -1,0 +1,9 @@
+<link rel="stylesheet" href="[% request.url_for('css/external/jbpivot.min.css', undef, undef, {internal_static => 1}) | none %]">
+<div id="pivot1"></div>
+<script type="text/javascript">
+        \$(function(){
+      var pivot = [% pivot | none %];
+      pivot.formatter = function (V,f) { var res=0; if (typeof(V) === "number") { res = virgule(Math.round(V)); } return res; };
+      \$("#pivot1").jbPivot(pivot)
+      });
+</script>

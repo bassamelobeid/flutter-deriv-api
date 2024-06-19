@@ -1,0 +1,11 @@
+<p>
+    DCC: (single click to copy)<br>
+        <div class="dcc-code copy-on-click">[% code %]</div>
+        <script>initCopyText()</script>
+<br>
+    This code is valid for 1 hour from now: UTC 
+    [% timestamp %]
+<br>
+Creator: [% clerk %]
+<br>
+</p>

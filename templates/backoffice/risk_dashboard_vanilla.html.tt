@@ -1,0 +1,101 @@
+<h2>Open Positions Scenario Analysis at : [% at_date %]</h2>
+<h2>[% error_message %]</h2>
+<form method="POST">
+    <label for="at_date">At Date (yyyy-mm-dd hh:mm:ss) :</label>
+    <input type="text" id="at_date" name="at_date">
+    <input type="submit" name="submit" value="Submit" class="btn btn--primary" >
+</form>
+
+<div id="rd-tabs" class="scrollable">
+    <ul class="tab">
+        [% FOREACH symbol IN data.keys %]
+            <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, '[% symbol %]')">[% symbol %]</a></li>
+        [% END %]
+    </ul>
+
+    [% FOREACH symbol IN data.keys %]
+        <div id="[% symbol %]" class="tabcontent">
+            [% FOREACH metric IN data.$symbol.keys.sort %]
+                [% IF metric != 'spot_scenario' %]
+                    <h4>[% metric %]</h4>
+                    <table class="small border hover alternate full-width">
+                            <tr>
+                                <th>Price Changes Scenario</th>
+                                [% FOREACH spot_price_change IN data.$symbol.spot_scenario %]
+                                    <th>[% spot_price_change %]</th>
+                                [% END %]
+                            </tr>
+                        [% FOREACH duration IN data.$symbol.$metric.keys.sort %]
+                            <tr>
+                                <td id="td-hoverable" title="[% data.$symbol.$metric.$duration.contract_ids %]">[% duration %]</td>
+                                [% FOREACH element_value IN data.$symbol.$metric.$duration.values %]
+                                    <td>[% element_value %]</td>
+                                [% END %]
+                            </tr>
+                        [% END %]
+                    </table>
+                [% END %]
+            [% END %]
+        </div>
+    [% END %]
+
+</div>
+
+<style type="text/css">
+
+/* Hate to do this but */
+ul.tab {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+ul.tab li {float: left;}
+
+ul.tab li a {
+    display: inline-block;
+    color: black;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+    transition: 0.3s;
+    font-size: 17px;
+}
+
+ul.tab li a:hover {background-color: #ddd;}
+
+ul.tab li a:focus, .active {background-color: #ccc;}
+
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+#td-hoverable:hover {
+  background-color: #ddd;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+</style>
+<script>
+function openTab(evt, keyName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(keyName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
+</script>
+

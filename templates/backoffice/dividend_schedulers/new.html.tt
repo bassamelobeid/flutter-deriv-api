@@ -1,0 +1,156 @@
+<p>MT5</p>
+
+<form id='dividend_scheduler_form'>
+    <table>
+        <tr>
+            <td>
+                <label for="platform_type">Platform Type</label>
+                <input type="text" name="platform_type" value="mt5" readonly/>
+            </td>
+            <td>
+                <label for="server_name">Servers</label>
+                <input type="text" name="server_name" value="p01_ts01,p02_ts01"/>
+                <label>To apply dividends on MT5 and DerivEZ trade servers</label>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="symbol">Symbol</label>
+                <select name="symbol" id="symbol" onchange="setSymbolCurrency(this)" data-lpignore="true">
+                    [% FOREACH mt5_symbol IN mt5_symbols.sort %]
+                        <option value='[% mt5_symbol %]'>[% mt5_symbol %]</option>
+                    [% END %]
+                </select>
+            </td>
+            <td>
+                <label for="currency">Currency</label>
+                <select name="currency" id="currency" data-lpignore="true">
+                    [% FOREACH payout_currency IN payout_currencies.sort %]
+                        <option value='[% payout_currency %]'>[% payout_currency %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="long_dividend">Long Dividend</label>
+                <input type="text" name="long_dividend" data-lpignore="true"/>
+            </td>
+            <td>
+                <label for="short_dividend">Short Dividend</label>
+                <input type="text" name="short_dividend" data-lpignore="true"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="long_tax">Long Tax(%)</label>
+                <input type="text" name="long_tax" data-lpignore="true" placeholder="e.g (0~100)"/>
+            </td>
+            <td>
+                <label for="short_tax">Short Tax(%)</label>
+                <input type="text" name="short_tax" data-lpignore="true" placeholder="e.g (0~100)"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="dividend_deal_comment">Comment</label>
+                <input type="text" name="dividend_deal_comment" data-lpignore="true"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="applied_datetime">Applied date and time(GMT)</label>
+                <input type="datetime-local" name="applied_datetime" data-lpignore="true" style="color:black;"/>
+            </td>
+            <td>
+                <input type="checkbox" name="skip_holiday_check" id="skip_holiday_check" data-lpignore="true"/>
+                <label for="skip_holiday_check">Skip holiday <b style="color: red;">(Warning: Only check this if you are really sure!!)</b></label>
+            </td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="saveDividendScheduler()" value="Save"></td>
+            <td class="form_result"></td>
+        </tr>
+    </table>
+</form>
+
+<script>
+    var dividend_scheduler_controller_url = "[% dividend_scheduler_controller_url | none %]";
+
+    function saveDividendScheduler() {
+        var el = \$('#dividend_scheduler_form');
+        var result = el.find('.form_result');
+
+        var platform_type = el.find('input[name="platform_type"]').val();
+        var server_name = el.find('input[name="server_name"]').val();
+        var symbol = \$('#symbol').val();
+        var currency = \$('#currency').val();
+        var long_dividend = el.find('input[name="long_dividend"]').val();
+        var short_dividend = el.find('input[name="short_dividend"]').val();
+        var long_tax = el.find('input[name="long_tax"]').val();
+        var short_tax = el.find('input[name="short_tax"]').val();
+        var dividend_deal_comment = el.find('input[name="dividend_deal_comment"]').val();
+        var applied_datetime = el.find('input[name="applied_datetime"]').val();
+        var skip_holiday_check_temp = \$('#skip_holiday_check');
+        var skip_holiday_check;
+
+        if (skip_holiday_check_temp.is(':checked')) {
+            skip_holiday_check = '1';
+        }
+        else {
+            skip_holiday_check = '0';
+        }
+
+        result.text('processing ...').css('color', 'black');
+        var data = {
+            create_dividend_scheduler: 1,
+            platform_type: platform_type,
+            server_name: server_name,
+            symbol: symbol,
+            currency: currency,
+            long_dividend: long_dividend.toString(),
+            short_dividend: short_dividend.toString(),
+            long_tax: long_tax.toString(),
+            short_tax: short_tax.toString(),
+            dividend_deal_comment: dividend_deal_comment,
+            applied_datetime: applied_datetime,
+            skip_holiday_check: skip_holiday_check,
+        };
+
+        \$.ajax({
+            url: dividend_scheduler_controller_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    result.text('saved').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+
+    function setSymbolCurrency(symbol) {
+        var el = \$('#dividend_scheduler_form');
+        var currency = \$('#currency');
+
+        var data = {
+            set_currency_symbol: 1,
+            symbol: symbol.value,
+        };
+
+        \$.ajax({
+            url: dividend_scheduler_controller_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    currency.val(config.success);
+                }
+            }
+        });
+    }
+</script>

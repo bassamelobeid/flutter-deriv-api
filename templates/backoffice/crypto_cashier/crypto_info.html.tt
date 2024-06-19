@@ -1,0 +1,24 @@
+[% BLOCK info_row %]
+    <tr>
+        <th class="right" style="text-transform: none;">[% name %]</th>
+        <td>
+            [% value || 'Not specified' %] [% value and show_currency ? currency : '' %]
+        </td>
+    </tr>
+[% END %]
+
+<table class="border">
+    <tr>
+        <th colspan="2" style="text-transform: none;">
+            [% currency %] Info
+            [% IF is_external %]
+                <span style="font-size: 85%; display: inline-block; padding-left: 20px">(via 3rd-party Payment Processor)</span>
+            [% END %]
+        </th>
+    </tr>
+    [% INCLUDE info_row name = 'Main Address',                         value = main_address %]
+    [% INCLUDE info_row name = 'Exchange Rate (' _ currency _ '/USD)', value = exchange_rate %]
+    [% INCLUDE info_row name = 'Min Sweep Limit',                      value = sweep_limit_min,       show_currency = 1 %]
+    [% INCLUDE info_row name = 'Max Sweep Limit',                      value = sweep_limit_max,       show_currency = 1 %]
+    [% INCLUDE info_row name = 'Sweep Reserve Limit',                  value = sweep_reserve_balance, show_currency = 1 %]
+</table>

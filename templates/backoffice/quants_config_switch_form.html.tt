@@ -1,0 +1,52 @@
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table id='config_status_form'>
+    [% IF old_config %]
+        <p>Not the latest copy of app config. Please refresh this page!</p>
+    [% END %]
+    <thead>
+    <tr>
+        <th>Config Name</th>
+        <th>Status</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH config IN config_status %]
+        <tr class="[% config.key %]">
+            <td>[% config.display_name %]</td>
+            <td class='config_status'>[% IF config.status == 1 %] ON [% ELSE %] OFF [% END %]</td>
+            <td class='config_button'>[% IF config.status == 1%] <button class="btn btn--secondary" onClick="UpdateConfigStatus('[% config.key %]', 0)">Turn off</button> [% ELSE %] <button class="btn btn--primary" onClick="UpdateConfigStatus('[% config.key %]', 1)">Turn on</button> [% END %]</td>
+            <td class='result'></td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+</fieldset>
+
+<script>
+    function UpdateConfigStatus(config_type, status){
+        var el = \$('table#config_status_form tr.'+config_type);
+        var result = el.find('td.result');
+        result.text('processing ...');
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                update_config_switch: 1,
+                limit_type: config_type,
+                limit_status: status,
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    var status = config.status == 1 ? 'ON' : 'OFF';
+                    el.find('td.config_status').text(status);
+                    var button = config.status == 1 ? '<button class="btn btn--secondary" onClick="UpdateConfigStatus(\''+config_type+'\', 0)">Turn off</button>' : '<button class="btn btn--primary" onClick="UpdateConfigStatus(\''+config_type+'\', 1)">Turn on</button>';
+                    el.find('td.config_button').html(button);
+                    result.text('config updated').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+</script>

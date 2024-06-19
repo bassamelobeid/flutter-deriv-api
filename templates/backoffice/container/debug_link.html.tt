@@ -1,0 +1,15 @@
+<div id="pricing_details_popup" class="draggable invisible">
+    <div id="[% bet_id %]">
+        <ul>
+            [% FOREACH tab = tabs %]
+            <li><a[% IF tab.class %] class="[% tab.class %]"[% END %] href="#[% bet_id %][% tab.url | none %]">[% tab.label %]</a></li>
+            [% END %]
+        </ul>
+            [% FOREACH tab = tabs %]
+        <div id="[% bet_id %][% tab.url | none %]">[% tab.content | none %]</div>
+            [% END %]
+    </div>
+    <script> \$(function() { \$( "#[% bet_id %]" ).tabs(); }); </script>
+    <a class="link centerText pricing-details-close" href="#">[close]</a>
+</div>
+<a class="centerText pricing-details link" style="bottom:10px;clear:both;display:block;font-size:10px;position:relative;" href="#">[Pricing details]</a>

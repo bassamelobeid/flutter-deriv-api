@@ -1,0 +1,47 @@
+[% total_in = 0; total_value_now = 0; %]
+[% IF open_bets.size == 0 %]
+    <div class="grd-grid-12">
+        <p>No open positions.</p>
+    </div>
+[% ELSE %]
+    <h3>Open positions:</h3>
+    <table id="portfolio-table" class="hover alternate">
+        <thead>
+            <tr>
+                <th>Ref.</th>
+                <th>Contract Details</th>
+                <th class="right-aligned">Buy Price</th>
+                <th class="right-aligned">Sale Price</th>
+            </tr>
+        </thead>
+        <tbody>
+        [% FOREACH open_bet IN open_bets %]
+            [%
+                total_in = total_in + (open_bet.buy_price || 0);
+                total_value_now = total_value_now + (open_bet.sale_price || 0);
+            %]
+            <tr>
+                <td class="center">
+                    <a class="link" href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency, purchase_time => open_bet.purchase_time, loginid => loginid, limit_order => open_bet.limit_order, transaction_id => open_bet.buy_transaction_id}) | none %]">
+                        [% open_bet.buy_transaction_id %]
+                    </a>
+                </td>
+                <td>[% open_bet.description %]</td>
+                <td class="right-aligned">
+                    [% currency %] <strong>[% formatnumber('price', currency, open_bet.buy_price) | none %]</strong>
+                </td>
+                <td class="right-aligned">
+                    [% currency %] [% formatnumber('price', currency, open_bet.sale_price) | none %]
+                </td>
+            </tr>
+        [% END %]
+        </tbody>
+    </table>
+    <br />
+[% END %]
+
+<table class="border">
+    <tr><th class="right">Balance</th><td>[% currency %] [% formatnumber('amount', currency, balance) | none %]</td></tr>
+    <tr><th class="right">Cost of open positions</th><td>[% currency %] [% formatnumber('amount', currency, total_in) | none %]</td></tr>
+    <tr><th class="right">Value of open positions</th><td>[% currency %] [% formatnumber('amount', currency, total_value_now) | none %]</td></tr>
+</table>

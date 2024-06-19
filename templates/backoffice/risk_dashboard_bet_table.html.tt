@@ -1,0 +1,22 @@
+<table>
+    <tr>
+        <th>Bet ref</th>
+        <th colspan=2>Buy Price</th>
+        <th colspan=2>Model Value</th>
+        <th>% change</th>
+        <th>Expires In</th>
+        <th colspan=2>Payout</th>
+        <th>Login ID</th>
+    </tr>
+    [% FOREACH bet IN bets %]
+    <tr class="[% bet.loginid %]">
+        <td><a title="[% bet.longcode %]" href="[% link_to_pnl(bet.loginid) %]">[% bet.ref %]</a></td>
+        <td>[% bet.currency_code %]</td><td>[% bet.buy_price %]</td>
+        <td>[% bet.currency_code %]</td><td>[% bet.market_price %]</td>
+        <td>[% bet.percentage_change %]</td>
+        <td>[% bet.expires_in %]</td>
+        <td>[% bet.currency_code %]</td><td>[% bet.payout_price %]</td>
+        <td><a title="[% titlfy(bet) %]" href="[% link_to_pnl(bet.loginid) %]">[% bet.loginid %]</a></td>
+    </tr>
+    [% END %]
+</table>

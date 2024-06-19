@@ -1,0 +1,31 @@
+<h3>Confirm a TRANSFER BETWEEN ACCOUNTS</h3>
+
+<form action="[%request.url_for('backoffice/f_manager_mt5_autotransfer.cgi') | none %]" method="POST" class="bo_form_with_files">
+
+<div class="row">
+    <label>FROM MT5:</label>
+    <input type="text" size="50" name="mt5_accounts" placeholder="[Example: MTR123456, MTR654321] (comma separate accounts)" data-lpignore="true" />
+</div>
+
+<div class="row">
+    <label>Control code:</label>
+    <input type="text" size="29" name="DCcode" placeholder="required" data-lpignore="true" />
+</div>
+
+<div class="row">
+    <label>Custom Transfer Amount:</label>
+    <input type="text" size="20" name="custom_transfer_amount" placeholder="optional" data-lpignore="true" />
+</div>
+
+<div class="row">
+    <label><input type="checkbox" name="skip_validation" value="on" id="skip_validation5" />Override status checks?</label>
+</div>
+
+<div class="row">
+    <label><input type="checkbox" name="skip_archive" value="on" />Skip archive process?</label>
+</div>
+
+<button type="submit" class="btn btn--primary" name="ttype" value="TRANSFER">Confirm transfer</button>
+<input type=reset class="btn btn--secondary" name=Reset>
+
+</form>

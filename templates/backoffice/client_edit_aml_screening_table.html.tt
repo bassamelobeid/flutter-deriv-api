@@ -1,0 +1,111 @@
+<caption>Risk Screen</caption>
+<tr>
+    <td colspan=2>
+        <table class="collapsed hover alternate">
+            <tr>
+                <th>INTERFACE REFERENCE</th>
+                <th>STATUS</th>
+                <th>UPDATE DATE</th>
+                <th>DATE ADDED</th>
+                <th>SCREENING REASON (CUSTOM TEXT)</th>
+
+                <th>Potential Matches</th>
+                <th>Discounted Matches</th>
+                <th>Flagged Matches</th>
+                <th>Flags</th>
+            </tr>
+            [% IF risk_screen %]
+            <tr>
+                <td> 
+                [% IF risk_screen.client_entity_id %] 
+                    <a href="https://batch.riskscreen.com/entity/view/[% risk_screen.client_entity_id %]">[% risk_screen.interface_reference %]</a>
+                [% ELSE %]
+                    [% risk_screen.interface_reference %]
+                [% END %]
+                </td>
+                <td>[% risk_screen.status %]</td>
+                <td>[% risk_screen.date_updated %]</td>
+                <td>[% risk_screen.date_added %]</td>
+                <td>[% risk_screen.custom_text1 %]</td>
+
+                <td>[% IF risk_screen.match_potential_volume %] [% risk_screen.match_potential_volume %][% END %]</td>
+                <td>[% IF risk_screen.match_discounted_volume %] [% risk_screen.match_discounted_volume %][% END %]</td>
+                <td>[% IF risk_screen.match_flagged_volume %] [% risk_screen.match_flagged_volume %] [% END %]</td>
+                <td>[% IF risk_screen.flags_str %] [% risk_screen.flags_str %] [% END %]</td>
+            </tr>
+            [% ELSE %]
+            <tr><td colspan='9' class='center'>No AML records found for RiskScreen.</td></tr>
+            [% END %]
+        </table>
+    </td>
+</tr>
+
+
+<caption>LexisNexis</caption>
+
+<tr>
+    <td colspan=2>
+        <table class="collapsed hover alternate">
+            <tr>
+                <th>Client Login ID</th>
+                <th>Alert STATUS</th>
+                <th>UPDATE DATE</th>
+                <th>DATE ADDED</th>
+                <th>SCREENING REASON (note)</th>
+
+                <th>Alert Id</th>
+
+            </tr>
+            [% IF lexis_nexis %]
+            <tr>
+                <td>[% lexis_nexis.client_loginid %]</td>
+                <td>[% lexis_nexis.alert_status %]</td>
+                <td>[% lexis_nexis.date_updated %]</td>
+                <td>[% lexis_nexis.date_added %]</td>
+                <td>[% lexis_nexis.note %]</td>
+
+                <td>[% IF lexis_nexis.alert_id %] [% lexis_nexis.alert_id %][% END %]</td>
+
+            </tr>
+            [% ELSE %]
+            <tr><td colspan='9' class='center'>No AML records found for LexisNexis.</td></tr>
+            [% END %]
+        </table>
+    </td>
+</tr>
+
+<caption>Sanction Screening Result</caption>
+
+<tr>
+    <td colspan=2>
+        <table class="collapsed hover alternate">
+            <tr>
+                <th>Client Login ID</th>
+                <th>Result </th>
+                <th>UPDATE DATE</th>
+                <th>DATE ADDED</th>
+                <th>Type </th>
+
+
+            </tr>
+            [% IF sanction_check.type %]
+            <tr>
+                <td>[% sanction_check.client_loginid %]</td>
+                <td>[% sanction_check.result %]</td>
+                <td>[% sanction_check.tstmp %]</td>
+                [% IF sanction_check.date_added != 'now()'%]
+                    <td>[% sanction_check.date_added %]</td>
+                [% ELSE %]
+                    <td> NILL </td>
+                [% END %]    
+                <td>[% sanction_check.type %]</td>
+
+            </tr>
+            [% ELSE %]
+            <tr><td colspan='9' class='center'>No records found for the client in sanctions list.</td></tr>
+            [% END %]
+        </table>
+    </td>
+</tr>
+
+

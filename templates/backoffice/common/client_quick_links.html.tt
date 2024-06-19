@@ -1,0 +1,16 @@
+[%
+    links_info = [
+        { name => 'details',          url => clientedit_url },
+        { name => 'profit',           url => profit_url },
+        { name => 'statement',        url => statement_url },
+        { name => 'Crypto statement', url => crypto_statement_url },
+    ];
+%]
+
+<div class="row btn-group">
+    [% FOREACH link_info IN links_info %]
+        [% IF link_info.url %]
+            <a class="btn btn--secondary" href="[% link_info.url %]">View [% loginid %] [% link_info.name %]</a>
+        [% END %]
+    [% END %]
+</div>

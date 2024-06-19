@@ -1,0 +1,50 @@
+<form id='vanilla_maturity_config'>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table>
+    <tr>
+        <td>Minimum Days: </td>
+        <td><input type="text" name="minimum_days" value="[% existing_config.minimum_days %]" ></input></td>
+    </tr>
+    <tr>
+        <td>Maximum Days: </td>
+        <td><input type="text" name="maximum_days" value="[% existing_config.maximum_days %]"></input></td>
+    </tr>
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveVanillaMaturityConfig()" value="Update Maturity Configuration"></td>
+        <td class="save_vanilla_maturity_config"></td>
+    </tr>
+</table>
+</form>
+
+
+<script>
+var vanilla_upload_url = "[% vanilla_upload_url | none %]";
+
+function SaveVanillaMaturityConfig(){
+
+    var el = \$('#vanilla_maturity_config');
+
+    var result = el.find('.save_vanilla_maturity_config');
+    var minimum_days = el.find('input[name="minimum_days"]').val();
+    var maximum_days = el.find('input[name="maximum_days"]').val();
+
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: vanilla_upload_url,
+        data: {
+            save_vanilla_maturity_config: 1,
+            minimum_days: minimum_days,
+            maximum_days: maximum_days
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('Maturity configuration for vanilla is updated successfully').css('color', 'var(--green-2)');
+            }
+        }
+    });
+}
+</script>

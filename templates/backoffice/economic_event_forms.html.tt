@@ -1,0 +1,97 @@
+
+
+<h2>README</h2>
+<h3>Adding and Remove an Economic Event</h3>
+<p>Please follow these steps to add a scheduled economic event:</p>
+<ul>
+    <li><b>Symbol:</b> Symbol should be the currency symbol that the event has an impact on.</li>
+    <li><b>Announcement DateTime:</b> The release date of the event.</li>
+    <li><b>Annoucement Name:</b> The name of the event. This is important please copy and paste to avoid typo.</li>
+</ul>
+
+<p>Once completed, click <b>Save</b> and wait until a message shows up next to the <b>Save</b> button with ID of the economic event. The added economic event would be displayed at the table below. The <b>Binary's Category</b> column shows the impact and duration of impact of the event on the currency pairs.</p>
+
+<p>If you wish to delete an economic event, click on the <b>Delete</b> button. The event will be removed from the table and it will be listed under the <b>Deleted Economic Events</b> table. To restore the deleted event, Click on the <b>Restore</b> button.</p>
+
+<h3>Economic Event Factors</h3>
+<ul>
+    <li><b>vol_change:</b> This is represent the estimated volatiltiy change after and before economic event release for the duration of effect. This value will be provided from economic_events_volatilities.yml by default.</li>
+    <li><b>duration:</b> This is the duration after release which the volatility change decay to zero. This value is 20 minutes unless manually we change it.</li>
+    <li><b>decay_factor:</b> decay_factor represents how fast the decay function decays. Mathematically more than 2/3 of varience belongs to duration/decay_factor. This value will be provided from economic_events_volatilities.yml by default.</li>
+    <li><b>vol_change_before:</b> Sometimes market is volatile before the economic event release. This is the estimation of volatality change before release correlated with it. This value will be provided from economic_events_volatilities.yml by default.</li>
+    <li><b>duration_before:</b>This is the duration before release which the volatility start rise from to zero. This value is 10 minutes unless manually we change it.</li>
+    <li><b>decay_factor_before:</b> It is exactly same concept for before news impact. The values are provided on yaml file.</li>
+<ol>
+    <li>Default: This will keep existing decay factor value. For freshly added underlying to news it will be 20 for after and 10 for before.
+    <li>Fast: Most of variance belongs to 1 minute after or before news.
+    <li>Slow: Most of variance belongs to half of time of duration after or before news.</li>
+    <li>Flat: Variance is distributed evently all over the duration.</li>
+</ol>
+</ul>
+
+<hr>
+<h2>Add Economic Event Factors</h2>
+<p>If you wish to update the economic event factor for an economic event, input all factors and use <b>Update</b> to add for each underlying. Wait until a message shows up next to the button with 'ok'. There is option also to add the value to all direct or indirect pairs.</p>
+
+<h3>Add New Economic Event</h3>
+<div class="scrollable">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table id='economic_event_form'>
+    <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol" data-lpignore="true" /></td><td>(e.g. USD GBP EUR)</td></tr>
+    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date" data-lpignore="true" /></td><td>(e.g. epoch or 2012-11-14 01:15:00.)</td></tr>
+    <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name" data-lpignore="true" /></td><td>(e.g. German Trade Balance)</td></tr>
+    <tr><td>Impact</td><td> : <INPUT type="text" name="impact" data-lpignore="true" /></td><td>(e.g. 1=low, 3=medium, 5=high)</td></tr>
+    <INPUT type="hidden" name="source" value="binary">
+    <tr><td></td><td><button onclick="saveEvent()" class="btn btn--primary">Save</td><td class='save_result'></td></tr>
+</table>
+</fieldset>
+</div>
+
+<br>
+<h3>Economic Event Factors</h3>
+<p>Those events which are not in yaml file are displayed with an asterisk '*'. </p>
+<p>Display for date: <select onchange="updateTable(this.value)">[% FOREACH date IN dates %]<option value="[% date %]">[% date %]</option>[% END %]</select></p>
+
+<p><b>List of Scheduled Categorized Economic Events</b></p>
+<div class="scrollable">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<div id='scheduled_event_list'></div>
+</fieldset>
+</div>
+
+<p><b>List of Scheduled Uncategorized Economic Events</b></p>
+<div class="scrollable">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<div id='scheduled_uncategorized_event_list'></div>
+</fieldset>
+</div>
+
+<p><b>List of Deleted Economic Events</b></p>
+<div class="scrollable">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<div id='deleted_event_list'></div>
+</fieldset>
+</div>
+
+<script>
+    var underlyings = [% underlying_symbols | none %];
+    var ee_upload_url = "[% ee_upload_url | none %]";
+    underlyings.unshift(['All INDIRECT pairs', 'INDIRECT']);
+    underlyings.unshift(['All DIRECT pairs', 'DIRECT']);
+    underlyings.unshift(['Select Underlying', '']);
+    [% PROCESS backoffice/economic_event_forms.js %]
+    createEcoTable([% categorized_events | none %], 'scheduled_event_list');
+    createEcoTable([% uncategorized_events | none %], 'scheduled_uncategorized_event_list');
+    createEcoTable([% deleted_events | none %], 'deleted_event_list');
+</script>
+
+<style>
+    .economic_event_table td, .economic_event_table th {
+        text-align: left;
+    }
+    .deleted_economic_event_list td, .deleted_economic_event_list th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 4px;
+    }
+</style>

@@ -1,0 +1,101 @@
+[% SET currencies = ['ETH', 'USDC', 'eUSDT'] %]
+<div><b>Please be inform that tool is only working for ETH network currently.</b></div>
+<br>
+<form id='form' ACTION="[% data_url %]" METHOD=POST>
+    <table>
+        <tr>
+            <td><label>Transaction Hash:</label></td>
+            <td><input type=text size=70 name='transaction_hash' value='[% transaction_hash %]' required data-lpignore='true' /></td>
+        </tr>
+        <tr>
+            <td><label>Address:</label></td>
+            <td><input type=text size=70 name='to_address' value='[% to_address %]' required data-lpignore='true' /></td>
+        </tr>
+        <tr>
+            <td><label>Currency on Blockchain:</label></td>
+            <td>
+                <select name="currency" id="rypto_currencies_list">
+                    [% FOR crypto IN currencies.sort %]
+                        <option value="[% crypto %]"[% IF currency_selected == crypto %] selected="selected"[% END %]>[% crypto %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><input type="hidden" name="credit" id="credit" value=""></td>
+            <td><input type=submit class="btn btn--primary" name="search" value='Search'></td>
+        </tr>
+    </table>
+</form>
+
+
+[% IF transaction_hash %]
+    [% IF data.size == 0 %]
+        <p>We haven't received this transaction in our system, the reason can be one of the followings: </p>
+         <ul>
+            <li>We might missed the transaction in subscription service.</li>
+            <li>Client deposited to an address which does not belong to us.</li>
+            <li>Client might used a network which we do not support.</li>
+         </ul>
+    [% ELSE %]  
+        [% IF status == 'CONFIRMED' %]
+            <p>The payment is confirmed and the client loginid <b><span id="sibiling_account">[% sibling_account %]</span></b> is credited with amount <b><span id="amount">[% data.amount %]</span></b> for this payment.</p>
+        [% ELSIF status == 'ERROR' %]    
+            <p>This is to confirm that we have received <b><span id="amount">[% data.amount %]</span> <span id="wrong_currency">[% data.wrong_currency %]</span></b> to address <b>[% to_address %]</b> that belongs to <b>[% data.client_loginid %](<span id="correct_currency">[% data.correct_currency %]</span>)</b></p>
+            <p>Transaction hash: <b>[% transaction_hash %]</b></p>
+            [% IF sibling_account %]
+                <p>Account funds need to be credited: <b><span id="sibiling_account">[% sibling_account %]</span> ([% data.wrong_currency %])</b></p>
+                <input type="button"  onclick="credit()" class="btn btn--primary" name="credit" value="credit" />
+                <p id="process"></p>
+            [% ELSE %]
+                <p>Client needs to create <b>[% data.wrong_currency %] </b> account on <b>[% broker_code %]</b>.</p>
+            [% END %]
+        [% ELSIF status == 'PENDING' %]
+            <p class ="notify notify--warning">The payment is under processing (the payment status is <b>PENDING</b>)</p>
+        [% ELSE %]
+            <p class ="notify notify--warning">We were unable to process your search request at the moment.</p>
+        [% END %]    
+    [% END %]
+[% END %]
+
+<script>
+
+function credit(){
+
+    \$.ajax({
+        url: "[% credit_url %]",
+        data: {
+            credit: 1,
+            correct_currency_code:  document.getElementById('correct_currency').innerText,
+            wrong_currency_code:  document.getElementById('wrong_currency').innerText,
+            client_loginid: document.getElementById('sibiling_account').innerText,
+            amount: document.getElementById('amount').innerText,
+            transaction_hash: "[% transaction_hash %]",
+            to_address: "[% to_address %]",
+        },
+        success: function(data) {
+
+            try {
+               var res = \$.parseJSON(data);
+               if (res.is_successful){
+                    document.getElementById("process").textContent = "The transaction has been triggered, please wait a few minutes for the account to be credited.";
+                    document.getElementById("process").style.color = "green";
+                }
+               else{
+                   document.getElementById("process").textContent = "The transaction has been triggered and the status is changed, Please check deposit page for more info.";
+                   document.getElementById("process").style.color = "green";
+                }
+            }
+            catch(error) {
+                document.getElementById("process").textContent =  error ;
+                document.getElementById("process").style.color = "blue";
+            }
+        },
+        error: function(xhr, status, error){
+                document.getElementById("process").textContent = error ;
+                document.getElementById("process").style.color = "blue";
+        }
+    });
+}
+
+</script>

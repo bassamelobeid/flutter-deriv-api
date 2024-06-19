@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<style>
+    .settings_form td div span { font-style: italic }
+
+    fieldset legend {
+        font-weight: bold;
+        width: calc(100% - 10px);
+        text-transform: capitalize;
+        text-indent: 4px;
+        border: none;
+        padding: 4px 8px;
+        margin-bottom: 5px;
+        background: var(--bg-primary-light);
+        cursor: pointer;
+        transition: all 0.25s;
+    }
+    fieldset legend:hover {
+        background: var(--bg-active);
+    }
+    fieldset ul {
+        padding-left: 5px;
+        margin: 0;
+    }
+    fieldset ul li {
+        margin: 0 0 16px 0;
+        list-style: none;
+    }
+    fieldset ul li.leaf {
+        display: flex;
+        margin-bottom: 10px;
+        padding: 16px;
+        border-radius: 8px;
+        width: calc(100% - 25px);
+        background-color: var(--bg-secondary-light);
+    }
+    html[data-theme="light"] fieldset ul li.leaf.changed {
+        background-color: var(--color-yellow) !important;
+    }
+    html[data-theme="dark"] fieldset ul li.leaf.changed {
+        background-color: var(--bg-secondary-dark) !important;
+
+    }
+    fieldset ul li.leaf:hover {
+        background: var(--bg-active);
+    }
+    fieldset ul label {
+        color: var(--color-blue);
+    }
+    fieldset ul li.leaf textarea {
+        height: 120px;
+        width: 350px;
+    }
+    fieldset ul li input:not([type="checkbox"]) {
+        display: block;
+        width: 350px;
+    }
+    fieldset ul li.leaf .desc {
+        color: var(--color-black);
+        margin-top: 7px;
+        width: 460px;
+    }
+    fieldset ul li div.input_container {
+        padding-left: 10px;
+    }
+    fieldset ul li.leaf cite {
+        color: var(--grey-200);
+        margin-top: 3px;
+        display: block;
+    }
+    fieldset ul li.leaf cite strong {
+        font-size: 1.2rem;
+    }
+    fieldset ul li.leaf cite em {
+        font-family: monospace;
+        color: var(--color-green);
+        word-break: break-all;
+    }
+    span.close {
+        display: none
+    }
+
+    input[type="submit"] {
+        text-transform: uppercase;
+    }
+    input[disabled] {
+        background: #eee;
+    }
+</style>
+
+<div id="wrapper">
+    [% INCLUDE settings_form %]
+</div>
+
+<script>
+    \$('li label').click(function() {
+        \$(this).next().focus();
+    });
+
+    \$('form fieldset legend').each(function() {
+        var leg_obj = \$(this);
+        leg_obj.html( leg_obj.html().replace(/_/g, ' ') );
+    });
+    \$('form fieldset legend').click(function(e) {
+        e.preventDefault();
+        \$(this).next().toggle();
+        \$(this).children('a').children('span').toggle();
+    });
+
+    function filterList(name) {
+        const ids = (name || '').trim().replace(/\s+/, '|');
+        let reg;
+        try { reg = new RegExp(`(\${ids})`, 'i'); } catch { return }
+        \$('li.leaf').each(function() {
+            const is_match = ids ? reg.test(\$(this).find('label').attr('for')) : true;
+            \$(this)[is_match ? 'show' : 'hide']();
+        });
+    }
+
+    const changedState = {};
+    function setChanged(el, value = el.value) {
+        const isChanged = value !== el.getAttribute('data-initialvalue');
+        if (isChanged) {
+            changedState[el.name] = 1;
+        } else {
+            delete changedState[el.name];
+        }
+
+        const elContainer = el.closest('li.leaf');
+        elContainer.classList[isChanged ? 'add' : 'remove']('changed');
+
+        updateSubmitInfo();
+    }
+    function isDirtyState() {
+        return Object.keys(changedState).length > 0;
+    }
+    function updateSubmitInfo() {
+        // Submit button
+        const shouldDisable = !isDirtyState();
+        [...document.querySelectorAll('.js-submit-settings')].forEach(elSubmit => {
+            elSubmit.disabled = shouldDisable;
+            elSubmit.title    = shouldDisable ? 'There is no changes yet!' : '';
+        });
+
+        // Updated values
+        document.getElementById('updated_settings').value = isDirtyState() ? JSON.stringify(changedState) : '';
+    }
+</script>
+
+[% BLOCK leaf %]
+    <li class="leaf">
+        <div>
+            <label for="[% item.name %]">[% item.name.replace('^(([\w.]+)\.)([\w]+)$', '$1<strong>$3</strong>') | none %]</label>
+            <div class="desc">
+                [% item.description %]
+                [% IF item.default %]
+                <strong>[&#10004;] </strong>
+                [% END %]
+                [% IF item.disabled %]
+                <strong>Field is static and cannot be changed.</strong>
+                [% END %]
+            </div>
+        </div>
+        <div class="input_container">
+            [% IF item.type == 'Bool' %]
+                <input id="[% item.name %]" type="checkbox" name="[% item.name %]" [% IF item.disabled %] disabled [% END %] [% IF item.value %] checked [% END %] data-initialvalue='[% item.value %]' onchange="setChanged(this, this.checked ? '1' : '0')" />
+            [% ELSIF item.type == 'json_string' or item.type == 'LongStr' %]
+                <textarea id="[% item.name %]" rows="3" cols="30" name="[% item.name %]" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %] data-initialvalue='[% item.value %]' onkeyup="setChanged(this)">[% item.value %]</textarea>
+            [% ELSIF item.type == 'Int' %]
+                <input id="[% item.name %]" type="text" name="[% item.name %]" pattern="[0-9]+" value="[% item.value %]" size="40" placeholder="[% item.default_value %]" data-lpignore="true" [% IF item.disabled %] disabled [% END %] data-initialvalue='[% item.value %]' onkeyup="setChanged(this)" />
+            [% ELSE %]
+                <input id="[% item.name %]" type="text" name="[% item.name %]" value="[% item.value %]" size="40" placeholder="[% item.default_value %]" data-lpignore="true" [% IF item.disabled %] disabled [% END %] data-initialvalue='[% item.value %]' onkeyup="setChanged(this)" />            [% END %]
+            <cite>
+                <strong>Type:</strong> <em>[% item.type %]</em><br />
+                <strong>Default Value:</strong>  <em>[% IF item.default_value %] [% item.default_value %] [% ELSE %] [Empty] [% END %]</em>
+            </cite>
+        </div>
+    </li>
+[% END %]
+
+[% BLOCK branch %]
+    <fieldset [% IF NOT config.key %] style="border: 0; margin-bottom: 0;" [% END %]>
+        [% IF config.key %]
+            <legend>
+                <a class="link" href=""><span class="close">&#10145;</span><span>&#11015;</span> [% config.key %]</a>
+            </legend>
+        [% END %]
+        <ul>
+            [% FOREACH config IN current_config %]
+                [% IF NOT config.value.leaf  %]
+                    <li class="branch"> [% INCLUDE  branch current_config=config.value %] </li>
+                [% ELSE %]
+                    [% INCLUDE leaf item=config.value.leaf %]
+                [% END %]
+            [% END %]
+        </ul>
+    </fieldset>
+[% END %]
+
+[% BLOCK submit_button %]
+<div class="row">
+    <div class="grd-grid-4">
+        <label>Filter (regex):</label>
+        <input type="text" autocomplete="off" oninput="filterList(this.value)" data-lpignore="true" />
+    </div>
+    <div class="grd-grid-4"></div>
+    <div class="grd-grid-4 right">
+        <button name="action" class="btn btn--primary js-submit-settings" value="update_settings" disabled title="There is no changes yet!"> UPDATE [% title %] </button>
+    </div>
+</div>
+[% END %]
+
+[% BLOCK settings_form %]
+    <div class="card">
+        <div class="card__label toggle">[% title %]</div>
+        <div class="card__content">
+            <form method="POST" onsubmit="return isDirtyState()">
+                <input type="hidden" name="revision" value="[% settings.setting_revision %]">
+                <input type="hidden" name="updated_settings" id="updated_settings">
+                [% INCLUDE submit_button %]
+                <hr>
+                [% INCLUDE branch current_config=settings.settings %]
+                <hr>
+                [% INCLUDE submit_button %]
+            </form>
+        </div>
+    </div>
+[% END %]

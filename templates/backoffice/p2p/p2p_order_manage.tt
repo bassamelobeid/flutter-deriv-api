@@ -1,0 +1,509 @@
+<p><a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi') %]">&laquo; Back to orders list</a></p>
+
+<form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker}) %]" method="get">
+<label>Order ID:</label><input type="number" min="1" name="order_id" value="[% order.id %]" size=20 data-lpignore="true" />
+<button class="btn btn--primary" type="submit">Get order</button>
+</form>
+
+[% IF order %]
+    <hr>
+    <h3>Details for order [% order.id %]</h3>
+    <table class="border" style="table-layout:fixed; width:100%; overflow-wrap: break-word;">
+        <tr>
+            <td style="width:150px;">Status</td>
+            <td><b>[% order.status %]</b></td>
+        </tr>
+        <tr>
+            <td>Order type</td>
+            <td><b>[% order.type %]</b></td>
+        </tr>
+        <tr>
+            <td>Advert type</td>
+            <td>[% order.advert_type %] Binary [% order.account_currency %] using local [% order.local_currency %] at [% order.advert_rate_type %] rate</td>
+        </tr>        
+        <tr>
+            <td>Client&nbsp;&nbsp;<span style="color:var(--color-blue);font-weight:bold;">[% order.client_role %]</span></td>
+            <td class="link-group">[% order.client_loginid %]
+                <a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => order.client_loginid }) %]">Manage advertiser</a>
+                <a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => order.client_loginid }) %]">Client profile</a>
+                <a class="link" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => order.client_loginid }) %]">Client statement</a>
+                <a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => order.client_loginid }) %]">All orders</a>
+            </td>
+        </tr>
+        <tr>
+            <td>Client confirmed</td>
+            <td><b>[% order.client_confirmed %]</b></td>
+        </tr>
+        <tr>
+            <td>Client P2P advertiser ID</td>
+            <td>[% order.client_id %]</td>
+        </tr>
+        <tr>
+            <td>Client advertiser name</td>
+            <td>[% order.client_name %]</td>
+        </tr>
+        <tr>
+            <td>Client country</td>
+            <td>[% order.client_country %] [% request.country_emoji(order.client_country) | none %]</td>
+        </tr>        
+        [% IF order.advertiser_review_time.defined %]
+        <tr>
+            <td>Client review</td>
+            <td>Rating: [% order.advertiser_review_rating %][% IF order.advertiser_review_recommended.defined %], recommended: [% IF order.advertiser_review_recommended == 1 %]yes[% ELSE %]no[% END %][% END %] (review at [% order.advertiser_review_time %])</td>
+        </tr>
+        [% END %]        
+        <tr>
+            <td>Advertiser&nbsp;&nbsp;<span style="color:var(--color-blue);font-weight:bold;">[% order.advertiser_role %]</span></td>
+            <td class="link-group">[% order.advertiser_loginid %]
+                <a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => order.advertiser_loginid }) %]">Manage advertiser</a>
+                <a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => order.advertiser_loginid }) %]">Client profile</a>
+                <a class="link" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => order.advertiser_loginid }) %]">Client statement</a>
+                <a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => order.advertiser_loginid }) %]">All orders</a>
+            </td>
+        </tr>
+        <tr>
+            <td>Advertiser ID</td>
+            <td>[% order.advertiser_id %]</td>
+        </tr>
+        <tr>
+            <td>Advertiser name</td>
+            <td>[% order.advertiser_name %]</td>
+        </tr>
+        <tr>
+            <td>Advertiser country</td>
+            <td>[% order.advertiser_country %] [% request.country_emoji(order.advertiser_country) | none %]</td>
+        </tr>         
+        <tr>
+            <td>Advertiser confirmed</td>
+            <td><b>[% order.advertiser_confirmed %]</b></td>
+        </tr>
+        [% IF order.client_review_time.defined %]
+        <tr>
+            <td>Advertisier review</td>
+            <td>Rating: [% order.client_review_rating %][% IF order.client_review_recommended.defined %], recommended: [% IF order.client_review_recommended == 1 %]yes[% ELSE %]no[% END %][% END %] (review at [% order.client_review_time %])</td>
+        </tr>
+        [% END %]
+        <tr>
+            <td>Order amount</td>
+            <td>[% order.account_currency %] [% order.amount_display %]</td>
+        </tr>
+        <tr>
+            <td>Local Amount</td>
+            <td>[% order.local_currency %] [% order.price_display %]
+            (rate: [% order.rate %])
+            [% IF order.advert_rate_type == 'float' %]
+            <br>Market rate when order was created: [% order.market_rate %]
+            [% END %]
+        </tr>
+        [% IF order.payment_method_details %]
+        <tr>
+            <td>Payment methods (current)</td>
+            <td>
+                [% FOR pm IN order.payment_method_details.values %]
+                    <table class="small" style="table-layout:fixed;width:100%;overflow-wrap: break-word;[% IF loop.count>1 %]margin-top:12px;[% END %]">
+                    <tr style="vertical-align:top;">
+                        <td style="border:0;padding:0;width:20px;">[% loop.count %]</td>
+                        <td style="border:0;padding:0;width:120px;">Method</td>
+                        <td style="border:0;padding:0;">[% pm.display_name %]</td><tr>
+                    [% FOR fld IN pm.fields.keys.sort %][% IF pm.fields.$fld.value %]
+                    <tr style="vertical-align:top;">
+                        <td style="border:0;padding:0;"></td>
+                        <td style="border:0;padding:0;">[% pm.fields.$fld.display_name %]
+                        <td style="border:0;padding:0;">[% pm.fields.$fld.value %]</td></tr>
+                    [% END %][% END %]
+                </table>
+                [% END %]
+            </td>
+        </tr>
+        [% END %]
+        [% IF order.advert_payment_method_names %]
+        <tr>
+            <td>Order Payment methods (visible at order creation)</td>
+            <td>[% order.advert_payment_method_names %]</td>
+        </tr>        
+        [% END %]
+        [% IF !order.buy_confirm_pms.keys.empty %]
+        <tr>
+            <td>Order Payment methods (visible at buyer confirm)</td>
+            <td>
+                [% FOR pm IN order.buy_confirm_pms.values %]
+                    <table class="small" style="table-layout:fixed;width:100%;overflow-wrap: break-word;[% IF loop.count>1 %]margin-top:12px;[% END %]">
+                    <tr style="vertical-align:top;">
+                        <td style="border:0;padding:0;width:20px;">[% loop.count %]</td>
+                        <td style="border:0;padding:0;width:120px;">Method</td>
+                        <td style="border:0;padding:0;">[% pm.display_name %]</td><tr>
+                    [% FOR fld IN pm.fields.keys.sort %][% IF pm.fields.$fld.value %]
+                    <tr style="vertical-align:top;">
+                        <td style="border:0;padding:0;"></td>
+                        <td style="border:0;padding:0;">[% pm.fields.$fld.display_name %]
+                        <td style="border:0;padding:0;">[% pm.fields.$fld.value %]</td></tr>
+                    [% END %][% END %]
+                </table>
+                [% END %]            
+            </td>
+        </tr>
+        [% END %]
+        [% IF order.advert_payment_method %]
+        <tr>
+            <td>Payment method</td>
+            <td>[% order.advert_payment_method %]</td>
+        </tr>
+        [% END %]        
+        [% IF order.payment_info %]
+        <tr>
+            <td>Payment info</td>
+            <td>[% order.payment_info %]</td>
+        </tr>
+        [% END %]
+        <tr>
+            <td>Contact info</td>
+            <td>[% order.contact_info %]</td>
+        </tr>
+        <tr>
+            <td>Advert Instructions</td>
+            <td>[% order.advert_description %]</td>
+        </tr>        
+        <tr>
+            <td>Creation time</td>
+            <td>[% order.created_time %]</td>
+        </tr>
+        <tr>
+            <td>Expiration time</td>
+            <td>[% order.expire_time %]
+            [% IF order.is_expired %]&nbsp;&nbsp;<span class="error">EXPIRED</span>[% END %]
+            </td>
+        </tr>
+        <tr>
+            <td>Advert ID</td>
+            <td>[% order.advert_id %]</td>
+        </tr>
+        </tr>
+        <tr>
+            <td>Block Trade</td>
+            <td>[% IF order.advert_block_trade %]Yes[% ELSE %]No[% END %]</td>
+        </tr>           
+        <tr>
+            <td>Escrow</td>
+            <td>[% order.escrow %]</td>
+        </tr>        
+    </table>
+
+    [% IF order.status == 'Timed-out' and can_dispute %]
+        <br>
+        <h3>Manual dispute creation</h3>
+
+        <table class="full-width border" style="background:lightgrey"><tr><td>
+        <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id }) %]" method="post">
+            <label>Dispute raised by:</label>
+            <select required name="disputer" >
+                <option value="[% order.buyer %]">Buyer [% order.buyer %]</option>
+                <option value="[% order.seller %]">Seller [% order.seller %]</option>
+            </select>
+            <label>Dispute reason:</label>
+            <select required name="reason">
+                [% FOREACH key IN dispute_reasons.keys.sort %]
+                    <option value="[% key %]">[% dispute_reasons.$key %]</option>
+                [% END %]
+            </select>
+            <button class="btn btn--primary" type="submit" name="dispute" value="1" onclick="return confirm('Are you sure? Order status will change to disputed.');">RAISE A DISPUTE</button>
+        </form>
+        </td></tr></table>
+    [% END %]
+
+    [% IF order.status == 'Disputed' and can_dispute %]
+
+        <br>
+        <h3>Order under dispute</h3>
+        
+        <table class="full-width border" style="background:lightgrey"><tr><td>
+        <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id, disputer_loginid => order.disputer_loginid }) %]" method="post">
+        <input type="hidden" name="disputer" value="[% order.disputer_loginid %]">
+            
+        <table id="dispute_table" style="background:LightCoral;" cellpadding=5>
+        <tr>
+            <td><b>Dispute raised by</b></td>
+            <td>[% order.disputer_loginid %] ([% order.disputer_role %])</td>
+        </tr>
+        <tr>
+            <td><b>Dispute reason</b></td>
+            <td>[% order.dispute_reason %]</td>
+        </tr>
+        <tr>
+            <td><b>Fraud case</b></td>
+            <td>        
+                <select name="fraud"  id="fraud" onchange="setBackgroundColor(this.value)" style="width: 70px;">
+                    <option value="1" selected>Yes</option>
+                    <option value="0">No</option>
+                </select>
+            </td>
+        </tr>
+        </table>
+        <p>Resolve in favour of:</p>
+        <div class="row">
+            <button class="btn btn--primary" type="submit" name="action" value="refund" onclick="return confirm(getResolveDisputeMessage({fraud_party: 'buyer', user: '[% order.seller %]', action: 'refunded'}));">SELLER</button>
+            This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to seller [% order.seller %]. A fraud incident will be recorded against [% order.buyer %] if 'Fraud Case' is 'yes'.
+        </div>
+        <div class="row">
+            <button class="btn btn--primary" type="submit" name="action" value="complete" onclick="return confirm(getResolveDisputeMessage({fraud_party: 'seller', user: '[% order.buyer %]', action: 'credited'}));">BUYER</button>
+            This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to buyer [% order.buyer %]. A fraud incident will be recorded against [% order.seller %] if 'Fraud Case' is 'yes'.
+        </div>
+        </form>
+        </td></tr></table>
+          <script>
+
+           function setBackgroundColor(flag) {
+               const disputeTable = document.getElementById('dispute_table');
+               disputeTable.style.backgroundColor = flag === "1" ? "LightCoral" : "White";
+            }
+
+            function getResolveDisputeMessage({fraud_party, user, action}) {
+                const is_fraud = document.getElementById('fraud').value;
+                const status = action === 'refunded' ? 'dispute-refunded' : 'dispute-completed';
+                const fraud_message = is_fraud === "1" ? 'This will be counted as ' + fraud_party + ' fraud. ' : '';
+                const confirm_message = 'Are you sure? [% order.account_currency %] [% order.amount %] will be '
+                   + action
+                   + ' to '
+                   + user
+                   + ' and order status will change to '
+                   + "'" + status + "'. "
+                   + fraud_message
+                   + 'This action is irreversible.';
+                return confirm_message;
+            }
+
+        </script>
+    [% END %]
+
+    <br>
+    <h3>Order History</h3>
+    <table class="full-width border">
+        <thead>
+            <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Status</th>
+                <th scope="col">TX Type</th>
+                <th scope="col"></th>
+                <th scope="col">TX ID</th>
+                <th scope="col">Login ID</th>
+                <th scope="col">Amount</th>
+                <th scope="col">TX type</th>
+                <th scope="col">Staff</th>
+            </tr>
+        </thead>
+        <tbody>
+            [% FOREACH t = transactions %]
+                [% IF t.type %]
+                    <tr>
+                        <td rowspan=2>[% t.transaction_time %]</td>
+                        <td rowspan=2>[% t.status %]</td>
+                        <td rowspan=2>[% t.type %]</td>
+                        <td>From</td>
+                        <td>[% t.src_id %]</td>
+                        <td>[% t.src_loginid %]</td>
+                        <td>[% t.src_amount %]</td>
+                        <td>[% t.src_action_type %]</td>
+                        <td>[% t.staff %]</td>
+                    </tr>
+                    <tr>
+                        <td>To</td>
+                        <td>[% t.dest_id %]</td>
+                        <td>[% t.dest_loginid %]</td>
+                        <td>[% t.dest_amount %]</td>
+                        <td>[% t.dest_action_type %]</td>
+                        <td>[% t.staff %]</td>
+                    </tr>
+                [% ELSE %]
+                    <tr>
+                        <td>[% t.transaction_time %]</td>
+                        <td>[% t.status %]</td>
+                        <td colspan=8></td>
+                    </tr>
+                [% END %]
+            [% END %]
+        </tbody>
+    </table>
+    
+    [% IF verification_history.size %]
+
+        <br>
+        <h3>Seller email verification history</h3>
+
+        <table class="border">
+        <thead>
+            <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Event</th>
+            </tr>
+        </thead>
+        [% FOREACH item = verification_history %]
+        <tr>
+            <td>[% item.datetime %]</td>
+            <td>[% item.event %]</td>
+        </tr>
+        [% END %]
+        </table>
+    
+    [% END %]
+    
+    <br>
+    <h3>Advert changes</h3>
+    
+    [% IF history.size %]
+    
+        <table class="border">
+            <thead>
+                <tr>
+                    <th scope="col">Time</th>
+                    <th scope="col">Change</th>
+                    <th scope="col">Old value</th>
+                    <th scope="col">New value</th>
+                </tr>
+            </thead>
+            [% FOREACH hist = history %]
+            <tr>
+                <td>[% hist.stamp %]</td>
+                <td>[% hist.change %]</td>
+                
+                [% IF hist.payment_method %]
+                    <td style="vertical-align:top;">
+                    [% IF hist.old %]
+                    <table class="small" style="table-layout:fixed; width:100%;overflow-wrap:break-word;">
+                        <tr style="vertical-align:top;"><td style="border:0;padding:0;width:120px;">Method:&nbsp;</td><td style="border:0;padding:0">[% hist.method_name %]</td></tr>
+                        [% FOREACH key IN hist.old_fields.keys.sort %]
+                        <tr style="vertical-align:top;"><td style="border:0;padding:0;">[% key %]:&nbsp;</td><td style="border:0;padding:0;">[% hist.old_fields.$key %]</td></tr>
+                        [% END %]
+                    </table>
+                    [% END %]
+                    </td>
+                    <td style="vertical-align:top;">
+                    [% IF hist.new %]
+                    <table class="small" style="table-layout:fixed;width:100%;overflow-wrap:break-word;">
+                        <tr style="vertical-align:top;"><td style="border:0;padding:0;width:120px;">Method:&nbsp;</td><td style="border:0;padding:0;">[% hist.method_name %]</td></tr>
+                        [% FOREACH key IN hist.new_fields.keys.sort %]
+                        <tr style="vertical-align:top;"><td style="border:0;padding:0;">[% key %]:&nbsp;</td><td style="border:0;padding:0;">[% hist.new_fields.$key %]</td></tr>
+                        [% END %]
+                    </table>
+                    [% END %]
+                    </td>
+                [% ELSE %]
+                    <td>[% hist.old %]</td>
+                    <td>[% hist.new %]</td>
+                [% END %]
+                
+            </tr>
+            
+            [% END %]
+            
+        </table>
+
+    [% ELSE %]
+        <p>No changes while the order was active.</p>
+    [% END %]
+
+    <br>
+    <h3>Chat Log</h3>
+
+    [% IF chat_messages.size %]
+        <table class="collapsed">
+            <thead>
+                <tr>
+                    <th scope="col">Time</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Chat User</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                [% FOREACH chat = chat_messages %]
+                    <tr>
+                        <td>[% chat.created_time %]</td>
+                        <td>[% chat.message_type %]</td>
+                        <td>[% chat.chat_user %]</td>
+                        <td>[% chat.chat_role %]</td>
+                        <td>
+                            [% IF chat.message_type == 'FILE' %]
+                                <a target="_blank" class="chat_file_url" href="[% chat.file_url %]" onclick="download_handler(event)">DOWNLOAD</a>
+                            [% ELSE %]
+                                [% chat.message_text %]
+                            [% END %]
+                        </td>
+                    </tr>
+                [% END %]
+            </tbody>
+
+            <tfoot>
+                <tr>
+                    <td colspan="2">
+                        [% IF chat_messages_prev %]
+                            <a href="[% request.url_for('backoffice/p2p_order_manage.cgi', {p => chat_messages_prev, order_id => order.id }) %]">Previous</a>
+                        [% END %]
+                    </td>
+                    <td align="right" colspan="3">
+                        [% IF chat_messages_next %]
+                            <a href="[% request.url_for('backoffice/p2p_order_manage.cgi', {p => chat_messages_next, order_id => order.id }) %]">Next</a>
+                        [% END %]
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <script>
+            // Since file URL needs Api-Token as header an such thing is impossible for regular links,
+            // this tiny and rather ugly snippet makes an XHR request to get the file.
+            // Caveat: it requires to download the whole file before the UI reacts, so a couple seconds of lags are feasible
+            // Caveat: it may expose sendbird api token, a secondary api token is good enough though.
+
+            const download_handler = (event) => {
+                event.preventDefault();
+
+                const link = event.target;
+                if (link.disabled) return;
+
+                const token = '[% sendbird_token %]';
+                const url = link.href;
+                const xhr = new XMLHttpRequest();
+                let to = setTimeout(() => { xhr.abort() }, 10000);
+                link.innerHTML = 'downloading file...';
+                link.disabled = 'disabled';
+
+                xhr.addEventListener('load', (event) => {
+                    const current = event.currentTarget;
+                    var blob = current.response;
+                    var filename = url.split('/').pop();
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = filename;
+                    a.dispatchEvent(new MouseEvent('click'));
+                    link.innerHTML = 'DOWNLOAD';
+                    delete link.disabled;
+                    clearTimeout(to);
+                    to = null;
+                });
+                
+                xhr.addEventListener('abort', (event) => {
+                    link.innerHTML = 'RETRY';
+                    delete link.disabled;
+                    clearTimeout(to);
+                    to = null;
+                });
+
+                xhr.open('GET', url);
+                xhr.responseType = 'blob';
+                xhr.setRequestHeader('Api-Token', token);
+                xhr.send();
+            };
+        </script>
+    [% ELSE %]
+        [% IF chat_messages_prev %]
+            <p>
+                No messages at this page,                                 
+                <a class="link" href="[% request.url_for('backoffice/p2p_order_manage.cgi', {p => chat_messages_prev, order_id => order.id }) %]">previous</a>
+            </p>
+        [% ELSE %]
+            <p>No chat was started about this order</p>
+        [% END %]
+    [% END %]
+
+    
+[% END %]

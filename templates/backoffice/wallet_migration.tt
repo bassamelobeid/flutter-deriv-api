@@ -1,0 +1,26 @@
+[% IF message %]<p class="success">[% message %]</p><br/>[% END %]
+[% IF error %]<p class="error">[% error %]</p><br/>[% END %]
+
+<form action="[% request.url_for('backoffice/wallet_migration.cgi') %]" method="get">
+<label>Login ID:</label><input type="text" name="loginID" value="[% request.params.loginID %]" size=20 data-lpignore="true"/>
+<button type="submit" class="btn btn--primary">Search</button>
+</form>
+<hr/>
+[% IF loginid %]
+<p>[% loginid %] wallet migration status: [% state.replace('_', ' ').ucfirst %]</p>
+
+[% IF eligibility_checks.size %]
+<p>Failed eligibility checks:</p>
+<ul>
+[% FOREACH check = eligibility_checks %]<li>[% check.replace('_', ' ') %]</li>[% END %]
+</ul>
+[% END %]
+
+
+[% IF action %]
+<form action="[% request.url_for('backoffice/wallet_migration.cgi', {loginID => loginid}) %]" method="post">
+<button type="submit" class="btn btn--primary" name="action" value="[% action %]">[% IF action == 'force_migrate' %]Force migration (may fail)[% ELSE %][% action.ucfirst %][% END %]</button>
+</form>
+[% END %]
+
+[% END %]

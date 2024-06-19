@@ -1,0 +1,53 @@
+<div class="row">
+    <form action="[% controller_url %]" method="POST">
+        <label for="categories">Show tools for:</label>
+        <select id="categories" name="currency" onchange="this.form.submit()">
+            [% FOREACH category IN category_options %]
+                <option value="[% category %]"[% IF  category == category_selected %] selected="selected"[% END %]>[% category %]</option>
+            [% END %]
+        </select>
+    </form>
+</div>
+
+[% IF currency_info.size > 1 %]
+<div class="row">
+    <label for="erc20_currencies">Show currency info:</label>
+    <select id="erc20_currencies" onchange="showCurrencyInfo(this.value)">
+        [% FOR currency IN currency_info.keys.sort %]
+            <option value="[% currency %]"[% IF currency == currency_selected %] selected="selected"[% END %]>[% currency %]</option>
+        [% END %]
+    </select>
+</div>
+[% END %]
+
+<div id="currency_info_container" class="row">
+[% FOREACH currency IN currency_info.keys %]
+    <div id="[% currency %]" class="currency-info invisible">
+        [% INCLUDE 'backoffice/crypto_cashier/crypto_info.html.tt'
+            is_external           = currency_info.$currency.is_external
+            main_address          = currency_info.$currency.main_address
+            exchange_rate         = currency_info.$currency.exchange_rate
+            sweep_limit_min       = currency_info.$currency.sweep_limit_min
+            sweep_limit_max       = currency_info.$currency.sweep_limit_max
+            sweep_reserve_balance = currency_info.$currency.sweep_reserve_balance
+        %]
+    </div>
+[% END %]
+</div>
+
+<script>
+    function showCurrencyInfo(selected_currency) {
+        selected_currency = selected_currency
+            || (document.getElementById('erc20_currencies') || {}).value
+            || document.getElementById('categories').value;
+
+        document.querySelectorAll('#currency_info_container .currency-info').forEach(el_info => {
+            el_info.classList[el_info.id === selected_currency ? 'remove' : 'add']('invisible');
+        });
+
+        // set the same currency on general tools
+        document.getElementById('gt_crypto_currencies_list').value = selected_currency;
+    }
+
+    showCurrencyInfo();
+</script>

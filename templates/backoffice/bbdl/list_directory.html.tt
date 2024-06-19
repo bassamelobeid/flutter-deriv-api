@@ -1,0 +1,18 @@
+<table>
+    <thead>
+    <tr>
+        <th>[% file_type %]</th>
+        <th>FILE SIZE</th>
+        <th>MODIFIED TIME</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH row IN args%]
+        <tr>
+            <td><a href="[% row.file_url %]">[% row.file_name %]</a></td>
+            <td>[% row.file_size %]</td>
+            <td>[% IF more_than_a_day %]<font color='gray'>[% END %][% row.bom_mdtm%] (~[% row.how_long %] seconds ago)</td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>

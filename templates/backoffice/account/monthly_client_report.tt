@@ -1,0 +1,72 @@
+<script>
+    \$(document).ready(function() {
+        \$('#all_payment_types'      ).click(function(){\$('input[name=payment_type]').removeAttr('checked')});
+        \$('input[name=payment_type]').click(function(){\$('#all_payment_types'      ).removeAttr('checked')});
+    })
+</script>
+
+<style>
+    div.brick-group { display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 8px; }
+    div.brick input { margin: 0 }
+</style>
+
+    <h3>Clients Report</h3>
+    <form action="[% request.url_for('backoffice/monthly_client_report.cgi') | none %]" method="post" class="row">
+        <input type="hidden" name="broker" value="[%request.broker_code%]"/>
+        <select name="crdr">
+            <option value="debit">All Debits and Contract-Buys</option>
+            <option value="credit">All Credits and Contract-Sells</option>
+        </select>
+        <label>Run month (e.g. 2014-12):</label><input size="8" type="text" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}" />
+        <input type="submit" class="btn btn--primary" value="Download CSV file"/>
+        <i>* All currencies for broker code [%request.broker_code%] will be included</i>
+    </form>
+    <hr/>
+    [%
+        SET payment_types = [
+            [ 'adjustment',         'Adjustment' ],
+            [ 'affiliate_reward',   'Affiliate Reward' ],
+            [ 'bank_money_transfer','Bank Wire' ],
+            [ 'adjustment_purchase','Contract Purchase Adjustment' ],
+            [ 'adjustment_sale'     'Contract Sale Adjustment' ],
+            [ 'cancellation',       'Cancellation' ],
+            [ 'closed_account',     'Closed Account' ],
+            [ 'dormant_fee',        'Dormant Fee' ],
+            [ 'external_cashier',   'Doughflow' ],
+            [ 'free_gift',          'Free Gift' ],
+            [ 'internal_transfer',  'Internal Transfer' ],
+            [ 'mt5_transfer',       'MT5 Transfer'],
+            [ 'dxtrade_transfer',   'DXTrade Transfer'],
+            [ 'dxtrade_adjustment', 'Manual DXTrade Adjustment'],
+            [ 'payment_fee',        'Payment Fee' ],
+            [ 'arbitrary_markup',   'Arbitrary Markup Payment' ],
+            [ 'crypto_cashier',     'Crypto Cashier' ],
+            [ 'test_account',       'Test Account' ],
+            [ 'commission_paid',    'Commission Paid' ],
+            [ 'account_transfer',   'Account Transfer' ],
+            [ 'ctrader_transfer',   'cTrader Transfer' ],
+            [ 'recovery',           'Recovery' ],
+        ];
+    %]
+
+    <h3>Payments Report</h3>
+    <p>Select any of these payment types:</p>
+    <form action="[%request.url_for('backoffice/payments_report.cgi') | none %]" method="post" class="row">
+        <input type="hidden" name="broker" value="[%request.broker_code%]"/>
+        <div class="row brick-group">
+            [% FOR pt IN payment_types %]
+                <div class="brick">
+                    <input type="checkbox" name="payment_type" value="[%pt.0%]" id="[%pt.0%]"/>
+                    <label for="[%pt.0%]" title="[%pt.0%]">[%pt.1%]</label>
+                </div>
+            [% END %]
+            <div class="brick">
+                <input type="checkbox" name="all_payment_types" id="all_payment_types"/>
+                <label for="all_payment_types" title="(including obsolete types)">ALL</label>
+            </div>
+        </div>
+        <label>Start date (e.g. 2014-12-01):</label><input size="8" type="text" name="start_yyyymmdd" value="$start_yyyymmdd" required pattern="\d{4}-\d{2}-\d{2}" />
+        <label>End date (e.g. 2014-12-05):</label><input size="8" type="text" name="end_yyyymmdd" value="$end_yyyymmdd" required pattern="\d{4}-\d{2}-\d{2}" />
+        <input type="submit" class="btn btn--primary" value="Download CSV file"/>
+        <i>* All currencies for broker code [%request.broker_code%] will be included</i>
+    </form>

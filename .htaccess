@@ -1,0 +1,7 @@
+AuthName "Attention! The username here is NOT your first name! "
+AuthType Basic
+<IfModule authn_file_module>
+AuthBasicProvider file
+</IfModule>
+AuthUserFile /etc/nginx/backoffice_htpasswd
+require user april14

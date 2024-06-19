@@ -1,0 +1,125 @@
+<h3>[% title %]</h3>
+
+<form id="idv_filters" action="[% url %]" method="POST" class="row" onSubmit="return idvFiltersValidation()">
+
+<div class="row">
+    <div class="col-4">
+        <label>Login ID:</label><br/>
+        <input style="width:90%" type="text" size="15" name="loginid" placeholder="ANY" value="[% filters.loginid %]" data-lpignore="true">
+    </div>
+
+    <div class="col-4">
+        <label>Document Number:</label><br/>
+        <input style="width:90%" type="text" size="15" name="document_number" placeholder="ANY" value="[% filters.document_number %]" data-lpignore="true">
+    </div>
+
+    <div class="col-4">
+        <label>Date range from:</label><br/>
+        <input id="idv_date_range_from" style="width:90%" type="text" size="15" name="date_from" placeholder="ANY" value="[% filters.date_from %]" data-lpignore="true">
+    </div>
+
+    <div class="col-4">
+        <label>Date range to:</label><br/>
+        <input id="idv_date_range_to" style="width:90%" type="text" size="15" name="date_to" placeholder="ANY" value="[% filters.date_to %]" data-lpignore="true">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-4">
+        <label>Country:</label><br/>
+        <select style="width:90%" name="country" data-lpignore="true">
+            <option value="">--- ANY ---</option>
+            [% FOREACH country IN countries.keys.sort %]
+                <option value="[% country %]" [% IF filters.country == country %]selected="selected"[% END %]>[% countries.$country %]</option>
+            [% END %]
+        </select>
+    </div>
+    <div class="col-4">
+        <label>Provider:</label><br/>
+        <select style="width:90%" name="provider" data-lpignore="true">
+            <option value="">--- ANY ---</option>
+            [% FOREACH provider IN providers.keys.sort %]
+                <option value="[% provider %]" [% IF filters.provider == provider %]selected="selected"[% END %]>[% providers.$provider %]</option>
+            [% END %]
+        </select>
+    </div>
+    <div class="col-4">
+        <label>Document Type:</label><br/>
+        <select style="width:90%" name="document_type" data-lpignore="true">
+            <option value="">--- ANY ---</option>
+            [% FOREACH type IN document_types.keys.sort %]
+                <option value="[% type %]" [% IF filters.document_type == type %]selected="selected"[% END %]>[% document_types.$type %]</option>
+            [% END %]
+        </select>
+    </div>
+    <div class="col-4">
+        <div class="row">
+            <div class="col-6">
+                <label>Status:</label><br/>
+                <select style="width:90%" name="status" data-lpignore="true">
+                    <option value="">--- ANY ---</option>
+                    [% FOREACH status IN statuses.keys.sort %]
+                        <option value="[% status %]" [% IF filters.status == status %]selected="selected"[% END %]>[% statuses.$status %]</option>
+                    [% END %]
+                </select>
+            </div>
+            <div class="col-6">
+                <label>Message:</label><br/>
+                <select style="width:90%" name="message" data-lpignore="true">
+                    <option value="">--- ANY ---</option>
+                    [% FOREACH message IN messages.sort %]
+                        <option value="[% message %]" [% IF filters.message == message %]selected="selected"[% END %]>[% message %]</option>
+                    [% END %]
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" name="offset" value="[% offset %]" />
+<button name="csv" value="1" class="btn btn--primary" onclick="return idv_dashboard_jump(0)">Export CSV</button>
+<button name="submitBtn" value="1" class="btn btn--primary" onclick="return idv_dashboard_jump(0)">Show records</button>
+</form>
+
+<script>
+    const dateRangeFrom = \$('#idv_date_range_from');
+    const dateRangeTo = \$('#idv_date_range_to');
+
+    dateRangeFrom.datepicker({dateFormat: "yy-mm-dd"});
+    dateRangeTo.datepicker({dateFormat: "yy-mm-dd"});
+
+    function idv_dashboard_jump(offset) {
+        const offsetInput = document.getElementsByName('offset')[0];
+        const form        = document.getElementById('idv_filters');
+
+        offsetInput.value = offset;
+
+        if (idvFiltersValidation()) {
+            return form.submit();
+        }
+
+        return false;
+    }
+
+    function idvFiltersValidation() {
+        const drf = new Date(dateRangeFrom.val());
+        const drt = new Date(dateRangeTo.val());
+
+        if(isNaN(drf.getTime())) {
+            alert('Invalid Date Range From, please input a valid yyyy-mm-dd date');
+            return false;
+        }
+
+        if(isNaN(drt.getTime())) {
+            alert('Invalid Date Range To, please input a valid yyyy-mm-dd date');
+            return false;
+        }
+
+        if (drf.getTime() > drt.getTime()) {
+            alert('Date Range From must be before or equal to Date Range To');
+            return false;
+        }
+
+        return true;
+    }
+</script>

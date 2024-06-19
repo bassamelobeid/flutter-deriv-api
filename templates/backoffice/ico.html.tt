@@ -1,0 +1,10 @@
+<p><b> To download the csv which contains current open ICO bid deals.</b></p>
+
+<form  name="download_csv" action="[% upload_url %]" method="POST" enctype="multipart/form-data">
+    <table>
+        <tr><input type="hidden" name="download_csv" value="1"></input></tr>
+        <tr><td colspan=2><INPUT type="submit" name="download_csv" value="Download File"></td></tr>
+    </table>
+</form>
+
+<div id="histogram_chart"></div>

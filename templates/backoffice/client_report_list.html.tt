@@ -1,0 +1,10 @@
+<form method="post" action="[% request.url_for('backoffice/monthly_client_report.cgi') | none %]">
+    <b>Month :</b>
+    <select name="filename">
+        [% FOREACH file IN report_list %]
+            <option value="[% file %]">[% file %]</option>
+        [% END %]
+    </select>
+    <input type="hidden" name="broker" value="[% broker %]">
+    <input type="submit" name="action" value="download_csv">
+</form>

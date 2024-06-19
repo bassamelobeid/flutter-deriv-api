@@ -1,0 +1,217 @@
+[%# if redirect from client details page %]
+    [% IF show_notification %]
+        <div class="grd-margin-bottom" style="color: blue;">
+            This line has already exist in <b>[% encoded_broker %].[% selected_untrusted_action %]</b> file.
+            <br />
+            To change the reason, kindly select from the dropdown selection list below and click 'Go'.
+            <br />
+        </div>
+    [% END %]
+
+<form action="[% edit_url %]" enctype='multipart/form-data' method=post>
+    [% IF untrusted_statuses %]
+        <table>
+                <thead>
+                    <tr>
+                        <th>&nbsp;</th>
+                        <th>Status</th>
+                        <th>Reason/Info</th>
+                        <th>Staff</th>
+                        <th>Sync</th>
+                        <th>Last modified date</th>
+                    </tr>   
+                </thead>
+                <tbody>
+                [% FOREACH status IN untrusted_statuses %]
+                    <tr>
+                        <td align="center"> 
+                            <input type="checkbox" name="status_checked" value="[% status.code %]" />
+                        </td>
+                        <td align="left">
+                            <strong style="font-size: 1.3rem !important; color:[% status.warning %]">
+                                [% status.section %]
+                            </strong>
+                        </td>
+                        <td>
+                            <b>
+                                [% status.reason %]
+                            </b>
+                        </td>
+                        <td>
+                            <b>
+                                [% status.clerk %]
+                            </b>
+                        </td>
+                        <td>
+                            <b>
+                                [% status.siblings_summary %]
+                            </b>
+                        </td>
+                        <td>
+                            <b>
+                                [% status.last_modified_date %]
+                            </b>
+                        </td>
+                    </tr>
+                [% END %]
+                [% FOREACH key IN client_statuses_readonly.keys.sort %]
+                    <tr>
+                        <td> 
+                        </td>
+                        <td align="left">
+                            [% IF client_statuses_readonly.$key.warning %]
+                            <b style="font-size: 1.3rem !important; color:[% client_statuses_readonly.$key.warning %]"> [% key %] <b>
+                            [% ELSE %]
+                            <b> [% key %] <b>
+                            [% END %]
+                        </td>
+                        <td>
+                            <b>
+                                <b>[% client_statuses_readonly.$key.reason %]</b>
+                            </b>
+                        </td>
+                        <td>
+                            <b>
+                                [% client_statuses_readonly.$key.staff_name %]
+                            </b>
+                        </td>
+                        <td>
+                        </td>
+                            <b>
+                                [% client_statuses_readonly.$key.siblings_summary %]
+                            </b>
+                        <td>
+                         <b>
+                           [% client_statuses_readonly.$key.last_modified_date  %]
+                         </b>
+                        </td>
+                    </tr>
+                [% END %]
+            </tbody>
+         </table>
+         <br>
+    [% END %]
+<table>
+    [% IF show_login %]
+        <tr>
+            <td><label>Login ID:</label></td>
+            <td><input type="text" size="15" name="login_id" value="[% clientid %]" data-lpignore="true" />
+                <label>File:</label><input type='file' name='bulk_loginids'></td>
+        </tr>
+    [% ELSE %]
+        <input type="hidden" name="login_id" value="[% clientid %]" />
+    [% END %]
+        <tr>
+            <td><label>ACTION:</label></td>
+            <td>
+                <select name="untrusted_action_type" onchange="updateChildDropdown(this, [% actions_hash_json %])">
+                    <option>------------------- SELECT AN ACTION -----------------</option>
+                    [% FOREACH r IN actions%]
+                    [% NEXT IF r.show_reason == 'no' %]
+                    [% NEXT IF NOT r.is_root %]
+                    <option data-statuscode="[% r.code %]" value="[% r.linktype %]"[% IF r.linktype == selected_untrusted_action %]selected[% END %]>[% r.comments %] </option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr id="childDropdownContainer">
+        </tr>
+        <tr>
+            <td class="top"><label>REASON:</label></td>
+            <td>
+                <select id="untrusted_reasonlist" name="untrusted_reason">
+                    <option>------------------- SELECT A REASON -------------------</option>
+                    [% FOREACH key IN reasons.keys.sort %]
+                    <optgroup label="[% reasons.$key.name %]">
+                        [% FOREACH reason IN reasons.$key.reasons.sort %]
+                        <option value="[% reason %]">[% reason %]</option>
+                        [% END %]
+                    </optgroup>
+                    [% END %]
+                </select>
+                <span>Editing status reason is not allowed, you need to delete the existing and create new one.</span>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)" data-lpignore="true" />
+            </td>
+        </tr>
+        <tr>
+        <td><label>OPERATION:</label></td>
+        <td>
+            <select id="status_op" name="status_op">
+                    <option  value=''>------------------- SELECT AN OPERATION -------------------</option>
+                    <option  value='remove'> Remove From Current LoginId</option>
+                    <option  value='remove_siblings'> Remove From Current/Siblings Real Accounts </option>
+                    <option  value='remove_accounts'> Remove From Current/Siblings (Included Virtuals) </option>
+                    <option  value='add'> Apply On Current LoginId</option>
+                    <option  value='sync'> Apply On Current/Siblings Real Accounts </option>
+                    <option  value='sync_accounts'> Apply On Current/Siblings (Included Virtuals) </option>
+            </select>
+            <input type="hidden" name="broker" value="[% broker %]">
+            <input type="hidden" name="untrusted_action" value="insert_data">
+            <input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
+        </td>
+     </tr>
+     [% IF show_login %]
+     <tr>
+            <td><label>DCC:</label></td>
+            <td><input type='text' name='DCcode' size='50' data-lpignore='true'/> </td>
+     </tr>
+     <tr>
+     <td><input type="submit" class="btn btn--primary" value="Save"></td>
+     </tr>
+     [% ELSE %]
+     <tr>
+     <td><input type="submit" class="btn btn--primary" value="Save"></td>
+     </tr>
+     [% END %]
+    </table>
+</form>
+
+[% IF show_untrusted %]
+[%# display log differences for untrusted client section %]
+<hr>
+<h3>View changes to this untrusted client section</h3>
+<p>To view all the changes made to each status, kindly click on each of the link below:</p>
+<table class="hover alternate collapsed">
+    <thead>
+        <tr>
+            <th>Untrusted section</th>
+            <th>Show the log changes</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+    [% FOREACH r IN actions %]
+        [% NEXT UNLESS r.explanation %]
+        <tr>
+            <td>[% r.comments %]</td>
+            <td>
+                <a class="link" href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_' _ r.code }) %]">
+                    [% r.comments %]
+                </a>
+            </td>
+            <td>[% r.explanation %]</td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+
+[% IF show_disabled %]
+[%# view all disabled accounts details %]
+<hr>
+<h3>View all disabled accounts and their a/c details</h3>
+<form action="[% request.url_for('backoffice/f_viewclientsubset.cgi') %]" method="get">
+    <input type="hidden" name="broker" value="[% encoded_broker %]">
+    <input type="hidden" name="show" value="disabled">
+    <div class="row">
+        <input type="checkbox" id="chk_only_with_more_equity" value="1" checked name="onlylarge">
+        <label for="chk_only_with_more_equity">Only those with more than $5 equity</label>
+    </div>
+    <input type="submit" class="btn btn--primary" value="Monitor disabled accounts">
+</form>
+[% END %]
+[% END %]

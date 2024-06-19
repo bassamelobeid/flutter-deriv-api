@@ -1,0 +1,98 @@
+<form id="user-limit-form">
+
+<label>Limit type:</label>
+    <select name="limit_type_selection">
+    [% FOREACH entry IN limit_types.sort %]
+                   <option value="[% entry %]"  [% IF limit_type_selected == entry %] selected [% END %]> [% entry %] </option>
+            [% END %]
+    </select>
+
+<label>Market type:</label>
+    <select name="market_type_selection">
+    [% FOREACH entry IN market_types.sort %]
+                   <option value="[% entry %]" [% IF market_type_selected == entry %] selected [% END %]> [% entry %] </option>
+            [% END %]
+    </select>
+
+<input type=hidden id="filter_broker" name="broker" type="text" size="10" value="[% broker %]" >
+
+
+<label>Comment:</label><input id="filter_comment" name="comment" type="text" size="10" value="[% comment_selected %]" >
+<input type="submit" class="btn btn--primary" name="filterclientlimit" value="FILTER"/>
+
+<p>
+<input type="submit" class="btn btn--secondary" name="deleteclientlimit" [% IF disabled %] disabled=true [% END %] value="DELETE"/>
+</p>
+
+<div class="scrollable">
+<table class="hover alternate">
+    <thead>
+    <tr>
+        <th>Binary user ID</th>
+        <th>Client login ID</th>
+        <th>Limit ID (if applicable)</th>
+        <th>Limit type</th>
+        <th>Market type</th>
+        <th>Client type</th>
+        <th>Limit condition</th>
+        <th>Payout limit</th>
+        <th>Turnover limit</th>
+        <th>Potential loss limit</th>
+        <th>Realized loss limit</th>
+        <th>Expiry</th>
+        <th>Updated by</th>
+        <th>Updated on</th>
+        <th>Comment</th>
+        <th>Delete</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN output %]
+        <tr>
+            <td>[% data.binary_user_id %]</td>
+            <td>
+                [% FOREACH loginid IN data.client_id %]
+                    <a class="link" href="[% profit_table_url %][% loginid %]">[% loginid %]</a> &nbsp;
+                [% END %]
+            </td>
+            <td>[% data.limit_id %]</td>
+            <td>[% data.limit_type %]</td>
+            <td>[% data.market_type %]</td>
+            <td>[% data.client_type %]</td>
+            <td>[% data.limit_condition %]</td>
+            <td>[% data.payout_limit %]</td>
+            <td>[% data.turnover_limit %]</td>
+            <td>[% data.potential_loss_limit %]</td>
+            <td>[% data.realized_loss_limit %]</td>
+            <td>[% data.expiry %]</td>
+            <td>[% data.updated_by %]</td>
+            <td>[% data.updated_on %]</td>
+            <td>[% data.comment %]</td>
+            <td><input type="checkbox" class="_user-limit-cb" name="deleteclientdata" [% IF disabled %] disabled=true [% END %] value="[% data.client_id.join() %]-[% data.market_type %]-[% data.client_type %]-[% data.limit_id %]"/></td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+</div>
+</form>
+
+<script>
+// manually submit the form and refresh in 1 seconds.
+\$("._user-limit-button").click(function() {
+
+    var data = [{ name: \$(this).attr('name'), value: \$(this).attr('value') }];
+    \$(this).attr('disabled','disabled');
+    \$.ajax({
+           type: "POST",
+           url: "[% url | none %]",
+           data: \$.param(data),
+           success: function(data) {
+		setTimeout(function() {
+			window.location.reload(false);
+		}, 500);
+           },
+         });
+
+    return false;
+});
+</script>

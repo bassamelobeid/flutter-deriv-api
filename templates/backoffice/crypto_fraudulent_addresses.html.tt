@@ -1,0 +1,198 @@
+[% USE date %]
+
+<form id='form_search' action="[% data_url %]" method="post">
+    <table>
+        <tr>
+            <td>
+                <label for="fraud_address">Crypto address:</label>
+            </td>
+            <td>
+                <input id="fraud_address" type="text" name="fraud_address" placeholder="e.g. bc1.. or 0x..." value="[% address %]" size="40" />
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="fraud_loginid">Login ID:</label>
+            </td>
+            <td>
+                <input id="fraud_loginid" type="text" name="fraud_loginid" placeholder="e.g. CR90000001" value="[% loginid %]" size="15" />
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="fraud_start_date">Start date:</label>
+            </td>
+            <td>
+                <input id="fraud_start_date" name="fraud_from_date" type="text" size=15 value="[% from_date %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="fraud_end_date">End date:</label>
+            </td>
+            <td>
+                <input id="fraud_end_date" name="fraud_to_date" type="text" size=15 value="[% to_date %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true"/>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <input type="hidden" name="type" id="type" value="search">
+                <input type="hidden" name="page" id="page" value="[% page %]">
+                <input type="hidden" name="max_pages" id="max_pages" value="[% max_pages %]">
+                <input type="hidden" name="updated_addresses" id="updated_addresses">
+
+                <input type="button" class="btn btn--primary" onclick='search()' value="Search" >
+            </td>
+        </tr>
+    </table>
+</form>
+
+[% IF search %]
+<hr>
+<style>
+    .changed {
+        background-color: var(--text-primary-light) !important;
+    }
+</style>
+
+[% INCLUDE pagination %]
+
+    <div class="scrollable">
+        <table class="border hover alternate" id="fraud_data">
+            <tr>
+                <th>Fraudulent address</th>
+                <th>Currency</th>
+                <th>Login ID</th>
+                <th>Report count</th>
+                <th>Investigation remarks</th>
+                <th>Blocked</th>
+                <th>Creation date</th>
+                <th>Last update date</th>
+                <th>Staff</th>
+                <th>Categories</th>
+                [% IF is_update %]
+                <th>Updated</th>
+                [% END %]
+            </tr>
+            [% FOREACH row IN data %]
+                <tr class="data">
+                    <td class="data-address"><a target="_blank" href="[% row.report_url %]">[% row.address %]</a></td>
+                    <td class="data-currency_code">[% row.currency_code %]</td>
+                    <td>[% row.client_loginid %]</td>
+                    <td>[% row.address_report_count %]</td>
+                    <td>
+                        <input type="text" class="data-remark" value="[% row.investigation_remarks %]" data-initialvalue="[% row.investigation_remarks %]" onkeyup="setChanged(this)" />
+                    </td>
+                    <td class="center">
+                        <input type="checkbox" class="data-is_blocked" value="[% row.is_blocked %]" data-initialvalue="[% row.is_blocked %]" onclick="this.value = this.checked ? 1 : 0; setChanged(this)" [% IF row.is_blocked %] checked="checked" [% END %] />
+                    </td>
+                    <td>[% date.format(row.insert_date, '%Y-%m-%d %T') %]</td>
+                    <td>[% row.last_status_date %]</td>
+                    <td>[% row.last_status_update_by %]</td>
+                    <td>[% row.categories %]</td>
+                    [% IF is_update %]
+                    <td class="center">
+                        <span style="color: var(--color-darkblue); [% !row.has_updated && 'display: none;' %]">&#10004;</span>
+                    </td>
+                    [% END %]
+                </tr>
+            [% END %]
+        </table>
+    </div>
+
+[% INCLUDE pagination %]
+
+[% END %]
+
+[% BLOCK pagination %]
+<table>
+    <tr>
+        <td>
+            <input type='button' class='btn btn--primary' onclick='previousPage()' value='Previous' />
+        </td>
+        <td>
+            <input type='text' size="3" name='page_view' value="[% page %]/[% max_pages %]" />
+        </td>
+        <td>
+            <input type='button' class='btn btn--primary' onclick='nextPage()' value='Next' />
+        </td>
+        <td>
+            <input type="button"  onclick="exportCSV()" class="btn btn--primary" name="export" value="Export" />
+        </td>
+        <td>
+            <input type="button"  onclick="postData()" class="btn btn--primary" name="save" value="Save" />
+        </td>
+    </tr>
+</table>
+[% END %]
+
+
+<script>
+
+function nextPage() {
+    const elPage = document.getElementById('page');
+
+    const nextPageNumber = parseInt(elPage.value) + 1;
+    if (nextPageNumber > [% max_pages %]) {
+        return undefined;
+    }
+
+    elPage.value = nextPageNumber;
+    submitForm();
+}
+
+function previousPage() {
+    const elPage = document.getElementById('page');
+
+    const previousPageNumber = parseInt(elPage.value) - 1;
+    if (previousPageNumber === 0){
+        return undefined;
+    }
+
+    elPage.value = previousPageNumber;
+    submitForm();
+}
+
+function search() {
+    document.getElementById('page').value = 1;
+    submitForm();
+}
+
+function exportCSV(){
+    submitForm('export');
+}
+
+function submitForm(type = 'search') {
+    document.getElementById('type').value = type;
+    document.getElementById('form_search').submit();
+}
+
+function setChanged(el) {
+    const elTr             = el.closest('tr.data');
+    const elIsBlocked      = elTr.querySelector('.data-is_blocked');
+    const elRemark         = elTr.querySelector('.data-remark');
+    const isBlockedChanged = !![elIsBlocked, elRemark].find(el => el.value !== el.getAttribute('data-initialvalue'));
+
+    elTr.classList[isBlockedChanged ? 'add' : 'remove']('changed');
+}
+
+function postData() {
+    const updated_addresses = [];
+    [...document.querySelectorAll('#fraud_data tr.changed')].forEach(elTr => {
+        updated_addresses.push({
+            address   : elTr.querySelector('.data-address').textContent.trim(),
+            is_blocked: elTr.querySelector('.data-is_blocked').value,
+            remark    : elTr.querySelector('.data-remark').value,
+        });
+    });
+
+    document.getElementById('updated_addresses').value = JSON.stringify(updated_addresses);
+    submitForm();
+}
+
+\$(document).ready(function() {
+    \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+});
+
+</script>

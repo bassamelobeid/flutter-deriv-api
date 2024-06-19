@@ -1,0 +1,155 @@
+[% 
+    titles = { stamp => 'Date', remote_addr => 'IP', staff_name => 'Staff', comment => 'Account review' };
+    groups_config = {
+        cs => ['stamp', 'staff_name', 'operation', 'table', 'reason', 'document_type', 'lifetime_valid', 'expiration_date', 'status', 'comments', 'status_code', 'first_name', 'last_name', 'email', 'password', 'is_totp_enabled', 'phone', 'address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state', 'no data found', 'status_comment'],
+    };
+%]
+
+[% MACRO groups_class(column) BLOCK;
+    cl = '';
+    FOREACH group = groups_config.keys;
+        cl = cl _ ' group-' _ group IF groups_config.item(group).list.grep("^$column$").size;
+    END;
+-%]
+    [%- cl ? "class='$cl.trim'" : '' -%]
+[% END %]
+
+<style type="text/css">
+    .hidden {
+        background: var(--bg-primary-light);
+        font-size: 0;
+        user-select: none;
+    }
+    .hidden_show {
+        background: var(--bg-primary-light);
+        color: var(--text-primary);
+        padding: 0 4px;
+    }
+    #group_display span {
+        cursor: pointer;
+        display: inline-block;
+        font-weight: bold;
+        background: var(--bg-primary-light);
+        padding: 4px 8px;
+        border-bottom: 2px solid transparent;
+        font-size: 1rem;
+    }
+    #group_display span.selected {
+        border-bottom: 2px solid var(--color-orange);
+    }
+    #group_display span:hover {
+        background: var(--bg-active);
+    }
+    table#show_log_list_table th, table#show_log_list_table td {
+        font-size: 1.4rem;
+    }
+    table#show_log_list_table td div.changed {
+        padding: 0 4px;
+        background: var(--color-pink);
+        color: var(--grey-800);
+    }
+    table#show_log_list_table td div.unavailable {
+        padding: 0 4px;
+        background: var(--bg-disabled);
+        height: 20px;
+    }
+</style>
+
+<a class="link" href="[% url_to_client | none %]">&laquo; Return to client details</a><br><br>
+
+[% IF hidden_cols %]NOTE: some contents are hidden (those having black background). <button class="btn btn--secondary" onclick="showHidden()">Show them</button>, if you need.<br>[% END %]
+
+<p id="group_display">
+    <label>Display:</label>
+    <span>All columns</span>
+    [% FOREACH group IN groups_config.keys.sort %]
+        <span data-group="[% group %]">[% group.upper %] columns</span>
+    [% END %]
+</p>
+
+[% INCLUDE pager %]
+<div class="scrollable">
+<table id="show_log_list_table" class="border hover nowrap small">
+    <thead>
+    <tr>
+        [% FOREACH hdr = hdrs  %]
+            <th [% groups_class(hdr) %]>[% titles.$hdr || hdr.replace('_', ' ').ucfirst %]</th>
+        [% END %]
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH log = logs %]
+        <tr class="[% log.row_classname%]">
+            [% FOREACH hdr = hdrs;
+                SET value = log.data.$hdr;
+                SET value = '' IF value == 'now()'; # default timestamp vals.  tacky; need to fix this at source!
+                SET class = '';
+                SET class = class _ " changed" IF log.changes.$hdr;
+                SET class = class _ " hidden" IF hidden_cols.$hdr;
+                SET class = class _ " unavailable" IF !log.data.exists(hdr);
+                SET classdec = class ? "class=\"$class\"" : '' %]
+                <td [% groups_class(hdr) %]>
+                    <div [% classdec | none %] title="[% value %]">[% value %]</div>
+                </td>
+            [% END %]
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+[% INCLUDE pager %]
+
+[% BLOCK pager %]
+    <div rowcount="[%rowcount%]"></div>
+    [% IF pages > 1 %]  
+        [% pages_less1 = pages - 1 %]
+        [% page_url = url_to_myself _ "&pagesize=$pagesize" %]
+        <a class="link" href="[% page_url _ "&page=0" | none %]">|<</a>
+        <a class="link" href="[% page_url _ "&page=$prev" | none %]"><</a>
+        [% FOREACH page IN [ 0..pages_less1 ] %]
+           <a class="link" href="[% page_url _ "&page=$page" | none %]">[% page + 1 %]</a>
+        [% END %]
+        <a class="link" href="[% page_url _ "&page=$next" | none %]">></a>
+        <a class="link" href="[% page_url _ "&page=$pages_less1" | none %]">>|</a>
+    [% END %]
+[% END %]
+
+<style type="text/css" id="group_display_style">#show_log_list_table { display: none; }</style>
+<script>
+    // Show hidden contents
+    const showHidden = () => {
+        [...document.getElementsByClassName('hidden')].forEach(elm => {
+            elm.classList.add('hidden_show');
+            elm.classList.remove('hidden');
+        });
+        return false;
+    };
+
+    // Display different column groups
+    const storage_key     = 'audit_columns';
+    const group_attr      = 'data-group';
+    const group_selectors = document.querySelectorAll('#group_display span');
+    const elm_group_style = document.getElementById('group_display_style');
+
+    const showColumns = (group = getDefaultGroup()) => {
+        elm_group_style.innerHTML = group ? `#show_log_list_table tr.edd_status { display: none; } #show_log_list_table th, #show_log_list_table td { display: none; } .group-\${group} { display: table-cell !important; }` : '';
+        updateSelectors(group);
+    };
+
+    const getElementGroup = (elm) => elm.getAttribute(group_attr) || '';
+    const getDefaultGroup = () => localStorage.getItem(storage_key) || '';
+
+    const updateSelectors = (selected_group = getDefaultGroup()) => {
+        group_selectors.forEach((elm) => {
+            elm.classList[getElementGroup(elm) === selected_group ? 'add' : 'remove']('selected');
+        });
+        localStorage.setItem(storage_key, selected_group || '');
+    };
+
+    group_selectors.forEach((elm) => {
+        elm.addEventListener('click', (e) => {
+            showColumns(getElementGroup(e.target));
+        });
+    });
+
+    showColumns();
+</script>

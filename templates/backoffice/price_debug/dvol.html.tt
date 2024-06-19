@@ -1,0 +1,39 @@
+<div style="float:left; display:inline;">Put Delta</div>
+<div style="margin:0 30%; display:inline;">[% IF cut %]Cut: [% cut %][% END %]</div>
+<div style="float:right; display:inline;">Call Delta</div>
+
+[% WRAPPER 'backoffice/container/full_table.html.tt' extra_class="smaller-font left-align" %]
+    <tr>
+        <th></th>
+        <th>Delta</th>
+        [% FOREACH delta = deltas %]
+        <th>
+        [% IF delta == 50 %]
+            ATM
+        [% ELSIF delta > 50 %]
+            [% 100 - delta %]
+        [% ELSE %]
+            [% delta %]
+        [% END %]
+        </th>
+        [% END %]
+    </tr>
+
+    [% FOREACH day = days %]
+        <tr>
+            <td style="color:#072365;">[% day %]</td>
+            <td style="color:#072365;">Vol<br>Strike</td>
+            [% FOREACH delta = deltas %]
+                [% IF delta == '50' || delta == '25' || delta == '75' %]
+                <td style="background-color: #D8D8D8;">
+                [% ELSE %]
+                <td>
+                [% END %]
+                    <span>[% vols_table.$day.$delta.vol %]</span>
+                    <br>
+                    <span style="color:#072365;">[% vols_table.$day.$delta.strike %]</span>
+                </td>
+            [% END %]
+        </tr>
+    [% END %]
+[% END %]

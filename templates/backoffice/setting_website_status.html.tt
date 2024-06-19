@@ -1,0 +1,52 @@
+[% WRAPPER layout title='Website status' %]
+    <form method="post">
+        <table>
+            <thead>
+                <tr>
+                    <td><b>Status</b></td>
+                    <td><b>Message</b></td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <select name="status" id="select_status">
+                            [% FOREACH status IN statuses %]
+                                <option value="[% status %]" [% site_status == status ? 'selected' : '' %]>[% status.ucfirst %]</option>
+                            [% END %]
+                        </select>
+                    </td>
+                    <td>
+                        <select name="reason" id="select_reason">
+                            <option value="">None</option>
+                            [% FOREACH reason IN reasons.sort %]
+                                <option value="[% reason %]" [% site_message == reason ? 'selected' : '' %]>[% reasons.$reason %]</option>
+                            [% END %]
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2">
+                        <input type="hidden" name="csrf" value="[% csrf %]" />
+                        <input type="submit" class="btn btn--primary" value="Change Site Status"/>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </form>
+[% END %]
+
+[% BLOCK layout %]
+    [% FOREACH msg IN flash %]
+        <p class="notify">[% msg %]</p>
+    [% END %]
+
+    <div class="card">
+        <div class="card__label toggle">[% title %]</div>
+        <div class="card__content">
+            [% content | none %]
+        </div>
+    </div>
+[% END %]

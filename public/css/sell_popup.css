@@ -1,0 +1,134 @@
+#sell_popup_container {
+    background: #F2F2F2;
+    border: solid 1px #E98024;
+    width: 90%;
+    font-size: 80%;
+    max-width: 960px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 0;
+}
+#sell_popup_container a.close {
+    display: inline-block;
+    float:right;
+    margin-top: 0;
+    margin-right: 0;
+    padding: 10px 8px;
+    cursor: pointer;
+    color: #FFF;
+    border: solid 1px #E98024;
+    border-radius: 0;
+    border-bottom-left-radius: 4px;
+    background: #E98024;
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 0px;
+}
+#sell_popup_container a.close:hover {
+    text-decoration: none;
+}
+#sell_popup_container .inpage_popup_content {
+    margin: 0;
+    padding: 0;
+}
+ #sell_popup_container .inpage_popup_content_box {
+    padding: 0;
+    margin: 0;
+    background: #FFF;
+    border: solid 2px #DEDEDE;
+    text-align: center;
+}
+#sell_popup_container .inpage_popup_content #explanation-content {
+    text-align: left;
+}
+#sell_popup_container .inpage_popup_content #sell_bet_desc {
+    padding: 5px 0;
+    border: 1px solid #DEDEDE;
+    cursor: pointer;
+}
+#sell_popup_container .inpage_popup_content #sell_content_wrapper .sell_price_wrapper {
+    margin-top: 10px;
+}
+#sell_popup_container .inpage_popup_content #sell_content_wrapper .sell_price_wrapper #sell_price_container {
+    margin: 0 auto;
+    width: 60%;
+    display: inline-block;
+}
+#sell_popup_container .inpage_popup_content #sell_content_wrapper .sell_price_wrapper #sell_price_container .stylized_price {
+    min-width: 155px;
+    width: 40%;
+    margin-bottom: 5px;
+    display: inline-block;
+}
+#sell_popup_container .inpage_popup_content #sell_content_wrapper .sell_price_wrapper #sell_price_container #sell_price_sparkline {
+    padding: 0;
+    width: 40%;
+    text-align: left;
+    display: inline-block;
+}
+#sell_popup_container .inpage_popup_content #sell_content_wrapper .sell_price_wrapper #sell_info {
+    display: inline-block;
+    width: 30%;
+}
+#sell_popup_container .inpage_popup_content #sell_content_wrapper .sell_price_wrapper .form_button {
+    display: inline-block;
+    margin: 0 auto;
+    vertical-align: top;
+}
+#sell_popup_container .inpage_popup_content #sell_content_wrapper .extra-info {
+    font-size: 85%;
+}
+#sell_popup_container .inpage_popup_content #sell_content_wrapper #message_container_wrapper {
+    clear: both;
+    padding: 0;
+    background: none;
+}
+#sell_popup_container .inpage_popup_content #sell_content_wrapper #overlay-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 90%;
+    background-color: #fff;
+    filter: alpha(opacity=50);
+    opacity: 0.5;
+    -moz-opacity: 0.5;
+    z-index: 150000;
+}
+#sell_popup_container .inpage_popup_content .bet_confirm_wrapper {
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0;
+    margin-bottom: 40px;
+}
+#sell_popup_container .inpage_popup_content .note {
+    clear: both;
+    margin: 20px;
+    margin-top: 0;
+    text-align: left;
+}
+#sell_popup_container .inpage_popup_content #confirmation_table {
+    font-size: 16px;
+    border: none;
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+#sell_popup_container .inpage_popup_content #confirmation_table th, #sell_popup_container .inpage_popup_content #confirmation_table td {
+    width: auto;
+}
+#sell_popup_container .inpage_popup_content #confirmation_table .standout {
+    width: 40%;
+}
+#sell_popup_container .inpage_popup_content #confirmation_table .standin {
+    width: 30%;
+}
+#sell_popup_container .inpage_popup_content .trade_ref {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+#sell_popup_container .inpage_popup_content .account_balance {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}

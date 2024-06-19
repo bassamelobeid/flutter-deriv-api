@@ -1,0 +1,48 @@
+<li>
+    <div class="item">
+        <a href="#" class="more">+</a>
+        <span>[% item.symbol %]</span>
+        [% IF item.big_diff %]
+        <span class="big_diff">
+            <img width="15" height="15" title="Big diff between [% item.big_diff_between %]" src="[% request.url_for('images/common/general_error_1.gif') | none %]"/>
+        </span>
+        [% END %]
+    </div>
+
+    [% IF item.SD_surface.table %]
+        <form class="update" action="[% update_url | none %]">
+            <input type="hidden" name="symbol" value="[% item.symbol %]"/>
+        Use:
+        [% IF item.BB_surface.table %]
+            BB <input type="radio" name="which" value="BB"/>
+        [% END %]
+        [% IF item.SD_surface.table %]
+            SD <input type="radio" name="which" value="SD" checked="checked"/>
+        [% END %]
+        <input name="submit" type="submit" value="Update."/>
+        <img src="[% request.url_for('images/common/hourglass_1.gif') | none %]" style="display:none;"/>
+        </form>
+    [% ELSE %]
+        <p>There were no valid surfaces in the file for [% item.symbol %].</p>
+    [% END %]
+
+    <div class="comparison" style="display:none">
+        <h3>SD Surface:</h3>
+        <div>
+            <p class="validity [% IF item.SD_surface.reason %]failure">Invalid: [%item.SD_surface.reason %][% ELSE %]success">Valid.[% END %]</p>
+            <img src="[% request.url_for('images/common/hourglass_1.gif') | none %]" style="display:none;"/>
+            [% IF item.SD_surface.table %]
+                    <span class="hidden recorded_epoch" style="display:none;">[% item.SD_surface.recorded_epoch %]</span>
+                    <span class="spot" style="display:none;">[% item.SD_surface.spot_reference %]</span>
+                    [% item.SD_surface.table %]
+            [% ELSE %]
+                <p>[% item.SD_surface.reason %]</p>
+            [% END %]
+        </div>
+
+        [% IF item.comparison %]
+            <h3>Comparison:</h3>
+            <div>[% item.comparison %]</div>
+        [% END %]
+    </div>
+</li>

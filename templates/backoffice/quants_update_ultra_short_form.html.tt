@@ -1,0 +1,44 @@
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table id="ultra_short_form">
+    <tr>
+        <td>Current ultra short duration is </td>
+        <td class="old_duration"><strong>[% data.duration %]</strong></td>
+    </tr>
+    <tr>
+        <td>Update duration:</td>
+        <td><input type="text" name="new_duration"></input></td>
+        <td>(accepts any of the following values: 1m, 5m, 10m, 1m 30s etc.)</td>
+    </tr>
+    <tr>
+        <td><button class="btn btn--primary" onClick="Save()" type="button">Save</button></td>
+        <td class="result"></td>
+    </tr>
+</table>
+</fieldset>
+
+<script>
+    function Save() {
+        var el = \$('table#ultra_short_form');
+        var old_duration = el.find('td.old_duration');
+        var new_duration = el.find('input[name="new_duration"]');
+        var result = el.find('td.result');
+        result.text('Processing ...');
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                save_ultra_short: 1,
+                duration: new_duration.val(),
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    old_duration.text(config.result);
+                    result.text('saved').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+</script>

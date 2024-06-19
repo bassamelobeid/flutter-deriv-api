@@ -1,0 +1,27 @@
+[% WRAPPER 'backoffice/container/full_table.html.tt' extra_class="smaller-font small-space left-align" %]
+    <caption style="text-align:left; font-weight:bold; color:var(--color-blue);">[% title %]</caption>
+    <tr>
+        [% FOREACH header = headers %]
+            <th>[% header %]</th>
+        [% END %]
+    </tr>
+
+    [%
+        row_cnt = days.size - 1
+        column_cnt = headers.size - 2
+        rows = [ 0 .. row_cnt ]
+        columns = [ 0 .. column_cnt ]
+    %]
+
+    [% FOREACH r = rows %]
+        <tr>
+            <td>[% days.$r %]</td>
+            [% IF tenors %]<td>[% tenors.$r %]</td>[% END %]
+            [% IF dates %]<td>[% dates.$r %]</td>[% END %]
+            [% FOREACH c = columns %]
+                <td>[% surface.$r.$c %]</td>
+            [% END %]
+        </tr>
+    [% END %]
+[% END %]
+

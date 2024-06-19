@@ -1,0 +1,31 @@
+
+<p>The CSV format should be as below (without headers):</p>
+
+<table class="border small">
+    <thead>
+        <tr>
+            <th>Deriv account</th>
+            <th>MT5 account</th>
+            <th>Transaction ID</th>
+            <th>Transaction time</th>
+            <th>Amount</th>
+            <th>Fee</th>
+            <th>Currency code</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td colspan="8" align="center">Examples:</td></tr>
+        <tr>
+            <td>CR3881512</td><td>20903498</td><td>101865161661</td><td>2023-05-02T06:16:37.744259</td><td>1</td><td>0</td><td>USD</td>
+        </tr>
+        <tr>
+            <td>CR3197946</td><td>20951498</td><td>101865164261</td><td>2023-05-02T06:17:03.88564</td><td>0.317907</td><td>0.01</td><td>BTC</td>
+        </tr>
+    </tbody>
+</table>
+<br>
+<form method="POST" action="[%request.url_for('backoffice/mt5_bulk_deposit.cgi') | none %]" enctype="multipart/form-data">
+    <label>DCC:</label><input type="text" name="DCcode" size="49"><br><br>
+    <label>Use this CSV:</label><input type="file" value="" required name="payments_csv" />
+    <button type="submit" class="btn btn--primary" name="preview" value="preview">Preview deposits</button>
+</form>

@@ -1,0 +1,52 @@
+<p><a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => input.loginid }) | url %]">&laquo; Return to client details</a></p>
+
+[% IF error %]
+    [% WRAPPER layout title='Error' %]
+       <p class="error"> [% error %]</p>
+    [% END %]
+[% END %]
+
+[% IF action ==  'show_edit_form' %]
+    [% WRAPPER layout title='Edit comment' %]
+    <form method="post">
+        <input type="hidden" name="loginid" value="[% input.loginid %]" />
+        <input type="hidden" name="action" value="update_comment" />
+        <input type="hidden" name="csrf" value="[% csrf %]" />
+        <input type="hidden" name="id" value="[% result.id %]" />
+        <input type="hidden" name="checksum" value="[% result.checksum %]" />
+        <label>Comment:</label>
+        <div class="row">
+            <textarea rows="10" cols="100" name="comment" maxlength=[% limit %] minlength="1" autofocus>[% input.comment || result.comment %]</textarea>
+        </div>
+        <input type="submit" class="btn btn--primary" value="Save changes">
+        <a class="btn btn--secondary" href="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => input.loginid }) | url %]">Cancel</a>
+    </form>
+    [% END %]
+[% ELSE %]
+    [% WRAPPER layout title='Add new comment' %]
+    <form method="post">
+        <input type="hidden" name="loginid" value="[% input.loginid %]" />
+        <input type="hidden" name="action" value="add_comment" />
+        <input type="hidden" name="csrf" value="[% csrf %]" />
+        <label>Comment:</label>
+        <div class="row">
+            <textarea rows="10" cols="100" name="comment" maxlength=[% limit %] minlength="1" autofocus placeholder="Enter new comment here" >[% error ?  input.comment : '' %]</textarea>
+        </div>
+        <input type="submit" class="btn btn--primary" value="Add new comment">
+    </form>
+    [% END %]
+[% END %]
+
+[% WRAPPER layout title='Review Comments' %]
+    [% INCLUDE 'backoffice/client_comments_table.html.tt' loginid=input.loginid %]
+[% END %]
+
+
+[% BLOCK layout %]
+    <div class="card">
+        <div class="card__label toggle">[% title %]</div>
+        <div class="card__content">
+            [% content | none %]
+        </div>
+    </div>
+[% END %]

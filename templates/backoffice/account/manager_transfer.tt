@@ -1,0 +1,52 @@
+<h3>Confirm a TRANSFER BETWEEN ACCOUNTS</h3>
+
+<form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi') | none %]" method="POST" class="bo_form_with_files">
+
+<input type="hidden" name="payment_type" value="transfer_between_account">
+
+<div class="row">
+    <div>
+        <label>FROM Login ID:</label>
+        <input type="text" name="account" placeholder="required" data-lpignore="true" />
+    </div>
+    <div>
+        <label>TO Login ID:</label>
+        <input type="text" name="to_account" placeholder="required" data-lpignore="true" />
+    </div>
+    <div>
+        <label>Currency:</label>
+        <select name="currency">
+            [% currency_options | none %]
+        </select>
+    </div>
+    <div>
+        <label>Amount:</label>
+        <input type="text" name="amount" placeholder="required" data-lpignore="true" />
+    </div>
+    <div>
+        <label>Amount range:</label>
+        <select name="range">
+            <option value="0-10">0-10</option>
+            <option value="10-100">10-100</option>
+            <option value="100-500">100-500</option>
+            <option value="500-1000">500-1000</option>
+            <option value="1000-2500">1000-2500</option>
+            <option value="2500-5000">2500-5000</option>
+            <option value="5000-10000">5000-10000</option>
+            <option value="10000-99999">10000-99999</option>
+        </select>
+    </div>
+    <div>
+        <label>Control code:</label>
+        <input type="text" name="DCcode" placeholder="required" data-lpignore="true" />
+    </div>
+</div>
+
+<div class="row">
+    <label><input type="checkbox" name="skip_validation" value="on" id="skip_validation2" />Override status checks?</label>
+</div>
+
+<button type="submit" class="btn btn--primary" name="ttype" value="TRANSFER">Confirm transfer</button>
+<input type=reset class="btn btn--secondary" name=Reset>
+
+</form>

@@ -1,0 +1,39 @@
+
+<p>The CSV format should be as below (without headers):</p>
+
+<table class="border small">
+    <thead>
+        <tr>
+            <th>Login ID</th>
+            <th>Transaction type</th>
+            <th>Trace ID</th>
+            <th>Payment processor</th>
+            <th>Payment method</th>
+            <th>Currency</th>
+            <th>Amount</th>
+            <th>Transaction ID</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td colspan="9" align="center">Examples:</td></tr>
+        <tr><td colspan="9" align="center">Transaction ID and Payment processor are required for <b>credit</b> (deposit)</td></tr>
+        <tr>
+            <td>CR0001</td><td>credit</td><td>714858<td>DCash1</td><td></td><td>USD</td><td>10.00</td><td>143222</td>
+        </tr>
+        <tr><td colspan="9" align="center">Payment method is required for <b>debit</b> (withdrawal) and <b>reversal</b> (withdrawal reversal)</td></tr>
+        <tr>
+            <td>CR0001</td><td>debit</td><td>714859</td><td></td><td>NETeller</td><td>USD</td><td>10.00</td><td></td>
+        </tr>
+        <tr>
+            <td>CR0001</td><td>reversal</td><td>714859</td><td></td><td>NETeller</td><td>USD</td><td>10.00</td><td></td>
+        </tr>
+    </tbody>
+</table>
+
+<br/>
+<form method="POST" action="[%request.url_for('backoffice/batch_payments.cgi') | none %]" enctype="multipart/form-data" class="row">
+    <label>Use this CSV:</label><input type="file" value="" required name="payments_csv" />
+    <label for="skip_validation4" ><input type="checkbox" name="skip_validation" value="on" id="skip_validation4" />Override status checks?</label>
+    <label for="notify_client_manual_payment" ><input type="checkbox" name="notify_client" value="on" id="notify_client_manual_payment" />Notify clients by email</label>
+    <button type="submit" class="btn btn--primary" name="preview" value="doughflow">Preview Doughflow payments</button>
+</form>

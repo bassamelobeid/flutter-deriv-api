@@ -1,0 +1,95 @@
+<p>See, also: <a class="link" href="[% dtr_link | none %]">this month's daily turnover report</a>.</p>
+<p>Summary of period starting at [% start_date %] and ending [% end_date %].</p>
+<div id="rd-tabs" class="scrollable">
+  <ul>
+    <li><a href="#rd-summary">Client Summary</a></li>
+    <li><a href="#rd-pivot">Pivot</a></li>
+    <li><a href="#rd-exposure">Company's Exposure</a></li>
+    <li><a href="#rd-multiplier">Multipliers Open Profit & Loss</a></li>
+    <li><a href="#rd-vanilla">Vanilla Risk Reporting</a></li>
+  </ul>
+  <div id="rd-summary">
+        <p> Latest report generated at [% generated_time %] </p>
+        <div class="sum_table">
+            <h3>Deposits</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_deposits, key = 'payments' %]
+        </div>
+        <div class="sum_table">
+            <h3>Withdrawals</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_withdrawals, key = 'payments' %]
+        </div>
+<hr/>
+        <div class="sum_table">
+            <h3>Winners (financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_winners.financial, key = 'financial_profit' %]
+        </div>
+        <div class="sum_table">
+            <h3>Winners (non_financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_winners.non_financial, key = 'non_financial_profit' %]
+        </div>
+        <div class="sum_table">
+            <h3>Losers (financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_losers.financial, key = 'financial_profit' %]
+        </div>
+        <div class="sum_table">
+            <h3>Losers (non_financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_losers.non_financial, key = 'non_financial_profit' %]
+        </div>
+<hr/>
+        <div class="sum_table">
+            <h3>Turnover (financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = top_turnover.financial, key = 'financial_turnover' %]
+        </div>
+        <div class="sum_table">
+            <h3>Turnover (non_financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = top_turnover.non_financial, key = 'non_financial_turnover' %]
+        </div>
+<hr/>
+        <div class="sum_table">
+            <h3>Watched</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = watched, action = 'watched', key = 'profit' %]
+        </div>
+<hr/>
+</div>
+<div id="rd-pivot">
+<p> Latest report generated at [% generated_time %] </p>
+[% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
+</div>
+<div id="rd-exposure">
+[% INCLUDE 'backoffice/risk_dashboard_exposure_monitoring.html.tt' data = exposures_report %]
+</div>
+<style type="text/css">
+    #rd-summary div {
+        padding:0 3px;
+        border-width: 1px;
+        display: table-cell;
+    }
+    #rd-summary h2,
+    #rd-summary h3 {
+        margin:5px 0;
+    }
+    #rd-summary ol {
+        padding-left:30px;
+    }
+    #rd-summary .sum_table {
+        width: 20%;
+    }
+    #rd-summary td {
+        text-align:right;
+    }
+    #rd-summary .highlight {
+        background-color: var(--color-yellow);
+    }
+    #rd-tabs {
+        padding: 16px;
+    }
+</style>
+
+<div id="rd-multiplier"> 
+[% INCLUDE 'backoffice/risk_dashboard_multiplier.html.tt' data = multiplier_open_pnl %]
+</div>
+
+<div id="rd-vanilla"> 
+[% INCLUDE 'backoffice/risk_dashboard_vanilla.html.tt' data = vanilla_risk_report  at_date = vanilla_risk_report_at_date error_message = vanilla_error_message %]
+</div>
+

@@ -1,0 +1,92 @@
+<span>Save all calibration parameters</span>
+<form>
+    <input class="save_all" type="submit" class="btn btn--primary" value="Save All">
+</form>
+
+[% FOREACH underlying = params.keys %]
+<div class="heading">
+    <p><a href="#" class="more">+</a> <b>[% underlying %]</b> calibrated(vega weighted) with absolute model error of <span id="[% underlying %]_calibration_error" style="font-weight:bold">[% params.$underlying.calibration_error %]</span> <span class='success [% underlying %]_update_output'></span></p>
+</div>
+
+<div class="content">
+    <form id="[% underlying %]_update" action="[% save_action_url | none %]" method="POST">
+        <div class="heading">
+            <p><a href="#" class="more">+</a> Implied Surface On Couch (surface recorded time: [% params.$underlying.implied_volsurface.recorded_datetime %])</p>
+        </div>
+        <div class="content">
+            <table border='1px'>
+                <tr>
+                    <td>Tenor</td>
+                    [% FOREACH point = params.$underlying.smilepoints.nsort %]
+                        <td>[% point %]</td>
+                    [% END %]
+                </tr>
+                [% FOREACH day IN params.$underlying.implied_volsurface.surface.keys.nsort %]
+                    <tr>
+                        <td>[% day %]</td>
+                        [% FOREACH volpoint IN params.$underlying.implied_volsurface.surface.$day.keys.nsort %]
+                        <td>[% params.$underlying.implied_volsurface.surface.$day.$volpoint %]</td>
+                        [% END %]
+                    </tr>
+                [% END %]
+            </table>
+        </div>
+        <div class="heading">
+            <p><a href="#" class="more">+</a> Calibrated Implied Surface</p>
+        </div>
+        <div class='content'>
+            <table id="[% underlying %]_calibrated_iv" border="1px">
+                <tr>
+                    <td>Tenor</td>
+                    [% FOREACH point = params.$underlying.smilepoints.nsort %]
+                        <td>[% point %]</td>
+                    [% END %]
+                </tr>
+                    [% FOREACH day IN params.$underlying.calibrated.keys.nsort %]
+                        <tr>
+                            <td>[% day %]</td>
+                            [% FOREACH volpoint IN params.$underlying.calibrated.$day.keys.nsort %]
+                                <td class="[% day %]_[% volpoint %]">[% params.$underlying.calibrated.$day.$volpoint %]</td>
+                            [% END %]
+                        </tr>
+                    [% END %]
+            </table>
+        </div>
+
+    <p>Calibration Parameters</p>
+    <input type="hidden" name="symbol" value="[% underlying %]">
+    <input type="hidden" name="calibration_error_[% underlying %]" value="[% params.$underlying.calibration_error %]">
+    <table border='1px' font-size='14px'>
+        <tr>
+            [% FOREACH param_name = params.$underlying.calibration_param.keys.sort %]
+                <td>[% param_name %]</td>
+            [% END %]
+        </tr>
+        <tr id="ori_param">
+            [% FOREACH param_name = params.$underlying.calibration_param.keys.sort %]
+                <td name="[% param_name %]">[% params.$underlying.calibration_param.$param_name %]</td>
+            [% END %]
+        </tr>
+        <tr id="altered_param">
+            [% FOREACH param_name = params.$underlying.calibration_param.keys.sort %]
+                <td><input class="calib_param" name="[% param_name %]" type="text" value="[% params.$underlying.calibration_param.$param_name %]" data-lpignore="true"/></td>
+            [% END %]
+        </tr>
+        <tr border='0'>
+            <td><input class="save_calib" type="submit" value="Save Calibration"></td>
+            <td><input class="recalibrate" type="submit" value="Recalibrate"></td>
+        </tr>
+    </table>
+</form>
+
+<p>Plot comparison</p>
+<table border='1px'>
+    <tr>
+        [% FOREACH day = params.$underlying.implied_vs_calib.keys.nsort %]
+        <td><img class="[% underlying %]_img_[% day %]" border=0 src="[% params.$underlying.implied_vs_calib.$day %]"></td>
+        [% END %]
+    </tr>
+</table>
+</div>
+
+[% END %]

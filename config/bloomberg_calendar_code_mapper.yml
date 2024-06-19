@@ -1,0 +1,168 @@
+---
+AM:
+- EEI_AM
+AX:
+- ASX
+- ASX_OTC
+B2:
+- BMF
+- BOVESPA
+BU:
+- EEI_BU
+- EEI_LI
+- EURONEXT_OTC
+- EURONEXT
+- STOXX
+- STOXX_OTC
+BX:
+- BSE
+CE:
+- CME
+DB:
+- DFM
+DT:
+- EUREX
+FA:
+- FSE
+- FSE_OTC
+HO:
+- HKF
+HS:
+- HKSE
+- HKSE_OTC
+I1:
+- BIS
+IE:
+- ISE
+JA:
+- JSC
+JH:
+- JSE
+- JSE_OTC
+LI:
+- ICE_LIFFE
+LS:
+- LSE
+- LSE_OTC
+- ODLS
+MD:
+- MEFF
+MI:
+- BI
+- IDM
+MS:
+- BM
+- BM_OTC
+N7:
+- NASDAQ
+- NASDAQ_INDEX
+- NASDAQ_OTC
+ND:
+- NZSE
+NT:
+- NSE
+- NSE_OTC
+NY:
+- NYSE
+- NYSE_OTC
+- NYSE_SPC
+- NYSE_SPC_OTC
+- SP_GSCI
+O2:
+- OMX
+OK:
+- OSE
+OS:
+- OSLO
+PA:
+- EEI_PA
+R7:
+- MOF
+- RTS
+S5:
+- EUREX_SWISS
+- SWX
+- SWX_OTC
+SE:
+- KRX
+SF:
+- SFE
+SG:
+- SGX
+SH:
+- SSE
+SN:
+- SZSE
+SX:
+- SES
+T4:
+- TRSE
+- TRSE_OTC
+TD:
+- SAS
+TK:
+- TSE
+- TSE_OTC
+- TSE_S
+AU:
+- AUD
+AR:
+- ARS
+BZ:
+- BRL
+CA:
+- CAD
+CH:
+- CNY
+CZ:
+- CZK
+EU:
+- EUR
+EC:
+- EUR
+FR:
+- EUR
+GB:
+- GBP
+GE:
+- EUR
+HK:
+- HKD
+ID:
+- IDR
+IN:
+- INR
+IT:
+- EUR
+JN:
+- JPY
+MX:
+- MXN
+NO:
+- NOK
+NZ:
+- NZD
+PD:
+- PLN
+RU:
+- RUB
+SA:
+- ZAR
+SI:
+- SGD
+SK:
+- KRW
+SR:
+- SAR
+SW:
+- SEK
+SZ:
+- CHF
+TU:
+- TRY
+UA:
+- AED
+UK:
+- GBP
+US:
+- USD

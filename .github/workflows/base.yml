@@ -1,0 +1,47 @@
+name: Repository Tests
+run-name: Repository Tests
+on:
+  workflow_call:
+    inputs:
+      repository:
+        description: 'Repository name for running tests'
+        required: false
+        default: regentmarkets/bom-backoffice
+        type: string
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.repository }}
+  cancel-in-progress: true
+jobs:
+  core_unit_syntax_diff:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/${{ inputs.repository }}
+    env:
+      LOG_LEVEL: debug
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: ${{ inputs.repository }}
+      - name: Code structure and syntax
+        run: |
+          sudo mkdir -p /home/website/www/temp
+          make syntax_diff
+      - name: unit tests
+        run: make unit
+      - name: Core tests
+        run: make test

@@ -1,0 +1,546 @@
+<p>Limit type definitions:</p>
+<ul>
+    <li><b>Landing company wide limits (per landing company (client database))</b>
+        <ul>
+        <li>Global Potential Loss: sum of payout price - buy price of open contracts for a single database.</li>
+        <li>Global Realized Loss: sum of sell price - buy price of closed contracts for a single database.</li>
+        </ul>
+    </li>
+</ul>
+
+<p>
+Input "default" in underlying symbol box -> output: "each symbol" -> if the limit applies to each symbol <br/>
+Input nothing in underlying symbol box -> output: "whole market" -> if the limit applies to all symbols of the market <br/>
+underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol <br/>
+</p>
+<p>Risk Profile Guidelines (there's no strict enforcement on limit amount but please use the guidelines so that we don't end up with hundreds of different numbers):</p>
+
+<ul>
+    <li>no_business: 0 Max Payout Per Contract(PCP), 0 Daily Turnver Per Client(DT)</li>
+    <li>extreme_risk: 100 (PCP), 1000 (DT)</li>
+    <li>high_risk: 1000 (PCP), 5000 (DT)</li>
+    <li>moderate_risk: 5000 (PCP), 50000 (DT)</li>
+    <li>medium_risk: 20000 (PCP), 100000 (DT)</li>
+    <li>low_risk: 50000 (PCP), 500000 (DT)</li>
+</ul>
+
+<p>Existing contract groups:</p>
+
+<ul>
+    [% FOREACH group IN existing_contract_groups %]
+        <li>[% group.key %]: [% group.list %]</li>
+    [% END %]
+</ul>
+
+<p>Existing market groups:</p>
+
+<ul>
+    [% FOREACH group IN existing_market_groups %]
+        <li>[% group.key %]: <span style="font-family: monospace">[% group.list %]</span></li>
+    [% END %]
+</ul>
+
+<div class="row scrollable">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table class="pretty small border nowrap">
+    <tbody>
+    <tr style="vertical-align: top;">
+        <td>
+            <div>
+                <b>Market</b><br/>
+                <div id="market"></div>
+            </div>
+            <hr/>
+            <div id="underlying_symbol">
+                <b>Underlying Symbol</b><br/>
+                <input type="text" name="underlying_symbol" size="10" data-lpignore="true" />
+            </div>
+        </td>
+        <td>
+            <b>Expiry Type<b><br/>
+            <div id="expiry_type"></div>
+        </td>
+        <td>
+            <b>Barrier Type</b><br/>
+            <div id="barrier_type"></div>
+        </td>
+        <td>
+            <b>Contract Group</b><br/>
+            <div id="contract_group"></div>
+        </td>
+        <td>
+            <b>Landing Company</b><br/>
+            <div id="landing_company"></div>
+        </td>
+        <td>
+            <div>
+                <b>Limit Type</b><br/>
+                <select name="limit_type">
+                    [% FOREACH limit_type IN data.limit_types %]
+                        <option value="[% limit_type.item(0) %]">[% limit_type.item(1) %]</option>
+                    [% END %]
+                </select>
+            </div>
+            <hr/>
+            <div>
+                <b>Limit Amount (USD)</b><br/>
+                <input type="text" name="limit_amount" size="12" data-lpignore="true" />
+            </div>
+            <hr/>
+            <div>
+                <b>Start time</b><br/>
+                <input type="time" step="1" name="start_time" data-lpignore="true" />
+            </div>
+            <hr/>
+            <div>
+                <b>End time</b><br/>
+                <input type="time" step="1" name="end_time" data-lpignore="true" />
+            </div>
+            <hr />
+            <div>
+                <b>Date(s)</b><br/>
+                <input type="text" name="limit_dates" class="multi-datepick" data-lpignore="true" />
+            </div>
+            <hr/>
+            <div>
+                <b>Comment</b><br/>
+                <input type="text" name="comment" size="15" data-lpignore="true" />
+            </div>
+        </td>
+        <td>
+            <button onClick="saveLimit()" type="button" class="btn btn--primary">Save</button>
+            <br><span class="save_result"></span>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</fieldset>
+</div>
+
+<h3>Landing company wide limits</h3>
+
+<div id="per_landing_company" class="row"></div>
+
+<h3>Global Loss Limits Hit</h3>
+
+<div id="global_loss_limits_display" class="row"></div>
+
+<h3>Pending market group switch</h3>
+<p>Market group update and clean-up of expired records is by a cron that runs every minute. So, if you select a start time of 20:11:15, it will be updated at 20:12:00</p>
+
+<div id="market_group_display" class="row"></div>
+
+<script>
+
+    var upload_url = "[% upload_url %]";
+    var underlying_symbols = JSON.parse('[% underlying_symbols | none %]');
+
+    function deleteMarketGroup(table_id, row_id) {
+        var el = \$('table#'+table_id).find('tr#'+row_id);
+        var result = el.find('td.result');
+        result.text('processing ...');
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                delete_market_group: "1",
+                market: el.find('td.market').attr('data_key'),
+                landing_company: el.find('td.landing_company').attr('data_key'),
+                start_time: el.find('td.start_time').attr('data_key'),
+                end_time: el.find('td.end_time').attr('data_key'),
+                symbol: el.find('td.symbol').attr('data_key')
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    createDisplayTable(config.limit.records, config.limit.header, 'per_landing_company');
+                    createDisplayTable(config.market_group.records, config.market_group.header, 'market_group_display');
+                }
+            }
+        });
+    }
+
+    function updateLimit(table_id, target_name, row_id) {
+        var el = \$('table#'+table_id).find('tr#'+row_id);
+        var result = el.find('td.' + target_name + ' button[name="update"]');
+        result.html(
+            '... &nbsp; &nbsp;' +
+            '<svg width="18" height="18" style="vertical-align: inherit" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff">' +
+            '<g fill="none" fill-rule="evenodd"> <g transform="translate(1 1)" stroke-width="2"> ' +
+            '<circle stroke-opacity=".5" cx="18" cy="18" r="18"/> <path d="M36 18c0-9.94-8.06-18-18-18">' +
+            '<animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="0.5s" repeatCount="indefinite"/>' +
+            '</path> </g> </g> </svg>'
+        );
+        var limit = {
+              market: el.find('td.market').attr('data_key'),
+              underlying_symbol: el.find('td.underlying_symbol').attr('data_key'),
+              expiry_type: el.find('td.expiry_type').attr('data_key'),
+              contract_group: el.find('td.contract_group').attr('data_key'),
+              landing_company: el.find('td.landing_company').attr('data_key'),
+              limit_type: target_name,
+              barrier_type: el.find('td.barrier_type').attr('data_key'),
+              type: el.find('td.type').attr('data_key'),
+              start_time: el.find('td.start_time').attr('data_key'),
+              end_time: el.find('td.end_time').attr('data_key'),
+              limit_amount: el.find('td.' + target_name + ' input').val(),
+              comment: el.find('td.comment').attr('data_key'),
+              new_market: '',
+        };
+
+        \$.ajax({
+            url: upload_url,
+            data: Object.assign({ delete_limit: "1"}, limit),
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    Object.keys(limit).forEach(function(key) {
+                        var keys = [
+                            'market', 'expiry_type', 'contract_group', 'landing_company',
+                            'barrier_type', 'type'
+                        ];
+                        if(limit[key] == 'default' || limit[key] == '-') {
+                            limit[key] = '';
+                        } else if(keys.indexOf(key) !== -1) {
+                            limit[key] = key + '=' + limit[key];
+                        }
+                    });
+
+                    \$.ajax({
+                        url: upload_url,
+                        data: Object.assign({ save_limit: "1"}, limit),
+                        success: function(data) {
+                            var config = \$.parseJSON(data);
+                            if (config.error) {
+                                result.text(config.error).css('color', 'var(--color-red)');
+                            } else {
+                                result.text('Update');
+                                createDisplayTable(config.limit.records, config.limit.header, 'per_landing_company');
+                            }
+                         }
+                     });
+                }
+            }
+        });
+    }
+
+    function deleteLimit(table_id, target_name, row_id) {
+        var el = \$('table#'+table_id).find('tr#'+row_id);
+        var result = el.find('.' + target_name + ' button[name="delete"]');
+        result.html(
+            '... &nbsp; &nbsp;' +
+            '<svg width="18" height="18" style="vertical-align: inherit" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff">' +
+            '<g fill="none" fill-rule="evenodd"> <g transform="translate(1 1)" stroke-width="2"> ' +
+            '<circle stroke-opacity=".5" cx="18" cy="18" r="18"/> <path d="M36 18c0-9.94-8.06-18-18-18">' +
+            '<animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="0.5s" repeatCount="indefinite"/>' +
+            '</path> </g> </g> </svg>'
+        );
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                delete_limit: "1",
+                market: el.find('td.market').attr('data_key'),
+                underlying_symbol: el.find('td.underlying_symbol').attr('data_key'),
+                expiry_type: el.find('td.expiry_type').attr('data_key'),
+                contract_group: el.find('td.contract_group').attr('data_key'),
+                landing_company: el.find('td.landing_company').attr('data_key'),
+                limit_type: target_name,
+                barrier_type: el.find('td.barrier_type').attr('data_key'),
+                type: el.find('td.type').attr('data_key'),
+                start_time: el.find('td.start_time').attr('data_key'),
+                end_time: el.find('td.end_time').attr('data_key'),
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    createDisplayTable(config.data.records, config.data.header, 'per_landing_company');
+                }
+            }
+        });
+    }
+
+    function createDisplayTable(data, header, id) {
+        var table = '<table class="pretty small hover alternate" id="'+id+'"><thead><tr>';
+        for (var i=0; i < header.length; i++) {
+            if (header[i][1] == 'Time Status') {
+                continue;
+            }
+            if (header[i][1] == 'Start Time') {
+                table += '<th><span tooltip="Times in green are currently active. Red indicates the limit has expired.">'+header[i][1]+'<span class="tooltip-blue">?</span></span></th>';
+                continue;
+            }
+            table += '<th>'+header[i][1]+'</th>'
+        }
+        table += '<th></th>';
+        table += '</tr></thead>';
+
+        for (var i=0; i < data.length; i++) {
+            table += '<tr id='+i+'>';
+            var time_status = 0;
+            var d = data[i];
+            for (var idx in header) {
+                var key = header[idx][0];
+                var value = d[key] || {data_key: '', display_value: ''};
+                if (header[idx][1] == 'Time Status') {
+                    time_status = value.display_value;
+                    continue;
+                }
+                table += '<td class="'+key+'" data_key="'+value.data_key+'">';
+                
+                if (key.substr(0,7) == 'global_' && \$.isNumeric(value.display_value) && id.includes('per_landing_company')) {
+                    table += '<button class="btn btn--secondary" name="delete" onClick="deleteLimit(\''+id+'\',\''+key+'\','+i+')">Delete</button> ';
+                    table += '<button class="btn btn--primary" name="update" onClick="updateLimit(\''+id+'\',\''+key+'\','+i+')">Update</button>';
+                    table += '<input style="border-radius: 5px; line-height: 18px; width: 65px" type="text" value="' +
+                                value.display_value + '"></input>';
+                    table += '</td>';
+                }
+                // Special handling for start_time and end_time
+                else if (key.substr(-4) == 'time') {
+                    table += ' &nbsp; '; // Don't let numbers squash together
+                    if (key = 'start time' && time_status == 2) { table += '<font color="#006600">'; } // active
+                    if (key = 'start time' && time_status == 3) { table += '<font color="#ff3300">'; } // expired
+                    table += value.display_value;
+                    if (key = 'end time' && time_status == 2 || time_status == 3) { table += '</font>'; }
+                    table += ' &nbsp; </td>';
+                }
+                else {
+                    table += value.display_value+'</td>';
+                }
+            }
+            if (typeof(d['type']) != 'undefined') {
+                table += '<td class="type" data_key="'+d['type'].data_key+'"></td>';
+            }
+
+            if (id == 'market_group_display') {
+                table += '<td><button class="btn btn--primary" onClick="deleteMarketGroup(\''+id+'\','+i+')" type="button">Delete</button></td><td class="result"></td>';
+            }
+            table += '</tr>'
+        }
+
+        table += '</table>';
+        \$('div#'+id).html(table);
+    }
+
+    function createInputTable(data, id) {
+        var table = '<table id="'+id+'">';
+
+        for (var i=0; i<data.length; i++) {
+            var input = data[i];
+            var value = input;
+            var display_value = input;
+
+            if (typeof input === 'object') {
+                value = input.value;
+                display_value = input.display_value;
+            }
+
+            if (value == 'new_market') {
+                table += '<tr><td><input type="text" name="new_market" data-lpignore="true" /></td></tr>';
+            } else {
+                table += '<tr><td><input type="checkbox" name="'+id+'" value="'+value+'">'+display_value+'</input></td></tr>';
+            }
+        }
+
+        table += '</table>';
+        \$('div#'+id).html(table);
+    }
+
+    function saveLimit() {
+        var el = \$("table.pretty");
+        if (el) {
+            var market = el.find('input[name="market"]:checked').serialize();
+            el.find('input[name="market"]:checked').each(function() { this.checked = false; });
+
+            var new_market = el.find('input[name="new_market"]').val();
+            el.find('input[name="new_market"]').val('');
+
+            var underlying_symbol = el.find('input[name="underlying_symbol"]').val();
+            el.find('input[name="underlying_symbol"]').val('');
+
+            var expiry_type = el.find('input[name="expiry_type"]:checked').serialize();
+            el.find('input[name="expiry_type"]:checked').each(function() { this.checked = false; });
+
+            var contract_group = el.find('input[name="contract_group"]:checked').serialize();
+            el.find('input[name="contract_group"]:checked').each(function() { this.checked = false; });
+
+            var barrier_type = el.find('input[name="barrier_type"]:checked').serialize();
+            el.find('input[name="barrier_type"]:checked').each(function() { this.checked = false; });
+
+            var limit_type = el.find('select[name="limit_type"]').val();
+
+            var limit_amount = el.find('input[name="limit_amount"]').val();
+            el.find('input[name="limit_amount"]').val('');
+
+            var landing_company = el.find('input[name="landing_company"]:checked').serialize();
+            el.find('input[name="landing_company"]:checked').each(function() { this.checked = false; });
+
+            var comment = el.find('input[name="comment"]').val();
+            el.find('input[name="comment"]').val('');
+
+            var start_time = el.find('input[name="start_time"]').val();
+            el.find('input[name="start_time"]').val('');
+
+            var end_time = el.find('input[name="end_time"]').val();
+            el.find('input[name="end_time"]').val('');
+
+            var limit_dates = el.find('input[name="limit_dates"]').val();
+            el.find('input[name="limit_dates"]').val('');
+
+            var result = el.find("span.save_result");
+
+            // validate underlying symbol
+            if(!underlying_symbols.includes(underlying_symbol) && underlying_symbol !== ''){
+                result.css('color', 'var(--color-red)');
+                result.text('Invalid underlying symbol');
+                return;
+            }
+
+            //Comment is required
+            if(comment === ''){
+                result.css('color', 'var(--color-red)');
+                result.text('Comment is required');
+                return;
+            }
+
+            //Both start_time and end_time should be empty or fill
+            if((start_time === '' && end_time !== '') || (start_time !== '' && end_time === '')) {
+                result.css('color', 'var(--color-red)');
+                result.text('you should enter both `start time` and `end time`');
+                return;
+            }
+
+            if (start_time !== '' && limit_dates === '') {
+                result.css('color', 'var(--color-red)');
+                result.text('`Date` cannot be empty');
+                return;
+            }
+
+            if(!isDatePickersValid()) return false;
+
+            if(start_time !== '') {
+                if(new Date("01/01/2000 " + start_time) >= new Date("01/01/2000 " + end_time)) {
+                    result.css('color', 'var(--color-red)');
+                    result.text('`start_time` should be less than `end_time`.');
+                    return;
+                }
+            }
+
+            result.text('processing ...');
+
+            \$.ajax({
+                url: upload_url,
+                data: {
+                    save_limit: "1",
+                    market: market,
+                    new_market: new_market,
+                    underlying_symbol: underlying_symbol,
+                    expiry_type: expiry_type,
+                    contract_group: contract_group,
+                    limit_type: limit_type,
+                    limit_amount: limit_amount,
+                    landing_company: landing_company,
+                    barrier_type: barrier_type,
+                    comment: comment,
+                    start_time: start_time,
+                    end_time: end_time,
+                    limit_dates: limit_dates,
+                },
+                success: function(data) {
+                    var config = \$.parseJSON(data);
+                    var error = (typeof config[0] !== 'undefined') ? config[0].error : config.error;
+                    if (error) {
+                        result.text(error).css('color', 'var(--color-red)');
+                    } else {
+                        result.text('saved').css('color', 'var(--color-green)');
+                        \$.each(config, function (index, item) {
+                            createDisplayTable(item.limit.records, item.limit.header, 'per_landing_company');
+                            createDisplayTable(item.market_group.records, item.market_group.header, 'market_group_display');
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    createInputTable([% data.landing_companies | none %], 'landing_company');
+    createInputTable([% data.markets | none %], 'market');
+    createInputTable([% data.expiry_types | none %], 'expiry_type');
+    createInputTable([% data.barrier_types | none %], 'barrier_type');
+    createInputTable([% data.contract_groups | none %], 'contract_group');
+
+    createDisplayTable([% existing_landing_company.records | none %], [% existing_landing_company.header | none %], 'per_landing_company');
+    createDisplayTable([% global_limits_passed.records | none %], [% global_limits_passed.header | none %], 'global_loss_limits_display');
+    createDisplayTable([% existing_pending_market_group.records | none %], [% existing_pending_market_group.header | none %], 'market_group_display');
+
+    \$(document).ready(function() {
+        initDatePickers();
+        initMultipleDatePickers();
+    });
+
+    initDatePickers = function(){
+        \$('.datepick')
+        .not('.date-picker-inited')
+        .datepicker({dateFormat: "yy-mm-dd 00:00:00"})
+        .addClass('date-picker-inited');
+    };
+
+    initMultipleDatePickers = function(){
+        \$('.multi-datepick')
+        .not('.date-picker-inited')
+        .multiDatesPicker({
+            dateFormat: "yy-mm-dd",
+        })
+        .addClass('date-picker-inited');
+    };
+
+    isDatePickersValid = function(){
+        var isValid = true;
+        var invalidDateNames = [];
+        \$('.datepick').each(function(){
+            var date = \$(this).val().trim();
+
+            // Ignore validation if field is empty and it's not required
+            if(!date && !\$(this).prop('required')) return true;
+
+            var valid = /^(\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/.test(date);
+            if(valid) {
+                date = new Date(date);
+                valid = date != 'Invalid Date';
+            }
+            isValid = isValid && valid;
+            if(!valid) invalidDateNames.push(\$(this).prop('name'));
+        });
+
+        if(!isValid) {
+            alert('Please match the correct format for the following fields: \n' + invalidDateNames.join('\n'));
+        }
+
+        return isValid;
+    };
+</script>
+<style>
+    .pretty td {
+        border: 1px solid var(--bg-primary-light);
+        text-align: left;
+        white-space: nowrap;
+    }
+    .inlineTable {
+        display: inline-block;
+        vertical-align: top;
+    }
+    span.hint {
+        color: #fff;
+        border-radius: 3px;
+        display: inline-block;
+        padding: 2px 6px;
+        background-color: var(--color-green);
+        border: none;
+        margin: 4px;
+    }
+</style>

@@ -1,0 +1,61 @@
+<p> <b>Max. Payout:</b> maximum allowable payout <br/>
+<b>Max. Duration:</b> maximum duration specified for each growth rate<br/>
+<b>Growth Start Step:</b> number of ticks after which payout starts to grow <br/>
+<b>Growth Rate:</b> the rate at which payout grows <br/>
+</p>
+
+<form id='per_symbol_config'>
+<table class="small full-width hover alternate border">
+    <thead><tr>
+        <th>Underlying symbol</th>
+        <th>Max. payout</th>
+        <th>Max. duration</th>
+        <th>Growth start step</th>
+        <th>Growth rate</th>
+    </tr></thead>
+    <tbody>
+    [% FOREACH data IN existing_config %]
+    <tr align="center" id="[% data.symbol %]-accumulator_config">
+        <td>[% data.symbol %]</td>
+        <td><input type="text" name="max_payout" value="[% data.max_payout %]" data-lpignore="true" /></td>
+        <td><input type="text" name="max_duration" value="[% data.max_duration %]" data-lpignore="true" /></td>
+        <td><input type="text" name="growth_start_step" value="[% data.growth_start_step %]" data-lpignore="true" /></td>
+        <td><input type="text" name="growth_rate" value="[% data.growth_rate %]" data-lpignore="true" /></td>
+        <td><button onClick="SaveAccumulatorConfig('[% data.symbol %]')" type="button" class="btn btn--primary">Save</button></td>
+        <td class="accumulator_config_result"></td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+</form>
+
+<script>
+var accumulator_upload_url = "[% accumulator_upload_url | none %]";
+
+function SaveAccumulatorConfig(symbol) {
+    var el = \$('#per_symbol_config').find('tr#' + symbol + '-accumulator_config');
+    var result = el.find('td.accumulator_config_result');
+    result.text('processing ...');
+
+    \$.ajax({
+        url: accumulator_upload_url,
+        data: {
+            save_accumulator_config: 1,
+            symbol: symbol,
+            max_payout: el.find('input[name="max_payout"]').val(),
+            max_duration: el.find('input[name="max_duration"]').val(),
+            growth_start_step: el.find('input[name="growth_start_step"]').val(),
+            growth_rate: el.find('input[name="growth_rate"]').val()
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('saved').css('color', 'var(--color-green)');
+            }
+        }
+    });
+}
+
+</script>

@@ -1,0 +1,409 @@
+<form enctype="multipart/form-data" ACTION="[% self_post %]" method="POST" onsubmit="return validate_document_info()">
+  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence, updates only with Passport and Proof ID upload):</label>
+  <select id="docnationalityselect" name="docnationality">
+    <option value="">Please select</option>
+    [% FOREACH c IN countries.all_country_names.sort %]
+        [% cc = countries.code_from_country(c) %]
+        <option value="[% cc %]">[% c %]</option>
+    [% END %]
+  </select>
+
+<div class="scrollable">
+<table class="nowrap">
+[% FOR n IN [1..4] %]
+<tr>
+  <td>File [% n %]:</td>
+  <td><select name="doctype_[% n %]" id="doctype_[% n %]" onchange="doc_type_changed([% n %])")">
+    [% FOR category IN doctypes %]
+      <optgroup label="[% category.description %]">
+        [% FOR type IN category.types %]
+          <option data-side-required="[% category.side_required %]" data-id-required="[% category.document_id_required %]" value="[% type.type %]">[% type.description %]</option>
+        [% END %]
+      </optgroup>
+    [% END %]
+  </select></td>
+  <td align="right">
+  <label name="doc_field_required_[% n %]">*</label>
+    <select name="page_type_[% n %]" id="page_type_[% n %]">
+    </select>
+  <td>
+  <td>*<input type="FILE" name="FILE_[% n %]" onchange="file_size_validation([% n %])"></td>
+  <td align="right">
+    <div id="expiration_date_div_[% n %]" anch>
+      <select class="expiration_dropdown" name="expiration_[% n %]" onChange="expiration_changed([% n %])">
+        <option value="expiration_date">Expiration date</option>
+        <option value="lifetime_valid">Lifetime valid</option>
+        <option value="not_applicable">Not applicable</option>
+      </select>
+
+      <span class="expiration_input_[% n %]" name="doc_field_required_[% n %]">
+      <label id="required_star_[% n %]">*</label></span>
+      <input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="expiration_input_[% n %] datepick" data-lpignore="true" />
+    </div>
+    <div id="issue_date_div_[% n %]" style="display:none">
+      <select class="issuance_dropdown" name="issuance_[% n %]" onChange="issuance_changed([% n %])">
+          <option value="issuance_date">Issuance date</option>
+          <option value="lifetime_valid">Lifetime valid</option>
+      </select>      <label id="required_star_[% n %]">*</label>
+      <input type="text" size=11 name="issue_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="issue_date_[% n %] datepick" data-lpignore="true" />
+      <label name="doc_field_required_[% n %]">*</label>
+    </div>
+  </td>
+  <td align="right" class="doc_id_[% n %]">
+    <label>Document ID:</label>
+    <label name="doc_field_required_[% n %]">*</label>
+    <input type="text" size=11 maxlength="30" name="document_id_[% n %]" placeholder="Document ID" data-lpignore="true" />
+  </td>
+  <td align="right">
+    Comments:
+    <input type="text" size=25 maxlength="255" name="comments_[% n %]" placeholder="optional, up to 255 characters" data-lpignore="true" />
+  </td>
+</tr>
+[% END %]
+</table>
+</div>
+
+  <input type="hidden" name="whattodo" value="uploadID">
+  <input type="hidden" name="broker" value="[% broker %]">
+  <input type="hidden" name="loginID" value="[% loginid %]">
+  <br/>
+  <input type=submit class="btn btn--primary" value="Upload new ID doc.">
+</form>
+<script type="text/javascript" language="javascript">
+
+var regex_poi            = /^([% poi_doctypes %])\$/i;
+var regex_poa            = /^([% poa_doctypes %])\$/i;
+var regex_expirable      =  /^([% expirable_doctypes %])\$/i;
+var regex_dateless       = /^([% dateless_doctypes %])\$/i;
+var regex_selfie_with_id = /^(selfie_with_id)\$/i;
+var regex_numberless     = /^([% numberless_doctypes %])\$/;
+var docsides             = [% docsides | none %];
+var sides                = [% sides | none %];
+var type_sides           = {};
+var onfido_types         = [% onfido_doctypes | none %];
+
+for(const side in docsides) {
+  docsides[side].forEach(type => {
+    if(typeof type_sides[type] === 'undefined') {
+      type_sides[type] = [];
+    }
+
+    type_sides[type].push(side);
+  });  
+}
+
+function expiration_changed(i) {
+  const expiration = document.getElementsByName('expiration_' + i)[0];
+  expiration.style.display = 'inline';
+  
+  const exp_value = expiration.value;
+  const elems = document.getElementsByClassName('expiration_input_' + i);
+  let display;
+
+  if (exp_value === 'expiration_date') {
+    display = 'inline';
+  } else {
+    display = 'none';
+  }
+
+  for(let elem of elems) {
+      elem.style.display = display;
+  }
+}
+
+function issuance_changed(i) {
+  const issuance = document.getElementsByName('issuance_' + i)[0];
+  issuance.style.display = 'inline';
+
+  const issuance_value = issuance.value;
+  const elems = document.getElementsByClassName('issue_date_' + i);
+  let display;
+
+  if (issuance_value === 'issuance_date') {
+    display = 'inline';
+  } else {
+    display = 'none';
+  }
+
+  for(let elem of elems) {
+      elem.style.display = display;
+  }
+}
+
+function doc_type_changed(i){
+  let dropdown = document.getElementById('doctype_'+i);
+  
+  if (!dropdown) return;
+
+  let doc_type = dropdown.value;
+  let is_expirable_doc = doc_type.match(regex_expirable);
+  let is_dateless_doc = doc_type.match(regex_dateless);
+  let is_poi_doc = doc_type.match(regex_poi);
+  let is_selfie_with_id = doc_type.match(regex_selfie_with_id);
+  document.getElementById('page_type_' +i).value = '';
+
+  let enabled_options = [];
+
+  if (typeof type_sides[doc_type] !== 'undefined') {
+    enabled_options = type_sides[doc_type];
+  }
+
+  handle_page_type_control(i, enabled_options);
+
+  if (enabled_options.length === 1) {
+    document.getElementById('page_type_' +i).value = enabled_options[0];
+  }
+
+  document.getElementById('expiration_date_div_'+i).style.display = 'none';
+  document.getElementById('issue_date_div_'+i).style.display = 'none';
+
+  if (is_expirable_doc) {
+    document.getElementById('expiration_date_div_'+i).style.display = 'inline';
+    document.getElementsByName('expiration_' + i)[0].value = 'expiration_date';
+    expiration_changed(i);
+  }
+  else {   
+    document.getElementsByName('expiration_' + i)[0].value = 'not_appplicable';
+    expiration_changed(i);
+    
+    if (!is_dateless_doc) {
+      issuance_changed(i);
+      document.getElementById('issue_date_div_'+i).style.display = 'inline';
+    }
+  }
+
+  let req_elements = document.getElementsByName('doc_field_required_'+i);
+  let doc_type_select = document.getElementsByName('doctype_' + i)[0];
+  let option = doc_type_select.options[doc_type_select.selectedIndex];
+  let id_required = parseInt(option.getAttribute('data-id-required'));
+  let side_required = parseInt(option.getAttribute('data-side-required'));
+
+  req_elements[0].style.display = side_required ? 'inline': 'none';
+  req_elements[1].style.display = is_poi_doc ? 'inline': 'none';
+  req_elements[2].style.display = is_poi_doc ? 'inline': 'none';
+    
+  const td = document.getElementsByClassName('doc_id_' + i)[0];
+
+  for(const child of td.getElementsByTagName('*')){
+    child.style.display = doc_type.match(regex_numberless) ? 'none' : 'inline';
+    child.disabled = doc_type.match(regex_numberless) ? 'disabled' : '';
+  }
+  
+  req_elements[3].style.display = id_required && !doc_type.match(regex_numberless) ? 'inline': 'none';
+
+  file_size_validation(i);
+}
+
+function file_size_validation(i) {
+  const file = document.getElementsByName('FILE_' + i)[0];
+
+  if (!file) {
+    return;
+  }
+
+  const f = file.files[0];
+
+  if (!f) {
+    return;
+  }
+
+  const file_size    = f.size / (1024 * 1024);
+  const types_select = document.getElementById('doctype_' + i);
+  const type         = types_select.value;
+
+  // Maximum is 20MB globally but 10MB for Onfido types 
+  var max_size = [% document_size_limit %];
+
+  if(onfido_types.includes(type)) {
+    max_size = [% onfido_document_size_limit %];
+  }
+
+  if(file_size > max_size) {
+    alert ("Exceeds maximum size of " + max_size + "MB");
+    file.value = "";
+  }
+}
+
+function validate_expiry_date(date) {
+  let expiry_date = new Date(date);
+  if(expiry_date == 'Invalid Date')
+      return "Invalid expiry date. Please match the requested format.\n"
+  else if(expiry_date <= new Date())
+    return "Expiry date must be a future date.\n";
+
+  return '';
+}
+
+function validate_issue_date(date) {
+  let issue_date = new Date(date);
+  if(issue_date == 'Invalid Date')
+      return "Invalid issue date. Please match the requested format.\n"
+  else if(issue_date > new Date())
+    return "Issue date must be a past date.\n";
+
+  return '';
+}
+
+function validate_document_info() {
+  let get_value = function(elm_name) {
+    return (document.getElementsByName(elm_name)[0] || {}).value;
+  }
+
+  let error_msg = "";
+  let nationality = document.getElementsByName('docnationality')[0].value;
+  let is_file_uploaded = false;
+
+  for (let i = 1; i <= 4; i++) {
+
+    let file_comments_errors = "";
+
+    let doc_type = get_value('doctype_' + i);
+    let doc_type_select = document.getElementsByName('doctype_' + i)[0];
+    let option = doc_type_select.options[doc_type_select.selectedIndex];
+    let id_required = parseInt(option.getAttribute('data-id-required'));
+    let side_required = parseInt(option.getAttribute('data-side-required'));
+
+    let issue_date = get_value('issue_date_' + i);
+    let expiry_date = get_value('expiration_date_' + i);
+    let comments = get_value('comments_' + i);
+    let doc_id = get_value('document_id_' + i);
+    let page_type = get_value('page_type_' + i);
+
+    let is_poi_doc = doc_type.match(regex_poi);
+    let is_poa_doc = doc_type.match(regex_poa);
+    let is_expirable_doc = doc_type.match(regex_expirable);
+    let is_dateless_doc = doc_type.match(regex_dateless);
+    let expiration = document.getElementsByName('expiration_' +i)[0].value;
+    let issuance = document.getElementsByName('issuance_' +i)[0].value;
+    
+    // Check if file uploaded (if not, proceed to next file)
+    if(!get_value('FILE_' + i)) {
+
+      if (expiry_date || doc_id || comments) {
+        file_comments_errors = "Please upload a file for File " + i + "\n\n";
+        error_msg += file_comments_errors;
+      }
+
+      continue;
+    }
+
+    is_file_uploaded = true;
+
+    if (side_required) {
+      if(!page_type && typeof type_sides[doc_type] !== 'undefined') {
+        file_comments_errors += "Page type is not selected.\n";
+      }
+    }
+
+    if (id_required) {
+      if(!doc_id && !doc_type.match(regex_numberless)) {
+        file_comments_errors += "Document ID is required.\n";
+      }
+    }
+
+    // POI and POA validation
+
+    if(is_poi_doc) {
+      if(!nationality) {
+        file_comments_errors += "Nationality is required.\n";
+      }
+      if (!expiry_date && expiration === 'expiration_date')
+        file_comments_errors += "Expiry date is required.\n";
+      if (expiry_date)
+        file_comments_errors += validate_expiry_date(expiry_date);
+    }
+
+    else if (is_poa_doc) {
+      if (!issue_date && issuance === 'issuance_date')
+        file_comments_errors += "Issue date is required.\n";
+      if (issue_date)
+        file_comments_errors += validate_issue_date(issue_date);
+    }
+    
+    else if (is_expirable_doc && expiry_date){
+      file_comments_errors += validate_expiry_date(expiry_date);
+    }
+    else if (!is_dateless_doc && issue_date) {
+      file_comments_errors += validate_issue_date(issue_date);
+    }
+
+    if (doc_id.length > 30) {
+      file_comments_errors += "Document ID is too long.\n";
+    }
+
+    if(comments.length > 255) {
+      file_comments_errors += "Comments are too long.";
+    }
+
+    if (file_comments_errors !== "") {
+      error_msg += "Document upload failed for File " + i + ": \n\n" + file_comments_errors + "\n\n";
+    }
+  }
+
+  if(!is_file_uploaded) {
+    error_msg = "No file is selected for uploading.";
+  }
+
+  if (error_msg !== "") {
+    alert(error_msg);
+    return false;
+  }
+
+  return true;
+}
+
+function handle_page_type_control(i, enabled_options) {
+  let select = document.getElementById('page_type_' +i );
+  select.innerHTML = '';
+
+  enabled_options = enabled_options.sort((a,b) => {
+    return a > b;
+  });
+
+  if (enabled_options.length > 0) {
+    const pagetype = document.createElement("option");
+    pagetype.value = '';
+    pagetype.innerHTML = 'Page Type';
+    select.appendChild(pagetype);
+
+    for(const op of enabled_options) {
+      const option = document.createElement("option");
+      option.value = op;
+      option.innerHTML = sides[op];
+      select.appendChild(option);
+    }
+      select.style.display = 'inline';
+  } else {
+      var option = document.createElement("option");
+      option.value = '';
+      option.disabled = 1;
+      option.selected = 1;
+      option.innerHTML = 'Sideless'
+      select.appendChild(option);
+      select.style.display = 'none';
+  }
+}
+
+\$(document).ready(function() {
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd",changeMonth: true,
+      changeYear: true});
+
+      \$('.datepick').datepicker('option', 'onSelect', function (date) {
+          \$(this).addClass('data-changed');
+      });
+
+      const dropdowns = document.getElementsByClassName('expiration_dropdown');
+      for(const elem of dropdowns) {
+        const id = elem.name.replace('expiration_', '');
+        doc_type_changed(id);
+        expiration_changed(id);
+      }
+
+      const issuances = document.getElementsByClassName('issuance_dropdown');
+      for(const elem of issuances) {
+        const id = elem.name.replace('issuance_', '');
+        doc_type_changed(id);
+        issuance_changed(id);
+      }
+});
+</script>

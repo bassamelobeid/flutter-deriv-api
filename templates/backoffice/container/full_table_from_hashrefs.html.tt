@@ -1,0 +1,13 @@
+[% WRAPPER 'backoffice/container/full_table.html.tt' %]
+    <thead>
+        <caption>[% title %]</caption>
+    </thead>
+    <tbody>
+        [% FOREACH hashref = rows %]
+            <tr class="[% IF (loop.index+1) % 2 %]odd[%ELSE%]even[% END %]">
+                <td style="width:50%;">[% hashref.label %]</td>
+                <td style="width:50%;">[% hashref.value %]</td>
+            </tr>
+        [% END %]
+    </tbody>
+[% END %]

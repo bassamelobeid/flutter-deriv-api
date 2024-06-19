@@ -1,0 +1,55 @@
+
+<tr>
+    <td class="bg-lightgrey" colspan="2">#PARTNER INFO</td>
+</tr>
+<tr>
+    <td class="label">Partner ID</td>
+    <td>:
+    [% IF client.partner_id %]
+        [% client.partner_id %] (This is the ID <strong>currently registered</strong> with DynamicWorks.)
+    [% ELSE %]
+        <strong>None</strong>
+    [% END %]
+    <a class="btn btn--primary" href="[% request.url_for('backoffice/partners/client_partner_details.cgi', {loginid => client.loginid , broker = client.broker }) %]">View partner details</a>
+    <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/partners/change_partner_id.cgi', {loginid => client.loginid , partner_id = client.partner_id }) %]">Edit partner ID</a>
+    <a  class="btn btn--primary" href="[% request.url_for('backoffice/f_ib_affiliate.cgi', {loginid => client.loginid}) | url %]">IB Affiliate status</a>
+    </td>
+</tr>
+[% IF is_staff_compliance %]
+<tr>
+    <td class="label" style="vertical-align:middle">RISK DISCLAIMER RESUBMISSION</td>
+    <td>:
+    [% IF risk_disclaimer_updated_at %]
+        requested at <b>[% risk_disclaimer_updated_at %]</b> (by [% risk_disclaimer_updated_by %])
+    [% END %]
+    </td>
+</tr>
+<tr>
+    <td class="label" style="vertical-align:middle">SEND RISK DISCLAIMER RESUBMISSION EMAIL</td>
+    <td>:<input type="checkbox" onclick="toggle_checkbox(this)" style="vertical-align:middle" name="risk_disclaimer_email_checkbox" />
+        <span id="risk_disclaimer_email_checkbox_toggle" [% IF risk_disclaimer_email_checkbox %] style="display:inline" [% ELSE %]  style="display:none" [% END %]> 
+        [% risk_disclaimer_email_checkbox %]   
+        <label for="risk_disclaimer_email_language">Select language:</label>
+        <select name="risk_disclaimer_email_language">
+            <option value="EN" selected>English</option>
+            <option value="ID">Indonesian</option>
+            <option value="PT">Portuguese</option>
+            <option value="ES">Spanish</option>
+            <option value="RU">Russian</option>
+        </select>
+    </td>
+</tr>
+<tr>
+    <td class="label"></td>
+    <td>
+        <button type="submit" name="force_coc_acknowledgement" value="1" class="btn btn--primary">Force COC acknowledgement</button>
+    </td>
+</tr>
+
+[% END %]
+<tr>
+    <td class="label"></td>
+    <td>
+        <a class="btn btn--primary" href="[% request.url_for('backoffice/affiliate_reputation_details.cgi', {loginID => client.loginid , broker = client.broker }) %]">Partner reputation details</a>
+    </td>
+</tr>

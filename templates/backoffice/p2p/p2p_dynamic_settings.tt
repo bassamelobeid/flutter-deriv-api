@@ -1,0 +1,128 @@
+<head>
+    <style>
+        .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        }
+
+        .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        }
+
+        .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+        }
+
+        .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+        }
+
+        input:checked + .slider {
+        background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+        box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+        }
+        .slider.round {
+        border-radius: 34px;
+        }
+
+        .slider.round:before {
+        border-radius: 50%;
+        }
+    </style>
+</head>
+
+<form action="[% request.url_for('backoffice/p2p_dynamic_settings.cgi') %]" method="post">
+    <input type="hidden" name="revision" value="[% revision %]"/>
+    <button type="submit" class="btn btn--primary" name="save" value="1">Save Dynamic Settings</button></td>
+    <hr/>
+    <p>P2P is enabled for these landing companies: [% enabled_lc.join(', ').upper %].</p>    
+    [% FOR setting IN settings.keys.sort %]
+        <div id=[% setting %] >
+            <hr/>
+            <h3>[% setting %]</h3>
+            <p>[% settings.$setting.description %]</p>
+            [% IF settings.$setting.type == 'Bool' %]
+                <label class="switch" style="bottom:16px;">
+                    [% IF settings.$setting.value %]
+                        <input type="checkbox" name="[% setting %]" [% 'checked' %]>
+                    [% ELSE %]
+                        <input type="checkbox" name="[% setting %]" >
+                    [% END %]
+                    <span class="slider round"></span> 
+                </label>
+                <span style="bottom:500px;">
+                    &nbsp;&nbsp;current: [% IF settings.$setting.value %]Yes[% ELSE %]No[% END %]
+                </span>
+            [% ELSIF settings.$setting.type == 'ArrayRef' %]
+                <table border="0"><tr>
+                <!-- textarea min lines of 2, grows by number of lines + 1 -->
+                <td><textarea name="$setting" rows="[% lines = settings.$setting.value.size + 1; vals = [lines,2]; vals.nsort.-1 %]">[% settings.$setting.value.join("\n") %]</textarea></td>
+                <td valign="top">current:
+                [% IF settings.$setting.value.size %]
+                    [% FOREACH v IN settings.$setting.value %]
+                    <br/>[% loop.count %]. [% v %]
+                        [% IF setting == 'payments.p2p.escrow' %] 
+                          ([% escrow_currencies.$v %]) 
+                        [% ELSIF setting.match('countries$') || setting.match('^payments.p2p.poa.countries') %] 
+                          ([% countries_list.$v.name || '<span class="error">invalid</span>' | none %])
+                        [% END %]
+                    [% END %]
+                [% ELSE %]
+                    none
+                [% END %]
+            </td></tr></table>
+            [% ELSIF settings.$setting.type == 'json_string' %]
+            <textarea name="$setting" rows="2" cols="100">[% settings.$setting.value %]</textarea>
+            [% ELSE %]
+            <input type="text" name="$setting" style="width: [% IF settings.$setting.type == 'Num' || settings.$setting.type == 'Int' %]70px;[% ELSE %]300px;[% END %]" [% IF settings.$setting.type == 'Int' %]pattern="[0-9]+" title="Integer"[% ELSIF settings.$setting.type == 'Num' %]pattern="[0-9\.]+" title="Numeric"[% END %] value="[% settings.$setting.value %]" required >
+            &nbsp;&nbsp;current: [% IF settings.$setting.value.length %][% settings.$setting.value %][% ELSE %]none[% END %]
+            [% END %]
+        </div>
+    [% END %]
+    <hr/>
+    <button type="submit" class="btn btn--primary" name="save" value="1">Save Dynamic Settings</button></td>
+</form>
+
+<script type="text/javascript" language="javascript">
+    var poa = document.getElementsByName("payments.p2p.poa.enabled")[0];
+    poa.addEventListener("change", (function poaCheck(){
+        if (poa.checked) {
+            document.getElementById("payments.p2p.poa.countries_excludes").style.display = 'block';
+            document.getElementById("payments.p2p.poa.countries_includes").style.display = 'none';
+        } else {
+            document.getElementById("payments.p2p.poa.countries_includes").style.display = 'block';
+            document.getElementById("payments.p2p.poa.countries_excludes").style.display = 'none';
+        }
+        return poaCheck;
+    })());
+
+</script>

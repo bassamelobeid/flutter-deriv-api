@@ -1,0 +1,31 @@
+[%# Note: keep the table in one row, so that it takes less vertical space in page %]
+<div class="row row-align-top bg-lightgrey grd-margin-top grd-margin-bottom">
+    <div class="grd-grid-2 inline-display">
+        <strong>Login ID</strong>
+        <div class="copy-on-click">[% loginid %]</div>
+    </div>
+    <div class="grd-grid-2 inline-display">
+        <strong>Name</strong>
+        <div class="copy-on-click">[% client.name %]</div>
+    </div>
+    <div class="grd-grid-2 inline-display">
+        <strong>Email</strong>
+        <div class="copy-on-click">[% client.email %]</div>
+    </div>
+    <div class="grd-grid-1 inline-display">
+        <strong>Country</strong>
+        <div>[% client.country %]</div>
+    </div>
+    <div class="grd-grid-1 inline-display">
+        <strong>Residence</strong>
+        <div>[% client.residence %]</div>
+    </div>
+    <div class="grd-grid-2 inline-display">
+        <strong>Tel</strong>
+        <div>[% client.tel %]</div>
+    </div>
+    <div class="grd-grid-2 inline-display">
+        <strong>Date Joined</strong>
+        <div>[% client.date_joined %]</div>
+    </div>
+</div>

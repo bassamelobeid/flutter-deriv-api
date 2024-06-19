@@ -1,0 +1,104 @@
+<p>Callputspread Barrier Multiplier</p>
+
+<form id='callputspread_barrier_multiplier_form'>
+    <table>
+        <tr>
+            <label for="barrier_type">Barrier Type</label>
+            <select id="barrier_type" data-lpignore="true">
+                [% FOREACH barrier_type IN barrier_types%]
+                    <option value='[% barrier_type %]'>[% barrier_type %]</option>
+                [% END %]
+            </select>
+        </tr>
+        <tr>
+            <td>
+                <p>Forex</p>
+            </td>
+            <td>
+                <label for="forex_callputspread_barrier_multiplier">Barrier Multiplier</label>
+                <input type="text" name="forex_callputspread_barrier_multiplier" data-lpignore="true" value="[% callputspread_barrier_multiplier_config.forex_callputspread_barrier_multiplier %]" placeholder="number of days"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p>Synthetic Index</p>
+            </td>
+            <td>
+                <label for="synthetic_index_callputspread_barrier_multiplier">Barrier Multiplier</label>
+                <input type="text" name="synthetic_index_callputspread_barrier_multiplier" data-lpignore="true" value="[% callputspread_barrier_multiplier_config.synthetic_index_callputspread_barrier_multiplier %]" placeholder="number of days"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p>Commodities</p>
+            </td>
+            <td>
+                <label for="commodities_callputspread_barrier_multiplier">Barrier Multiplier</label>
+                <input type="text" name="commodities_callputspread_barrier_multiplier" data-lpignore="true" value="[% callputspread_barrier_multiplier_config.commodities_callputspread_barrier_multiplier %]" placeholder="number of days"/>
+            </td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="saveCallputspreadBM()" value="Save"></td>
+            <td class="form_result"></td>
+        </tr>
+    </table>
+</form>
+<br>
+<table class="small hover alternate">
+    <thead>
+    <tr>
+        <th>Barrier Type</th>
+        <th>Forex Barrier Multiplier</th>
+        <th>Synthetic Index Barrier Multiplier</th>
+        <th>Commodities Barrier Multiplier</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH id IN callputspread_barrier_multiplier_configs.keys.sort %]
+        [% callputspread_barrier_multiplier_config = callputspread_barrier_multiplier_configs.$id %]
+        <tr>
+            <td>[% callputspread_barrier_multiplier_config.barrier_type %]</td>
+            <td>[% callputspread_barrier_multiplier_config.forex_callputspread_barrier_multiplier %]</td>
+            <td>[% callputspread_barrier_multiplier_config.synthetic_index_callputspread_barrier_multiplier %]</td>
+            <td>[% callputspread_barrier_multiplier_config.commodities_callputspread_barrier_multiplier %]</td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+
+<script>
+    var callputspread_barrier_multiplier_controller_url = "[% callputspread_barrier_multiplier_controller_url | none %]";
+
+    function saveCallputspreadBM() {
+        var el = \$('#callputspread_barrier_multiplier_form');
+        var result = el.find('.form_result');
+
+        var barrier_type = \$('#barrier_type').val();
+        var forex_callputspread_barrier_multiplier = el.find('input[name="forex_callputspread_barrier_multiplier"]').val();
+        var synthetic_index_callputspread_barrier_multiplier = el.find('input[name="synthetic_index_callputspread_barrier_multiplier"]').val();
+        var commodities_callputspread_barrier_multiplier = el.find('input[name="commodities_callputspread_barrier_multiplier"]').val();
+
+        result.text('processing ...').css('color', 'black');
+        var data = {
+            create_callputspread_barrier_multiplier: 1,
+            barrier_type: barrier_type,
+            forex_callputspread_barrier_multiplier: forex_callputspread_barrier_multiplier,
+            synthetic_index_callputspread_barrier_multiplier: synthetic_index_callputspread_barrier_multiplier,
+            commodities_callputspread_barrier_multiplier: commodities_callputspread_barrier_multiplier
+        };
+        console.log(data);
+
+        \$.ajax({
+            url: callputspread_barrier_multiplier_controller_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    result.text('Saved. Please refresh the page').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+</script>

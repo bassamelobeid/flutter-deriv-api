@@ -1,0 +1,38 @@
+<style type="text/css">
+#list_receivedby_address {
+    max-height: 2000px;
+}
+</style>
+
+[% IF response.error %]
+
+    <p class="error">[% response.error.replace("\n", "<br>") | none %]</p>
+
+[% ELSE %]
+
+    <div class="tab">
+      <button onclick="toggleResponse()" class="btn btn--secondary">Show alternate view</button>
+    </div>
+    <br>
+    <div class="toggle-response">
+        [% SWITCH req_type %]
+            [% CASE 'get_wallet_balance' %]
+                <p>[% currency %] Wallet Balance: <b>[% response %]</b></p>
+
+            [% CASE DEFAULT %]
+                <p>[% response.replace("\n", "<br>") | none %]</p>
+        [% END %]
+    </div>
+
+    <div class="toggle-response invisible scrollable">
+        <p>[% response_json %]</p>
+    </div>
+
+<script>
+    function toggleResponse() {
+        document.querySelectorAll('.toggle-response').forEach(el_response => {
+            el_response.classList[el_response.classList.contains('invisible') ? 'remove' : 'add']('invisible');
+        });
+    }
+</script>
+[% END %]

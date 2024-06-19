@@ -1,0 +1,81 @@
+<h3>EXISTING LIMITS</h3>
+<form id='per_symbol_limits'>
+<table class="small full-width hover alternate border">
+    <thead>
+    <tr align="center">
+        <th>Symbol</th>
+        <th>Risk Profile</th>
+        <th>Vol Markup</th>
+        <th>Spread spot</th>
+        <th>Delta Config</th>
+        <th>Black Scholes Markup</th>
+        <th>Max Strike Price Choice</th>
+        <th>Min Number Of Contracts</th>
+        <th>Max Number Of Contracts</th>
+        <th>Max Open Position</th>
+        <th>Max Daily Volume</th>
+        <th>Max Daily PnL</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN existing_config %]
+    <tr align="center" id="[% data.symbol %]-vanilla_config">
+        <td>[% data.symbol %]</td>
+        <td><input type="text" name="risk_profile" value="[% data.risk_profile %]" data-lpignore="true"/></td>
+        <td><input type="text" name="vol_markup" value="[% data.vol_markup %]" data-lpignore="true" size="5"/></td>
+        <td><input type="text" name="spread_spot" value="[% data.spread_spot %]" data-lpignore="true" size="5"/></td>
+        <td><input type="text" name="delta_config" value="[% data.delta_config %]" data-lpignore="true" /></td>
+        <td><input type="text" name="bs_markup" value="[% data.bs_markup %]" data-lpignore="true" size="5" /></td>
+        <td><input type="text" name="max_strike_price_choice" value="[% data.max_strike_price_choice %]" data-lpignore="true" size="5" /></td>
+        <td><input type="text" name="min_number_of_contracts" value="[% data.min_number_of_contracts %]" data-lpignore="true"/></td>
+        <td><input type="text" name="max_number_of_contracts" value="[% data.max_number_of_contracts %]" data-lpignore="true"/></td>
+        <td><input type="text" name="max_open_position" value="[% data.max_open_position %]" data-lpignore="true" size="5"/></td>
+        <td><input type="text" name="max_daily_volume" value="[% data.max_daily_volume %]" data-lpignore="true" size="5"/></td>
+        <td><input type="text" name="max_daily_pnl" value="[% data.max_daily_pnl %]" data-lpignore="true" size="5"/></td>
+        <td><button onClick="SaveVanillaConfig('[% data.symbol %]')" type="button" class="btn btn--primary">Save</button></td>
+        <td class="vanilla_config_result"></td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+</form>
+
+
+<script>
+var vanilla_upload_url = "[% vanilla_upload_url | none %]";
+
+function SaveVanillaConfig(symbol) {
+    var el = \$('#per_symbol_limits').find('tr#' + symbol + '-vanilla_config');
+    var result = el.find('td.vanilla_config_result');
+    result.text('processing ...');
+
+    \$.ajax({
+        url: vanilla_upload_url,
+        data: {
+            save_vanilla_per_symbol_config: 1,
+            symbol: symbol,
+            vol_markup: el.find('input[name="vol_markup"]').val(),
+            spread_spot: el.find('input[name="spread_spot"]').val(),
+            bs_markup: el.find('input[name="bs_markup"]').val(),
+            delta_config: el.find('input[name="delta_config"]').val(),
+            max_strike_price_choice: el.find('input[name="max_strike_price_choice"]').val(),
+            min_number_of_contracts: el.find('input[name="min_number_of_contracts"]').val(),
+            max_number_of_contracts: el.find('input[name="max_number_of_contracts"]').val(),
+            max_open_position: el.find('input[name="max_open_position"]').val(),
+            max_daily_volume: el.find('input[name="max_daily_volume"]').val(),
+            max_daily_pnl: el.find('input[name="max_daily_pnl"]').val(),
+            risk_profile: el.find('input[name="risk_profile"]').val(),
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('saved').css('color', 'var(--color-green)');
+            }
+        }
+    });
+
+}
+
+</script>

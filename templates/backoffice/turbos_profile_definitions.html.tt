@@ -1,0 +1,98 @@
+<div class="scrollable">
+    <table class="small border hover alternate full-width">
+        <tr>
+            <th>profile /<br/>max stake</th>
+            [% FOREACH header IN currencies %]
+                <th>[% header %]</th>
+            [% END %]
+        </tr>
+        [% FOREACH row IN stake_rows %]
+        <tr>
+            [% FOREACH td IN row %]
+                <td>[% td %]</td>
+            [% END %]
+        </tr>
+        [% END %]
+    </table>
+
+
+<form id='turbos_risk_profile'>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table>
+    <tr>
+        <td>Risk Profile: </td>
+        <td>
+            <select name="risk_level" >
+                <option value='extreme_risk'>Extreme Risk</option>
+                <option value='high_risk'>High Risk</option>
+                <option value='low_risk'>Low Risk</option>
+                <option value='medium_risk'>Medium Risk</option>
+                <option value='moderate_risk'>Moderate Risk</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td>Currency: </td>
+        <td>
+            <select name="currency" >
+                <option value='All'>All Currency</option>
+                <option value='AUD'>AUD</option>
+                <option value='BTC'>BTC</option>
+                <option value='ETH'>ETH</option>
+                <option value='EUR'>EUR</option>
+                <option value='GBP'>GBP</option>
+                <option value='LTC'>LTC</option>
+                <option value='USD'>USD</option>
+                <option value='USDC'>USDC</option>
+                <option value='UST'>UST</option>
+                <option value='XRP'>XRP</option>
+                <option value='eUSDT'>eUSDT</option>
+                <option value='tUSDT'>tUSDT</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td>Amount: </td>
+        <td><input type="text" name="amount"></input></td>
+    </tr>
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveTurbosRiskProfile()" value="Update Risk Profile"></td>
+        <td class='turbos_risk_profile_result'></td>
+    </tr>
+</table>
+</form>
+</div>
+
+<script>
+var turbos_upload_url = "[% turbos_upload_url | none %]";
+
+function SaveTurbosRiskProfile() {
+    var el = \$('#turbos_risk_profile');
+    var result = el.find('.turbos_risk_profile_result');
+
+    var currency   = el.find('select[name="currency"]').val();
+    var risk_level = el.find('select[name="risk_level"]').val();
+    var amount     = el.find('input[name="amount"]').val();
+
+    result.text('processing ...');
+
+    \$.ajax({
+        url: turbos_upload_url,
+        data: {
+            save_turbos_risk_profile: 1,
+            currency: currency,
+            risk_level: risk_level,
+            amount: amount
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('Risk profile for turbos is updated successfully. Please refresh to see the changes').css('color', 'var(--green-2)');
+            }
+        }
+
+    });
+}
+</script>

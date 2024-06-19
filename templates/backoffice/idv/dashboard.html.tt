@@ -1,0 +1,171 @@
+[% UNLESS valid_request %]
+    <p class="notify notify--warning">The requested filters are invalid.</p>
+[% ELSIF dashboard.empty %]
+    <p class="notify notify--warning">No IDV records have been found.</p>
+[% ELSE %]
+    [% FOREACH record IN dashboard %]
+        [% IF loop.first %]
+            <TABLE STYLE="width:100%;margin:0px!important;">
+                <THEAD>
+                    <TR>
+                        [% FOREACH cfg IN schema %]
+                            <TH>[% cfg.th %]</TH>
+                        [% END %]
+                    <TR>
+                </THEAD>
+                <TBODY>
+        [% END %]
+
+        <TR>
+            [% FOREACH cfg IN schema %]
+                <TD>
+                    [% IF record.${cfg.field}.defined %]
+                        [% IF cfg.field == 'loginids' %]
+                            [% PROCESS loginids %]
+                        [% ELSIF cfg.field == 'status_messages' %]
+                            [% PROCESS status_messages %]
+                        [% ELSIF cfg.field == 'response' %]
+                            [% PROCESS json_viewer %]
+                        [% ELSIF cfg.field == 'request' %]
+                            [% PROCESS json_viewer %]
+                        [% ELSIF cfg.field == 'report' %]
+                            [% PROCESS json_viewer %]
+                        [% ELSIF cfg.field == 'photo_urls' %]
+                            [% PROCESS photo_urls %]
+                        [% ELSE %]
+                            [% record.${cfg.field} %]
+                        [% END %]
+                    [% ELSE %]
+                        [% PROCESS not_available %]
+                    [% END %]
+                </TD>
+            [% END %]
+        </TR>
+
+        [% IF loop.last %]
+                </TBODY>
+            </TABLE>
+        [% END %]
+    [% END %]
+[% END %]
+
+[% BLOCK json_viewer %]
+    <DIV CLASS="[% cfg.field %] jsonViewer">
+        <SPAN style="display:none">
+            [% record.${cfg.field} | html %]
+        </SPAN>
+
+        <A HREF="#" ONCLICK="return jsonView(this, '[% cfg.field %]')">Show contents</A>
+    </DIV>
+[% END %]
+
+[% BLOCK loginids %]
+    [% FOREACH data IN record.${cfg.field}%]
+        <DIV>
+            <A TARGET="_blank" HREF="[% data.url %]">[% data.loginid %]</A>
+        </DIV>
+    [% END %]
+[% END %]
+
+[% BLOCK photo_urls %]
+    [% IF record.${cfg.field}.empty %]
+        [% PROCESS not_available %]
+    [% ELSE %]
+        [% FOREACH url IN record.${cfg.field}%]
+            <DIV><A href="[% url %]" target="_blank">Show picture</A></DIV>
+        [% END %]
+    [% END %]
+[% END %]
+
+[% BLOCK status_messages %]
+    [% IF record.${cfg.field}.empty %]
+        [% PROCESS empty_array %]
+    [% ELSE %]
+        [% FOREACH msg IN record.${cfg.field}%]
+            <DIV>[% msg %]</DIV>
+        [% END %]
+    [% END %]
+[% END %]
+
+[% BLOCK not_available %]
+    <I>N/A</I>
+[% END %]
+
+[% BLOCK empty_array %]
+    &nbsp;
+[% END %]
+
+[% IF offset > 0 || !dashboard.empty %]
+    <DIV STYLE="text-align:center;padding-top:20px;">
+        [% IF offset > 0 %]
+            <A CLASS="btn btn--primary" HREF="#" ONCLICK="return idv_dashboard_jump([% offset - decrement %])">&lt;&lt; Back</A>
+        [% END %]
+
+        [% IF increment > 0 %]
+            <A CLASS="btn btn--primary" HREF="#" ONCLICK="return idv_dashboard_jump([% offset + increment %])">Next &gt;&gt;</A>
+        [% END %]
+    </DIV>
+[% END %]
+
+<SCRIPT>
+    function jsonView(obj, title) {
+        const parent = jQuery(obj).parent();
+
+        const json = JSON.parse(parent.find('span').html());
+
+        const modal   = jQuery('<DIV CLASS="idv-modal"></DIV>');
+        const pre     = jQuery('<PRE></PRE>');
+        const topside = jQuery('<DIV><SPAN>IDV ' + title + '</SPAN></DIV>');
+        const a       = jQuery('<A HREF="#">CLOSE</A>');
+
+        jQuery('DIV.idv-modal').remove();
+
+        topside.append(a);
+
+        topside.css({
+            background: '#000',
+            padding: '18px',
+        });
+
+        topside.find('SPAN, A').css({
+            color: '#f1f1f1',
+            fontSize: '1.9em',
+            fontWeight: 'bold',
+        });
+
+        a.css({
+            float: 'right',
+            fontWeight: 'bold',
+        });
+
+        pre.css({
+            width: '100%',
+            height: '100%',
+            overflowY: 'auto',
+            margin: '30px',
+            fontSize: '1.6em',
+            paddingBottom: '90px',
+        })
+
+        modal.css({
+            background: '#f5f5f5',
+            position: 'fixed',
+            top: '0px',
+            width: '100%',
+            height: '100%',
+            zIndex: 99999999,
+            padding: '30px',
+        });
+
+        pre.html(JSON.stringify(json, null, 2));
+        a.on('click', function() {
+            modal.remove();
+        });
+        modal.append(topside);
+        modal.append(pre);
+
+        jQuery('BODY').append(modal);
+
+        return false;
+    }
+</SCRIPT>

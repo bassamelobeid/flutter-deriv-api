@@ -1,0 +1,108 @@
+[% USE date %]
+<p id="notify_message"></p>
+<p><strong>SPREAD VALUES</strong></p>
+<table>
+  <tr>
+    <th>Currency Pair</th>
+    <th>Current Spread</th>
+    <th>Last Updated By</th>
+    <th>Date</th>
+    <th>Reason</th>
+    <th>New Spread <span style="color: var(--color-red)">*</span></th>
+    <th>Update Reason <span style="color: var(--color-red)">*</span></th>
+  </tr>
+  <form id="id_spread_form" name="spread_form" action="$action" method="post">
+    [% FOREACH row IN spread_data %]
+    <tr id="[% row.currency_pair %]">
+      <td>
+        <input
+          type="text"
+          name="currency_pair"
+          value=[% row.currency_pair %]
+          readonly
+        />
+      </td>
+      <td>[% row.current_spread %]</td>
+      <td>[% row.last_updated_by %]</td>
+      <td>[% date.format(time = row.updated_date, format = '%d-%b-%Y %I:%M %p' ) %]</td>
+      <td>[% row.reason %]</td>
+      <td>
+        <input
+          type="number"
+          name="new_spread_value"
+          class="numeric_input_field"
+          min="0"
+          max="99.999999"
+          step="0.000001"
+          required
+        />
+      </td>
+      <td>
+        <textarea
+          name="update_reason"
+          maxlength="255"
+          rows="2"
+          cols="25"
+          required
+        ></textarea>
+      </td>
+      <td>
+        <button
+          type="button"
+          class="btn btn--primary"
+          onclick="updateSpreadValue('[% row.currency_pair %]')"
+        >UPDATE</button>
+      </td>
+    </tr>
+    [% END %]
+  </form>
+</table>
+
+<script>
+var internal_transfer_url = "[% internal_transfer_url | none %]";
+
+var numericInputField = document.querySelectorAll(".numeric_input_field");
+var invalidCharacters = ["e", "+", "-"];
+
+numericInputField.forEach(field => {
+  field.addEventListener("change", event => {
+    event.target.value = parseFloat(event.target.value).toFixed(6);
+  })
+
+  field.addEventListener("keydown", event => {
+    if (invalidCharacters.includes(event.key)) {
+      event.preventDefault();
+    }
+  });
+});
+
+function updateSpreadValue(currencyPair) {
+  var escapedCurrencyPair = \$.escapeSelector(currencyPair);
+  var row = \$('#' + escapedCurrencyPair);
+  var message = \$('p#notify_message');
+
+  var newSpreadValue = row.find("input[name='new_spread_value']").val();
+  var updateReason = row.find("textarea[name='update_reason']").val();
+
+  if (!newSpreadValue || !updateReason) {
+    alert('Both new spread and update reason are required.');
+  } else if (newSpreadValue < 0 || newSpreadValue > 99.999999) {
+    alert('Spread value must be between 0 and 99.999999');
+  } else {
+    message.text('Updating spread value for ' + currencyPair + '...');
+
+    \$.ajax({
+          url: internal_transfer_url,
+          type: 'POST',
+          data: {
+              symbol: currencyPair,
+              new_spread: newSpreadValue,
+              reason: updateReason,
+          },
+      });
+    
+    var form = document.getElementById('id_spread_form');
+    form.submit();
+  }
+}
+</script>

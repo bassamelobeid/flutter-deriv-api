@@ -1,0 +1,207 @@
+[%
+    import_address_currencies = ['BTC', 'LTC'];
+    all_no_param_functions = {
+        get_accounts             => 'All accounts',
+        get_block_count          => 'Block count',
+        get_blockchain_info      => 'Blockchain info',
+        get_estimate_smartfee    => 'Estimate smart fee',
+        get_gas_price            => 'Gas price',
+        get_main_address_balance => 'Main address balance',
+        get_syncing              => 'Syncing',
+        get_wallet_balance       => 'Wallet balance',
+    };
+    currency_no_param_functions = {
+        BTC => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_blockchain_info', 'get_estimate_smartfee'],
+        ETH => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_accounts',        'get_gas_price',         'get_syncing'],
+        tUSDT => ['get_wallet_balance'],
+    };
+    all_forms = {
+        get_address_balance => {
+            title    => 'Get address balance',
+            elements => [
+                { label => 'Address', name => 'address', required => 1, size => 50 },
+            ],
+        },
+        get_estimatedgas => {
+            title    => 'Get estimated gas',
+            elements => [
+                { label => 'Address', name => 'address', size => 50 },
+                { label => 'Amount',  name => 'amount' },
+            ],
+        },
+        get_transaction => {
+            title    => 'Get transaction info',
+            elements => [
+                { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 50 },
+            ],
+        },
+        get_transaction_receipt => {
+            title    => 'Get transaction receipt',
+            elements => [
+                { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 50 },
+            ],
+        },
+        import_address => {
+            title       => 'Import address',
+            description => 'Use this when client performed an incorrect currency deposit to <b>' _ currency _ '</b> address.',
+            elements => [
+                { label => 'From currency', type => 'label',          text => '<b>' _ currency _ '</b>' },
+                { label => 'To currency',   name => 'to_currency',    type => 'select', options => import_address_currencies.sort.grep('^(?!' _ currency _ ').*$') },
+                { label => 'Address',       name => 'import_address', required => 1,    size => 50 },
+                { label => 'Block number',  name => 'block_number',   required => 1,    type => 'number' },
+            ],
+        },
+        list_receivedby_address => {
+            title    => 'List received by address',
+            elements => [
+                { label => 'Address',           name => 'address',       size => 50 },
+                { label => 'Min. confirmation', name => 'confirmations', type => 'number' },
+            ],
+        },
+        list_unspent_utxo => {
+            title    => 'List unspent UTXO', note => '<i>* Leave blank to get <b>all</b> unspent UTXO</i>',
+            elements => [
+                { label => 'Address',       name => 'address',       size => 50 },
+                { label => 'Confirmations', name => 'confirmations', type => 'number' },
+            ],
+        },
+        bump_eth_transaction => {
+            title    => 'Bump transaction',
+            description => 'Use this when the transaction needs to be bumped. It requires a two-person check to complete the process.',
+        },
+        bump_btc_transaction => {
+            title    => 'Bump transaction',
+            description => 'Use this when the transaction needs to be bumped. It requires a two-person check to complete the process.',
+            elements => [
+                { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 80, value => '' },
+            ],
+        },
+    };
+    currency_forms = {
+        BTC => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'bump_btc_transaction'],
+        ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas', 'get_transaction_receipt', 'bump_eth_transaction'],
+    };
+%]
+
+[% BLOCK form %]
+    [% import(props) %]
+    <div id="form_[% id %]" class="invisible">
+        <hr>
+        <h3>[% title %]</h3>
+        [% IF description %]
+            <p>
+                <i>[% description | none %]</i>
+            </p>
+        [% END %]
+        <form action="[% controller_url %]" method="post">
+            <input type="hidden" name="currency" value="[% currency %]" />
+            <input type="hidden" name="req_title" value="[% title %]" />
+
+            <table>
+                [% FOREACH elm IN elements %]
+                    [% INCLUDE input props=elm value=previous_values %]
+                [% END %]
+                <tr>
+                    <td></td>
+                    <td>
+                        <button type="submit" class="btn btn--primary" name="req_type" value="[% id %]">[% title %]</button>
+                        [% note | none %]
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+[% END %]
+
+[% BLOCK input %]
+    [% import(props) %]
+    <tr>
+        <td>
+            <label>[% label %]:</label>
+        </td>
+        <td>
+            [% IF type == 'label' %]
+                [% text | none %]
+            [% ELSIF type == 'select' %]
+                <select name="[% name %]">
+                    [% FOR item_value IN options %]
+                        <option value="[% item_value %]"[% IF (!value.$name && selected_value == item_value) || value.$name == item_value %] selected="selected"[% END %]>[% item_value %]</option>
+                    [% END %]
+                </select>
+            [% ELSE %]
+                <input type="[% type || 'text' %]" name="[% name %]" value="[% value.$name %]" size="[% size %]" [% required && 'required' %] />
+            [% END %]
+        </td>
+    </tr>
+[% END %]
+
+[% IF currency_no_param_functions.$form_type %]
+    <form action="[% controller_url %]" method="post" class="row">
+        <input type="hidden" name="currency" value="[% currency %]" />
+
+        <label for="ddl_no_params">Wallet functions (w/o params):</label>
+        <select id="ddl_no_params" name="req_type" onchange="showForm(this.value)">
+            <option disabled selected value>--- select an option ---</option>
+            [% FOREACH func_name IN currency_no_param_functions.$form_type.sort %]
+                <option value="[% func_name %]"[% IF previous_req == func_name %] selected="selected"[% END %]>[% all_no_param_functions.$func_name %]</option>
+            [% END %]
+        </select>
+        <button type="submit" class="btn btn--primary" name="req_title" onclick="setTitle(this)">Get</button>
+    </form>
+[% END %]
+
+[% IF currency_forms.$form_type %]
+    <div>
+        <label for="ddl_with_params">Wallet functions (with params):</label>
+        <select id="ddl_with_params" onchange="showForm(this.value)">
+            <option disabled selected value>--- select an option ---</option>
+            [% FOREACH form_name IN currency_forms.$form_type.sort %]
+                <option value="[% form_name %]"[% IF previous_req == form_name %] selected="selected"[% END %]>[% all_forms.$form_name.title %]</option>
+            [% END %]
+        </select>
+    </div>
+
+    <div id="form_container">
+        [% FOREACH form_name IN currency_forms.$form_type.sort %]
+            [% IF form_name == 'bump_eth_transaction' %]
+                <div id="[% id %]" class="invisible">
+                    <form action="[% controller_url %]" method="POST" name="get_eth_pending">
+                        <input type="hidden" name='req_title' value="Bump transactions" />
+                        <input type="hidden" name='currency' value="ETH" />
+                        <input type="hidden" name='req_type' value="get_eth_pending_txn" />
+                        <button type="submit" class="btn btn--primary">Show</button>
+                    </form>
+                </div>
+            [% ELSE %]
+                [% INCLUDE form id=form_name props=all_forms.$form_name %]
+            [% END %]
+        [% END %]
+    </div>
+[% END %]
+
+<script type="text/javascript">
+    function setTitle(el) {
+        el.value = document.getElementById('ddl_no_params').selectedOptions[0].text;
+    }
+
+    function showForm(form_id) {
+        document.querySelectorAll('#form_container > div').forEach(el_form => {
+            el_form.classList[el_form.id === `form_\${form_id}` ? 'remove' : 'add']('invisible');
+        });
+
+        document.querySelectorAll('#ddl_no_params, #ddl_with_params').forEach(el_ddl => {
+            el_ddl.value = el_ddl.querySelector(`option[value='\${form_id}']`) ? form_id : '';
+        });
+
+        if(form_id == 'bump_eth_transaction') {
+            document.forms.get_eth_pending.submit();
+        }
+    }
+
+    showForm('[% previous_req %]');
+</script>
+
+[% IF !currency_no_param_functions.$form_type && !currency_forms.$form_type %]
+    <hr />
+    <p><b>No tools implemented for [% currency %] yet.</b></p>
+[% END %]

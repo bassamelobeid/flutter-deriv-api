@@ -1,0 +1,156 @@
+[% USE date %]
+
+<style type="text/css">
+    #pending_txn_list {
+        margin-bottom: 30px;    /* remove vertical scroll caused by tooltip position (top) */
+    }
+    #pending_txn_list td {
+        padding: 5px;
+    }
+    .txn_error_row:hover {
+        background-color: #f1faee !important;
+    }
+    table tr.txn_error_row.selected {
+        background: #D0E3C4 !important;
+    }
+    .nowrap {
+        white-space: nowrap;
+    }
+    pre {
+        font-family: monospace;
+        font-size: 1.5rem;
+    }
+</style>
+
+[% IF error_withdrawals && error_withdrawals.size > 0 || 1 == 1 %]
+<form name="revert_processing_form" method="post">
+    <div class="scrollable">
+    <table id="pending_txn_list" class="alternate border">
+        <tr>
+            <td></td>
+            <th>ID</th>
+            <th>Login ID</th>
+            <th>Address</th>
+            <th>Currency</th>
+            <th>Amount</th>
+            <th>Txn Fee</th>
+            <th>Status</th>
+            <th>Creation Date</th>
+            <th>Error Date</th>
+            <th>Error</th>
+            <th>Remark</th>
+            <th>Approver</th>
+        </tr>
+        [% FOREACH txn IN error_withdrawals.keys.nsort.reverse %]
+            <tr class='txn_error_row'>
+                <td><input type="checkbox" name="txn_checkbox" value="[% error_withdrawals.$txn.id %]" onchange="toggleSelected(this)" /></td>
+                <td class="copy-on-click">[% error_withdrawals.$txn.id %]</td>
+                <td class="copy-on-click">[% error_withdrawals.$txn.client_loginid %]</td>
+                <td class="copy-on-click address">[% error_withdrawals.$txn.address %]</td>
+                <td>[% error_withdrawals.$txn.currency_code %]</td>
+                <td>[% error_withdrawals.$txn.amount %]</td>
+                <td>[% error_withdrawals.$txn.txn_fee %]</td>
+                <td>[% error_withdrawals.$txn.status %]</td>
+                <td>[% error_withdrawals.$txn.creation_date && date.format(error_withdrawals.$txn.creation_date, '%Y-%m-%d %T') | none %]</td>
+                <td>[% error_withdrawals.$txn.error_date && date.format(error_withdrawals.$txn.error_date, '%Y-%m-%d %T') | none %]</td>
+                <td>[% error_withdrawals.$txn.error_text %]</td>
+                <td>[% error_withdrawals.$txn.remark %]</td>
+                <td>[% error_withdrawals.$txn.approved_by %]</td>
+            </tr>
+        [% END %]
+    </table>
+    </div>
+    <br>
+    <br>
+
+    <!-- Sent Error Withdrawals -->
+         <label for="txn_hash">Transaction hash</label>
+         <input type="text" id="sent_tx_hash" name="txn_hash" value="" size="100"/>
+    <!--  -->
+    
+    <div class="grd-margin-top">
+        <a href="javascript:;" class="btn btn--secondary" onclick="selectMultiple()">Select multiple transactions</a>
+        <a href="javascript:;" class="btn btn--secondary" onclick="selectTransactions()">Deselect all</a>
+        <div id="select_result"></div>
+    </div>
+    <input type="hidden" name="gt_currency" value="[% currency %]" />
+    <input type="hidden" name="txn_to_process" />
+    <input type="hidden" name="req_title" value="Bump transactions" />
+    <input type="hidden" name="req_type" value="gt_revert_processing_txn" />
+    <hr />
+    <div id="selected_items"></div>
+    <button type="button" class="btn btn--primary" onclick="processErrorWithdrawals()">Bump Selected Transactions</button>
+
+</form>
+[% ELSE %]
+    [% IF error %]
+    <p class="error"><b>[% error %]</b></p>
+    [% ELSE %]
+    <p class="error"><b>There is no withdrawal record with "ERROR" status for [% currency %].</b></p>
+    [% END %]
+[% END %]
+
+<script type="text/javascript">
+    const all_checkboxes = document.querySelectorAll('#pending_txn_list [name="txn_checkbox"]');
+    function getAllChecked() {
+        return [...all_checkboxes].filter(el_chk => el_chk.checked);
+    }
+
+    function toggleSelected(el_chk) {
+        const is_selected = el_chk.checked;
+        const el_row      = el_chk.closest('tr');
+        el_row.classList[is_selected ? 'add' : 'remove']('selected');
+        showSelectedSummary();
+    }
+
+    function showSelectedSummary() {
+        const selected_ids = getAllChecked().map(el_chk => el_chk.value).sort((a, b) => a - b).join(', ');
+        (document.getElementById('selected_items') || {}).innerHTML = `<b>Selected transactions:</b> \${selected_ids || 'None'}`;
+    }
+
+    function selectMultiple() {
+        const txn_input = window.prompt('Please paste the list of Transaction Hash below:\n(comma-separated integers)');
+        const txn_list  = (txn_input || '').split(/(,|\s+)/).map(id => id.trim()).filter(id => parseInt(id) === +id);
+        document.getElementById('select_result').innerHTML = `<pre>Input Hash : \${txn_input}<br>Parsed IDs: \${txn_list.length ? txn_list.join(', ') : 'No transaction hash entered.'}</pre>`;
+        selectTransactions(txn_list);
+    }
+
+    function selectTransactions(txn_list = []) {
+        all_checkboxes.forEach(el_chk => {
+            el_chk.checked = txn_list.includes(el_chk.value);
+            el_chk.dispatchEvent(new Event('change'));
+        });
+    }
+
+    function checkEmpty() {
+        const checked_count = getAllChecked().length;
+        if (!checked_count) {
+            alert('Error: No transaction selected.');
+            return false;
+        }
+        return true;
+    }
+
+    function processErrorWithdrawals(){
+        if(checkEmpty()){
+            document.forms.revert_processing_form.req_title.value = 'Revert processing transactions';
+            document.forms.revert_processing_form.req_type.value  = 'gt_revert_processing_txn';
+            document.forms.revert_processing_form.submit();
+        }
+    }
+
+    function processSentWithdrawals(){
+        const tx_hash_input = document.getElementById('sent_tx_hash');
+        if(!tx_hash_input.value.trim().length){
+            alert('Error: Transaction hash not provided.');
+            return;
+        }
+        if(checkEmpty()){
+            document.forms.revert_processing_form.req_title.value = 'Update Sent Withdrawals';
+            document.forms.revert_processing_form.req_type.value  = 'gt_update_error_txn_sent';
+            document.forms.revert_processing_form.submit();
+        }
+    }
+
+    showSelectedSummary();
+</script>

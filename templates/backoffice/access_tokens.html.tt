@@ -1,0 +1,71 @@
+<h3>ACTIVE ([% tokens.size %])</h3>
+<table class="hover alternate nowrap small">
+    [% IF tokens.size > 0 %]
+    <thead>
+    <tr>
+        <th>Login ID</th>
+        <th>Token</th>
+        <th>Linked To</th>
+        <th>Type</th>
+        <th>Created</th>
+        <th colspan="2">Details</th>
+    </tr>
+    </thead>
+    <tbody>
+        [% FOREACH token IN tokens %]
+        <tr>
+            <td class="tokencell">[% token.loginid %]</td>
+            <td class="tokencell">[% token.token %]</td>
+            <td class="tokencell"><ul>
+            [% FOREACH login_id IN token.copiers %]
+                <li><a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID =>  login_id }) %]" > [% login_id %] 
+                </a></li>
+            [% END %]    
+            </ul>
+            </td>
+            <td class="tokencell">[% token.type %]</td>
+            <td class="tokencell">[% token.creation_time %]</td>
+            <td class="tokencell" colspan="2">[% token.info %]</td>
+        </tr>
+        [% END %]
+     [% ELSE %]
+     <tr>
+         <td colspan="6">No active</td>
+     </tr>
+     [% END %]
+    </tbody>
+</table>
+
+<hr>
+
+<h3>DELETED ([% deleted.size %])</h3>
+<table class="hover alternate nowrap small">
+    [% IF deleted.size > 0 %]
+    <thead>
+    <tr>
+        <th>Login ID</th>
+        <th>Token</th>
+        <th>Type</th>
+        <th>Created</th>
+        <th>Deleted</th>
+        <th>Details</th>
+    </tr>
+    <thead>
+    <tbody>
+        [% FOREACH token IN deleted %]
+        <tr>
+            <td class="tokencell">[% token.loginid %]</td>
+            <td class="tokencell" style="text-align:center">[% token.token %]</td>
+            <td class="tokencell">API</td>
+            <td class="tokencell">[% token.creation_time %]</td>
+            <td class="tokencell" style="text-align:center">[% token.deleted %]</td>
+            <td class="tokencell">[% token.info %]</td>
+        </tr>
+        [% END %]
+     [% ELSE %]
+     <tr>
+         <td colspan="6">No deleted tokens</td>
+     </tr>
+     [% END %]
+    </tbody>
+</table>

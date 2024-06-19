@@ -1,0 +1,174 @@
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.5/nv.d3.min.css">
+<form>
+[% FOREACH parameter IN ['Date', 'Underlying', 'Duration', 'Type' ] -%]
+[% name = parameter | lower -%]
+<label for="[% name %]">[% parameter %]</label>
+<select name="[% name %]"[% IF parameter == 'Date' || parameter == 'Type' -%] multiple="multiple"[% END %]>
+[%  FOR item IN parameter_list.item(name) -%]
+ <option value="[% item %]"[% IF selected_parameter.$name == item %] selected="selected"[% END -%]
+[% IF parameter == 'Date'; FOREACH date IN selected_parameter.date; IF item == date %] selected="selected"[% END; END; END -%]
+[% IF parameter == 'Type'; FOREACH type IN selected_parameter.type; IF item == type %] selected="selected"[% END; END; END -%]
+>[% item %]</option>
+[%  END -%]
+</select>
+[%  IF parameter == 'Date' -%]
+<label for="price_type">Ask/theo price</label>
+<select name="price_type">
+ <option value="ask"[% IF selected_parameter.price_type == 'ask' %] selected="selected"[% END %]>Ask price</option>
+ <option value="theo"[% IF selected_parameter.price_type == 'theo' %] selected="selected"[% END %]>Theo price</option>
+</select>
+
+<label for="strategy">Strategy</label>
+<select name="strategy">
+[% FOR strategy IN strategy_list -%]
+ <option value="[% strategy %]"[% IF strategy_selected == strategy %] selected="selected"[% END %]>[% strategy %]</option>
+[% END -%]
+</select>
+
+<label for="count">Param 1</label>
+<input name="count" value="[% count %]">
+
+<br>
+[%  END -%]
+[% END -%]
+
+<label for="skip">Skip</label>
+<input name="skip" value="[% skip %]">
+
+<input name="run" type="submit" value="Run">
+
+[% IF result_table.size -%]
+<h2>Results for all datasets with strategy [% strategy_selected || 'unknown' %]</h2>
+<table>
+ <thead>
+<tr>
+[% FOREACH hdr IN result_table.header -%]
+ <th>[% hdr %]</th>
+[% END -%]
+</tr>
+ </thead>
+ <tbody>
+[% sum_contracts_bought = 0;
+   sum_company_profit = 0; -%]
+[% FOREACH result IN result_table.body -%]
+<tr[% IF result.1 < 5000 %] style="color:#777;"[% ELSIF result.14 > 1.0 %] style="color:#f00;"[% END %]>
+[%  FOREACH stat IN result -%]
+ <td style="text-align:center; border:1px solid;">[% stat | none %]</td>
+[%  END -%]
+[% sum_contracts_bought = sum_contracts_bought + result.11;
+   sum_company_profit = sum_company_profit + result.12; -%]
+</tr>
+[% END -%]
+<tr>
+<td colspan="11">&nbsp;</td>
+<td style="text-align:center; border:1px solid;">[% sum_contracts_bought | format('%.02f') %]</td>
+<td style="text-align:center; border:1px solid;">[% sum_company_profit | format('%.02f')  %]</td>
+<td style="text-align:center; border:1px solid;">[% (100 * sum_company_profit / sum_contracts_bought) | format('%.02f') %]%</td>
+</tr>
+ </tbody>
+</table>
+[% ELSIF result_list.size -%]
+<h2>Results for [% dataset.join(',') %] with strategy [% strategy_selected || 'unknown' %]</h2>
+<p>[% description %]</p>
+<table>
+ <tbody>
+[% FOREACH stat IN statistics -%]
+ <tr><th style="text-align:right;padding-right:1em;">[% stat.0 %]</th><td>[% stat.1 | none %]</td></tr>
+[% END -%]
+[% IF dataset.size == 1 -%]
+<tr>
+<th>Download dataset</th>
+<td>
+ <a target="_blank" href="?download=[% date %]/[% dataset.0 %]">Download [% dataset.0 %]</a>
+</td>
+</tr>
+[% END -%]
+ </tbody>
+</table>
+<div id="chart"> <svg style="height: 32em"> </svg> </div>
+<div id="spot"> <svg style="height: 32em"> </svg> </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.5/nv.d3.min.js"></script>
+<script type="text/javascript">
+nv.addGraph(function() {
+    var chart = nv.models.lineChart()
+        .margin({left: 100})
+        .useInteractiveGuideline(true)
+        .showLegend(true)
+        .showYAxis(true)
+        .showXAxis(true);
+
+    chart.xAxis
+        .axisLabel('Time')
+        .tickFormat(d3.format(',r'));
+/*
+    chart.y1Axis
+        .axisLabel('Cumulative client profit')
+        .tickFormat(d3.format('.02f'));
+    chart.y2Axis
+        .axisLabel('Spot price')
+        .tickFormat(d3.format('.02f'));
+*/
+
+    chart.yAxis
+        .axisLabel('Cumulative client profit')
+        .tickFormat(d3.format('.02f'));
+    // chart.lines.forceY([0]);
+
+    d3.select('#chart svg')
+        .datum([ {
+            key: "Client profit/loss",
+            color: "#ff0000",
+            values: [
+[% FOREACH value IN result_list -%]
+                { x: [% loop.index %], y: [% value %] }[% UNLESS loop.last -%],[% END %]
+[% END -%]
+            ]
+        } ])
+        .call(chart);
+
+    nv.utils.windowResize(function() { chart.update() });
+    chart.color(function (d, i) {
+            console.log("have %o and %o", d, i);
+            return d.values.map(function(v,i) { return v.y < 0 ? '#00ff00' : '#ff0000' });
+        });
+    return chart;
+});
+nv.addGraph(function() {
+    var chart = nv.models.lineChart()
+        .margin({left: 100})
+        .useInteractiveGuideline(true)
+        .showLegend(true)
+        .showYAxis(true)
+        .showXAxis(true);
+
+    chart.xAxis
+        .axisLabel('Time')
+        .tickFormat(d3.format(',r'));
+
+    chart.yAxis
+        .axisLabel('Cumulative client profit')
+        .tickFormat(d3.format('.02f'));
+
+    d3.select('#spot svg')
+        .datum([ {
+            key: "Spot price",
+            color: "#00ff00",
+            values: [
+[% FOREACH value IN spot_list -%]
+                { x: [% loop.index %], y: [% value %] }[% UNLESS loop.last -%],[% END %]
+[% END -%]
+            ]
+        } ])
+        .call(chart);
+
+    nv.utils.windowResize(function() { chart.update() });
+    chart.color(function (d, i) {
+            console.log("have %o and %o", d, i);
+            return d.values.map(function(v,i) { return v.y < 0 ? '#00ff00' : '#ff0000' });
+        });
+    return chart;
+});
+</script>
+[% END -%]
+</form>

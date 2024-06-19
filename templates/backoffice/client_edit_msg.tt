@@ -1,0 +1,4 @@
+<p [% IF error %] class="error" [% ELSE %] class="success" [% END %]>[% message %]</p>
+<p>
+    <a class="link" href="[% self_url | none %]">&laquo; Return to client details<a/>
+</p>

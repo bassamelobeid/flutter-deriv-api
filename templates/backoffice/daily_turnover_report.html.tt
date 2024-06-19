@@ -1,0 +1,117 @@
+<div>
+    <h3>Daily turnover report</h3>
+    <form action="[% request.url_for('backoffice/f_dailyturnoverreport.cgi') | none %]" method="post" onsubmit="return validate_month()">
+        <label>Month:</label><input type="text" size="12" name="month" value="[% this_month %]" required pattern="\d{4}-\d{2}" data-lpignore="true" />
+        <input type="submit" class="btn btn--primary" value="View daily turnover report"></input>
+    </form>
+</div>
+<hr/>
+
+[% IF dtr.summarize_turnover %]
+<br>
+    <table id="summary" class='bg-highlight'>
+        <thead>
+            <tr><th/><th>Current</th><th>Projected</th></tr>
+        </thead>
+        <tbody>
+            <tr><th>Turnover</th><td>[% commas(dtr.all_USD_buys) %]</td><td>[% commas(dtr.projected_turnover) %]</td></tr>
+            <tr><th>Profit</th><td>[% commas(dtr.estimated_pl) %]</td><td>[% commas(dtr.projected_pl) %]</td></tr>
+            <tr><th>Hold</th><td colspan="2" class="shared">[% dtr.pct_hold %]%</td></tr>
+        </tbody>
+        <caption>Amounts in USD. Projections based on a <strong>[% dtr.pct_month_completed %]%</strong> complete marked-to-model month.</caption>
+    </table>
+[% END %]
+<br>
+
+[% IF dtr.risk_report %]
+<p>See, also: <a class="link" href="[% dtr.risk_report | none %]">the latest Risk Dashboard</a></p>
+[% END %]
+[% IF dtr.mtm_calc_time %]
+    <p id='mtm_last_calculated_time'>Latest marked to market calculation prices at [% dtr.mtm_calc_time %]</p>
+[% END %]
+[% IF dtr.initial_note %]
+    <p><i>* [% dtr.initial_note %]</i></p>
+[% END %]
+<div class="scrollable">
+    <table id="dtr" class="border hover">
+        <thead>
+        <tr>
+            <th>DATE</th>
+            <th>[% dtr.buy_label %] (USD AGG.)</th>
+            <th>[% dtr.sell_label %] (USD AGG.)</th>
+            <th>USD <br>[% dtr.buy_label %]-[% dtr.sell_label %]</th>
+            <th>AGG OUT.BET<br>(USD)</th>
+            <th>P/L O.BETS (USD)</th>
+            <th>PL ON DAY</th>
+            <th>Active Clients</th>
+            [% FOREACH currency IN dtr.currencies.sort %]
+                <th>[% dtr.buy_label %] ([% currency %])</th>
+                <th>[% dtr.sell_label %] ([% currency %])</th>
+            [% END %]
+        </tr>
+        </thead>
+        <tbody>
+            [% FOREACH day IN dtr.days.reverse %]
+                <tr[% IF day.is_weekend %] class="weekend"[% END %]>
+                    <td>[% day.date %]</td>
+                    <td><strong>USD<br>[% commas(day.USD_buys) %]</strong></td>
+                    <td><strong>USD<br>[% commas(day.USD_sells) %]</strong></td>
+                    <td class="[% IF day.pl < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% commas(day.pl) %]</td>
+                    <td>USD<br>[% commas(day.agg_bets) %]</td>
+                    <td class="[% IF day.pl_bets < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% commas(day.pl_bets) %]</strong></td>
+                    <td class="[% IF day.pl_on_day < 0 %]down[% ELSE %]up[% END %]">
+                        <strong>USD<br>[% commas(day.pl_on_day) %]</strong>
+                    </td>
+                    <td>[% day.active_clients %]</td>
+                    [% FOREACH currency IN dtr.currencies.sort%]
+                        <td>[% IF day.buys.$currency %][% currency %]<br>[% commas(day.buys.$currency) %][% ELSE %]&nbsp;[% END %]</td>
+                        <td>[% IF day.sells.$currency %][% currency %]<br>[% commas(day.sells.$currency) %][% ELSE %]&nbsp;[% END %]</td>
+                    [% END %]
+                </tr>
+            [% END %]
+        <tr>
+            <td>TOTALS</td>
+            [% FOREACH currency IN dtr.currencies.sort%]
+                <td><strong>[% currency %] [% commas(dtr.all_buys.$currency) %]</strong></td>
+                <td><strong>[% currency %] [% commas(dtr.all_sells.$currency) %]</strong></td>
+            [% END %]
+            <td><strong>USD [% commas(dtr.all_USD_buys) %]</strong></td>
+            <td><strong>USD [% commas(dtr.all_USD_sells) %]</strong></td>
+            <td><span [% IF dtr.all_pl < 0 %] class="warning"[% END %]><strong>USD [% commas(dtr.all_pl) %]</strong></span></td>
+            <td><span [% IF dtr.agg_bets_diff < 0 %] class="warning"[% END %]><strong>USD [% commas(dtr.agg_bets_diff) %]</strong></span></td>
+            <td><span [% IF dtr.all_prev_agg_bets < 0 %] class="warning"[% END %]><strong>USD [% commas(dtr.all_prev_agg_bets) %]</strong></span></td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<style type="text/css">
+    #dtr span.warning, span.warning * { color:var(--color-red); }
+    #dtr th { text-align: left; }
+    #dtr td { white-space: nowrap; }
+    #dtr td.up, td.up * { color: var(--color-green); }
+    #dtr td.down, td.down * { color: var(--color-red); }
+    #dtr tr.weekend td { background-color: var(--bg-disabled); }
+#summary th { font-weight: normal; font-size: medium; border: 1px solid var(--bg-primary); background-color: var(--bg-primary-light); }
+#summary td { text-align: right; font-weight: bold; font-size: medium; padding: 5px; border: 1px solid var(--bg-primary); }
+#summary td.shared { text-align: center; }
+#summary caption { caption-side: bottom; font-size: small;  }
+
+</style>
+
+<script type="text/javascript" language="javascript">
+function validate_month(){
+    var get_value = function(elm_name) {
+        return (document.getElementsByName(elm_name)[0] || {}).value;
+    }
+    var month = get_value('month');
+    var month_obj = new Date(month);
+    if(/^0000/.test(month) || month_obj == 'Invalid Date'){
+        alert("Invalid month or year entered.");
+        return false;
+    }
+    return true;
+}
+</script>

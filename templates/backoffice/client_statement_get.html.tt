@@ -1,0 +1,22 @@
+<div class="row">
+    <form action="[% statement_url %]" method="get">
+        <input type="hidden" name="loginID" value="[% encoded_loginid %]">
+        <input type="submit" class="btn btn--primary" value="View [% encoded_loginid %] portfolio">
+        <input type="hidden" name="broker" value="[% encoded_broker %]">
+        <input type="hidden" name="currency" value="default">
+    </form>
+
+    <form action="[% history_url %]" method="get">
+        <input type="hidden" name="loginID" value="[% encoded_loginid %]">
+        <input type="submit" class="btn btn--primary" value="View [% encoded_loginid %] statement" style="margin-right: 4px;">
+        <div class="form-checkbox">
+            <input type="checkbox" name="trx_filter" id="deposit_withdrawal_only" value="deposit_withdrawal_only" [% checked %]>
+            <label for="deposit_withdrawal_only" style="margin-right: 8px;">Deposits and withdrawals only</label>
+        </div>
+    </form>
+
+    <form action="[% request.url_for('backoffice/f_client_comments.cgi') | url %]" method="get">
+        <input type="hidden" name="loginid" value="[% encoded_loginid %]" />
+        <input type="submit" class="btn btn--primary" value="Account review notes" />
+    </form>
+</div>

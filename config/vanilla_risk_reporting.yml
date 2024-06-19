@@ -1,0 +1,52 @@
+---
+spot_change_scenarios:
+  - 0.1
+  - 0.25
+  - 0.5
+  - 0.9
+  - 0.95
+  - 0.975
+  - 0.99
+  - 0.995
+  - 0.9975
+  - 1
+  - 1.0025
+  - 1.005
+  - 1.01
+  - 1.025
+  - 1.05
+  - 1.1
+  - 1.25
+  - 1.5
+  - 1.75
+  - 1.9
+time_remain_bins:
+  - max: 0.0027397260273972603
+    label: "less than a day"
+  - max: 0.0054794520547945205
+    label: "1 to 2 days"
+  - max: 0.00821917808219178
+    label: "2 to 3 days"
+  - max: 0.010958904109589041
+    label: "3 to 4 days"
+  - max: 0.0136986301369863
+    label: "4 to 5 days"
+  - max: 0.01643835616438356
+    label: "5 to 6 days"
+  - max: 0.01917808219178082
+    label: "6 to 7 days"
+  - max: 0.03835616438356164
+    label: "1 to 2 weeks"
+  - max: 0.057534246575342465
+    label: "2 to 3 weeks"
+  - max: 0.07671232876712328
+    label: "3 to 4 weeks"
+  - max: 0.16666666666666666
+    label: "1 to 2 months"
+  - max: 0.25
+    label: "2 to 3 months"
+  - max: 0.5
+    label: "5 to 6 months"
+  - max: null
+    label: "more than 6 months"
+

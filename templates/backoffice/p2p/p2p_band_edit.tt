@@ -1,0 +1,184 @@
+<form action="[% request.url_for('backoffice/p2p_band_management.cgi', {broker => broker}) %]" method="post">
+
+<table class="border">
+    <tr>
+        <td rowspan=4>
+        <div class="small">
+        <p>A band is assigned to an advertiser by the first matching condition:</p>
+        <ol class="small">
+            <li>Level matches, country matches, curency matches</li>
+            <li>Level matches, country matches, band currency is USD</li>
+            <li>Level matches, band country is default, currency matches</li>
+            <li>Level matches, band country is default, band currency is USD</li>
+            <li>Band is low, country is default, currency is USD</li>
+        </ol>
+        </div>
+        </td>
+    </tr>
+    <tr>        
+        <td class="label">Level</td>
+        <td>
+            [% IF action == 'update' %]
+                <b>[% item.trade_band %]</b>
+                <input type="hidden" name="trade_band" value="[% item.trade_band %]"/>
+            [% ELSE %]
+            <input type="text" name="trade_band" value="[% item.trade_band %]">
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Country</td>
+        <td>
+            [% IF action == 'update' %]
+                <b>
+                [% IF countries_list.${item.country} %]
+                    [% countries_list.${item.country}.name %] ([% item.country %])
+                [% ELSE %]
+                    [% item.country %]
+                [% END %]
+                </b>
+                <input type="hidden" name="country" value="[% item.country %]"/>
+            [% ELSE %]
+            <select name="country">
+                <option value="">choose...</option>
+                <option value="default" [% item.country == 'default' && 'selected' %]>default (all countries)</option>
+                [% FOREACH c = countries %]
+                <option value="[% c.code %]" [% item.country == c.code && 'selected' %]>[% c.name %] ([% c.code %])</option>
+                [% END %]
+            </select>
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Currency</td>
+        <td>
+            [% IF action == 'update' %]
+                <b>[% item.currency %]</b>
+                <input type="hidden" name="currency" value="[% item.currency %]"/>
+            [% ELSE %]
+            <select name="currency">
+                <option value="">choose...</option>
+                [% FOREACH c = currencies %]
+                <option value="[% c %]" [% item.currency==c && 'selected' %]>[% c %]</option>
+                [% END %]
+            </select>
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td rowspan=2 valign="top"><b>Daily Limits</b></td>
+        <td class="label">Buy Limit</td>
+        <td>
+            <input type="text" name="max_daily_buy" value="[% item.max_daily_buy %]" size=20 data-lpignore="true" />
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Sell Limit</td>
+        <td>
+            <input type="text" name="max_daily_sell" value="[% item.max_daily_sell %]" size=20 data-lpignore="true" />
+        </td>
+    </tr>
+    <tr>
+        <td rowspan=2 valign="top"><b>Normal Trading Ad Limits</b></td>
+        <td class="label">Minimum Ad Order Limit</td>
+        <td>
+            <input type="text" name="min_order_amount" value="[% item.min_order_amount %]" size=20 data-lpignore="true" />(optional)
+        </td>
+        </tr>
+    <tr>
+        <td class="label">Maximum Ad Order Limit</td>
+        <td>
+            <input type="text" name="max_order_amount" value="[% item.max_order_amount %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td rowspan=2 valign="top"><b>Block Trading Ad Limits</b><br/>(leave both fields blank if block trading is not allowed)</td>
+        <td class="label">Minimum Block Trade Ad Order Limit</td>
+        <td>
+            <input type="text" name="block_trade_min_order_amount" value="[% item.block_trade_min_order_amount %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Maximum Block Trade Ad Order Limit</td>
+        <td>
+            <input type="text" name="block_trade_max_order_amount" value="[% item.block_trade_max_order_amount %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>                   
+    <tr>
+        <td></td>
+        <td class="label">Minimum Balance<br/>(Sell ads are hidden when P2P balance drops below this amount)</td>
+        <td>
+            <input type="text" name="min_balance" value="[% item.min_balance %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td rowspan=9 valign="top"><b>Upgrade Settings</b><br/>Clients will upgraded to this band when they meet these criteria.<br/>If eligible for multiple bands, they will be upgraded to the band with highest daily limits.</td>
+        <td class="label">Upgrade Type</td>
+        <td>
+            <select name="upgrade_type">
+                <option value="none" [% item.upgrade_type=='none' && 'selected' %]>No upgrade</option>
+                <option value="auto" [% item.upgrade_type=='auto' && 'selected' %]>Upgrade automatically with daily cron</option>
+                <option value="manual" [% item.upgrade_type=='manual' && 'selected' %]>Offer upgrade to client</option>
+                <option value="manual_with_email" [% item.upgrade_type=='manual_with_email' && 'selected' %]>Offer upgrade to client, send internal email on upgrade</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Minimum Joined Days<br>(Advertisers who joined less than 30 days will not be upgraded)</td>
+        <td>
+            <input type="text" name="min_joined_days" value="[% item.min_joined_days %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Maximum Dispute Rate</td>
+        <td>
+            <input type="text" name="max_allowed_dispute_rate" value="[% item.max_allowed_dispute_rate %]" size=20 data-lpignore="true" />0 - 1 (optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Minimum Completion Rate</td>
+        <td>
+            <input type="text" name="min_completion_rate" value="[% item.min_completion_rate %]" size=20 data-lpignore="true" />0 - 1 (optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Minimum Completed Orders</td>
+        <td>
+            <input type="text" name="min_completed_orders" value="[% item.min_completed_orders %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Maximum Fraud Cases</td>
+        <td>
+            <input type="text" name="max_allowed_fraud_cases" value="[% item.max_allowed_fraud_cases %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Minimum 30 day turnover</td>
+        <td>
+            <input type="text" name="min_turnover" value="[% item.min_turnover %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Payment Agent tier<br>(Tier name must match exactly and only authorized PAs will be upgraded)</td>
+        <td>
+            <input type="text" name="payment_agent_tier" value="[% item.payment_agent_tier %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>    
+    <tr>
+        <td class="label">POA Required</td>
+        <td>
+            <select name="poa_required">
+                <option value="0">no</option>
+                <option value="1" [% item.poa_required && 'selected' %]>yes</option>
+            </select>
+        </td>
+    </tr>
+</table>
+
+<br/>
+
+<button type="submit" class="btn btn--primary" name="action" value="[% action %]">Save</button>
+<button type="submit" class="btn btn--secondary" name="cancel" value="1">Reset fields</button>
+
+</form>

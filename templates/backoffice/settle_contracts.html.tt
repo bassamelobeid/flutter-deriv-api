@@ -1,0 +1,41 @@
+<div>
+    <p>Only contracts which cannot be automatically settled should appear below.</p>
+    <p><strong>"Cancel"</strong>: sell the contract at <strong>0</strong> and issue a <strong>credit for the purchase amount</strong></p>
+<p><strong>"As Loss"</strong>: sell the contract for <strong>0</strong></p>
+<p><strong>"As Win"</strong>: sell the contract for <strong>full payout</strong></p>
+<form METHOD="POST">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table class="border">
+    <tr>
+        <th>Contract Ref. No.</th>
+        <th>Client Login</th>
+        <th>Shortcode</th>
+        <th>Reason</th>
+        <th>Buy Price</th>
+        <th>Full Payout</th>
+        <th>Skip</th>
+        <th class="bg-danger error">Cancel</th>
+        <th class="bg-red">As Loss</th>
+        <th class="bg-highlight">As Win</th>
+    </tr>
+    [% FOREACH contract IN unsettled %]
+    <tr>
+    <td><a class="link" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => contract.loginid, currency => contract.currency }) | none %]">[% contract.ref %]</a></td>
+        <td>[% contract.loginid %]</td>
+        <td>[% contract.shortcode %]</td>
+        <td>[% contract.reason %]</td>
+        <td>[% contract.currency %][% contract.buy_price %]</td>
+        <td>[% contract.currency %][% contract.payout %]</td>
+        <td><input type="radio" name="fmb_[% contract.fmb_id %]" value="skip" checked></td>
+        <td class="bg-danger error"><input type="radio" name="fmb_[% contract.fmb_id %]" value="cancel"> </td>
+        <td class="bg-red"><input type="radio" name="fmb_[% contract.fmb_id %]" value="loss"> </td>
+        <td class="bg-highlight"><input type="radio" name="fmb_[% contract.fmb_id %]" value="win"> </td>
+    </tr>
+    [% END %]
+</table>
+<hr/>
+<input type="submit" class="btn btn--primary" name="perform_actions"  value="Perform Selected Actions"/>
+<input type="hidden" name="broker"  value="[% broker_code %]"/>
+</fieldset>
+</form>
+</div>

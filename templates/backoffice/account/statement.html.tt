@@ -1,0 +1,215 @@
+[% USE date %]
+
+[% INCLUDE 'backoffice/common/client_quick_links.html.tt' %]
+
+<hr>
+
+[% INCLUDE 'backoffice/account/statement_summary.html.tt' %]    
+<br>
+<form action="[% self_post %]" method="get" class="row">
+    <label>Client deposits/withdrawals for the lifetime of the account:</label>
+    <input name="loginID" type="hidden" value="[% loginid %]">
+    <input name="broker" type="hidden" value="[% broker %]">
+    <input name="currency" type="hidden" value="[% currency %]">
+    <input name="action" type="hidden" value="gross_transactions">
+    <input type="submit" class="btn btn--primary" value="View">
+</form>
+
+[% IF total_deposits %]
+<div class="row bg-lightgrey grd-margin-top grd-margin-bottom">
+    <div class="grd-grid-2">
+        <strong>Total Deposits</strong><br>
+        <p>[% total_deposits %] [% currency %]</p>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Total Withdrawals</strong><br>
+        <p>[% total_withdrawals %] [% currency %]</p>
+    </div>
+</div>
+[% END %]
+
+<hr>
+
+<div>
+    <h3>Show all transactions</h3>
+    <div class="grd-margin-bottom">
+        <p class="error">NOTE: may fail for clients with a huge number of transactions, so use this feature only when required.</p>
+    </div>
+    <div>
+        <form  name="trx_form" onsubmit="return validateTrxForm()" action="[% self_post %]" method="get">
+            <div class="row">
+            <label>Quick jump to see another statement:</label>
+            <input name="loginID" type="text" size=15 value="[% loginid %]" data-lpignore="true" required/>
+            <input name="startdate" type="text" size=15 value="[% startdate %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" />
+            <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" />
+            <input name="broker" type=hidden value="[% broker %]">
+            <input name="currency" type="hidden" value="[% currency %]">
+            <span tooltip="If specified, the result would contain only one transaction if found a match, otherwise nothing">
+                <label for="transactionID">Transaction Ref.: </label>
+                <input name="transactionID" id="transactionID" type="number" size=15 value="[% transaction_id %]" data-lpignore="true" />
+            </span>
+            </div>
+            <div class="row" style="padding-left: 235px;">
+            <input name="trx_filter" id="deposit_withdrawal_only" type="checkbox" value="deposit_withdrawal_only" [% trx_filter == 'deposit_withdrawal_only' && 'checked' %]>
+                <label for="deposit_withdrawal_only">Deposits and withdrawals only</label>
+                <input name="l" type="hidden" value="EN">
+                <input type=submit class="btn btn--primary" id="viewTransactions" value="View">
+            </div>
+        </form>
+    </div>
+</div>
+
+<br>
+
+[% INCLUDE 'backoffice/common/client_info_brief.html.tt' %]
+
+<div class="row grd-parent grd-grid-12">
+    <div class="grd-grid-10">
+        <b>Balance on [% now.date %]</b>
+    </div>
+    <div class="grd-grid-2 right">
+        <b>[% currency %] [% formatnumber('amount', currency, balance) %]</b>
+    </div>
+</div>
+
+[% MACRO pagination(is_top) BLOCK %]
+    [% IF NOT transaction_id %]
+<div class="row grd-parent grd-grid-12">
+    <div class="grd-grid-2 left-aligned">
+        <a class="pjaxload link"
+           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, startdate => transactions.first.transaction_time, currency => currency, deposit_withdrawal_only => deposit_withdrawal_only }) | none %]"><span>&laquo; Newer</span></a>
+    </div>
+    <div class="grd-grid-8 center-aligned">
+        <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
+    </div>
+    <div class="grd-grid-2 right-aligned">
+        <a class="pjaxload link"
+           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, deposit_withdrawal_only => deposit_withdrawal_only }) | none %]"><span>Older &raquo;</span></a>
+    </div>
+</div>
+    [% ELSIF is_top %]
+    <div>
+        <strong>NOTE:</strong> Showing only transaction Ref.: <strong>[% transaction_id %]</strong> for client: <strong>[% loginid %]</strong>
+    </div>
+    [% END %]
+[% END %]
+
+[% pagination(1) | none %]
+
+<div class="row scrollable">
+<table id="statement-table" class="hover alternate border full-width">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Staff</th>
+            <th>App ID</th>
+            <th>Ref.</th>
+            <th>Payout</th>
+            <th>Item</th>
+            <th class="right-aligned">Debit</th>
+            <th class="right-aligned">Credit</th>
+            <th class="right-aligned">Cash Balance</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    [% IF transactions.size == 0 %]
+    <tr>
+        <td align="center" colspan="9">
+            <strong class="error">
+                [%
+                transaction_id
+                    ? 'No transaction found matching client: ' _ loginid _ ' transaction id: ' _ transaction_id
+                    : 'There are no items during this period.'
+                %]
+            </strong>
+        </td>
+    </tr>
+    [% ELSE %]
+
+    [% FOREACH transaction IN transactions %]
+    <tr>
+        <td>[% transaction.date.datetime %]</td>
+        <td>[% transaction.staff_loginid %]</td>
+        [% id = transaction.source %]
+        <td class="app-id">[% id %] <span class="app-name">[% apps.$id %]</span></td>
+
+        [% IF transaction.financial_market_bet_id.defined %]
+            <td>
+                <a class="link" href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid, transaction_id => transaction.id}) | none %]">
+                    [% transaction.id %]
+                </a>
+            </td>
+            <td>[% transaction.payout_price %]</td>
+
+            [% IF transaction.action_type == 'sell' %]
+                <td>
+                    Sell<br/>
+                    [% contract_details(transaction, currency).description %]
+                </td>
+                <td class="right-aligned"></td>
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+            [% ELSE %]
+                <td>
+                    [% details = contract_details(transaction, currency) %]
+                    Buy<br/>[% details.longcode %]
+                </td>
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+                <td class="right-aligned"></td>
+            [% END %]
+
+        [% ELSIF transaction.payment_id.defined %]
+            <td>[% transaction.id %]</td>
+            <td></td>
+            <td>[% transaction.payment_remark.replace('\s+:\s+', ': ').replace('(payment_processor=)(\w+)', '$1<b>$2</b>') | none %]</td>
+
+            [% IF transaction.action_type == 'deposit' %]
+                <td class="right-aligned"></td>
+                <td class="right-aligned text-green">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+            [% ELSE %]
+                <td class="right-aligned text-red">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+                <td class="right-aligned"></td>
+            [% END %]
+
+        [% ELSE %]
+            <td>[% transaction.id %]</td>
+            <td></td>
+            <td>[% transaction.action_type | ucfirst %]<br/>[% transaction.remark %]</td>
+
+            [% IF transaction.amount > 0 %]
+                <td class="right-aligned"></td>
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+            [% ELSE %]
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+                <td class="right-aligned"></td>
+            [% END %]
+
+        [% END %]
+        <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.balance_after) %]</b></td>
+    </tr>
+    [% END %]
+
+    [% END %]
+    </tbody>
+</table>
+</div>
+[% pagination(0) | none %]
+
+<style>
+    .app-id .app-name {
+        visibility: hidden;
+        background-color: black;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 5px;
+
+        /* Position the tooltip */
+        position: absolute;
+        z-index: 1;
+    }
+    .app-id:hover .app-name {
+        visibility: visible;
+    }
+</style>
+

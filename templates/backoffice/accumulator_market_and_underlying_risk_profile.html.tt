@@ -1,0 +1,168 @@
+<p>
+Risk profile, defines the "max stake" per contract - see the table at the top of the page.<br/>
+You can set a risk_profile for a "market" or an "underlying". <br/>
+Setting it for a market is a shortcut for setting it on the individual underlyings within that market.
+</p>
+
+<p>
+If there is no risk profile defined for a given underlying (or it's corresponding market), the default limits will be used.
+</p>
+
+<form id='accumulator_market_or_underlying_risk_profile' class="scrollable">
+<table>
+    <tr>
+        <td>Risk profile:</td>
+        <td><input type="text" name="risk_profile" data-lpignore="true" /></td>
+        <td> e.g. [% risk_profiles.join(' | ') %].</td>
+    </tr>
+    <tr>
+        <td>★ Market: </td>
+        <td><input type="text" name="market" data-lpignore="true" /></td>
+        <td>
+            (optional) e.g synthetic_index.
+        </td>
+    </tr>
+    <tr>
+        <td>★ Underlying Symbol: </td>
+        <td><input type="text" name="underlying_symbol" data-lpignore="true" /></td>
+        <td>(optional) e.g. R_100.</td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <p> <b>★</b> You can only put either Market or Underlying symbol. <br/>
+            Setting the risk profile for a market is a <b>shortcut</b> for setting it on the individual underlyings within that market.
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveAccumulatorOrUnderlyingRiskProfile()" value="Add New Risk Profile / Override Existing Risk Profile"></td>
+        <td class="save_market_and_underlying_risk_profile_result"></td>
+    </tr>
+</table>
+</form>
+
+<hr/>
+
+<p><b>Default Risk Profiles</b></p>
+<table class="small hover alternate">
+    <thead>
+    <tr>
+        <th>Market</th>
+        <th>Risk Profile</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN market_risk_profile_default %]
+        <tr>
+            <td>[% data.market %]</td>
+            <td>[% data.risk_profile %]</td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+
+<br/>
+<p><b>Existing Risk Profles</b></p>
+<form>
+<table class="small hover alternate">
+    <thead>
+    <tr>
+        <th>Market</th>
+        <th>Risk Profile</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN market_risk_profiles %]
+    <tr id='accumulator-risk-profile-[% data.market %]'>
+        <td>[% data.market %]</td>
+        <td>[% data.risk_profile %]</td>
+        <td><button
+            onClick="DeleteMarketOrUnderlyingRiskProfile({ market: '[% data.market %]' })"
+            type="button" class="btn btn--secondary">Delete</button>
+        </td>
+        <td class='delete_market_or_underlying_risk_profile_result'></td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+
+<br>
+<table class="small hover alternate">
+    <thead>
+    <tr>
+        <th>Underlying</th>
+        <th>Risk Profile</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN symbol_risk_profiles %]
+    <tr id='accumulator-risk-profile-[% data.symbol %]'>
+        <td>[% data.symbol %]</td>
+        <td>[% data.risk_profile %]</td>
+        <td><button
+            onClick="DeleteMarketOrUnderlyingRiskProfile({ symbol: '[% data.symbol %]' })"
+            type="button" class="btn btn--secondary">Delete</button>
+        </td>
+        <td class='delete_market_or_underlying_risk_profile_result'></td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+</form>
+
+<script>
+var accumulator_upload_url = "[% accumulator_upload_url | none %]";
+
+function SaveAccumulatorOrUnderlyingRiskProfile(){
+    var el = \$('#accumulator_market_or_underlying_risk_profile');
+    var result = el.find('.save_market_and_underlying_risk_profile_result');
+
+    var risk_profile = el.find('input[name="risk_profile"]').val();
+    var market = el.find('input[name="market"]').val();
+    var symbol = el.find('input[name="underlying_symbol"]').val();
+
+    result.text('processing ...').css('color', 'black');
+    var data = {
+        save_accumulator_market_or_underlying_risk_profile: 1,
+        risk_profile: risk_profile,
+        market: market,
+        symbol: symbol,
+    };
+
+    \$.ajax({
+        url: accumulator_upload_url,
+        data: data,
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('saved').css('color', 'var(--color-green)');
+            }
+        }
+    });
+}
+
+function DeleteMarketOrUnderlyingRiskProfile(data) {
+    var el = \$('tr#accumulator-risk-profile-' + (data.market || data.symbol));
+    var result = el.find('td.delete_market_or_underlying_risk_profile_result');
+    result.text('processing ...');
+
+    data.delete_accumulator_market_or_underlying_risk_profile = 1;
+
+    \$.ajax({
+        url: accumulator_upload_url,
+        data: data,
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('removed').css('color', 'var(--green-2)');
+                el.remove();
+            }
+        }
+    });
+}
+
+</script>

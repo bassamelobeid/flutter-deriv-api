@@ -1,0 +1,32 @@
+[% IF records.keys.size %]
+<table class="border">
+    <thead>
+        <tr>
+            <th>Currency</th>
+            <th>Broker code and balances</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+    [% FOREACH entry IN records.keys.sort %]
+
+        <tr>
+            <td>[% entry %]</td>
+            <td>
+                <table>
+                [% FOREACH data IN records.$entry.keys.sort %]
+                    <tr>
+                        <th>[% data %]</th>
+                        <td>[% records.$entry.$data %]</td>
+                    </tr>
+                [% END %]
+                </table>
+            </td>
+            <td>[% aggregate_total.$entry.total_across_broker_codes %]</td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+[% ELSE %]
+    <p>No records</p>
+[% END %]

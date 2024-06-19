@@ -1,0 +1,81 @@
+[% IF errors %]
+<ul class="error">
+    [% FOREACH error IN errors %]
+        <li>ERROR: [% error %]</li>
+    [% END %]
+</ul>
+<br />
+[% END %]
+
+<form action="[% controller_url %]" method="POST">
+    <select name="currency" id="ddl_crypto_currencies">
+        [% USE String %]
+        [% FOR crypto IN all_crypto %]
+            [% space = String.new('&nbsp;').repeat(6 - crypto.currency.length) %]
+            <option value="[% crypto.currency %]"[% IF currency == crypto.currency %] selected="selected"[% END %]>[% crypto.currency _ space _ ': ' _ crypto.name | none %]</option>
+        [% END %]
+    </select>
+    <br>
+    <br>
+    <input type="hidden" name="broker" value="[% broker %]">
+<!-- Recon -->
+        <button type="submit" class="btn btn--primary" name="view_action" value="reconcil">Reconciliation</button>
+        <input type="text" name="start_date" class="datepick" value="[% start_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
+        <input type="text" name="end_date" class="datepick" value="[% end_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
+        <input type="checkbox" name="include_new" id="include_new" [% IF include_new %] checked [% END %]><label for="include_new">Show new addresses</label>
+    <br><br>
+<!-- Search -->
+        <button type="submit" class="btn btn--primary" name="view_action" value="search">Search</button>
+        <select name="search_type">
+            <option value="loginid">Login ID</option>
+            <option value="address">Address</option>
+        </select>
+        <select name="search_transaction_type">
+            <option value="withdrawal">Withdrawals</option>
+            <option value="deposit">Deposits</option>
+        </select>
+        <input type="text" name="search_query" data-lpignore="true" size="40"/>
+    <br><br>
+<!-- Deposit -->
+    <button type="submit" class="btn btn--primary" name="view_action" value="deposits">Deposit transactions</button>
+    <br><br>
+<!-- Withdrawal -->
+    <button type="submit" class="btn btn--primary" name="view_action" value="withdrawals">Withdrawal transactions</button>
+    <input type="checkbox" id="show_all_pendings" name="show_all_pendings" [% IF show_all_pendings %] checked [% END %]>
+    <label for="show_all_pendings"> Show all pending payouts </label>
+    <input type="checkbox" id="show_one_authorised" name="show_one_authorised" [% IF show_one_authorised %] checked [% END %]>
+    <label for="show_one_authorised"> Show One Authorised pending payouts </label>
+    <input type="checkbox" id="show_priority_withdrawals" name="show_priority_withdrawals" [% IF show_priority_withdrawals %] checked [% END %]>
+    <label for="show_priority_withdrawals"> Show Priority withdrawals </label>
+    <br><br>
+    Pending Client Payouts : <strong> [% pending_withdrawal_amount %] [% currency %] </strong>
+    <br>
+    Pending Approval Priority Payout Count : <strong> [% locked_priority_withdrawals_count %] </strong>
+<!-- Tools -->
+    <br><br>
+    <button type="submit" class="btn btn--primary" name="view_action" value="run">Run</button>
+    <select name="command">
+        <option value="getwallet" [% IF cmd == "getwallet" %] selected="selected" [% END %]>Get Wallet Balance</option>
+        [% IF !is_external %]
+        <option value="getavailablepayout" [% IF cmd == "getavailablepayout" %] selected="selected" [% END %]>Get Available Balance for payout</option>
+        <option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get Info</option>
+        [% END %]
+    </select>
+</form>
+
+<style type="text/css">
+    #ddl_crypto_currencies option {
+        font-family: monospace;
+    }
+</style>
+
+<script type="text/javascript" language="javascript">
+  \$(document).ready(function() {
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+  });
+  document.getElementById('ddl_crypto_currencies').addEventListener('change', e => {
+      var search_params = new URLSearchParams(window.location.search);
+      search_params.set('currency', e.target.value);
+      window.location.search = search_params.toString();
+  });
+</script>

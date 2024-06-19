@@ -1,0 +1,6 @@
+<table>
+    <tr><th>Source Name</th><th>Entries</th><th>Release Date</th><th>Last Verified</th><th>Error</th></tr>
+[% FOR source IN data.keys.sort %]
+    <tr><td>[% source %]</td><td>[% data.$source.count %]</td><td>[% data.$source.updated %]</td><td>[% data.$source.verified %]</td><td>[% data.$source.error %]</td></tr>
+[% END %]
+</table>

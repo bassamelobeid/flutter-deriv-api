@@ -1,0 +1,18 @@
+[% WRAPPER 'backoffice/container/full_table.html.tt' %]
+    <thead>
+        [% FOREACH header = headers %]
+            <th>[% header %]</th>
+        [% END %]
+    </thead>
+    <tbody>
+        [% FOREACH hashref = rows %]
+            <tr class="[% IF (loop.index+1) % 2 %]odd[%ELSE%]even[% END %]">
+                <td>[% hashref.label %]</td>
+                <td>[% hashref.analytical %]</td>
+                <td>[% hashref.display_base %] [% IF is_quanto == 'quanto' %] * [% END %]</td>
+                <td>[% hashref.display_num %] [% IF is_quanto == 'quanto' %] * [% END %]</td>
+            </tr>
+        [% END %]
+    </tbody> 
+[% END %]
+<p>[% IF is_quanto == 'quanto' %] * The numbers are not accurate for quanto bet [% END %]</p>

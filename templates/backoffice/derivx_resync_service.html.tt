@@ -1,0 +1,22 @@
+<style>
+    .tab {
+        tab-size: 4;
+    }
+</style>
+
+<b>Last execution at [% last_execution %]</b>
+<pre class="tab">Start Datetime:     [% exec_start_datetime %]</pre>
+<pre class="tab">End Datetime:      [% exec_end_datetime %]</pre>
+<pre>Resynced [% orders_resynced %] orders for [% accounts %] accounts</pre>
+<pre>Issued by [% staffname %]</pre>
+<form action=[% refresh_url %] method="get">
+    <input type="submit" class="btn btn--primary" value="Refresh">
+</form>
+<hr>
+<form>
+    <label>Start Datetime: </label>
+        <input type="datetime-local" name="start_datetime" value='[% prev_start_datetime %]' data-lpignore="true" style="color:black;"/>
+    <label>End Datetime: </label>
+        <input type="datetime-local" name="end_datetime" value='[% prev_end_datetime %]' data-lpignore="true" style="color:black;"/>
+    <input type="submit" class="btn btn--primary" value="Start" name="resync-button">
+</form>

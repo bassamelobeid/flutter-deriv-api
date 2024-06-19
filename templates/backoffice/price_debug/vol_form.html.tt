@@ -1,0 +1,37 @@
+<style type="text/css">
+       label.float_left {width: 75px; text-align: left}
+</style>
+
+<form>
+    <label class="float_left">View vol for:</label>
+    <select id="vol_date_first_[% tab_id %]" name="first_date">
+        <option value="Current" [% IF surface_date == 'current' %] selected="selected" [% END %]>Current</option>
+        [% FOREACH date = historical_dates %]
+        <option value="[% date.value %]" [% IF surface_date == date.value %] selected="selected" [% END %]>[% date.display %] ([% date.calibration_error %])</option>
+        [% END %]
+    </select> vs 
+    <select id="vol_date_second_[% tab_id %]" name="second_date">
+        <option value="none">None</option>
+        [% FOREACH date = historical_dates %]
+        <option value="[% date.value %]" [% IF surface_date == date.value %] selected="selected" [% END %]>[% date.display %] ([% date.calibration_error %]</option>
+        [% END %]
+    </select>
+    [% IF !historical_dates %]
+        <span>Try loading again in a few minutes to see historical dates.</span>
+    [% END %]
+    <input type="hidden" name="underlying" value="[% underlying %]" />
+    <span id="loading" style="display:none; font-style:italic; color:#0000FF;">loading</span>
+</form>
+
+<div id="vol_table" style="clear:both;">
+    [% INCLUDE backoffice/price_debug/vol_table.html.tt
+        table1 = table1
+        table2 = table2
+    %]
+</div>
+
+<div id="vol_table_old" style="clear:both; display:none;">
+</div>
+
+<div id="diff_table" style="clear:both; display:none;">
+</div>

@@ -1,0 +1,55 @@
+<p>Current alert threshold (e.g. 0.1 is equivalent to 10%):</p>
+
+<table id="global_limits_threshold_display" class="border">
+    [% FOREACH key IN data.current_limits.keys %]
+        <tr><td>[% data.current_limits.$key.display_key %]:</td><td id="[% key %]">[% data.current_limits.$key.display_value %]</td>
+    [% END %]
+</table>
+
+<p>Update alert threshold with the tool below:</p>
+
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table id="global_limits_threshold_form">
+    <tr>
+        <td>
+            <select name='global_limits'>
+                [% FOREACH key IN data.global_limits.keys %]
+                    <option value="[% key %]">[% data.global_limits.$key %]</option>
+                [% END %]
+            </select>
+        </td>
+        <td><input type="text" name="threshold_amount" data-lpignore="true" /></td>
+    </tr>
+    <tr>
+        <td><button onClick="SaveThreshold()" type="button" class="btn btn--primary">Save</button></td>
+        <td class="result"></td>
+    </tr>
+</table>
+</fieldset>
+
+<script>
+    function SaveThreshold() {
+        var el = \$('table#global_limits_threshold_form');
+        var result = el.find('td.result');
+        result.text('processing ...');
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                save_threshold: 1,
+                limit_type: el.find('select[name="global_limits"]').val(),
+                threshold_amount: el.find('input[name="threshold_amount"]').val(),
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    var el_display = \$('table#global_limits_threshold_display');
+                    el_display.find('td#'+config.id).text(config.amount);
+                    result.text('saved').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+</script>

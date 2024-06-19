@@ -1,0 +1,31 @@
+[% FOREACH underlying = params.keys %]
+    <div class="heading">
+        <span>
+            <a href="#" class="more">+</a> <b>[% underlying %]</b>
+            <span class="[% underlying %]_output" style="clear:both; display:none;">
+            </span>
+        </span>
+    </div>
+
+    <div class="content">
+        <div class="[% underlying %]_error" style="clear:both; display:none;">
+        </div>
+        <form id="[% underlying %]_params_update_form">
+            <table border='1px'>
+                <tr>
+                    [% FOREACH param_name = params.$underlying.values.keys.sort %]
+                        <td>[% param_name %]</td>
+                    [% END %]
+                </tr>
+                <tr>
+                    [% FOREACH param_name = params.$underlying.values.keys.sort %]
+                    <td><input type='text' name="[% param_name %]" value="[% params.$underlying.values.$param_name %]" data-lpignore="true" /></td>
+                    [% END %]
+                </tr>
+            </table>
+            <input type='hidden' name="underlying" value="[% underlying %]">
+            <input type='submit' name="[% underlying %]_params_submit" value='save'>
+        </form>
+    </div>
+
+[% END %]

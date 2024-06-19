@@ -1,0 +1,76 @@
+<form id='commission_delete'>
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+    <table>
+        <tr>
+            <td>Symbol: </td>
+            <td><input type="text" name="symbol" ></input></td>
+            <td>** Support comma separated symbol</td>
+        </tr>
+        <tr>
+            <td>Account type: </td>
+            <td>
+                <select name="account_type">
+                    [% FOREACH type IN account_type %]
+                        <option value="[% type %]">[% type %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Commission type: </td>
+            <td>
+                <select name="commission_type">
+                    [% FOREACH type IN commission_type %]
+                        <option value="[% type %]">[% type %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="DeleteCFDsCommission()" value="Delete Commission"></td>
+            <td class="delete_cfds_affiliate_commission"></td>
+        </tr>
+    </table>
+</form>
+
+
+<script>
+var upload_url = "[% upload_url | none %]";
+var provider = "[% provider | none %]";
+
+function DeleteCFDsCommission(){
+
+    var el = \$('#commission_delete');
+
+    var result = el.find('.delete_cfds_affiliate_commission');
+    var symbol = el.find('input[name="symbol"]').val();
+    var account_type = el.find('select[name="account_type"]').val();
+    var commission_type = el.find('select[name="commission_type"]').val();
+
+    var delete_comm = confirm("Are you sure to delete the commission?");
+    if (!delete_comm) {
+            return;
+    }
+    
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: upload_url,
+        data: {
+            delete_cfds_commission: 1,
+            symbol: symbol,
+            account_type: account_type,
+            commission_type: commission_type,
+            provider: provider
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('Deleted').css('color', 'var(--color-green)');
+            }
+        }
+    });
+}
+</script>

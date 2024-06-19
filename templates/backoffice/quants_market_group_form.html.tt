@@ -1,0 +1,63 @@
+<p>Please update market group of an underlying with the tool below:</p>
+
+<ul>
+    <li>default: use market information for the specific underlying symbol defined in yaml configuration. (share/underlyings.yml in perl-Finance-Underlying repository)</li>
+    <li>new category: set market group as the 'new category'. This is used to limit new product.</li>
+</ul>
+
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table id="market_group_form">
+    <tr>
+        <td>Underlying symbol: </td>
+        <td> <input type="text" name="underlying_symbol" data-lpignore="true" /></td>
+        <td> (accepts comma separated values)</td>
+    </tr>
+    <tr>
+        <td>Market group: </td>
+        <td> <input type="text" name="market_group" data-lpignore="true" /></td>
+    </tr>
+    <tr>
+        <td>Submarket group: </td>
+        <td> <input type="text" name="submarket_group" data-lpignore="true" /></td>
+    </tr>
+    <tr>
+        <td>Market type: </td>
+        <td>
+            <select name='market_type'>
+                <option value='financial'>Financial</option>
+                <option value='non_financial'>Non-financial</option>
+            </select>
+        </td>
+        <td> (required)</td>
+    </tr>
+    <tr>
+        <td><button onClick="UpdateMarketGroup()" type="button" class="btn btn--primary">Update</button></td><td class="result"></td>
+    </tr>
+</table>
+</fieldset>
+
+<script>
+    function UpdateMarketGroup() {
+        var el = \$('table#market_group_form');
+        var result = el.find('td.result');
+        result.text('processing...');
+        \$.ajax({
+            url: upload_url,
+            data: {
+                update_market_group: 1,
+                underlying_symbol: el.find('input[name="underlying_symbol"]').val(),
+                market_group: el.find('input[name="market_group"]').val(),
+                submarket_group: el.find('input[name="submarket_group"]').val(),
+                market_type: el.find('select[name="market_type"]').val(),
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    result.text('successfully updated').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+</script>

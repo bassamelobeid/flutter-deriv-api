@@ -1,0 +1,35 @@
+<style>
+ th {
+  background-color: lightgray;
+ }
+</style>
+
+<tr>
+    <td bgcolor="#ffffff" align="left" style="padding: 40px 30px 10px 30px;" class="mobile-lowsidepadding darkmodelowblack">
+ 
+<table>
+ <tbody>
+  <tr>
+   <th>Client</th>
+   <th>Total Deposits</th>
+   <th>Total Withdrawals</th>
+   <th>Total Buy Price</th>
+   <th>Total Commission &amp; Fees</th>
+   <th>Ending Balance</th>
+   <th>Processing time</th>
+  </tr>
+[% FOR client IN client_list -%]
+  <tr>
+   <th scope="row">[% client.loginid %]</th>
+   <td>[% client.deposits %]</td>
+   <td>[% client.withdrawals %]</td>
+   <td>[% client.total_buy_price %]</td>
+   <td>[% client.total_fees %]</td>
+   <td>[% client.ending_balance %]</td>
+   <td>[% client.elapsed | format('%.2f') %]s</td>
+  </tr>
+[% END -%]
+ </tbody>
+</table>
+
+</td></tr>

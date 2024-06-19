@@ -1,0 +1,10 @@
+<table class="collapsed border"style="min-width: 100px;">
+    <tr>
+        <th>[% currency %]</th>
+        <td>[% balance %]</td>
+    </tr>
+</table>
+
+<br />
+<input type="button" class="btn btn--primary"  value="View [% loginid %] statement" onclick='location.href="[% statement_url %]"' />
+<input type="button" class="btn btn--primary"  value="View [% loginid %] Crypto statement" onclick='location.href="[% crypto_statement_url %]"' />

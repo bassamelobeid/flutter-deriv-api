@@ -1,0 +1,308 @@
+<p>
+    <b>Deal Cancellation Tool</b>
+</p>
+
+<hr>
+<p style="color: red;">NOTE:</p>
+<p>
+    <b>DEAL CANCELLATION DURATION:</b><br>
+    In the "Allowed Deal Cancellation duration" text field, the entered DC duration here indicates the ALLOWED DC duration.<br>
+    Example (5m,10m,15m) here shows that only the typed DC duration will be available to the customer.<br>
+    We can leave the input box empty to indicate all DC duration are disabled.
+</p>
+<hr>
+
+<form id='deal_cancellation' class="scrollable">
+    <table>
+        <tr>
+            <td>Underlying Symbol</td>
+            <td>
+                <select id="underlying_symbol" data-lpignore="true" multiple>
+                    [% FOREACH underlying_symbol IN underlying_symbols%]
+                        <option value='[% underlying_symbol %]'>[% underlying_symbol %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Landing Company </td>
+            <td>
+                <select id="landing_company" data-lpignore="true" multiple>
+                    [% FOREACH landing_company IN landing_companies.sort %]
+                        <option value='[% landing_company %]'>[% landing_company %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Allowed Deal Cancellation duration</td>
+            <td><input type="text" name="dc_types" data-lpignore="true" value="5m,10m,15m,30m,60m" /></td>
+            <td>REMINDER: Please include "," after each DC duration (e.g 5m, 10m, 60m)</td>
+        </tr>
+        <tr>
+            <td colspan="6">Duration of the limit(GMT):</td>
+        </tr>
+        <tr>
+            <td>Start date and time</td>
+            <td><input type="date" name="start_date_limit" data-lpignore="true" style="color:black;"/></td>
+            <td><input type="time" name="start_time_limit"></td>
+        </tr>
+        <tr>
+            <td>End date and time</td>
+            <td><input type="date" name="end_date_limit" data-lpignore="true" style="color:black;"/></td>
+            <td><input type="time" name="end_time_limit"></td>
+        </tr>
+        <tr>
+            <td>Comment</td>
+            <td><input type="text" name="dc_comment" data-lpignore="true" /></td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="saveDCConfig()" value="Add New Limit / Override Existing Limit"></td>
+            <td class="create_error_message"></td>
+        </tr>
+    </table>
+</form>
+
+<hr/>
+
+<p><b>EXISTING CONFIG</b></p>
+<form>
+    <br>
+    <table class="small hover alternate" id="dc_config_table">
+        <thead>
+        <tr>
+            <th>Underlying</th>
+            <th>Landing Company</th>
+            <th>Deal Cancellation Type</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Comment</th>
+        </tr>
+        </thead>
+        <tbody>
+        [% FOREACH landing_company IN dc_configs.keys %]
+            <tr><td colspan="9"><b>[% landing_company %]</b></td></tr>
+            [% grouped_dc_configs = dc_configs.$landing_company %]
+            [% FOREACH dc_config IN grouped_dc_configs %]
+                <tr id='dc-config-[% dc_config.id %]'>
+                    <td>[% dc_config.underlying_symbol %]</td>
+                    <td>[% dc_config.landing_companies %]</td>
+                    <td>[% dc_config.dc_types %]</td>
+                    <td>[% dc_config.start_datetime_limit %]</td>
+                    <td>[% dc_config.end_datetime_limit %]</td>
+                    <td>[% dc_config.dc_comment %]</td>
+                    <td><button
+                        onClick="deleteDCConfig('[% dc_config.id %]')"
+                        type="button" class="btn btn--secondary">Delete</button>
+                    </td>
+                    <td><button
+                        onClick="edit('[% dc_config.id %]')"
+                        type="button" class="btn btn--primary">Edit</button>
+                    </td>
+                    <td class='delete_error_message'></td>
+                </tr>
+                <tr id='edit-[% dc_config.id %]' style="display: none;background-color: orange;">
+                    <td><input name="underlying_symbol" type="text" value='[% dc_config.underlying_symbol %]'></td>
+                    <td><input name="landing_companies" type="text" value='[% dc_config.landing_companies %]'></td>
+                    <td><input name="dc_types" type="text" value='[% dc_config.dc_types %]'></td>
+                    <td><input name="start_datetime_limit" placeholder="1990-06-15 15:30:00" type="text" value='[% dc_config.start_datetime_limit %]'></td>
+                    <td><input name="end_datetime_limit" placeholder="1990-06-15 15:30:00" type="text" value='[% dc_config.end_datetime_limit %]'></td>
+                    <td><input name="dc_comment" type="text" value='[% dc_config.dc_comment %]'></td>
+                    <td><button onClick="updateDCConfig('[% dc_config.id %]')" type="button" class="btn btn--secondary" >Update</button></td>
+                    <td class='edit_error_message'></td>
+                </tr>
+            [% END %]
+        [% END %]
+        </tbody>
+    </table>
+</form>
+
+<script>
+    var dc_upload_url = "[% dc_upload_url | none %]";
+
+    function refresh_dc_rows() {
+        \$.ajax({
+            url: dc_upload_url,
+            data: {
+                fetch_dc_config: 1,
+            },
+            success: function(data) {
+                var tbody = \$("#dc_config_table tbody");
+                var configs = \$.parseJSON(data);
+                tbody.html("");
+
+                \$.each(configs, function (index, value) {
+                    tbody.append('<tr><td colspan="9"><b>' + index + '</b></td></tr>');
+                    \$.each(value, function (index, value) {
+                        tbody.append("<tr id='dc-config-" + value.id + "'>" +
+                        "<td>" + value.underlying_symbol + "</td>" +
+                        "<td>" + value.landing_companies + "</td>" +
+                        "<td>" + value.dc_types + "</td>" +
+                        "<td>" + value.start_datetime_limit + "</td>" +
+                        "<td>" + value.end_datetime_limit + "</td>" +
+                        "<td>" + value.dc_comment + "</td>" +
+                        "<td><button onClick=deleteDCConfig('" + value.id + "') type='button' class='btn btn--secondary'>Delete</button></td>" +
+                        "<td><button onClick=edit('" + value.id + "') type='button' class='btn btn--primary'>Edit</button></td>" +
+                        "<td class='delete_error_message'></td>" +
+                        "</tr>" +
+                        "<tr id='edit-" + value.id + "' style='display: none;background-color: orange;'>" +
+                        "<td><input name='underlying_symbol' type='text' value='" + value.underlying_symbol + "'></td>" +
+                        "<td><input name='landing_companies' type='text' value='" + value.landing_companies + "'></td>" +
+                        "<td><input name='dc_types' type='text' value='" + value.dc_types + "'></td>" +
+                        "<td><input name='start_datetime_limit' placeholder='1990-06-15 15:30:00' type='text' value='" + value.start_datetime_limit + "'></td>" +
+                        "<td><input name='end_datetime_limit' placeholder='1990-06-15 15:30:00' type='text' value='" + value.end_datetime_limit + "'></td>" +
+                        "<td><input name='dc_comment' type='text' value='" + value.dc_comment + "'></td>" +
+                        "<td><button onClick=updateDCConfig('" + value.id + "') type='button' class='btn btn--secondary' >Update</button></td>" +
+                        "<td class='edit_error_message'></td>" +
+                        "</tr>");
+                    });
+                });
+            }
+        });
+    }
+
+    function edit(dc_id) {
+        \$("tr#edit-" + dc_id).slideToggle();
+    }
+
+    function saveDCConfig(){
+        var el = \$('#deal_cancellation');
+        var result = el.find('.create_error_message');
+
+        var underlying_symbol = \$('#underlying_symbol').val();
+        var landing_company = \$('#landing_company').val();
+        var dc_types = el.find('input[name="dc_types"]').val();
+        var start_date_limit = el.find('input[name="start_date_limit"]').val();
+        var start_time_limit = el.find('input[name="start_time_limit"]').val();
+        var end_date_limit = el.find('input[name="end_date_limit"]').val();
+        var end_time_limit = el.find('input[name="end_time_limit"]').val();
+        var dc_comment = el.find('input[name="dc_comment"]').val();
+
+        if (start_time_limit) {
+            start_time_limit = start_time_limit + ':00';
+        }
+
+        if (end_time_limit) {
+            end_time_limit = end_time_limit + ':00';
+        }
+
+        result.text('processing ...').css('color', 'black');
+        var data = {
+            save_dc_config: 1,
+            underlying_symbol: underlying_symbol.toString(),
+            landing_company: landing_company.toString(),
+            dc_types: dc_types,
+            start_date_limit: start_date_limit,
+            start_time_limit: start_time_limit,
+            end_date_limit: end_date_limit,
+            end_time_limit: end_time_limit,
+            dc_comment: dc_comment,
+        };
+        
+        \$.ajax({
+            url: dc_upload_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    refresh_dc_rows();
+                    result.text('saved').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+
+    function deleteDCConfig(dc_id) {
+        var el = \$('tr#dc-config-' + dc_id);
+        var result = el.find('td.delete_error_message');
+        var data = {
+            destroy_dc_config: 1,
+            dc_id: dc_id,
+        };
+
+        result.text('processing ...');
+
+        \$.ajax({
+            url: dc_upload_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    refresh_dc_rows();
+                    result.text('removed').css('color', 'var(--green-2)');
+                }
+            }
+        });
+    }
+
+    function updateDCConfig(dc_id) {
+        var edit_row = 'tr#edit-' + dc_id;
+        var el = \$(edit_row);
+        var underlying_symbol = \$(edit_row + ' input[name="underlying_symbol"]').val();
+        var landing_companies = \$(edit_row + ' input[name="landing_companies"]').val();
+        var dc_types = \$(edit_row + ' input[name="dc_types"]').val();
+        var start_datetime_limit = \$(edit_row + ' input[name="start_datetime_limit"]').val();
+        var end_datetime_limit = \$(edit_row + ' input[name="end_datetime_limit"]').val();
+        var dc_comment = \$(edit_row + ' input[name="dc_comment"]').val();
+        var result = \$(edit_row + ' td.edit_error_message');
+
+        result.text('processing ...');
+
+        // Date and time validation.
+        var timeRegx = /^\d{2}:\d{2}:\d{2}$/;
+        var dateRegx = /^\d{4}-\d{2}-\d{2}$/;
+        var dateTimeRegx = /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/;
+
+        if (
+            start_datetime_limit &&
+            !timeRegx.test(start_datetime_limit) &&
+            !dateRegx.test(start_datetime_limit) &&
+            !dateTimeRegx.test(start_datetime_limit)
+        ) {
+            result.text('Start time/date is not in correct format.')
+                .css('color', 'var(--color-red)');
+            return;
+        }
+
+        if (
+            end_datetime_limit &&
+            !timeRegx.test(end_datetime_limit) &&
+            !dateRegx.test(end_datetime_limit) &&
+            !dateTimeRegx.test(end_datetime_limit)
+        ) {
+            result.text('End time/date is not in correct format.')
+                .css('color', 'var(--color-red)');
+            return;
+        }
+
+        var data = {
+            update_dc_config: 1,
+            dc_id: dc_id,
+            underlying_symbol: underlying_symbol,
+            landing_companies: landing_companies,
+            dc_types: dc_types,
+            start_datetime_limit: start_datetime_limit,
+            end_datetime_limit: end_datetime_limit,
+            dc_comment: dc_comment,
+        };
+
+        \$.ajax({
+            url: dc_upload_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    refresh_dc_rows();
+                    result.text('updated').css('color', 'var(--green-2)');
+                }
+            }
+        });
+    }
+</script>
+

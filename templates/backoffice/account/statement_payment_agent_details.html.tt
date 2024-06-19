@@ -1,0 +1,24 @@
+<br/>
+<hr/>   
+<h3>Transactions for [% fellow_loginid %] 
+    [% IF api_call%] - [% api_call%] API call [% END %] 
+</h3>
+ 
+<table class="sortable collapsed hover alternate border">
+    <tr>
+        <th width="180">Ref. ID</th>
+        <th  width="180">Type</th>
+        <th with="180">API Call </th>
+        <th width="180">Amount ([%currency%])</th>
+        <th width="180">Time</th>
+    </tr>
+    [% FOR item IN details %]
+    <tr>
+        <td> [% item.transaction_id %] </td>
+        <td> [% item.action_type %] </td>
+        <td> [% item.api_call %] </td>
+        <td> [% item.amount %] </td>
+        <td> [% item.payment_time %] </td>
+    </tr>
+    [% END %]
+</table>

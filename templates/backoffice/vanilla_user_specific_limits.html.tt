@@ -1,0 +1,127 @@
+<form id='vanilla_user_specific_limits'>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table>
+    <tr>
+        <td>Login ID: </td>
+        <td><input type="text" name="loginid"></input></td>
+    </tr>
+    <tr>
+        <td>Maximum Open Position: </td>
+        <td><input type="text" name="max_open_position"></input></td>
+    </tr>
+    <tr>
+        <td>Maximum Daily Volume: </td>
+        <td><input type="text" name="max_daily_volume"></input></td>
+    </tr>
+    <tr>
+        <td>Maximum Daily PnL: </td>
+        <td><input type="text" name="max_daily_pnl"></input></td>
+    </tr>
+    <tr>
+        <td>Maximum Stake Per Trade: </td>
+        <td><input type="text" name="max_stake_per_trade"></input></td>
+    </tr>
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveVanillaUserSpecificLimits()" value="Update User Specific Limits"></td>
+        <td class="save_vanilla_user_specific_limits"></td>
+    </tr>
+</table>
+</form>
+
+<hr/>
+
+<h3>EXISTING LIMITS</h3>
+<form id='user_specific_limits'>
+<table class="small full-width hover alternate border">
+    <thead>
+    <tr align="center">
+        <th>Client Login ID</th>
+        <th>Max Open Position</th>
+        <th>Max Daily Volume</th>
+        <th>Max Daily PnL</th>
+        <th>Max Stake Per Trade</th>
+        <th>Comment</th>
+    </tr>
+    </thead>
+    <tbody>
+    [% FOREACH data IN existing_config %]
+    <tr align="center" id="[% data.loginid %]-user_specific_limits_config">
+        <td>[% data.loginid %]</td>
+        <td>[% data.max_open_position %]</td>
+        <td>[% data.max_daily_volume %]</td>
+        <td>[% data.max_daily_pnl %]</td>
+        <td>[% data.max_stake_per_trade%]</td>
+        <td>[% data.comment || '-' %]</td>
+        <td><button
+            onClick="DeleteCustomLimit('[% data.loginid %]')"
+            type="button" class="btn btn--secondary">Delete</button>
+        </td>
+        <td class='user_limit_result'>..</td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+</form>
+
+
+<script>
+var vanilla_upload_url = "[% vanilla_upload_url | none %]";
+
+function SaveVanillaUserSpecificLimits(){
+
+    var el = \$('#vanilla_user_specific_limits');
+
+    var result = el.find('.save_vanilla_user_specific_limits');
+    var loginid = el.find('input[name="loginid"]').val();
+    var max_open_position = el.find('input[name="max_open_position"]').val();
+    var max_daily_volume = el.find('input[name="max_daily_volume"]').val();
+    var max_daily_pnl = el.find('input[name="max_daily_pnl"]').val();
+    var max_stake_per_trade = el.find('input[name="max_stake_per_trade"]').val();
+
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: vanilla_upload_url,
+        data: {
+            save_vanilla_user_specific_limits: 1,
+            loginid: loginid,
+            max_open_position: max_open_position,
+            max_daily_volume: max_daily_volume,
+            max_daily_pnl: max_daily_pnl,
+            max_stake_per_trade: max_stake_per_trade
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('User specific config for vanilla is updated successfully. Please refresh the page to see the latest limits.').css('color', 'var(--green-2)');
+            }
+        }
+    });
+}
+
+function DeleteCustomLimit(loginid) {
+    var el = \$('#user_specific_limits').find('tr#' + loginid + '-user_specific_limits_config');
+    var result = el.find('.user_limit_result');
+    result.text('processing ...');
+
+    \$.ajax({
+        url: vanilla_upload_url,
+        data: {
+            delete_vanilla_user_specific_limit: 1,
+            loginid: loginid,
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('User specific limit removed. Please refresh the page to see latest limits').css('color', 'var(--color-green)');
+            }
+        }
+    });
+}
+
+
+</script>

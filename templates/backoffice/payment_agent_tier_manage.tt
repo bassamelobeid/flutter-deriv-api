@@ -1,0 +1,163 @@
+[% IF messages or errors %]
+<div class="card">
+    <div class="card__content">
+    [% FOREACH e = errors %]<p class="error">[% e %]</p>[% END %]
+    [% FOREACH m = messages %]<p class="success">[% m %]</p>[% END %]
+    </div>
+</div>
+[% END %]
+
+<div class="card">
+    <div class="card__label toggle">
+        [% IF item.id %]Edit [% item.name %][% ELSE %]Create new tier[% END %]
+    </div>
+    <div class="card__content">
+        <form action="[% request.url_for('backoffice/payment_agent_tier_manage.cgi', {broker => broker}) %]" method="post">
+            <table>
+                <tr>
+                    <td class="label">Name</td>
+                    <td>
+                        <input type="text" name="name" value="[% item.name %]">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Cashier Withdraw</td>
+                    <td>
+                        <select name="cashier_withdraw">
+                            <option value="0" [% !item.cashier_withdraw && 'selected' %]>No</option>
+                            <option value="1" [% item.cashier_withdraw && 'selected' %]>Yes</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">P2P</td>
+                    <td>
+                        <select name="p2p">
+                            <option value="0" [% !item.p2p && 'selected' %]>No</option>
+                            <option value="1" [% item.p2p && 'selected' %]>Yes</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Trading</td>
+                    <td>
+                        <select name="trading">
+                            <option value="0" [% !item.trading && 'selected' %]>No</option>
+                            <option value="1" [% item.trading && 'selected' %]>Yes</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Transfer To PA</td>
+                    <td>
+                        <select name="transfer_to_pa">
+                            <option value="0" [% !item.transfer_to_pa && 'selected' %]>No</option>
+                            <option value="1" [% item.transfer_to_pa && 'selected' %]>Yes</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+        
+            [% IF item.id %]
+            <button type="submit" class="btn btn--primary" name="save" value="[% item.id %]">Save</button>
+            <button type="submit" class="btn btn--secondary" name="cancel" value="[% item.id %]">Cancel</button>
+            [% ELSE %]
+            <button type="submit" class="btn btn--primary" name="create" value="1">Submit</button>
+            [% END %]
+        
+        </form>        
+    </div>
+</div>
+
+<div class="card">
+    <div class="card__label toggle">
+        Payment agent tiers for [% broker %]
+    </div>
+    <div class="card__content">
+        <table class="sortable border">
+            <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Cashier Withdraw</th>
+                    <th scope="col">P2P</th>
+                    <th scope="col">Trading</th>
+                    <th scope="col">Transfer To PA</th>
+                    <th scope="col">Created</th>
+                    <th scope="col">Updated</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+
+            [% FOREACH t = tiers %]
+                <tr>
+                    <td>[% t.id %] [% IF t.id == 1 %] <i>(default tier)</i>[% END %]</td>
+                    <td>[% t.name %]</td>
+                    <td>[% IF t.cashier_withdraw %]&#9989;[% ELSE %]&#10060;[% END %]</td>
+                    <td>[% IF t.p2p %]&#9989;[% ELSE %]&#10060;[% END %]</td>
+                    <td>[% IF t.trading %]&#9989;[% ELSE %]&#10060;[% END %]</td>
+                    <td>[% IF t.transfer_to_pa %]&#9989;[% ELSE %]&#10060;[% END %]</td>
+                    <td>[% IF t.created_at %][% t.created_at %] by [% t.created_by %][% END %]</td>
+                    <td>[% IF t.updated_at %][% t.updated_at %] by [% t.updated_by %][% END %]</td>
+                    <td>
+                        <form style="margin-block-end:0;" action="[% request.url_for('backoffice/payment_agent_tier_manage.cgi', {broker => broker}) %]" method="post">
+                            <button class="btn btn--primary" name="edit" value="[% t.id %]" type="submit">Edit</button>
+                            [% IF t.id > 1 %]<button class="btn btn--primary" name="delete" value="[% t.id %]" type="submit" onclick="return confirm('Are you sure? Any PAs on this tier will be assigned to the default tier.')">Delete</button>[% END %]
+                        </form>                
+                    </td>
+                </tr>
+            [% END %]
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card__label toggle">
+       Bulk assign
+    </div>
+    <div class="card__content">
+        <p>File should be CSV format with 2 columns, login ID and tier name. Tier name is case sensitve. The header row will be ignored.</p>
+        <form action="[% request.url_for('backoffice/payment_agent_tier_manage.cgi', {broker => broker}) %]" enctype="multipart/form-data" method="post">
+            <label>CSV file:</label>
+            <input type="file" name="bulk_tier_file" required>
+            <button class="btn btn--primary" name="bulk_assign" value="1" type="submit">Upload</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card__label toggle">
+        Audit history
+    </div>
+    <div class="card__content">
+        <table class="border">
+            <thead>
+                <tr>
+                    <th scope="col">Time</th>
+                    <th scope="col">User</th>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Change</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            [% FOREACH a = audit %]
+                <tr>
+                    <td>[% a.stamp %]</td>
+                    <td>[% a.user %]</td>
+                    <td>[% a.id %]</td>
+                    <td>[% a.name %]</td>
+                    <td>[% a.change %]</td>
+                </tr>
+            [% END %]
+            </tbody>
+        </table>
+        <p>
+            [% IF prev.defined %]<a href="[% request.url_for('backoffice/payment_agent_tier_manage.cgi', {broker => broker, start => prev}) %]">Previous [% audit_limit %]</a>[% END %]
+            [% IF next %]<a href="[% request.url_for('backoffice/payment_agent_tier_manage.cgi', {broker => broker, start => next}) %]">Next [% audit_limit %]</a>[% END %]
+        </p>
+    </div>
+</div>

@@ -1,0 +1,26 @@
+<br/>
+<hr/>   
+<h3>Payment agent transfer summary</h3>
+<strong>[% summary_ranges.from %] - [% summary_ranges.to %] </strong>
+<table class="sortable collapsed hover alternate border">
+    <tr>
+        <th  width="180">Fellow Client</th>
+        <th width="150">Payment Agent</th>
+        <th width="150">API Call</th>
+        <th width="180">Deposit ([%currency%])</th>
+        <th width="180">Withdrawal ([%currency%])</th>
+        <th width="180">Details</th>
+    </tr>
+    [% FOREACH item IN summary %]
+        [% FOREACH api_call IN item.by_call.keys.sort %]
+            <tr>
+            <td><a href='[% clientedit_url %]?loginID=[% item.loginid %]'>[% item.loginid %]</a></td>
+            <td>[% IF item.is_payment_agent %] <strong>Yes</strong> [% ELSE %] No [% END %]</td>
+            <td> [% api_call %] </td>
+            <td>[% item.by_call.$api_call.deposits.amount %] </td>
+            <td> [% item.by_call.$api_call.withdrawals.amount %] </td>
+            <td> <a href='[% self_post %]&fellow_account=[% item.accountid %]&fellow_loginid=[% item.loginid %]&api_call=[% api_call %]'> view [% item.by_call.$api_call.total.count  %] transactions </a> </td>
+            </tr>
+        [% END %]
+    [% END %]
+</table>

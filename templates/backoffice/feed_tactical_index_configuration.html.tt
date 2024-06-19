@@ -1,0 +1,208 @@
+<form id='feed_tactical_index_configuration' action=[% action %] method='post' class='bo_ajax_form'>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<h2>Latest config for Tactical Index</h2>
+<table class="small border hover alternate full-width">
+  <tr>
+    <th>Attribute</th>
+    <th>Value</th>
+  </tr>
+  [% FOREACH key IN existing_config.keys.sort %]
+  <tr>
+    <td>[% key %]</td>
+    <td>
+        <table class="small border hover alternate full-width">
+            [% FOREACH index_params IN existing_config.$key.keys.sort %]
+            <tr>
+                <td width="150">[% index_params %]</td>
+                <td>[% existing_config.$key.$index_params %]</td>
+            </tr>
+            [% END %]
+        </table>
+    </td>
+  </tr>
+  [% END %]
+</table>
+<hr>
+<table>
+    <tr>
+        <td>Symbol: </td>
+        <td>
+            <!-- the rest of the system is not aware that tactical index exists -->
+            <select name="symbol" >
+                <option value='RSIXAGML1'>RSIXAGML1</option>
+                <option value='RSIXAGML2'>RSIXAGML2</option>
+                <option value='RSIXAGMS1'>RSIXAGMS1</option>
+                <option value='RSIXAGMS2'>RSIXAGMS2</option>
+                <option value='RSIXAGCL1'>RSIXAGCL1</option>
+                <option value='RSIXAGCL2'>RSIXAGCL2</option>
+                <option value='RSIXAGCS1'>RSIXAGCS1</option>
+                <option value='RSIXAGCS2'>RSIXAGCS2</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <b> Index Parameters  </b>
+        </td>
+    </tr>
+    <tr>
+        <td>Lookback period (mins)</td>
+        <td><input type="number" name="index_params_lb_period"></input></td>
+
+        <td>Secondary Lookback period (mins)</td>
+        <td><input type="number" name="index_params_lb_period_secondary"></input></td>
+    </tr>
+    <tr>
+        <td>Buy Leverage</td>
+        <td><input type="number" name="index_params_buy_leverage" ></input></td>
+
+        <td>Sell Leverage</td>
+        <td><input type="number" name="index_params_sell_leverage"></input></td>
+    </tr>
+    <tr>
+        <td>Rebalancing Frequency (tick)</td>
+        <td><input type="number" name="index_params_rebalancing_tick"></input></td>
+
+        <td>Transition State</td>
+        <td>
+            <select name="index_params_transition_state" >
+                <option value='0'>Hold</option>
+                <option value='1'>Long Cash</option>
+            </select>
+        </td>
+
+    </tr>
+    <tr>
+        <td>Signal Upper Level</td>
+        <td><input type="number" step="any" name="index_params_upper_level"></input></td>
+
+        <td>Signal Lower Level</td>
+        <td><input type="number" step="any" name="index_params_lower_level"></input></td>
+    </tr>
+
+    <tr>
+        <td>Dual Control Code</td>
+        <td><input type="text" name="quants_dcc" [% IF is_quants %]disabled[% END %]></input</td>
+    </tr>
+
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveTacticalIndexParams()" value="Update Index Parameters"[% IF is_quants %]disabled[% END %]></td>
+        <td><input type="submit" class="btn btn--primary" value="Generate DCC" [% IF is_dealing %]disabled[% END %]></td>
+    </tr>
+
+
+    </table>
+    <p class="save_tactical_index_parameters">
+    </p>
+    <table>
+    <tr>
+        <td>
+            <b> Spread Parameters  </b>
+        </td>
+    </tr>
+
+    <tr>
+        <td>Alpha</td>
+        <td><input type="number" name="spread_params_alpha"></input></td>
+    </tr>
+    <tr>
+        <td>Calibration (%)</td>
+        <td><input type="number" name="spread_params_calibration" ></input></td>
+    </tr>
+    <tr>
+        <td>Commission</td>
+        <td><input type="number" name="spread_params_commission" ></input></td>
+    </tr>
+
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveTacticalIndexSpread()" value="Update Commission"></td>
+        <td class="save_tactical_index_spread"></td>
+    </tr>
+</table>
+</form>
+
+
+<script>
+var feed_tactical_index_upload_url = "[% feed_tactical_index_upload_url | none %]";
+
+function SaveTacticalIndexParams(){
+
+    var el = \$('#feed_tactical_index_configuration');
+
+    var result       = el.find('.save_tactical_index_parameters');
+    var symbol       = el.find('select[name="symbol"]').val();
+    var lb_period    = Number(el.find('input[name="index_params_lb_period"]').val());
+    var lb_period_secondary = Number(el.find('input[name="index_params_lb_period_secondary"]').val());
+    var buy_leverage  = Number(el.find('input[name="index_params_buy_leverage"]').val());
+    var sell_leverage = Number(el.find('input[name="index_params_sell_leverage"]').val());
+    var upper_level = Number(el.find('input[name="index_params_upper_level"]').val());
+    var lower_level = Number(el.find('input[name="index_params_lower_level"]').val());
+    var rebalancing_tick = Number(el.find('input[name="index_params_rebalancing_tick"]').val());
+    var transition_state = el.find('select[name="index_params_transition_state"]').val();
+    var quants_dcc = el.find('input[name="quants_dcc"]').val();
+
+    var pop_up = confirm("This change will affect the dynamics of tactical index, please double check the values. Press Yes to proceed with the values. \n");
+
+    if (pop_up) {
+        result.text('processing ...').css('color', 'black');
+
+        \$.ajax({
+            url: feed_tactical_index_upload_url,
+            data: {
+                save_tactical_index_params: 1,
+                symbol: symbol,
+                lb_period: lb_period,
+                lb_period_secondary: lb_period_secondary,
+                rebalancing_tick: rebalancing_tick,
+                transition_state: transition_state,
+                buy_leverage: buy_leverage,
+                sell_leverage: sell_leverage,
+                upper_level: upper_level,
+                lower_level: lower_level,
+                quants_dcc: quants_dcc,
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    result.text('Updated successfully! Please refresh the page to see latest parameters').css('color', 'var(--green-2)');
+                }
+            }
+        });
+    }
+}
+
+function SaveTacticalIndexSpread(){
+
+    var el = \$('#feed_tactical_index_configuration');
+
+    var symbol      = el.find('select[name="symbol"]').val();
+    var result      = el.find('.save_tactical_index_spread');
+    var alpha       = el.find('input[name="spread_params_alpha"]').val();
+    var calibration = el.find('input[name="spread_params_calibration"]').val();
+    var commission  = el.find('input[name="spread_params_commission"]').val();
+
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: feed_tactical_index_upload_url,
+        data: {
+            save_tactical_index_spread: 1,
+            symbol: symbol,
+            alpha: alpha,
+            calibration: calibration,
+            commission: commission
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('Updated successfully! Please refresh the page to see latest parameters').css('color', 'var(--green-2)');
+            }
+        }
+    });
+}
+
+</script>

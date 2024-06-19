@@ -1,0 +1,193 @@
+<style>
+form {display: inline-block;}
+.small_btn {
+    background: white;
+    color: black;
+    border: 1px solid black;
+    border-radius: 4px;
+
+}
+</style>
+
+[% IF messages or errors %]
+<div class="card">
+    <div class="card__content">
+    [% FOREACH e = errors %]<p class="error">[% e %]</p>[% END %]
+    [% FOREACH m = messages %]<p class="success">[% m %]</p>[% END %]
+    </div>
+</div>
+[% END %]
+
+<form action="[% request.url_for('backoffice/f_payment_agent_list.cgi') %]" method="post" class="grd-margin-bottom" style="width:100%;">
+  <label>Status:</label>
+    <select name="status">
+        <option value="">All</option>
+        [% FOREACH entry IN [ 'applied', 'verified', 'authorized', 'suspended', 'rejected' ] %]
+            <option value="[% entry %]" [% entry == status && 'selected' %]>[% entry %]</option>
+        [% END %]
+    </select>
+    <label>Country:</label>
+    <select name="country">
+        <option value="">All</option>
+        [% FOREACH entry IN countries.keys.sort %]
+            <option value="[% entry %]" [% entry == country && 'selected' %]>[% entry %] - [% countries.$entry %]</option>
+        [% END %]
+    </select>
+    <label>Currency:</label>
+    <select name="currency">
+        <option value="">All</option>
+        [% FOREACH entry IN currencies.sort %]
+            <option value="[% entry %]" [% entry == currency && 'selected' %]>[% entry %]</option>
+        [% END %]
+    </select>
+    <label>Risk level:</label>
+    <select name="risk_level">
+        <option value="">All</option>
+        [% FOREACH entry IN [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ] %]
+            <option value="[% entry %]" [% entry == risk_level && 'selected' %]>[% entry %]</option>
+        [% END %]
+    </select>
+    <label>Eligible:</label>
+    <select name="eligible">
+        <option value="">All</option>
+        <option value="1" [% eligible == 1 && 'selected' %]>Yes</option>
+        <option value="0" [% eligible == 0 && 'selected' %]>No</option>
+    </select>    
+    <label>Loginid:</label>
+    <input type="text" name="loginid" value="[% loginid %]" size=20 data-lpignore="true" />
+    </label>
+    <label>Application date:</label>
+    <input type="text" value="[% application_date %]" size=11 name="application_date" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true"/>
+
+    <input type="submit" class="btn btn--primary" name="search" value="Search">
+    <hr/>
+
+[% IF list.defined && list.size > 0 %]
+    [% IF can_edit %]
+    <p>
+        <input type="submit" class="btn btn--primary" name="approve" value="Approve selected">
+        <input type="submit" class="btn btn--primary" name="reject" value="Reject selected (can reapply)">
+        <input type="submit" class="btn btn--primary" name="suspend" value="Suspend selected (cannot reapply)">
+    </p>
+    [% END %]
+    <table class="border sortable collapsed hover alternate">
+        <thead>
+            <tr>
+                [% IF can_edit %]
+                <th scope="col" class="sorttable_nosort">
+                    <input type="checkbox" onClick="selectAll(this)">
+                </th>
+                [% END %]
+                <th scope="col">Login ID</th>
+                <th scope="col">PA name</th>
+                <th scope="col">Status</th>
+                <th scope="col">Applied on</th>
+                <th scope="col">Apply attempts</th>
+                <th scope="col">Country</th>
+                <th scope="col">Currency</th>
+                <th scope="col">Risk Level</th>
+                <th scope="col">Desposit</th>
+                <th scope="col">POA</th>
+                <th scope="col">Bad statuses</th>
+                <th scope="col">Eligible</th>
+                <th scope="col" width="100%" class="sorttable_nosort">Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+        [% FOREACH row IN list %]
+            <tr style="white-space:nowrap;">
+                [% IF can_edit %]
+                <td>                
+                    <input type="checkbox" name="process_loginid" value="[% row.client_loginid %]">
+                </td>
+                [% END %]
+                <td>                
+                    <a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => row.client_loginid }) %]">
+                        [% row.client_loginid %]
+                    </a>
+                </td>
+                <td>
+                    <a class="link" href="[% request.url_for('backoffice/f_setting_paymentagent.cgi', { loginid => row.client_loginid, whattodo => 'show' }) %]">
+                        [% row.pa_name %]
+                    </a>
+                </td>
+                <td>[% row.pa_status %]</td>
+                <td>[% row.last_application_time %]</td>
+                <td>[% row.application_attempts %]</td>
+                <td>[% row.pa_countries.join(', ') %]</td>
+                <td>[% row.pa_currency %]</td>
+                <td>[% row.pa_risk_level %]</td>
+                <td[% IF row.deposit_converted < row.deposit_req %] style="background:#ffaaaa;"[% END %]>
+                    <span[%IF row.account_currency != 'USD' %] tooltip="[% row.account_currency %] [% row.deposit %] converted at [% row.conversion_rate %]"[% END %]>
+                    [% row.deposit_converted %] / [% row.deposit_req %]
+                    </span>
+                </td>
+                <td[% row.has_poa ? '>Yes' : ' style="background:#ffaaaa;">No' | none %]</td>
+                <td[% IF row.client_statuses.defined && row.client_statuses.size > 0 %] style="background:#ffaaaa;"[% END %]>[% row.client_statuses.join(', ') %]</td>
+                <td[% row.is_eligible ? '>Yes' : ' style="background:#ffaaaa;">No' | none %]</td>
+                <td style="max-width:1px;">
+                    [% IF row.status_comment.length %]
+                    <a name="remark_summary" id="remark_summary_[% row.client_loginid %]" href="#" onClick="javascript:startEdit('[% row.client_loginid %]')">
+                        <div style="text-overflow:ellipsis; overflow: hidden;">[% row.status_comment %]</div>
+                    </a>
+                    [% ELSIF can_edit %] 
+                        <input name="remark_summary" id="remark_summary_[% row.client_loginid %]" type="button" value="Add" onClick="startEdit('[% row.client_loginid %]')" class="small_btn">
+                    [% END %]
+                    <div name="remark_edit" id="remark_edit_[% row.client_loginid %]" style="display:none;">
+                        <textarea name="remark_edit_[% row.client_loginid %]" style="width:100%;" disabled>[% row.status_comment %]</textarea><br/>
+                        [% IF can_edit %]<input type="submit" name="save_remark" value="Save" class="small_btn">[% END %]
+                        <input type="reset" value="Cancel" onClick="resetEdit()" class="small_btn">
+                    </div>
+                </td>
+            </tr>
+        [% END %]
+        </tbody>
+    </table>
+
+    <p>
+    [% IF prev.defined %]<button type="submit" name="start" value="[% prev %]">Previous [% page_limit %]</button>[% END %]
+    [% IF next.defined %]<button type="submit" name="start" value="[% next %]">Next [% page_limit %]</button>[% END %]
+    </p>
+
+[% ELSIF request.http_method == 'POST' %]
+    <p>No payment agents found.</p>
+[% END %]
+
+</form>
+
+<script>
+
+function selectAll(e) {
+    var checkboxes = document.getElementsByName('process_loginid');
+    for(var i=0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = e.checked;
+    }
+}
+
+function startEdit(loginid) {
+    resetEdit();
+    document.getElementById('remark_summary_'+loginid).style.display = 'none';
+    document.getElementById('remark_edit_'+loginid).style.display = 'revert';
+    [% IF can_edit %]document.getElementsByName('remark_edit_'+loginid)[0].disabled = false;[% END %]
+}
+
+function resetEdit() {
+    var els = document.getElementsByName('remark_edit');
+    for(var i=0; i < els.length; i++) {
+        els[i].style.display = 'none';
+        var textArea = els[i].children[0];
+        textArea.disabled = true;
+        textArea.value = textArea.defaultValue;
+    }    
+
+    els = document.getElementsByName('remark_summary');
+    for(var i=0; i < els.length; i++) {
+        els[i].style.display = 'revert';
+    }    
+}
+
+\$(document).ready(function() {
+  \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+});
+
+</script>

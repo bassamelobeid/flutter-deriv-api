@@ -1,0 +1,200 @@
+<form id='dividend_scheduler_form'>
+    <table>
+        <input type="hidden" name="schedule_id" value='[% dividend_scheduler.schedule_id %]'>
+        <tr>
+            <td>
+                <label for="platform_type">Platform Type</label>
+                <input type="text" name="platform_type" value='[% dividend_scheduler.platform %]' readonly/>
+            </td>
+            <td>
+                <label for="server_name">Servers</label>
+                <input type="text" name="server_name" value='[% dividend_scheduler.server %]'/>                
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="symbol">Symbol</label>
+                <input type="text" name="symbol" id="symbol" value='[% dividend_scheduler.symbol %]' readonly/>
+            </td>
+            <td>
+                <label for="currency">Currency</label>
+                <select name="currency" id="currency" data-lpignore="true">
+                    [% FOREACH payout_currency IN payout_currencies.sort %]
+                        [% IF payout_currency == dividend_scheduler.currency %]
+                            <option value='[% payout_currency %]' selected>[% payout_currency %]</option>
+                        [% ELSE %]
+                            <option value='[% payout_currency %]'>[% payout_currency %]</option>
+                        [% END %]
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="long_dividend">Long Dividend</label>
+                <input type="text" name="long_dividend" data-lpignore="true" value='[% dividend_scheduler.long_dividends %]'/>
+            </td>
+            <td>
+                <label for="short_dividend">Short Dividend</label>
+                <input type="text" name="short_dividend" data-lpignore="true" value='[% dividend_scheduler.short_dividends %]'/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="long_tax">Long Tax(%)</label>
+                <input type="text" name="long_tax" data-lpignore="true" value='[% dividend_scheduler.long_tax %]'  placeholder="e.g (0~100)"/>
+            </td>
+            <td>
+                <label for="short_tax">Short Tax(%)</label>
+                <input type="text" name="short_tax" data-lpignore="true" value='[% dividend_scheduler.short_tax %]'  placeholder="e.g (0~100)"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="dividend_deal_comment">Comment</label>
+                <input type="text" name="dividend_deal_comment" data-lpignore="true" value='[% dividend_scheduler.dividend_deal_comment %]'/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="applied_datetime">Applied date and time(GMT)</label>
+                <input type="datetime-local" name="applied_datetime" data-lpignore="true" style="color:black;" value='[% dividend_scheduler.applied_date_time %]'/>
+            </td>
+            <td>
+                [% IF dividend_scheduler.skip_holiday_check == 1 %]
+                    <input type="checkbox" name="skip_holiday_check" id="skip_holiday_check" data-lpignore="true" checked/>
+                [% ELSE %]
+                    <input type="checkbox" name="skip_holiday_check" id="skip_holiday_check" data-lpignore="true"/>
+                [% END %]
+                <label for="skip_holiday_check">Skip holiday <b style="color: red;">(Warning: Only check this if you are really sure!!)</b></label>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="schedule_status">Status</label>
+                [% IF dividend_scheduler.schedule_status == 'failed' %]
+                    <input type="text" name="schedule_status" data-lpignore="true" style="color:red;" value='[% dividend_scheduler.schedule_status %]' readonly/>
+                [% ELSIF dividend_scheduler.schedule_status == 'passed' %]
+                    <input type="text" name="schedule_status" data-lpignore="true" style="color:lightgreen;" value='[% dividend_scheduler.schedule_status %]' readonly/>
+                [% ELSIF dividend_scheduler.schedule_status == 'running' %]
+                    <input type="text" name="schedule_status" data-lpignore="true" style="color:lightyellow;" value='[% dividend_scheduler.schedule_status %]' readonly/>
+                [% ELSE %]
+                    <input type="text" name="schedule_status" data-lpignore="true" style="color:lightblue;" value='[% dividend_scheduler.schedule_status %]' readonly/>
+                [% END %]
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <input type="button" class="btn btn--primary" onClick="updateDividendScheduler()" value="Save">
+            </td>
+            <td class="dividend_scheduler_status"></td>
+        </tr>
+    </table>
+</form>
+
+<br>
+
+<td>
+    <button onClick="goToMain()" type="button" class="btn btn--secondary">
+        Cancel
+    </button>
+    <button onClick="newDividendScheduler()" type="button" class="btn btn--secondary">
+        New
+    </button>
+</td>
+
+<script>
+    var dividend_scheduler_controller_url = "[% dividend_scheduler_controller_url | none %]";
+    var new_dividend_scheduler_url    = "[% new_dividend_scheduler_url | none %]";
+    var index_dividend_scheduler_url = "[% index_dividend_scheduler_url | none %]";
+
+    function updateDividendScheduler() {
+        var el = \$('#dividend_scheduler_form');
+        var result = el.find('.dividend_scheduler_status');
+
+        var schedule_id = el.find('input[name="schedule_id"]').val();
+        var platform_type = el.find('input[name="platform_type"]').val();
+        var server_name = el.find('input[name="server_name"]').val();
+        var symbol = \$('#symbol').val();
+        var currency = \$('#currency').val();
+        var long_dividend = el.find('input[name="long_dividend"]').val();
+        var short_dividend = el.find('input[name="short_dividend"]').val();
+        var long_tax = el.find('input[name="long_tax"]').val();
+        var short_tax = el.find('input[name="short_tax"]').val();
+        var dividend_deal_comment = el.find('input[name="dividend_deal_comment"]').val();
+        var applied_datetime = el.find('input[name="applied_datetime"]').val();
+        var skip_holiday_check_temp = \$('#skip_holiday_check');
+        var skip_holiday_check;
+
+        if (skip_holiday_check_temp.is(':checked')) {
+            skip_holiday_check = '1';
+        }
+        else {
+            skip_holiday_check = '0';
+        }
+
+        result.text('processing ...').css('color', 'black');
+        var data = {
+            update_dividend_scheduler: 1,
+            schedule_id: schedule_id,
+            platform_type: platform_type,
+            server_name: server_name,
+            symbol: symbol,
+            currency: currency,
+            long_dividend: long_dividend.toString(),
+            short_dividend: short_dividend.toString(),
+            long_tax: long_tax.toString(),
+            short_tax: short_tax.toString(),
+            dividend_deal_comment: dividend_deal_comment,
+            applied_datetime: applied_datetime,
+            skip_holiday_check: skip_holiday_check,
+        };
+
+        \$.ajax({
+            url: dividend_scheduler_controller_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    result.text('saved').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+
+    function newDividendScheduler() {
+        location.replace(new_dividend_scheduler_url);
+    }
+
+    function goToMain() {
+        var el = \$('#dividend_scheduler_form');
+
+        var datetime = el.find('input[name="applied_datetime"]').val();
+        location.replace(index_dividend_scheduler_url + "?" + "sorted_datetime=" + datetime.split('T')[0]);
+    }
+
+    function setSymbolCurrency(symbol) {
+        var el = \$('#dividend_scheduler_form');
+        var currency = \$('#currency');
+
+        var data = {
+            set_currency_symbol: 1,
+            symbol: symbol.value,
+        };
+
+        \$.ajax({
+            url: dividend_scheduler_controller_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    currency.val(config.success);
+                }
+            }
+        });
+    }
+</script>

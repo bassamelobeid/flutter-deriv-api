@@ -1,0 +1,64 @@
+[% IF existing_custom.keys %]
+    <table>
+        <tr>
+            <td>OTM ID</td>
+            <td>Condition</td>
+            <td>Deep OTM value</td>
+        </tr>
+        [% FOREACH id IN existing_custom.keys %]
+            <tr>
+                <td>[% id %]</td>
+                <td>
+                    [% FOREACH data IN existing_custom.$id.conditions.keys %]
+                        [% IF existing_custom.$id.conditions.defined(data) %] [% data %] ([% existing_custom.$id.conditions.$data %]) [% END %]
+                    [% END %]
+                </td>
+                <td>[% existing_custom.$id.value  %]</td>
+            </tr>
+        [% END %]
+    </table>
+[% END %]
+
+<p>Update custom OTM threshold (to delete a custom threshold set the market/underlying_symbol and click 'Delete' button): </p>
+<form action="[% url | none %]" method="POST">
+    <table>
+        <tr>
+            <td>Market: </td>
+            <td><input type="text" name="market" data-lpignore="true" /></td>
+            <td> e.g. forex. Supports comma separated string.</td>
+        </tr>
+        <tr>
+            <td>Underlying symbol: </td>
+            <td><input type="text" name="underlying_symbol" value='' data-lpignore="true" /></td>
+            <td> e.g. frxUSDJPY. Supports comma separated string.</td>
+        </tr>
+        <tr>
+            <td>Is ATM contract: </td>
+            <td><input type="text" name="is_atm_bet" value='' data-lpignore="true" /></td>
+            <td> e.g. Boolean, 1 or 0</td>
+        </tr>
+        <tr>
+            <td>Expiry Type: </td>
+            <td><input type="text" name="expiry_type" value='' data-lpignore="true" /></td>
+            <td> e.g. daily | intraday | tick</td>
+        </tr>
+        <tr>
+            <td>OTM value: </td>
+            <td><input type="text" name="otm_value" value='' data-lpignore="true" /></td>
+            <td> e.g. 0.01 (maximum is 1)</td>
+        </tr>
+        <tr>
+            <td><input type="submit" name="update_otm" value="Update"></td>
+        </tr>
+
+        <tr>
+            <td>OTM id: </td>
+            <td><input type="text" name="otm_id" value='' data-lpignore="true" /></td>
+            <td> required to delete OTM threshold</td>
+        </tr>
+        <tr>
+            <td><input type="submit" name="delete_otm" value="Delete"></td>
+        </tr>
+    </table>
+</form>
+

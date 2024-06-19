@@ -1,0 +1,117 @@
+[% WRAPPER layout title='Filters' %]
+    <form method="get">
+        <input type="hidden" name="sort_by" value="[% input.sort_by %]" />
+        <input type="hidden" name="sort_order" value="[% input.sort_order %]" />
+        <div class="row">
+            <label>Nick name:</label>
+                <input type="text" name="nickname" value="[% input.nickname %]" size=20 data-lpignore="true" />
+            <label>Email:</label>
+                <input type="text" name="email" value="[% input.email %]" pattern="^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$" oninvalid="setCustomValidity('Please enter a valid email address.')" oninput="setCustomValidity('')" size=20 data-lpignore="true" />
+            <label>Country:</label>
+                <select name="residence">
+                    <option value="">All</option>
+                    [% FOR country IN countries.keys.sort %]
+                        <option value="[% country %]" [% input.residence == country && 'selected' %]>[% countries.$country %]</option>
+                    [% END %]
+                </select>
+            <label>PA status:</label>
+                <select name="pa_status">
+                    <option value="%">All</option>
+                    <option value="none" [% input.pa_status == 'none' && 'selected' %]>Not a PA</option>
+                    <option value="applied" [% input.pa_status == 'applied' && 'selected' %]>Applied</option>
+                    <option value="verified" [% input.pa_status == 'verified' && 'selected' %]>Verified</option>
+                    <option value="authorized" [% input.pa_status == 'authorized' && 'selected' %]>Authorized</option>
+                    <option value="suspended" [% input.pa_status == 'suspended' && 'selected' %]>Suspended</option>
+                    <option value="rejected" [% input.pa_status == 'rejected' && 'selected' %]>Rejected</option>
+                </select>
+            <label>Band:</label>
+                <select name="trade_band">
+                    <option value="">All</option>
+                    [% FOR band IN trade_bands %]
+                        <option value="[% band %]" [% input.trade_band == band && 'selected' %]>[% band %]</option>
+                    [% END %]
+                </select>                
+        </div>
+        <div class="row">            
+            <label>Aggregate transactions since:</label>
+                <input type="text" value="[% input.date_from %]" size=11 name="date_from" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" required data-lpignore="true" />
+            <input type="checkbox" name="include_disabled" id="include_disabled" value="1" [% input.include_disabled && 'checked' %]>
+                <label for="include_disabled">Include disabled/inactive</label>
+        </div>
+        <div class="row">
+            <input type="submit" class="btn btn--primary" name="search" value="Show">
+            <a class="btn btn--secondary" href="[% request.url_for('backoffice/p2p_advertiser_list.cgi') %]">Reset filters</a>
+        </div>
+    </form>
+[% END %]
+
+[% IF results.size %]
+
+[% WRAPPER layout title='Results' %]
+
+<div class="scrollable">
+<table class="border hover alternate">
+    <thead><tr>
+        <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.id ) %]">Advertiser ID[% sort_flag.id | none %]</a></th>
+        <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.loginid ) %]">Login ID[% sort_flag.loginid | none %]</a></th>
+        <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.residence ) %]">Country[% sort_flag.residence | none %]</a></th>
+        <th>Approved</th>
+        <th>Enabled</th>
+        <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.nickname ) %]">Nickname[% sort_flag.nickname | none %]</a></th>
+        <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.trade_band ) %]">Band[% sort_flag.trade_band | none %]</a></th>
+        <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.email ) %]">Email[% sort_flag.email | none %]</a></th>
+        <th>Online</th>
+        <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.pa_status ) %]">PA[% sort_flag.pa_status | none %]</a></th>
+        <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.p2p_buy ) %]">P2P buy[% sort_flag.p2p_buy | none %]</a></th>
+        <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.p2p_sell ) %]">P2P sell[% sort_flag.p2p_sell | none %]</a></th>
+    </tr></thead>
+    <tbody>
+    [% FOREACH result IN results %]
+        <tr>
+            <td><a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { id => result.id }) %]">[% result.id %]</a></td>
+            <td><a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => result.loginid }) %]">[% result.loginid %]</a></td>
+            <td>[% countries.item(result.residence) %] [% request.country_emoji(result.residence) | none %]</td>
+            <td>[% IF result.is_approved %]&#9989;[% ELSE %]&#10060;[% END %]</td>
+            <td>[% IF result.is_enabled %]&#9989;[% ELSE %]&#10060;[% END %]</td>
+            <td>[% result.nickname %]</td>
+            <td>[% result.trade_band %]</td>
+            <td>[% result.email %]</td>
+            <td>[% result.is_online | none %] [% result.online_time %]</td>
+            <td>[% result.pa_status | ucfirst %]</td>
+            <td>[% result.p2p_buy %]</td>
+            <td>[% result.p2p_sell %]</td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+
+[% IF link_params.defined('prev') %]
+<a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.prev ) %]">Previous</a>
+[% END %]
+
+[% IF link_params.defined('next') %]
+<a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.next ) %]">Next</a>
+[% END %]
+
+</div>
+
+[% END %]
+
+[% ELSIF input.search %]
+
+<p>No results</p>
+
+[% END %]
+
+[% BLOCK layout %]
+    <div class="card">
+        <div class="card__label toggle">[% title %]</div>
+        <div class="card__content">[% content | none %]</div>
+    </div>
+[% END %]
+
+<script type="text/javascript" language="javascript">
+\$(document).ready(function() {
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+});
+</script>

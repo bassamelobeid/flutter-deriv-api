@@ -1,0 +1,56 @@
+<style>
+ table {
+  padding-bottom: 2%;
+ }
+
+ th {
+  background-color: lightblue;
+  text-align: center;
+ }
+
+ td {
+  text-align: center;
+ }
+ 
+ .no_record {
+  background-color: lightgray;
+ }
+
+</style>
+
+[% MACRO display_data BLOCK %]
+[% IF data %]
+ <table>
+  <tbody align="left">
+   <tr>
+    <th scope="row">Date & Time</th>
+    <th>Client's LoginID</th>
+    <th>Client's Residence</th>
+    <th>IP Address</th>
+    <th>IP Address Country</th>
+   </tr>
+   [% FOREACH ea IN data -%]
+   <tr>
+      <td>[% ea.date_time %]</td>
+      <td>[% ea.client_loginid %]</td>
+      <td>[% ea.client_residence %]</td>
+      <td>[% ea.ip_address %]</td>
+      <td>[% ea.ip_country %]</td>
+   </tr>
+   [% END %]
+  </tbody>
+ </table>
+[% END %]
+[% END %]
+
+<h2>List of IP mismatches</h2>
+[% UNLESS all_data.size %]
+ <h3 class="no_record">No record</h3>
+[% ELSE %]
+ [% FOREACH key IN all_data.keys.sort %]
+  [% IF all_data.$key %]
+  <h3>[% key %] accounts</h3>
+    [% display_data(data= all_data.$key) %]
+  [% END %]
+ [% END %]
+[% END %]

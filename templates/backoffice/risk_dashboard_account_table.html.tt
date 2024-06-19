@@ -1,0 +1,11 @@
+[% IF clients.size == 0 %]
+    <p>None.</p>
+[% ELSE %]
+<table>
+    <tbody>
+    [% FOREACH client IN clients %]
+    <tr class="[% client.loginid %]"><td>[<a class="link" tooltip="[% titlfy(client) %]" href="[% link_to_pnl(client.loginid) %]">[% client.loginid %]</a> [% client.currency %]]</td><td>[% client.$key %]</td></tr>
+    [% END %]
+    </tbody>
+</table>
+[% END %]
