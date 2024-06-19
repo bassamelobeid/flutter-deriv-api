@@ -1,0 +1,223 @@
+provider,account_type,type,mapped_symbol,commission_rate
+dxtrade,standard,volume,RB 100,0
+dxtrade,standard,volume,RB 200,0
+dxtrade,standard,volume,USD/CHF,0.00002
+dxtrade,standard,volume,AAPL,0.0001
+dxtrade,standard,volume,OMG/USD,0.0001
+dxtrade,standard,volume,BTC/LTC,0.0001
+dxtrade,standard,volume,GBP/JPY,0.00002
+dxtrade,standard,volume,TEVA,0.0001
+dxtrade,standard,volume,XAU/USD,0.00004
+dxtrade,standard,volume,JPM,0.0001
+dxtrade,standard,volume,USD Index,0
+dxtrade,standard,volume,ETH/USD,0.0001
+dxtrade,standard,volume,LTC/USD,0.0001
+dxtrade,standard,volume,EOS/USD,0.0001
+dxtrade,standard,volume,GM,0.0001
+dxtrade,standard,volume,BTC/ETH,0.0001
+dxtrade,standard,volume,GBP/AUD,0.00002
+dxtrade,standard,volume,AUD/USD,0.00002
+dxtrade,standard,volume,IBM,0.0001
+dxtrade,standard,volume,BTC/USD,0.0001
+dxtrade,standard,volume,Vol 25/1s,0.0000175
+dxtrade,standard,volume,Vol 75/1s,0.00005
+dxtrade,standard,volume,EUR/JPY,0.00002
+dxtrade,standard,volume,XAU/EUR,0.00004
+dxtrade,standard,volume,NZD/USD,0.00002
+dxtrade,standard,volume,UK 100,0.00001
+dxtrade,standard,volume,PYPL,0.0001
+dxtrade,standard,volume,XPD/USD,0.00004
+dxtrade,standard,volume,Vol 75,0.00005
+dxtrade,standard,volume,XAG/EUR,0.00004
+dxtrade,standard,volume,Vol 10/1s,0.0000075
+dxtrade,standard,volume,EUR Index,0
+dxtrade,standard,volume,AUD/CAD,0.00002
+dxtrade,standard,volume,AIG,0.0001
+dxtrade,standard,volume,TSLA,0.0001
+dxtrade,standard,volume,USD/PLN,0.00002
+dxtrade,standard,volume,USD/ZAR,0.00002
+dxtrade,standard,volume,GBP Index,0
+dxtrade,standard,volume,CSCO,0.0001
+dxtrade,standard,volume,AUD/NZD,0.00002
+dxtrade,standard,volume,AUD/JPY,0.00002
+dxtrade,standard,volume,PFE,0.0001
+dxtrade,standard,volume,FRA 40,0.00001
+dxtrade,standard,volume,DBK,0.0001
+dxtrade,standard,volume,CRM,0.0001
+dxtrade,standard,volume,XZN/USD,0.00004
+dxtrade,standard,volume,XMR/USD,0.0001
+dxtrade,standard,volume,XRP/USD,0.0001
+dxtrade,standard,volume,EUR/CHF,0.00002
+dxtrade,standard,volume,GBP/NOK,0.00002
+dxtrade,standard,volume,JNJ,0.0001
+dxtrade,standard,volume,BCH/USD,0.0001
+dxtrade,standard,volume,Vol 100,0.000075
+dxtrade,standard,volume,Vol 50/1s,0.0000375
+dxtrade,standard,volume,BNB/USD,0.0001
+dxtrade,standard,volume,KO,0.0001
+dxtrade,standard,volume,GOOG,0.0001
+dxtrade,standard,volume,USD/SEK,0.00002
+dxtrade,standard,volume,GBP/SEK,0.00002
+dxtrade,standard,volume,EBAY,0.0001
+dxtrade,standard,volume,IOT/USD,0.0001
+dxtrade,standard,volume,GBP/CAD,0.00002
+dxtrade,standard,volume,EUR/AUD,0.00002
+dxtrade,standard,volume,EUR/SEK,0.00002
+dxtrade,standard,volume,BABA,0.0001
+dxtrade,standard,volume,AAL,0.0001
+dxtrade,standard,volume,BMW,0.0001
+dxtrade,standard,volume,BAC,0.0001
+dxtrade,standard,volume,XAG/USD,0.00004
+dxtrade,standard,volume,TWTR,0.0001
+dxtrade,standard,volume,Vol 100/1s,0.000075
+dxtrade,standard,volume,Jump 50,0.000025
+dxtrade,standard,volume,NEO/USD,0.0001
+dxtrade,standard,volume,Jump 75,0.0000375
+dxtrade,standard,volume,HPQ,0.0001
+dxtrade,standard,volume,Crash 500,0.0000035
+dxtrade,standard,volume,NKE,0.0001
+dxtrade,standard,volume,XLM/USD,0.0001
+dxtrade,standard,volume,BA,0.0001
+dxtrade,standard,volume,Boom 1000,0.0000025
+dxtrade,standard,volume,USD/MXN,0.00002
+dxtrade,standard,volume,EUR/PLN,0.00002
+dxtrade,standard,volume,NVDA,0.0001
+dxtrade,standard,volume,BAY,0.0001
+dxtrade,standard,volume,Vol 25,0.0000175
+dxtrade,standard,volume,XAL/USD,0.00004
+dxtrade,standard,volume,Jump 100,0.00005
+dxtrade,standard,volume,PG,0.0001
+dxtrade,standard,volume,Gold Index,0
+dxtrade,standard,volume,DSH/USD,0.0001
+dxtrade,standard,volume,XPT/USD,0.00004
+dxtrade,standard,volume,GBP/USD,0.00002
+dxtrade,standard,volume,CAD/CHF,0.00002
+dxtrade,standard,volume,JP 225,0.00001
+dxtrade,standard,volume,US 500,0.00001
+dxtrade,standard,volume,GS,0.0001
+dxtrade,standard,volume,V,0.0001
+dxtrade,standard,volume,EUR/CAD,0.00002
+dxtrade,standard,volume,NED 25,0.00001
+dxtrade,standard,volume,C,0.0001
+dxtrade,standard,volume,USD/CNH,0.00002
+dxtrade,standard,volume,Jump 10,0.000005
+dxtrade,standard,volume,FDX,0.0001
+dxtrade,standard,volume,NZD/CAD,0.00002
+dxtrade,standard,volume,AUS 200,0.00001
+dxtrade,standard,volume,CAD/JPY,0.00002
+dxtrade,standard,volume,EUR/NOK,0.00002
+dxtrade,standard,volume,ZEC/USD,0.0001
+dxtrade,standard,volume,GBP/CHF,0.00002
+dxtrade,standard,volume,ADS,0.0001
+dxtrade,standard,volume,XNI/USD,0.00004
+dxtrade,standard,volume,EUR/USD,0.00002
+dxtrade,standard,volume,MCD,0.0001
+dxtrade,standard,volume,ZM,0.0001
+dxtrade,standard,volume,Vol 50,0.0000375
+dxtrade,standard,volume,Vol 10,0.0000075
+dxtrade,standard,volume,DIS,0.0001
+dxtrade,standard,volume,WMT,0.0001
+dxtrade,standard,volume,USD/NOK,0.00002
+dxtrade,standard,volume,MSFT,0.0001
+dxtrade,standard,volume,EUR/NZD,0.00002
+dxtrade,standard,volume,USD/JPY,0.00002
+dxtrade,standard,volume,NFLX,0.0001
+dxtrade,standard,volume,AUD/CHF,0.00002
+dxtrade,standard,volume,XCU/USD,0.00004
+dxtrade,standard,volume,INTC,0.0001
+dxtrade,standard,volume,XPB/USD,0.00004
+dxtrade,standard,volume,FB,0.0001
+dxtrade,standard,volume,TRX/USD,0.0001
+dxtrade,standard,volume,Crash 1000,0.0000025
+dxtrade,standard,volume,GBP/NZD,0.00002
+dxtrade,standard,volume,US 30,0.00001
+dxtrade,standard,volume,UBER,0.0001
+dxtrade,standard,volume,Jump 25,0.0000125
+dxtrade,standard,volume,USD/CAD,0.00002
+dxtrade,standard,volume,ESP 35,0.00001
+dxtrade,standard,volume,EUR 50,0.00001
+dxtrade,standard,volume,DAL,0.0001
+dxtrade,standard,volume,EUR/GBP,0.00002
+dxtrade,standard,volume,AUD Index,0
+dxtrade,standard,volume,CHF/JPY,0.00002
+dxtrade,standard,volume,NZD/JPY,0.00002
+dxtrade,standard,volume,AMZN,0.0001
+dxtrade,standard,volume,MA,0.0001
+dxtrade,standard,volume,Boom 500,0.0000035
+dxtrade,standard,volume,ABNB,0.0001
+dxtrade,standard,volume,ADA/USD,0.0001
+dxtrade,standard,volume,ALG/USD,0.0001
+dxtrade,standard,volume,AUD Basket,0
+dxtrade,standard,volume,AUD/CADm,0
+dxtrade,standard,volume,AUD/CHFm,0
+dxtrade,standard,volume,AUD/JPYm,0
+dxtrade,standard,volume,AUD/NZDm,0
+dxtrade,standard,volume,AUD/SGD,0.000025
+dxtrade,standard,volume,AUD/USDm,0
+dxtrade,standard,volume,BAT/USD,0.0001
+dxtrade,standard,volume,BIIB,0.0001
+dxtrade,standard,volume,BRN,0
+dxtrade,standard,volume,BTC/XAG,0.0001
+dxtrade,standard,volume,BTC/XAU,0.0001
+dxtrade,standard,volume,Boom 300,0.00001
+dxtrade,standard,volume,Crash 300,0.00001
+dxtrade,standard,volume,DAX 30,0.00001
+dxtrade,standard,volume,DAX 40,0.00001
+dxtrade,standard,volume,DOG/USD,0.0001
+dxtrade,standard,volume,DOT/USD,0.0001
+dxtrade,standard,volume,DVMT,0.0001
+dxtrade,standard,volume,ETC/USD,0.0001
+dxtrade,standard,volume,EUR Basket,0
+dxtrade,standard,volume,EUR/AUDm,0
+dxtrade,standard,volume,EUR/CADm,0
+dxtrade,standard,volume,EUR/CHFm,0
+dxtrade,standard,volume,EUR/GBPm,0
+dxtrade,standard,volume,EUR/HKD,0.000025
+dxtrade,standard,volume,EUR/ILS,0.000025
+dxtrade,standard,volume,EUR/JPYm,0
+dxtrade,standard,volume,EUR/MXN,0.000025
+dxtrade,standard,volume,EUR/NZDm,0
+dxtrade,standard,volume,EUR/SGD,0.000025
+dxtrade,standard,volume,EUR/TRY,0.000025
+dxtrade,standard,volume,EUR/USDm,0
+dxtrade,standard,volume,EUR/ZAR,0.000025
+dxtrade,standard,volume,FIL/USD,0.0001
+dxtrade,standard,volume,GBP Basket,0
+dxtrade,standard,volume,GBP/CHFm,0
+dxtrade,standard,volume,GBP/JPYm,0
+dxtrade,standard,volume,GBP/SGD,0.000025
+dxtrade,standard,volume,GBP/USDm,0
+dxtrade,standard,volume,GOOGL,0.0001
+dxtrade,standard,volume,Gold Basket,0
+dxtrade,standard,volume,HKD/JPY,0.000025
+dxtrade,standard,volume,Jump 150,0
+dxtrade,standard,volume,Jump 200,0
+dxtrade,standard,volume,LNK/USD,0.0001
+dxtrade,standard,volume,MKR/USD,0.0001
+dxtrade,standard,volume,MRNA,0.0001
+dxtrade,standard,volume,MTC/USD,0.0001
+dxtrade,standard,volume,NGAS,0
+dxtrade,standard,volume,NKLA,0.0001
+dxtrade,standard,volume,NZD/CHF,0.000025
+dxtrade,standard,volume,NZD/SGD,0.000025
+dxtrade,standard,volume,NZD/USDm,0
+dxtrade,standard,volume,SGD/JPY,0.000025
+dxtrade,standard,volume,SOL/USD,0.0001
+dxtrade,standard,volume,SPCE,0.0001
+dxtrade,standard,volume,Step,0.000001
+dxtrade,standard,volume,UNI/USD,0.0001
+dxtrade,standard,volume,US 100,0.00001
+dxtrade,standard,volume,USD Basket,0
+dxtrade,standard,volume,USD/CADm,0
+dxtrade,standard,volume,USD/CHFm,0
+dxtrade,standard,volume,USD/HKD,0.000025
+dxtrade,standard,volume,USD/ILS,0.000025
+dxtrade,standard,volume,USD/JPYm,0
+dxtrade,standard,volume,USD/RUB,0.000025
+dxtrade,standard,volume,USD/SGD,0.000025
+dxtrade,standard,volume,USD/THB,0.000025
+dxtrade,standard,volume,USD/TRY,0.000025
+dxtrade,standard,volume,Vol 200/1s,0.0001
+dxtrade,standard,volume,Vol 300/1s,0.00015
+dxtrade,standard,volume,WTI,0
+dxtrade,standard,volume,XTZ/USD,0.0001
