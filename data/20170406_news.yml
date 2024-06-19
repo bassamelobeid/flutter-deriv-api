@@ -1,0 +1,661 @@
+---
+- event_name: PPI y/y
+  id: cd6a511e54d98bb2
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491960600
+  source: forexfactory
+  symbol: CNY
+- event_name: CPI y/y
+  id: 18f49babce01ac62
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491960600
+  source: forexfactory
+  symbol: CNY
+- event_name: Labor Market Conditions Index m/m
+  id: ba19a51c60a48536
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491832800
+  source: forexfactory
+  symbol: USD
+- event_name: Natural Gas Storage
+  id: d246a3e493126120
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491489000
+  source: forexfactory
+  symbol: USD
+- event_name: 30-y Bond Auction
+  id: eb1f8ec203da3a40
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1492016460
+  source: forexfactory
+  symbol: USD
+- event_name: Industrial Production m/m
+  id: c68b1da60c259e61
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491553800
+  source: forexfactory
+  symbol: GBP
+- event_name: German Factory Orders m/m
+  id: 390a3da15da92b74
+  impact: 3
+  recorded_date: 1491609604
+  release_date: 1491458400
+  source: forexfactory
+  symbol: EUR
+- event_name: BOC Monetary Policy Report
+  id: 482ae1dc38f7b1aa
+  impact: 5
+  recorded_date: 1491868804
+  release_date: 1492005600
+  source: forexfactory
+  symbol: CAD
+- event_name: AIG Construction Index
+  id: a2592ebd1f2d5435
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491521400
+  source: forexfactory
+  symbol: AUD
+- event_name: German Trade Balance
+  id: 9045a04b90916c8d
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491544800
+  source: forexfactory
+  symbol: EUR
+- event_name: Construction Output m/m
+  id: 4eda507a0f0a7df8
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491553800
+  source: forexfactory
+  symbol: GBP
+- event_name: Foreign Currency Reserves
+  id: 01e782118f2fbb2c
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491548400
+  source: forexfactory
+  symbol: CHF
+- event_name: Business NZ Manufacturing Index
+  id: dcb6bcaf2e20c204
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1492036200
+  source: forexfactory
+  symbol: NZD
+- event_name: Claimant Count Change
+  id: e34eb32b92f53c6a
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491985800
+  source: forexfactory
+  symbol: GBP
+- event_name: Non-Farm Employment Change
+  id: 9e53c987c7e484a6
+  impact: 5
+  recorded_date: 1491609604
+  release_date: 1491568200
+  source: forexfactory
+  symbol: USD
+- event_name: FPI m/m
+  id: 4746e6472291e1e0
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1492037100
+  source: forexfactory
+  symbol: NZD
+- event_name: ECB Monetary Policy Meeting Accounts
+  id: c5e009a68768ed8a
+  impact: 3
+  recorded_date: 1491609604
+  release_date: 1491478200
+  source: forexfactory
+  symbol: EUR
+- event_name: HPI y/y
+  id: d3393e9fdb023294
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491899400
+  source: forexfactory
+  symbol: GBP
+- event_name: Unemployment Claims
+  id: 2cd135118ae2dbdb
+  impact: 5
+  recorded_date: 1491609604
+  release_date: 1491481800
+  source: forexfactory
+  symbol: USD
+- event_name: Manufacturing Production m/m
+  id: 13944bf75ba536e0
+  impact: 5
+  recorded_date: 1491609604
+  release_date: 1491553800
+  source: forexfactory
+  symbol: GBP
+- event_name: Bank Lending y/y
+  id: a4293a589d1f5dda
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491954600
+  source: forexfactory
+  symbol: JPY
+- event_name: Housing Equity Withdrawal q/q
+  id: c77469207b8504fa
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491467400
+  source: forexfactory
+  symbol: GBP
+- event_name: PPI Output m/m
+  id: 3799bfb6c2dc2af0
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491899400
+  source: forexfactory
+  symbol: GBP
+- event_name: Italian Industrial Production m/m
+  id: 2ad7de09889125a2
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491811200
+  source: forexfactory
+  symbol: EUR
+- event_name: Unemployment Rate
+  id: a330857832a1c63a
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491543900
+  source: forexfactory
+  symbol: CHF
+- event_name: German Industrial Production m/m
+  id: ed8542e63de11547
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491544800
+  source: forexfactory
+  symbol: EUR
+- event_name: NFIB Small Business Index
+  id: 3a91a5f9fcf98f43
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491904800
+  source: forexfactory
+  symbol: USD
+- actual_release_date: 1491469080
+  event_name: French 10-y Bond Auction
+  id: b7fc6b515c6c0b12
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491469080
+  source: forexfactory
+  symbol: EUR
+- event_name: Sentix Investor Confidence
+  id: d65a825fffc36de5
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491813000
+  source: forexfactory
+  symbol: EUR
+- event_name: President Trump Speaks
+  id: b612f8ca46f8c784
+  impact: 1
+  release_date: 1492012800
+  source: forexfactory
+  symbol: USD
+- event_name: Core CPI y/y
+  id: 87bc08d30f9202e4
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491899400
+  source: forexfactory
+  symbol: GBP
+- event_name: Federal Budget Balance
+  id: 878097ee123026d8
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1492020000
+  source: forexfactory
+  symbol: USD
+- event_name: BOC Rate Statement
+  id: c17ea9674f4a2790
+  impact: 5
+  recorded_date: 1491868804
+  release_date: 1492005600
+  source: forexfactory
+  symbol: CAD
+- event_name: M2 Money Stock y/y
+  id: 8f59b784bb8bbc3e
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1492041000
+  source: forexfactory
+  symbol: JPY
+- event_name: ZEW Economic Sentiment
+  id: f358aaa1d0635f72
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491901200
+  source: forexfactory
+  symbol: EUR
+- event_name: French Industrial Production m/m
+  id: c1c7ebc27ccdcb58
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491547500
+  source: forexfactory
+  symbol: EUR
+- event_name: Current Account
+  id: f054d18653693c60
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491781800
+  source: forexfactory
+  symbol: JPY
+- event_name: Goods Trade Balance
+  id: 1555839310825304
+  impact: 3
+  recorded_date: 1491609604
+  release_date: 1491553800
+  source: forexfactory
+  symbol: GBP
+- event_name: Average Hourly Earnings m/m
+  id: 3c93d8a983d9877a
+  impact: 5
+  recorded_date: 1491609604
+  release_date: 1491568200
+  source: forexfactory
+  symbol: USD
+- event_name: Consumer Credit m/m
+  id: f5493177a016002d
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491591600
+  source: forexfactory
+  symbol: USD
+- event_name: RPI y/y
+  id: 97927b1d2e8979e1
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491899400
+  source: forexfactory
+  symbol: GBP
+- event_name: CPI m/m
+  id: cf5c47c9d766f600
+  impact: 3
+  recorded_date: 1491609604
+  release_date: 1491462900
+  source: forexfactory
+  symbol: CHF
+- event_name: 10-y Bond Auction
+  id: 773f3121f36c3467
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491930060
+  source: forexfactory
+  symbol: USD
+- event_name: Overnight Rate
+  id: 7800b6b68fccacd0
+  impact: 5
+  recorded_date: 1491868804
+  release_date: 1492005600
+  source: forexfactory
+  symbol: CAD
+- event_name: Ivey PMI
+  id: 6f0b82800ab16129
+  impact: 3
+  recorded_date: 1491609604
+  release_date: 1491573600
+  source: forexfactory
+  symbol: CAD
+- event_name: 30-y Bond Auction
+  id: 10bd438d79cca506
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491968700
+  source: forexfactory
+  symbol: JPY
+- event_name: ECB President Draghi Speaks
+  id: 764acbc2001c3048
+  impact: 5
+  recorded_date: 1491609604
+  release_date: 1491462000
+  source: forexfactory
+  symbol: EUR
+- event_name: FOMC Member Dudley Speaks
+  id: 838114bb92e0b905
+  impact: 3
+  recorded_date: 1491609604
+  release_date: 1491581700
+  source: forexfactory
+  symbol: USD
+- event_name: Challenger Job Cuts y/y
+  id: 3a5e1b797929addc
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491478200
+  source: forexfactory
+  symbol: USD
+- event_name: Fed Chair Yellen Speaks
+  id: 48cccacd2b8d5435
+  impact: 5
+  recorded_date: 1491868804
+  release_date: 1491855000
+  source: forexfactory
+  symbol: USD
+- event_name: Caixin Services PMI
+  id: be6431c0a65819fe
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491443100
+  source: forexfactory
+  symbol: CNY
+- event_name: Home Loans m/m
+  id: 7bc89c71d3c066f5
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491787800
+  source: forexfactory
+  symbol: AUD
+- event_name: BRC Retail Sales Monitor y/y
+  id: 4faa498ad6f1a1a1
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491865260
+  source: forexfactory
+  symbol: GBP
+- event_name: Average Earnings Index 3m/y
+  id: 2ddc9e0ab96920b2
+  impact: 5
+  recorded_date: 1491868804
+  release_date: 1491985800
+  source: forexfactory
+  symbol: GBP
+- event_name: Crude Oil Inventories
+  id: 8dd787f7501b88b3
+  impact: 5
+  recorded_date: 1491868804
+  release_date: 1492007400
+  source: forexfactory
+  symbol: USD
+- event_name: RICS House Price Balance
+  id: d5e189ddb7ec514c
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1492038060
+  source: forexfactory
+  symbol: GBP
+- event_name: JOLTS Job Openings
+  id: 75a9ad73a0e1511a
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491919200
+  source: forexfactory
+  symbol: USD
+- event_name: Unemployment Rate
+  id: 7eba73a329626c06
+  impact: 5
+  recorded_date: 1491609604
+  release_date: 1491568200
+  source: forexfactory
+  symbol: USD
+- event_name: PPI y/y
+  id: 12b5b78fcb5aa208
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491954600
+  source: forexfactory
+  symbol: JPY
+- event_name: Economy Watchers Sentiment
+  id: 6cf370a7dd03c45c
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491800880
+  source: forexfactory
+  symbol: JPY
+- event_name: French Gov Budget Balance
+  id: 8b6add8f7a2d2113
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491547500
+  source: forexfactory
+  symbol: EUR
+- event_name: FOMC Member Kashkari Speaks
+  id: 09bd78c79299c44d
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491932700
+  source: forexfactory
+  symbol: USD
+- event_name: BOC Press Conference
+  id: 5969ed788838dc7d
+  impact: 5
+  recorded_date: 1491868804
+  release_date: 1492010100
+  source: forexfactory
+  symbol: CAD
+- event_name: Employment Change
+  id: 029c5b0029bc2ec9
+  impact: 5
+  recorded_date: 1491609604
+  release_date: 1491568200
+  source: forexfactory
+  symbol: CAD
+- event_name: Unemployment Rate
+  id: 4e232b4b75dc2df7
+  impact: 5
+  recorded_date: 1491609604
+  release_date: 1491568200
+  source: forexfactory
+  symbol: CAD
+- event_name: BOC Gov Poloz Speaks
+  id: ce554cf82b2dd140
+  impact: 5
+  recorded_date: 1491955203
+  release_date: 1492028100
+  source: forexfactory
+  symbol: CAD
+- event_name: Unemployment Rate
+  id: 2c5d3ed2a3a538d2
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491985800
+  source: forexfactory
+  symbol: GBP
+- event_name: Import Prices m/m
+  id: 5bea6f27b58cb10e
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1492000200
+  source: forexfactory
+  symbol: USD
+- event_name: Average Cash Earnings y/y
+  id: f9b1c7739431453d
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491523200
+  source: forexfactory
+  symbol: JPY
+- event_name: Prelim Machine Tool Orders y/y
+  id: 5b260013ab579094
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491890400
+  source: forexfactory
+  symbol: JPY
+- event_name: Halifax HPI m/m
+  id: 7fa13f865edef9ed
+  impact: 3
+  recorded_date: 1491609604
+  release_date: 1491550200
+  source: forexfactory
+  symbol: GBP
+- event_name: NAB Business Confidence
+  id: 9ee2d6d2b58b3dc0
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491874200
+  source: forexfactory
+  symbol: AUD
+- event_name: Consumer Confidence
+  id: 985ee74315611166
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491454920
+  source: forexfactory
+  symbol: JPY
+- event_name: President Trump Speaks
+  id: 25f04e2cb04ae91b
+  impact: 5
+  recorded_date: 1492041604
+  release_date: 1491991200
+  source: forexfactory
+  symbol: USD
+- event_name: BOE Gov Carney Speaks
+  id: 3a14e350f4c9f8c6
+  impact: 5
+  recorded_date: 1491868804
+  release_date: 1491984000
+  source: forexfactory
+  symbol: GBP
+- actual_release_date: 1491989520
+  event_name: German 10-y Bond Auction
+  id: c12a4812db1d70cb
+  impact: 1
+  recorded_date: 1492041604
+  release_date: 1491989520
+  source: forexfactory
+  symbol: EUR
+- event_name: Italian Retail Sales m/m
+  id: 9869244bd9aec87f
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491552000
+  source: forexfactory
+  symbol: EUR
+- event_name: German WPI m/m
+  id: b2d921011c8d5651
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491976800
+  source: forexfactory
+  symbol: EUR
+- event_name: German ZEW Economic Sentiment
+  id: 73a0513cb7a6c929
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491901200
+  source: forexfactory
+  symbol: EUR
+- event_name: Building Permits m/m
+  id: 432e6ee19e06ce90
+  impact: 3
+  recorded_date: 1491609604
+  release_date: 1491481800
+  source: forexfactory
+  symbol: CAD
+- event_name: PPI Input m/m
+  id: 852c8d327513c7b4
+  impact: 3
+  recorded_date: 1491868804
+  release_date: 1491899400
+  source: forexfactory
+  symbol: GBP
+- event_name: Core Machinery Orders m/m
+  id: 9773ac340e05382a
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491954600
+  source: forexfactory
+  symbol: JPY
+- event_name: BOE Gov Carney Speaks
+  id: 5913008ef1cb46cf
+  impact: 5
+  recorded_date: 1491609604
+  release_date: 1491555600
+  source: forexfactory
+  symbol: GBP
+- event_name: Housing Starts
+  id: 1af82547aac7310c
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491826500
+  source: forexfactory
+  symbol: CAD
+- event_name: NIESR GDP Estimate
+  id: 9d6c9477f10b4eec
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491566400
+  source: forexfactory
+  symbol: GBP
+- event_name: Industrial Production m/m
+  id: 76fba2ebbdd32cca
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491901200
+  source: forexfactory
+  symbol: EUR
+- event_name: Retail PMI
+  id: 2e439fe8b583448b
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491466200
+  source: forexfactory
+  symbol: EUR
+- event_name: German Buba President Weidmann Speaks
+  id: 227a9c62b3542ee8
+  impact: 3
+  recorded_date: 1491609604
+  release_date: 1491471600
+  source: forexfactory
+  symbol: EUR
+- event_name: CPI y/y
+  id: 82f4ba84b4cceea4
+  impact: 5
+  recorded_date: 1491868804
+  release_date: 1491899400
+  source: forexfactory
+  symbol: GBP
+- event_name: French Trade Balance
+  id: 4adf3c1db960020b
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491547500
+  source: forexfactory
+  symbol: EUR
+- event_name: Westpac Consumer Sentiment
+  id: 073c612416c67251
+  impact: 1
+  recorded_date: 1491868804
+  release_date: 1491957000
+  source: forexfactory
+  symbol: AUD
+- event_name: Leading Indicators
+  id: a2c999b237e46961
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491541200
+  source: forexfactory
+  symbol: JPY
+- actual_release_date: 1491468480
+  event_name: Spanish 10-y Bond Auction
+  id: 765e93920571085c
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491468480
+  source: forexfactory
+  symbol: EUR
+- event_name: Final Wholesale Inventories m/m
+  id: 039adca5d15d6ef6
+  impact: 1
+  recorded_date: 1491609604
+  release_date: 1491573600
+  source: forexfactory
+  symbol: USD
