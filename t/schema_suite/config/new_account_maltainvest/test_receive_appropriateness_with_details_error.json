@@ -1,0 +1,38 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "error"
+   ],
+   "additionalProperties" : false,
+   "title" : null,
+   "description" : null,
+   "type" : "object",
+   "properties" : {
+      "error" : {
+         "properties" : {
+            "message_to_client" : {
+               "type" : "string"
+            },
+            "code" : {
+               "type" : "string",
+               "pattern" : "^AppropriatenessTestFailed$"
+            },
+            "details" : {
+               "type" : "object",
+               "properties": {
+                  "cooling_off_expiration_date": {
+                     "type" : "integer"
+                  }
+               }
+            }
+         },
+         "required" : [
+            "code",
+            "message_to_client",
+            "details"
+         ],
+         "type" : "object",
+         "additionalProperties" : false
+      }
+   }
+}

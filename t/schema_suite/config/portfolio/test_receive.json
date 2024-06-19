@@ -1,0 +1,19 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "stash",
+      "contracts"
+   ],
+   "type" : "object",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : false,
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "contracts" : {
+         "type" : "array"
+      }
+   }
+}

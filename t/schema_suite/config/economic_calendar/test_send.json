@@ -1,0 +1,8 @@
+{
+    "args": {
+        "economic_calendar": 1,
+        "currency": "[_1]",
+        "start_date": "[_2]",
+        "end_date": "[_3]"
+    }
+}

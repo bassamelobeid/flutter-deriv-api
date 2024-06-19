@@ -1,0 +1,30 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "error"
+   ],
+   "properties" : {
+      "error" : {
+         "additionalProperties" : false,
+         "type" : "object",
+         "properties" : {
+            "message_to_client" : {
+               "pattern" : "^The token is invalid\\.$",
+               "type" : "string"
+            },
+            "code" : {
+               "pattern" : "^InvalidToken$",
+               "type" : "string"
+            }
+         },
+         "required" : [
+            "message_to_client",
+            "code"
+         ]
+      }
+   }
+}

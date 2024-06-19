@@ -1,0 +1,220 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : false,
+   "title" : "",
+   "description" : "",
+   "type" : "object",
+   "required" : [
+      "landing_company_fullname",
+      "currency",
+      "balance",
+      "is_virtual",
+      "email",
+      "loginid",
+      "fullname",
+      "landing_company_name",
+      "country",
+      "scopes",
+      "stash",
+      "account_list",
+      "upgradeable_landing_companies",
+      "user_id",
+      "local_currencies",
+      "preferred_language"
+   ],
+   "properties" : {
+      "fullname" : {
+         "pattern" : "^Ms Example First Name Example Last Name$",
+         "type" : "string"
+      },
+      "email" : {
+         "type" : "string",
+         "pattern" : "^[_3]$"
+      },
+      "balance" : {
+         "type" : "string",
+         "pattern" : "^0.00$"
+      },
+      "landing_company_fullname" : {
+         "pattern" : "^Deriv \\(SVG\\) LLC$",
+         "type" : "string"
+      },
+      "upgradeable_landing_companies" : {
+         "type" : "array"
+      },
+      "currency" : {
+         "type" : "string",
+         "pattern" : "^$"
+      },
+      "is_virtual" : {
+         "type" : "integer",
+         "enum" : [
+            0
+         ]
+      },
+      "country" : {
+         "type" : "string",
+         "pattern" : "^[_2]$"
+      },
+      "account_list" : {
+         "type" : "array",
+         "description" : "List of accounts for current user.",
+         "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [
+               "is_virtual",
+               "currency",
+               "loginid",
+               "is_disabled",
+               "landing_company_name"
+            ],
+            "properties" : {
+               "is_virtual" : {
+                  "type" : "integer",
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is a virtual-money account.",
+                  "enum" : [
+                     0,
+                     1
+                  ]
+               },
+               "broker" : {
+                   "type": "string"
+               },
+               "loginid" : {
+                  "description" : "The account id of specified account.",
+                  "type" : "string"
+               },
+               "is_disabled" : {
+                  "type" : "integer",
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is marked as disabled or not.",
+                  "enum" : [
+                     0,
+                     1
+                  ]
+               },
+               "currency" : {
+                  "description" : "Currency of specified account.",
+                  "type" : "string"
+               },
+               "currency_type" : {
+                  "description" : "Currency type for the corresponding currency.",
+                  "type" : "string"
+               },
+               "landing_company_name" : {
+                  "description" : "Landing company shortcode the account belongs to.",
+                  "type" : "string"
+               },
+               "account_type": {
+                  "description": "Account type.",
+                  "type": "string"
+               },
+               "account_category": {
+                  "description": "Account category.",
+                  "type": "string",
+                  "enum" : [
+                     "trading",
+                     "wallet"
+                  ]
+               },
+              "linked_to": {
+                 "description": "list of linked accounts.",
+                 "type": "array",
+                 "items" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "required" : [
+                       "loginid",
+                       "platform"
+                    ],
+                    "properties" : {
+                       "loginid": {
+                          "type": "string"
+                       },
+                       "platform": {
+                          "type": "string"
+                       }
+                    }
+                 }
+               },
+               "trading": {
+                  "description": "Details of the Trading account.",
+                  "type": "object"
+               },
+               "wallet": {
+                  "description": "Details of the Wallet account.",
+                  "type": "object"
+               },
+               "created_at": {
+                  "description": "Creation time of the account as epoch.",
+                  "type": "integer"
+              }
+            }
+         }
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "scopes" : {
+         "minItems" : 4,
+         "items" : {
+            "pattern" : "^(admin|payments|read|trade)$",
+            "type" : "string"
+         },
+         "type" : "array"
+      },
+      "landing_company_name" : {
+         "pattern" : "^svg$",
+         "type" : "string"
+      },
+      "local_currencies": {
+          "type": "object",
+          "minProperties": 1,
+          "patternProperties": {
+              "^[a-zA-Z0-9]{2,20}$": {
+                  "type": "object",
+                  "required": [
+                      "fractional_digits"
+                  ],
+                  "properties": {
+                      "fractional_digits": {
+                          "type": "number"
+                      }
+                  }
+              }
+          }
+      },
+      "loginid" : {
+         "type" : "string",
+         "pattern" : "^CR\\d+$"
+      },
+      "user_id" : {
+         "type" : "string",
+         "pattern" : "^[0-9]+$"
+      },
+      "preferred_language" : {
+         "type" : "string",
+         "pattern": "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+      },
+      "linked_to": {
+         "description": "list of linked accounts.",
+         "type": "array",
+         "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [
+               "loginid",
+               "platform"
+            ],
+            "properties" : {
+               "loginid": {
+                  "type": "string"
+               },
+               "platform": {
+                  "type": "string"
+               }
+            }
+         }
+       }
+   }
+}

@@ -1,0 +1,49 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "email",
+      "client_id",
+      "oauth_token",
+      "balance",
+      "currency",
+      "stash"
+   ],
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "email" : {
+         "pattern" : "^[_3]$",
+         "type" : "string"
+      },
+      "balance" : {
+         "pattern" : "^10000.00$",
+         "type" : "string"
+      },
+      "client_id" : {
+         "pattern" : "^VRTC\\d+$",
+         "type" : "string"
+      },
+      "currency" : {
+         "pattern" : "^USD$",
+         "type" : "string"
+      },
+      "currency_type" : {
+         "pattern" : "^fiat$",
+         "type" : "string"
+      },
+      "oauth_token" : {
+         "type" : "string"
+      },
+      "type" : {
+         "type" : "string"
+      },
+      "refresh_token" : {
+         "type" : "string"
+      }
+   }
+}

@@ -1,0 +1,7 @@
+{
+    "token": "[_1]",
+    "currency": "[_2]",
+    "args": {
+      "set_account_currency": "[_2]"
+    }
+}

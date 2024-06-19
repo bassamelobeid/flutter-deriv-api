@@ -1,0 +1,995 @@
+use strict;
+use warnings;
+
+use Log::Any::Test;
+use Test::More;
+use Test::Mojo;
+use Test::Deep;
+use Test::MockModule;
+use Test::MockTime                             qw(set_absolute_time restore_time);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Platform::Token::API;
+use BOM::Config::Runtime;
+use BOM::Config::Redis;
+use BOM::RPC::v3::P2P;
+use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::Client;
+
+#Test endpoint for testing logic in function p2p_rpc
+BEGIN {
+    BOM::RPC::v3::P2P::p2p_rpc 'test_p2p_controller' => sub { return {success => 1} };
+}
+
+use BOM::Test::RPC::QueueClient;
+
+BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $dummy_method = 'test_p2p_controller';
+
+my $app_config = BOM::Config::Runtime->instance->app_config;
+
+my $P2P_AVAILABLE_CURRENCIES = ['usd'];
+
+$app_config->system->suspend->p2p(0);
+$app_config->payments->p2p->enabled(1);
+$app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
+$app_config->payments->p2p->cancellation_barring->count(2);
+$app_config->payments->p2p->cancellation_barring->period(2);
+$app_config->payments->p2p->transaction_verification_countries([]);
+$app_config->payments->p2p->transaction_verification_countries_all(0);
+
+my $email_advertiser = 'p2p_advertiser@test.com';
+my $email_client     = 'p2p_client@test.com';
+
+my $user_advertiser = BOM::User->create(
+    email    => $email_advertiser,
+    password => 'test'
+);
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'VRTC',
+    binary_user_id => $user_advertiser->id,
+    email          => $email_advertiser
+});
+
+my $client_advertiser = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    email          => $email_advertiser,
+    binary_user_id => $user_advertiser->id,
+    residence      => 'za'
+});
+$user_advertiser->add_client($client_vr);
+$user_advertiser->add_client($client_advertiser);
+
+my $user_client = BOM::User->create(
+    email    => $email_client,
+    password => 'test'
+);
+my $client_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    binary_user_id => $user_client->id,
+    email          => $email_client
+});
+
+$user_client->add_client($client_client);
+
+my $token_vr         = BOM::Platform::Token::API->new->create_token($client_vr->loginid,         'test vr token');
+my $token_advertiser = BOM::Platform::Token::API->new->create_token($client_advertiser->loginid, 'test advertiser token');
+
+my $c = BOM::Test::RPC::QueueClient->new();
+
+my $params = {language => 'EN'};
+my $advert;
+
+# Used it to enable wallet migration in progress
+sub _enable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(0);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->set(
+        "WALLET::MIGRATION::IN_PROGRESS::" . $user->id, 1,
+        EX => 30 * 60,
+        "NX"
+    );
+}
+# Used it to disable wallet migration
+sub _disable_wallet_migration {
+    my $user       = shift;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->system->suspend->wallets(1);
+    my $redis_rw = BOM::Config::Redis::redis_replicated_write();
+    $redis_rw->del("WALLET::MIGRATION::IN_PROGRESS::" . $user->id);
+}
+
+subtest 'No token' => sub {
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'error code is InvalidToken');
+};
+
+subtest 'VR not allowed' => sub {
+    $params->{token} = $token_vr;
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('UnavailableOnVirtual', 'error code is UnavailableOnVirtual');
+};
+
+subtest 'P2P suspended' => sub {
+    $app_config->system->suspend->p2p(1);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('P2PDisabled', 'error code is P2PDisabled');
+    $app_config->system->suspend->p2p(0);
+};
+
+subtest 'P2P payments disabled' => sub {
+    $app_config->payments->p2p->enabled(0);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('P2PDisabled', 'error code is P2PDisabled');
+    $app_config->payments->p2p->enabled(1);
+};
+
+subtest 'No account' => sub {
+    $params->{token} = $token_advertiser;
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('NoCurrency', 'error code is NoCurrency');
+};
+
+$client_advertiser->set_default_account('USD');
+
+subtest 'Currency not enabled' => sub {
+    $app_config->payments->p2p->available_for_currencies([]);
+
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCurrency', 'error code is RestrictedCurrency')
+        ->error_message_is('USD is not supported at the moment.');
+
+    $app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
+
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('No errors when the currency is allowed');
+};
+
+# client residence is za
+
+subtest 'Restricted countries' => sub {
+    $app_config->payments->p2p->restricted_countries(['za']);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error('Access denied when residence in list')
+        ->error_code_is('RestrictedCountry', 'correct error code');
+
+    $app_config->payments->p2p->restricted_countries(['ag', 'us']);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('Access allowed when residence not in list');
+
+    $app_config->payments->p2p->restricted_countries([]);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('Access allowed when setting is empty');
+};
+
+subtest 'Landing company does not allow p2p' => sub {
+    my $mock_lc = Test::MockModule->new('LandingCompany');
+
+    $mock_lc->mock('p2p_available' => sub { 0 });
+
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCountry', 'error code is RestrictedCountry');
+};
+
+subtest 'Client restricted statuses' => sub {
+    my @restricted_statuses = qw(
+        unwelcome
+        cashier_locked
+        withdrawal_locked
+        no_withdrawal_or_trading
+    );
+
+    for my $status (@restricted_statuses) {
+        $client_advertiser->status->set($status);
+        $c->call_ok($dummy_method, $params)
+            ->has_no_system_error->has_error->error_code_is('PermissionDenied', "error code is PermissionDenied for status $status");
+        my $clear_status = "clear_$status";
+        $client_advertiser->status->$clear_status;
+    }
+
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('No errors with valid client & args');
+};
+
+$app_config->payments->p2p->available(0);
+subtest 'P2P is not available to anyone' => sub {
+    $c->call_ok($dummy_method, $params)
+        ->has_no_system_error->has_error->error_code_is('P2PDisabled', "error code is P2PDisabled, because payments.p2p.available is unchecked");
+};
+
+subtest 'P2P is available for only one client' => sub {
+    $app_config->payments->p2p->clients([$client_advertiser->loginid]);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error("P2P is available for whitelisted client");
+};
+$app_config->payments->p2p->available(1);
+
+subtest 'Client blocked' => sub {
+    my $mock_p2p = Test::MockModule->new('P2P');
+    $mock_p2p->mock('p2p_is_advertiser_blocked' => sub { 1 });
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'error code is PermissionDenied');
+};
+
+subtest 'Adverts' => sub {
+    my $advert_params = {
+        amount           => 100,
+        description      => 'Test advert',
+        type             => 'sell',
+        account_currency => 'USD',
+        expiry           => 30,
+        rate             => 1.23,
+        rate_type        => 'fixed',
+        min_order_amount => 0.1,
+        max_order_amount => 10,
+        payment_method   => 'bank_transfer',
+        payment_info     => 'Bank 123',
+        contact_info     => 'Tel 123',
+    };
+
+    $params->{args} = {name => 'Bond007'};
+    $c->call_ok('p2p_advertiser_update', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNotRegistered', 'Update non-existent advertiser');
+
+    $params->{args} = {name => 'bond007'};
+
+    subtest 'PA restriction' => sub {
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        $mock_client->redefine(
+            get_payment_agent => sub {
+                my $mock_pa = Test::MockObject->new;
+                $mock_pa->mock(status       => sub { 'authorized' });
+                $mock_pa->mock(tier_details => sub { {} });
+                return $mock_pa;
+            });
+        $c->call_ok('p2p_advertiser_create', $params)
+            ->has_no_system_error->has_error->error_code_is('ServiceNotAllowedForPA', 'Payment agents cannot create orders.');
+        $mock_client->unmock('get_payment_agent');
+    };
+
+    # Added to check, it will not allow if we have any migration in progress
+    _enable_wallet_migration($client_advertiser->user);
+    $c->call_ok('p2p_advertiser_create', $params)
+        ->has_no_system_error->has_error->error_code_is('WalletMigrationInprogress', 'The wallet migration is in progress.')
+        ->error_message_is(
+        'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.');
+    _disable_wallet_migration($client_advertiser->user);
+
+    my $res = $c->call_ok('p2p_advertiser_create', $params)->has_no_system_error->has_no_error->result;
+    is $res->{name}, $params->{args}{name}, 'advertiser created';
+
+    $params->{args} = {name => 'SpyvsSpy'};
+    $c->call_ok('p2p_advertiser_update', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNotApproved',
+        'Cannot update the advertiser information when advertiser is not approved');
+
+    $client_advertiser->p2p_advertiser_update(is_approved => 1);
+    delete $client_advertiser->{_p2p_advertiser_cached};
+
+    $res = $c->call_ok('p2p_advertiser_update', $params)->has_no_system_error->has_no_error->result;
+    is $res->{name}, $params->{args}{name}, 'update advertiser name';
+
+    $params->{args} = {name => ' '};
+    $c->call_ok('p2p_advertiser_update', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNameRequired', 'Cannot update the advertiser name to blank');
+
+    $client_advertiser->p2p_advertiser_update(is_approved => 0);
+    delete $client_advertiser->{_p2p_advertiser_cached};
+
+    $params->{args} = $advert_params;
+    $c->call_ok('p2p_advert_create', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNotApproved',
+        "unapproved advertiser, create advert error is AdvertiserNotApproved");
+
+    $client_advertiser->p2p_advertiser_update(
+        is_approved => 1,
+        is_listed   => 0,
+    );
+    delete $client_advertiser->{_p2p_advertiser_cached};
+
+    subtest 'PA restriction' => sub {
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        $mock_client->redefine(
+            get_payment_agent => sub {
+                my $mock_pa = Test::MockObject->new;
+                $mock_pa->mock(status       => sub { 'authorized' });
+                $mock_pa->mock(tier_details => sub { {} });
+                return $mock_pa;
+            });
+
+        $c->call_ok('p2p_advert_create', $params)
+            ->has_no_system_error->has_error->error_code_is('ServiceNotAllowedForPA', 'Payment agents cannot create orders.');
+        $mock_client->unmock_all;
+    };
+
+    my @offer_ids = ();    # store all agent's offer's ids to check p2p_agent_offers later
+    $params->{args} = $advert_params;
+    $res = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error('unlisted advertiser can still create advert')->result;
+    push @offer_ids, $res->{offer_id};
+
+    $client_advertiser->p2p_advertiser_update(is_listed => 1);
+    delete $client_advertiser->{_p2p_advertiser_cached};
+
+    $params->{args} = {advertiser => $client_advertiser->p2p_advertiser_info->{id}};
+    $res = $c->call_ok('p2p_advertiser_info', $params)->has_no_system_error->has_no_error->result;
+    ok $res->{is_approved} && $res->{is_listed}, 'p2p_advertiser_info returns advertiser is approved and the adverts are listed';
+
+    $params->{args} = {id => 9999};
+    $c->call_ok('p2p_advertiser_info', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNotFound', 'Get info of non-existent advertiser');
+
+    $params->{args} = +{$advert_params->%*};
+    $params->{args}{min_order_amount} = $params->{args}{max_order_amount} + 1;
+    $c->call_ok('p2p_advert_create', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_order_amount cannot be greater than max_order_amount');
+
+    $params->{args} = {$advert_params->%*};
+    $params->{args}{max_order_amount} = $app_config->payments->p2p->limits->maximum_order + 1;
+    $c->call_ok('p2p_advert_create', $params)
+        ->has_no_system_error->has_error->error_code_is('MaxPerOrderExceeded',
+        'Advert max_order_amount cannot be more than maximum_order amount config');
+
+    $params->{args}                 = $advert_params;
+    $params->{args}{local_currency} = 'AAA';
+    $advert                         = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    delete $advert->{stash};
+    ok $advert->{id}, 'advert has id';
+    push @offer_ids, $advert->{id};
+
+    BOM::Test::Helper::Client::top_up($client_advertiser, $client_advertiser->currency, $advert_params->{amount});
+
+    $params->{args} = {id => $advert->{id}};
+    $res = $c->call_ok('p2p_advert_list', $params)->has_no_system_error->has_no_error->result->{list};
+    my @ads = grep { $advert->{id} == $_->{id} } $res->@*;
+    ok @ads, 'p2p_advert_list returns advert';
+
+    $params->{args}                 = $advert_params;
+    $params->{args}{local_currency} = 'BBB';
+    $params->{args}{rate}           = 12.000001;
+    $advert                         = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    is $advert->{rate_display}, '12.000001', 'advert rate_display is correct';
+    push @offer_ids, $advert->{id};
+
+    $params->{args}{local_currency} = 'CCC';
+    $params->{args}{rate}           = 1_000_000_000;
+    $advert                         = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    is $advert->{rate_display}, '1000000000.00', 'advert rate_display is correct for large numbers';
+    push @offer_ids, $advert->{id};
+
+    $params->{args}{rate} = 0.000001;
+    delete $params->{args}{local_currency};
+    $params->{args}{min_order_amount} = 11;
+    $params->{args}{max_order_amount} = 20;
+    $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
+
+    $params->{args} = {
+        id        => $advert->{id},
+        is_active => 0,
+    };
+    $res = $c->call_ok('p2p_advert_update', $params)->has_no_system_error->has_no_error->result;
+    is $res->{is_active}, 0, 'edit advert ok';
+    $params->{args} = {
+        id        => $advert->{id},
+        is_active => 1,
+    };
+    $res = $c->call_ok('p2p_advert_update', $params)->has_no_system_error->has_no_error->result;
+    is $res->{is_active}, 1, 'edit advert ok';
+
+    $params->{args} = {id => $advert->{id}};
+    $res = $c->call_ok('p2p_advert_info', $params)->has_no_system_error->has_no_error->result;
+    cmp_ok $res->{id}, '==', $advert->{id}, 'p2p_advert_info returned correct info';
+
+    $params->{args} = {id => 9999};
+    $c->call_ok('p2p_advert_info',   $params)->has_no_system_error->has_error->error_code_is('AdvertNotFound', 'Get info for non-existent advert');
+    $c->call_ok('p2p_advert_update', $params)->has_no_system_error->has_error->error_code_is('AdvertNotFound', 'Edit non-existent advert');
+
+    $params->{args} = {};
+    $c->call_ok('p2p_advert_info', $params)->has_no_system_error->has_error->error_code_is('AdvertInfoMissingParam', 'Error for no id or subscribe');
+
+    $params->{args} = {subscribe => 1};
+    $res = $c->call_ok('p2p_advert_info', $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply $res,
+        {
+        advertiser_id         => $client_advertiser->p2p_advertiser_info->{id},
+        advertiser_account_id => $client_advertiser->account->id,
+        stash                 => ignore()
+        },
+        'can subscribe to p2p_advert_info with no id';
+
+    $params->{args} = {};
+    $res = $c->call_ok('p2p_advertiser_adverts', $params)->has_no_system_error->has_no_error->result;
+    is((map { $_{offer_id} } $res->{list}->@*), @offer_ids, 'Advert returned in p2p_advertiser_adverts');
+};
+
+subtest 'Create new order' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my $client = BOM::Test::Helper::P2P::create_advertiser();
+    my $params;
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    BOM::Test::Helper::Client::top_up($advertiser->{client}, 'USD', 100);
+
+    $params->{args} = {
+        advert_id => $advert->{id},
+        amount    => 100,
+    };
+
+    subtest 'PA restriction' => sub {
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        $mock_client->redefine(
+            get_payment_agent => sub {
+                my $mock_pa = Test::MockObject->new;
+                $mock_pa->mock(status       => sub { 'authorized' });
+                $mock_pa->mock(tier_details => sub { {} });
+                return $mock_pa;
+            });
+        $c->call_ok('p2p_order_create', $params)
+            ->has_no_system_error->has_error->error_code_is('ServiceNotAllowedForPA', 'Payment agents cannot create orders.');
+        $mock_client->unmock_all;
+    };
+
+    my $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
+    ok($order->{id},               'Order is created');
+    ok($order->{account_currency}, 'Order has account_currency');
+    ok($order->{local_currency},   'Order has local_currency');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Prevent create orders more than daily order limit number' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($params, $advertiser, $advert, $order);
+
+    # Set maximum order create limit per day to 5
+    $app_config->payments->p2p->limits->count_per_day_per_client(5);
+    is($app_config->payments->p2p->limits->count_per_day_per_client, 5, 'Change `count_per_day_per_client` setting value to 5');
+
+    # Create client
+    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+
+    for (my $i = 0; $i < $app_config->payments->p2p->limits->count_per_day_per_client - 1; $i++) {
+        ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+        BOM::Test::Helper::P2P::create_order(
+            advert_id => $advert->{id},
+            client    => $client,
+            amount    => 10
+        );
+    }
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $params->{args} = {
+        advert_id         => $advert->{id},
+        amount            => 10,
+        order_description => 'here is my order'
+    };
+
+    $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
+
+    ok($order->{id}, 'Orders will successfully created until numbers of created orders reached `count_per_day_per_client` limit.');
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $params->{args} = {
+        advert_id         => $advert->{id},
+        amount            => 10,
+        order_description => 'here is my order'
+    };
+
+    # API v3 gives us an error when we are trying to submits order more than p2p.limits.count_per_day_per_client setting.
+    $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_error('Client daily order limit exceeded.')
+        ->error_code_is('ClientDailyOrderLimitExceeded', 'Client daily order limit exceeded.')
+        ->error_message_is('You may only place 5 orders every 24 hours. Please try again later.', 'Client max order is 5 per 24hours');
+
+    # Increase count_per_day_per_client bye 1 to 6
+    $app_config->payments->p2p->limits->count_per_day_per_client(6);
+    is($app_config->payments->p2p->limits->count_per_day_per_client, 6, 'Change `count_per_day_per_client` setting value to 6');
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $params->{args} = {
+        advert_id         => $advert->{id},
+        amount            => 10,
+        order_description => 'here is my order'
+    };
+
+    $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
+
+    ok($order->{id}, 'Orders will successfully created until numbers of created orders reached `count_per_day_per_client` limit.');
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $params->{args} = {
+        advert_id         => $advert->{id},
+        amount            => 10,
+        order_description => 'here is my order'
+    };
+
+    # API v3 gives us an error when we are trying to submits order more than p2p.limits.count_per_day_per_client setting.
+    $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_error('Client daily order limit exceeded.')
+        ->error_code_is('ClientDailyOrderLimitExceeded', 'Client daily order limit exceeded.')
+        ->error_message_is('You may only place 6 orders every 24 hours. Please try again later.', 'Client max order is 6 per 24hours');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Client confirm an order' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $params->{args}  = {id => $order->{id}};
+    my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'buyer-confirmed', 'Order is confirmed';
+
+    $params->{args} = {id => 9999};
+    $c->call_ok('p2p_order_confirm', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Confirm non-existent order');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Advertiser confirm' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+
+    $params->{token} = $client_token;
+    $params->{args}  = {id => $order->{id}};
+    my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'buyer-confirmed', 'Order is buyer confirmed';
+
+    $params->{token} = $advertiser_token;
+    $params->{args}  = {id => $order->{id}};
+    $res             = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'completed', 'Order is completed';
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Client cancellation' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    $params->{token} = $client_token;
+    $params->{args}  = {id => $order->{id}};
+    my $res = $c->call_ok(p2p_order_cancel => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'cancelled', 'Order is cancelled';
+
+    $params->{args} = {id => 9999};
+    $c->call_ok('p2p_order_cancel', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Cancel non-existent order');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Getting order list' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 10
+    );
+
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+
+    $params->{token} = $advertiser_token;
+    $params->{args}  = {advert_id => $advert->{id}};
+    my $res1 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of adverts is correct';
+
+    BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 10
+    );
+
+    my $res2 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res2->{list}}), '==', 2, 'count of orders is correct';
+
+    $params->{token} = $client_token;
+    $params->{args}  = {advert_id => $advert->{id}};
+    my $res3 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res3->{list}}), '==', 1, 'count of orders is correct';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Order list pagination' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+
+    BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 10
+    ) for (1 .. 2);
+
+    my $param = {};
+    $param->{token} = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+
+    my $res1 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res1->{list}}), '==', 2, 'Got 2 orders in a list';
+
+    my ($first_order, $second_order) = @{$res1->{list}};
+
+    $param->{args} = {limit => 1};
+    my $res2 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res2->{list}}), '==', 1,                  'got 1 order with limit 1';
+    cmp_ok $res2->{list}[0]{id},     'eq', $first_order->{id}, 'got correct order id with limit 1';
+
+    $param->{args} = {
+        limit  => 1,
+        offset => 1
+    };
+    my $res3 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res3->{list}}), '==', 1,                   'got 1 order with limit 1 and offest 1';
+    cmp_ok $res3->{list}[0]{id},     'eq', $second_order->{id}, 'got correct order id with limit 1 and offset 1';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Getting order list' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert1) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+
+    my $advertiser1_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+    $params->{token} = $advertiser1_token;
+    $params->{args}  = {advertiser_id => $advertiser->p2p_advertiser_info->{id}};
+    my $res1 = $c->call_ok(p2p_advert_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of adverts is correct';
+
+    my ($advertiser2, $advert2) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+
+    my $advertiser2_token = BOM::Platform::Token::API->new->create_token($advertiser2->loginid, 'test token');
+    $params->{token} = $advertiser2_token;
+    $params->{args}  = {advertiser_id => $advertiser2->p2p_advertiser_info->{id}};
+    my $res2 = $c->call_ok(p2p_advert_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res2->{list}}), '==', 1, 'count of adverts is correct';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Sell orders' => sub {
+    my $amount = 100;
+
+    BOM::Test::Helper::P2P::create_escrow();
+
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        amount => $amount,
+        type   => 'buy'
+    );
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        balance   => $amount
+    );
+
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+
+    $params->{token} = $advertiser_token;
+    $params->{args}  = {id => $order->{id}};
+    my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'buyer-confirmed', 'Order is buyer confirmed';
+
+    $params->{token} = $client_token;
+    $params->{args}  = {id => $order->{id}};
+    $res             = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'completed', 'Order is completed';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Order dispute (type buy)' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token2');
+    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    $params->{token} = $client_token;
+    $params->{args}  = {
+        id             => $order->{id},
+        dispute_reason => 'seller_not_released',
+    };
+    my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status},                              'disputed',            'Order status is disputed';
+    is $res->{dispute_details}->{dispute_reason},   'seller_not_released', 'Dispute reason is properly set';
+    is $res->{dispute_details}->{disputer_loginid}, $client->loginid,      'Client is the disputer';
+
+    subtest 'Error scenarios for dispute' => sub {
+        $params->{args} = {id => $order->{id} * -1};
+        $c->call_ok('p2p_order_dispute', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Dispute non-existent order');
+
+        $params->{args} = {
+            id             => $order->{id},
+            dispute_reason => 'buyer_not_paid',
+        };
+        $c->call_ok('p2p_order_dispute', $params)->has_no_system_error->has_error->error_code_is('InvalidReasonForBuyer', 'Invalid reason for buyer');
+
+        $params->{args} = {
+            id             => $order->{id},
+            dispute_reason => 'seller_not_released',
+        };
+        $params->{token} = $advertiser_token;
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidReasonForSeller', 'Invalid reason for seller');
+
+        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        my $user_third_party = BOM::User->create(
+            email    => 'some@strange.com',
+            password => 'test'
+        );
+        my $third_party = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => 'some@strange.com'
+        });
+        $user_third_party->add_client($third_party);
+        $third_party->set_default_account('USD');
+
+        my $token_third_party = BOM::Platform::Token::API->new->create_token($third_party->loginid, 'third party token');
+        $params->{token} = $token_third_party;
+        $params->{args}  = {
+            id             => $order->{id},
+            dispute_reason => 'seller_not_released'
+        };
+
+        $c->call_ok('p2p_order_dispute', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Invalid client');
+        $params->{token} = $client_token;
+        $params->{args}  = {
+            id             => $order->{id},
+            dispute_reason => 'seller_not_released'
+        };
+
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'pending');
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidStateForDispute', 'Invalid state for dispute');
+
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'cancelled');
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidFinalStateForDispute', 'Invalid final state for dispute');
+
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'disputed');
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('OrderUnderDispute', 'Order is already under dispute');
+
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'completed');
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidFinalStateForDispute', 'Invalid final state for dispute');
+
+    };
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Dispute edge cases' => sub {
+    # FE relies on expire time to show the complain button
+    # So `buyer-confirmed` status may raise a dispute when order is expired
+
+    for my $status (qw/buyer-confirmed/) {
+        subtest $status => sub {
+            BOM::Test::Helper::P2P::create_escrow();
+            my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+            my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+            my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+            BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});    # This expires the order
+            BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
+            $params->{token} = $client_token;
+            $params->{args}  = {
+                id             => $order->{id},
+                dispute_reason => 'buyer_overpaid',
+            };
+            my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
+            is $res->{status},                              'disputed',       'Order status is disputed';
+            is $res->{dispute_details}->{dispute_reason},   'buyer_overpaid', 'Dispute reason is properly set';
+            is $res->{dispute_details}->{disputer_loginid}, $client->loginid, 'Client is the disputer';
+        }
+    }
+};
+
+subtest 'Order dispute (type sell)' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my $amount = 100;
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        amount => $amount,
+        type   => 'buy'
+    );
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        balance   => $amount
+    );
+
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+
+    $params->{token} = $advertiser_token;
+    $params->{args}  = {
+        id             => $order->{id},
+        dispute_reason => 'buyer_overpaid',
+    };
+
+    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status},                              'disputed',           'Order status is disputed';
+    is $res->{dispute_details}->{dispute_reason},   'buyer_overpaid',     'Dispute reason is properly set';
+    is $res->{dispute_details}->{disputer_loginid}, $advertiser->loginid, 'Advertiser is the disputer';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Advertiser stats' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my $amount = 100;
+
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        balance   => $amount
+    );
+
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+
+    $params->{token} = $advertiser_token;
+    $params->{args}  = {
+        id             => $order->{id},
+        dispute_reason => 'buyer_overpaid',
+    };
+
+    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status},                              'disputed',           'Order status is disputed';
+    is $res->{dispute_details}->{dispute_reason},   'buyer_overpaid',     'Dispute reason is properly set';
+    is $res->{dispute_details}->{disputer_loginid}, $advertiser->loginid, 'Advertiser is the disputer';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'P2P Order Info' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my $amount = 100;
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        amount => $amount,
+        type   => 'buy'
+    );
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        balance   => $amount
+    );
+
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $params->{token} = $client_token;
+    $params->{args}  = {
+        id        => $order->{id},
+        subscribe => 1
+    };
+
+    my $res = $c->call_ok(p2p_order_info => $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply $res, {
+        chat_channel_url => '',
+        rate_display     => '1.00',
+        local_currency   => 'IDR',
+        amount           => '100.00',
+        client_details   => {
+            loginid          => $client->loginid,
+            id               => re('\d+'),
+            name             => $client->p2p_advertiser_info->{name},
+            first_name       => $client->{client}->first_name,
+            last_name        => $client->{client}->last_name,
+            is_online        => ignore(),
+            last_online_time => ignore(),
+        },
+        price_display  => '100.00',
+        expiry_time    => re('\d+'),
+        amount_display => '100.00',
+        advert_details => {
+            payment_method => 'bank_transfer',
+            id             => re('\d+'),
+            description    => 'Test advert',
+            type           => 'buy',
+            block_trade    => 0,
+        },
+        payment_info       => 'Bank: 123456',
+        created_time       => re('\d+'),
+        is_incoming        => 0,
+        advertiser_details => {
+            loginid          => $advertiser->loginid,
+            id               => re('\d+'),
+            name             => $advertiser->p2p_advertiser_info->{name},
+            first_name       => $advertiser->{client}->first_name,
+            last_name        => $advertiser->{client}->last_name,
+            is_recommended   => undef,
+            is_online        => ignore(),
+            last_online_time => ignore(),
+        },
+        contact_info     => 'Tel: 123456',
+        type             => 'sell',
+        status           => 'pending',
+        is_seen          => 1,
+        id               => re('\d+'),
+        price            => 100,
+        account_currency => 'USD',
+        rate             => '1.000000',
+        dispute_details  => {
+            disputer_loginid => undef,
+            dispute_reason   => undef
+        },
+        is_reviewable     => 0,
+        subscription_info => {
+            advertiser_id => re('\d+'),
+            order_id      => re('\d+'),
+        },
+        stash => {
+            source_bypass_verification => 0,
+            app_markup_percentage      => '0',
+            valid_source               => 1,
+            source_type                => 'official',
+        }
+
+    };
+};
+
+subtest 'RestrictedCountry error before PermissionDenied' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my $amount = 100;
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        amount => $amount,
+        type   => 'buy'
+    );
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        balance   => $amount
+    );
+
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $params->{token} = $client_token;
+    $params->{args}  = {
+        id => $advertiser->{id},
+    };
+
+    # Set unwelcome to client
+    $client->{client}->status->set('unwelcome');
+    # Set restricted country and client residence to py
+    $app_config->payments->p2p->restricted_countries(['py']);
+    $client->{client}->residence('py');
+    $client->{client}->save;
+    my $res = $c->call_ok(p2p_advertiser_info => $params)->has_no_system_error->result;
+    is $res->{error}->{code}, 'RestrictedCountry', 'The expected error code is RestrictedCountry';
+};
+
+subtest 'cancellation barring' => sub {
+    $app_config->payments->p2p->cancellation_grace_period(0);
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 1
+    );
+    $client->p2p_order_cancel(id => $order->{id});
+    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 1,
+        client    => $client
+    );
+    $client->p2p_order_cancel(id => $order->{id});
+
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $params = {
+        token => $client_token,
+        args  => {
+            advert_id => $advert->{id},
+            amount    => 1
+        },
+    };
+    my $res = $c->call_ok(p2p_order_create => $params)->has_no_system_error->result;
+    is $res->{error}->{code}, 'TemporaryBar', 'The expected error code is TemporaryBar';
+    $app_config->payments->p2p->cancellation_grace_period(10);
+};
+
+subtest 'p2p_ping and online tracking' => sub {
+    my $redis        = BOM::Config::Redis->redis_p2p;
+    my $client       = BOM::Test::Helper::P2P::create_advertiser;
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $redis->zrem('P2P::USERS_ONLINE', $client->loginid);
+
+    set_absolute_time(2000);
+    my $res = $c->call_ok(p2p_ping => {token => $client_token})->has_no_system_error->result;
+    is $res, 'pong', 'result is pong';
+    cmp_ok $redis->zscore('P2P::USERS_ONLINE', ($client->loginid . "::" . $client->residence)) - 2000, '<=', 1, 'online time is set in redis';
+
+    set_absolute_time(2099);
+    $c->call_ok(p2p_advertiser_info => {token => $client_token});
+    cmp_ok $redis->zscore('P2P::USERS_ONLINE', ($client->loginid . "::" . $client->residence)) - 2099, '<=', 1,
+        'online time is updated by other call';
+};
+
+done_testing();

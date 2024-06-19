@@ -1,0 +1,46 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "stash",
+      "login_history"
+   ],
+   "additionalProperties" : false,
+   "title" : null,
+   "description" : null,
+   "type" : "object",
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "login_history" : {
+         "items" : {
+            "required" : [
+               "environment",
+               "time",
+               "status",
+               "action"
+            ],
+            "properties" : {
+               "environment" : {
+                  "type" : "string"
+               },
+               "time" : {
+                  "type" : "integer"
+               },
+               "status" : {
+                  "type" : "integer",
+                  "enum" : [
+                     0
+                  ]
+               },
+               "action" : {
+                  "type" : "string"
+               }
+            },
+            "type" : "object",
+            "additionalProperties" : false
+         },
+         "type" : "array"
+      }
+   }
+}

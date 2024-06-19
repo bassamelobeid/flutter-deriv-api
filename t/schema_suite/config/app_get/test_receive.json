@@ -1,0 +1,77 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : false,
+   "title" : null,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "app_markup_percentage",
+      "name",
+      "appstore",
+      "homepage",
+      "scopes",
+      "stash",
+      "github",
+      "verification_uri",
+      "redirect_uri",
+      "googleplay",
+      "app_id",
+      "active"
+   ],
+   "properties" : {
+      "appstore" : {
+         "type" : "string",
+         "pattern" : "^https\\://itunes\\.apple\\.com/test_app$"
+      },
+      "redirect_uri" : {
+         "type" : "string",
+         "pattern" : "^https\\://test\\.example\\.com/redirect$"
+      },
+      "verification_uri" : {
+         "pattern" : "^https\\://test\\.example\\.com/verify$",
+         "type" : "string"
+      },
+      "active" : {
+         "type" : "integer",
+         "enum" : [
+            1
+         ]
+      },
+      "github" : {
+         "pattern" : "^https\\://github\\.com/test_org/app$",
+         "type" : "string"
+      },
+      "homepage" : {
+         "type" : "string",
+         "pattern" : "^https\\://test\\.example\\.com/$"
+      },
+      "name" : {
+         "type" : "string",
+         "pattern" : "^Test Application$"
+      },
+      "app_markup_percentage" : {
+         "type" : "string",
+         "pattern" : "^1.5$"
+      },
+      "app_id" : {
+         "type" : "string",
+         "pattern" : "^[_2]$"
+      },
+      "googleplay" : {
+         "type" : "string",
+         "pattern" : "^https://play\\.google\\.com/store/apps/details\\?id=x\\.y\\.z$"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "scopes" : {
+         "maxItem" : 2,
+         "minItem" : 2,
+         "type" : "array",
+         "items" : {
+            "pattern" : "^(read|trade)$",
+            "type" : "string"
+         }
+      }
+   }
+}

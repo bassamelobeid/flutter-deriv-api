@@ -1,0 +1,32 @@
+name: Repository tests
+run-name: Repository tests
+on:
+  workflow_call:
+    inputs:
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
+      need_upload_result:
+        description: 'Upload the test result'
+        required: false
+        default: false
+        type: boolean
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-regentmarkets/bom-rpc
+  cancel-in-progress: true
+jobs:
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        test_name: [json_schemas, accounts, misc, mt5, transaction, others]
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    secrets: inherit
+    with:
+      test_name: ${{ matrix.test_name }}
+      repository: regentmarkets/bom-rpc
+      env_vars: "RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis"
+      debianci_image: ${{ inputs.debianci_image }}
+      need_upload_result: ${{ inputs.need_upload_result }}

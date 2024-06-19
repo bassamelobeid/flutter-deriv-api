@@ -1,0 +1,243 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "legal_default_currency",
+      "shortcode",
+      "support_professional_client",
+      "legal_allowed_currencies",
+      "country",
+      "stash",
+      "legal_allowed_markets",
+      "legal_allowed_contract_categories",
+      "has_reality_check",
+      "name",
+      "changeable_fields",
+      "currency_config",
+      "requirements",
+      "address"
+   ],
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : false,
+   "title" : null,
+   "properties" : {
+      "requirements" : {
+         "additionalProperties" : false,
+         "type" : "object",
+         "properties" : { }
+      },
+      "legal_allowed_contract_categories" : {
+         "type" : "array",
+         "items" : {
+            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier|vanilla|accumulator|turbos)$",
+            "type" : "string"
+         },
+         "minItems" : 6
+      },
+      "has_reality_check" : {
+         "enum" : [
+            0
+         ],
+         "type" : "integer"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "changeable_fields" : {
+         "properties" : {},
+         "type" : "object",
+         "additionalProperties" : false
+      },
+      "country" : {
+         "pattern" : "^Bahamas$",
+         "type" : "string"
+      },
+      "tin_not_mandatory": {
+         "description": "Flag that indicates whether tax identifier number is not mandatory for the current country and landing company.",
+         "type": "integer",
+         "enum": [
+             0,
+             1
+         ]
+      },
+      "currency_config" : {
+         "required" : [
+            "forex",
+            "commodities",
+            "synthetic_index",
+            "indices",
+            "cryptocurrency"
+         ],
+         "properties" : {
+            "forex" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "patternProperties" : {
+                  "^[a-zA-Z0-9]{2,20}$" : {
+                     "properties" : {
+                        "min_stake" : {
+                           "type" : "number",
+                           "minimum" : 0,
+                           "maximum" : 10
+                        },
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        }
+                     },
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               }
+            },
+            "commodities" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "max_payout" : {
+                           "minimum" : 0,
+                           "type" : "number"
+                        },
+                        "min_stake" : {
+                           "minimum" : 0,
+                           "type" : "number",
+                           "maximum" : 10
+                        }
+                     },
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               },
+               "properties" : {}
+            },
+            "synthetic_index" : {
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "additionalProperties" : false,
+                     "type" : "object",
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        },
+                        "min_stake" : {
+                           "maximum" : 10,
+                           "minimum" : 0,
+                           "type" : "number"
+                        }
+                     }
+                  }
+               },
+               "properties" : {},
+               "additionalProperties" : false,
+               "type" : "object"
+            },
+            "indices" : {
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "min_stake" : {
+                           "type" : "number",
+                           "minimum" : 0,
+                           "maximum" : 10
+                        },
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        }
+                     },
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               },
+               "properties" : {},
+               "additionalProperties" : false,
+               "type" : "object"
+            },
+            "cryptocurrency" : {
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "min_stake" : {
+                           "type" : "number",
+                           "minimum" : 0,
+                           "maximum" : 10
+                        },
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        }
+                     },
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               },
+               "properties" : {},
+               "additionalProperties" : false,
+               "type" : "object"
+            }
+         },
+         "type" : "object",
+         "additionalProperties" : false
+      },
+      "legal_allowed_currencies" : {
+         "type" : "array",
+         "items" : {
+            "pattern" : "^USD$",
+            "type" : "string"
+         },
+         "minItems" : 1
+      },
+      "legal_allowed_markets" : {
+         "type" : "array",
+         "items" : {
+            "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
+            "type" : "string"
+         },
+         "minItems" : 4
+      },
+      "address" : {
+         "type" : "null"
+      },
+      "name" : {
+         "type" : "string",
+         "pattern" : "^Deriv Limited$"
+      },
+      "legal_default_currency" : {
+         "type" : "string",
+         "pattern" : "^USD$"
+      },
+      "shortcode" : {
+         "pattern" : "^[_1]$",
+         "type" : "string"
+      },
+      "support_professional_client" : {
+         "type" : "integer",
+         "enum" : [
+            0
+         ]
+      }
+   }
+}

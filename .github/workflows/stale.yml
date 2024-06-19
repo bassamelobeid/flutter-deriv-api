@@ -1,0 +1,11 @@
+name: Close stale issues and PRs
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+jobs:
+  stale:
+    permissions:
+      issues: write
+      pull-requests: write
+    uses: regentmarkets/github-actions/.github/workflows/stale.yml@master

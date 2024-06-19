@@ -1,0 +1,20 @@
+{
+    "token": "[_1]",
+    "args": {
+        "new_account_real": "1",
+        "salutation": "Ms",
+        "first_name": "[_2]",
+        "last_name": "Example Last Name",
+        "date_of_birth": "1975-12-01",
+        "citizen": "at",
+        "residence": "[_3]",
+        "address_line_1": "C-13-02, iTech Tower",
+        "address_line_2": "Jalan Impact, Cyber 6",
+        "address_city": "Cyberjaya",
+        "address_postcode": "63000",
+        "phone": "+48 58 881 00 02",
+        "secret_question": "Memorable date",
+        "secret_answer": "11 November, 2016",
+        "account_opening_reason": "Hedging"
+    }
+}

@@ -1,0 +1,41 @@
+use strict;
+use warnings;
+use utf8;
+use BOM::Test::RPC::QueueClient;
+use Test::Most;
+use Test::Mojo;
+use Data::Dumper;
+
+my $c = BOM::Test::RPC::QueueClient->new();
+
+my $method = 'trading_times';
+subtest $method => sub {
+    my $params = {
+        language => 'EN',
+        'args'   => {'trading_times' => '2016-03-16'}};
+    my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    ok($result->{markets}[0]{submarkets}, 'have sub markets key');
+    is($result->{markets}[0]{submarkets}[0]{name}, 'Major Pairs', 'name  is translated');
+    is_deeply(
+        $result->{markets}[0]{submarkets}[0]{symbols}[0],
+        {
+            'symbol' => 'frxAUDJPY',
+            'events' => [{
+                    'descrip' => 'Closes early (at 20:55)',
+                    'dates'   => 'Fridays'
+                }
+            ],
+            'name'  => "AUD/JPY",
+            'times' => {
+                'open'       => ['00:00:00'],
+                'close'      => ['23:59:59'],
+                'settlement' => '23:59:59'
+            },
+            'trading_days' => [qw/Mon Tue Wed Thu Fri/]
+        },
+        'a instance of symbol'
+    );
+
+};
+
+done_testing();

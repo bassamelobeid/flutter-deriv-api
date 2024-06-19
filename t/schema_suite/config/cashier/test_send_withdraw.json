@@ -1,0 +1,7 @@
+{
+    "token": "[_1]",
+    "args": {
+        "cashier": "withdraw",
+        "verification_code": "[_2]"
+    }
+}

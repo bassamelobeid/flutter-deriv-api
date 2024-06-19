@@ -1,0 +1,35 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "oauth_token",
+      "landing_company_shortcode",
+      "client_id",
+      "landing_company",
+      "stash"
+   ],
+   "properties" : {
+      "oauth_token" : {
+         "type" : "string",
+         "pattern" : "^.{32}$"
+      },
+      "landing_company" : {
+         "pattern" : "^Deriv \\(SVG\\) LLC$",
+         "type" : "string"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "client_id" : {
+         "pattern" : "^CR\\d+$",
+         "type" : "string"
+      },
+      "landing_company_shortcode" : {
+         "type" : "string",
+         "pattern" : "^svg$"
+      }
+   }
+}

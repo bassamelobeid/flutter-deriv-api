@@ -1,0 +1,150 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "title" : null,
+   "additionalProperties" : false,
+   "required" : [
+      "status",
+      "stash",
+      "risk_classification",
+      "prompt_client_to_authenticate",
+      "authentication",
+      "currency_config"
+   ],
+   "properties" : {
+      "currency_config": {
+         "description": "Provides cashier details for client currency.",
+           "type": "object",
+           "minProperties": 0,
+           "patternProperties": {
+               "^[a-zA-Z0-9]{2,20}$": {
+                   "description": "Client currency",
+                   "type": "object",
+                    "properties": {
+                        "is_deposit_suspended": {
+                            "description": "Deposit is allowed for currency or not",
+                           "type": "integer",
+                           "enum": [
+                               0,
+                               1
+                             ]
+                       },
+                       "is_withdrawal_suspended": {
+                           "description": "Withdrawal is allowed for currency or not",
+                           "type": "integer",
+                           "enum": [
+                               0,
+                               1
+                           ]
+                       }
+                    }
+               }
+           }
+      },
+      "p2p_poa_required":{
+        "type" : "integer",
+        "enum" : [
+           0,
+           1
+        ]
+     },
+      "p2p_status":{
+        "description": "Represent current P2P status of client if client is a P2P advertiser, otherwise return none",
+        "type": "string",
+        "enum": [
+            "none",
+            "active",
+            "temp_ban",
+            "perm_ban"
+        ]
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "risk_classification" : {
+         "pattern" : "^(low|standard|high)?$",
+         "type" : [
+            "string",
+            "null"
+         ]
+      },
+      "prompt_client_to_authenticate" : {
+         "enum" : [
+            0,
+            1
+         ],
+         "type" : "integer"
+      },
+      "status" : {
+         "type" : "array"
+      },
+      "cashier_validation" : {
+        "type": "array"
+      },
+      "authentication" : {
+         "type" : "object",
+         "required": [
+             "needs_verification",
+             "document",
+             "identity",
+             "attempts"
+         ],
+         "properties" : {
+             "attempts" : {
+                "type" : "object",
+                "properties": {
+                    "count" : {
+                        "type" : "integer"
+                    },
+                    "history" : {
+                        "type" : "array"
+                    },
+                    "latest" : {
+                        "type" : [ "object", "null" ]
+                    }
+                }
+             },
+             "needs_verification" : {
+                 "type" : "array"
+             },
+             "document" : {
+                 "type" : "object",
+                 "properties" : {
+                     "status" : {
+                         "type" : "string",
+                         "enum": [
+                            "none",
+                            "pending",
+                            "rejected",
+                            "verified",
+                            "expired"
+                        ]
+                     },
+                     "expiry_date" : {
+                         "type" : "integer"
+                     }
+                 }
+             },
+             "identity" : {
+                 "type" : "object",
+                 "properties" : {
+                     "status" : {
+                         "type" : "string",
+                         "enum": [
+                            "none",
+                            "pending",
+                            "rejected",
+                            "verified",
+                            "expired"
+                        ]
+                     },
+                     "expiry_date" : {
+                         "type" : "integer"
+                     }
+                 }
+            }
+         }
+      }
+   }
+}

@@ -1,0 +1,25 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "array",
+   "title" : null,
+   "additionalProperties" : false,
+   "required" : null,
+   "items" : {
+      "required" : [
+         "value",
+         "text"
+      ],
+      "properties" : {
+         "text" : {
+            "type" : "string"
+         },
+         "value" : {
+            "pattern" : "^.{2}$",
+            "type" : "string"
+         }
+      },
+      "additionalProperties" : false,
+      "type" : "object"
+   }
+}

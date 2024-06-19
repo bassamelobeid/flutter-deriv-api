@@ -1,0 +1,68 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : false,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "stash",
+      "tokens",
+      "new_token"
+   ],
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "new_token" : {
+         "type" : "integer",
+         "enum" : [
+            1
+         ]
+      },
+      "tokens" : {
+         "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [
+               "valid_for_ip",
+               "token",
+               "display_name",
+               "last_used",
+               "scopes"
+            ],
+            "properties" : {
+               "valid_for_ip" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "token" : {
+                  "pattern" : "^.{15}$",
+                  "type" : "string"
+               },
+               "display_name" : {
+                  "type" : "string",
+                  "pattern" : "^[_2]$"
+               },
+               "last_used" : {
+                  "pattern" : "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})?$",
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "scopes" : {
+                  "minItems" : 4,
+                  "type" : "array",
+                  "items" : {
+                     "pattern" : "^(read|trade|payments|admin)$",
+                     "type" : "string"
+                  }
+               }
+            }
+         },
+         "type" : "array"
+      }
+   }
+}

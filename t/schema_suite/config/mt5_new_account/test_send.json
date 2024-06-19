@@ -1,0 +1,17 @@
+{
+    "token": "[_1]",
+    "args": {
+        "account_type": "demo",
+        "country": "id",
+        "email": "[_2]",
+        "name": "[_3]",
+        "mainPassword": "[_4]",
+        "leverage": 100,
+        "address": "my address",
+        "city": "my city",
+        "phone": "my phone",
+        "phonePassword": "my phonePassword",
+        "state": "my state",
+        "zipCode": "my zipCode"
+    }
+}

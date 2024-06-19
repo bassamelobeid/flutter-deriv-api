@@ -1,0 +1,29 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "object",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : false,
+   "required" : [
+      "error"
+   ],
+   "properties" : {
+      "error" : {
+         "additionalProperties" : false,
+         "type" : "object",
+         "properties" : {
+            "message_to_client" : {
+               "type" : "string"
+            },
+            "code" : {
+               "pattern" : "^PermissionDenied$",
+               "type" : "string"
+            }
+         },
+         "required" : [
+            "message_to_client",
+            "code"
+         ]
+      }
+   }
+}

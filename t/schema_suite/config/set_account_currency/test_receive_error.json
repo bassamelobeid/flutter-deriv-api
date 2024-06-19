@@ -1,0 +1,29 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "error"
+   ],
+   "description" : null,
+   "type" : "object",
+   "title" : null,
+   "additionalProperties" : false,
+   "properties" : {
+      "error" : {
+         "additionalProperties" : false,
+         "type" : "object",
+         "properties" : {
+            "message_to_client" : {
+               "type" : "string"
+            },
+            "code" : {
+               "pattern" : "^CurrencyTypeNotAllowed$",
+               "type" : "string"
+            }
+         },
+         "required" : [
+            "message_to_client",
+            "code"
+         ]
+      }
+   }
+}

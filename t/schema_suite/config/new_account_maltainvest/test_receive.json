@@ -1,0 +1,43 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "oauth_token",
+      "client_id",
+      "landing_company_shortcode",
+      "landing_company",
+      "stash"
+   ],
+   "type" : "object",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : false,
+   "properties" : {
+      "oauth_token" : {
+         "type" : "string",
+         "pattern" : "^.{32}$"
+      },
+      "landing_company" : {
+         "type" : "string",
+         "pattern" : "^Deriv Investments \\(Europe\\) Limited$"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "client_id" : {
+         "pattern" : "^MF\\d+$",
+         "type" : "string"
+      },
+      "landing_company_shortcode" : {
+         "type" : "string",
+         "pattern" : "^maltainvest$"
+      },
+      "currency" : {
+         "pattern" : "^EUR$",
+         "type" : "string"
+      },
+      "currency_type" : {
+         "pattern" : "^fiat$",
+         "type" : "string"
+      }
+   }
+}

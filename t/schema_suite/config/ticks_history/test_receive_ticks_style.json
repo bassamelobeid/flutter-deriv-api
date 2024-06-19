@@ -1,0 +1,75 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : false,
+   "title" : null,
+   "required" : [
+      "type",
+      "publish",
+      "stash",
+      "data"
+   ],
+   "properties" : {
+      "type" : {
+         "type" : "string",
+         "pattern" : "^history$"
+      },
+      "stash" : {
+         "properties" : {
+            "[_1]_display_decimals" : {
+               "type" : "integer"
+            }
+         },
+         "type" : "object"
+      },
+      "publish" : {
+         "pattern" : "^tick$",
+         "type" : "string"
+      },
+      "data" : {
+         "properties" : {
+            "pip_size" : { "enum" : [4] }, 
+            "history" : {
+               "required" : [
+                  "prices",
+                  "times"
+               ],
+               "properties" : {
+                  "prices" : {
+                     "minItems" : "[_2]",
+                     "items" : {
+                        "pattern" : "^\\d+\\.\\d+$",
+                        "type" : "string"
+                     },
+                     "type" : [
+                        "array",
+                        "null"
+                     ],
+                     "maxItems" : "[_2]"
+                  },
+                  "times" : {
+                     "minItems" : "[_2]",
+                     "maxItems" : "[_2]",
+                     "type" : [
+                        "array",
+                        "null"
+                     ],
+                     "items" : {
+                        "pattern" : "^\\d{10}$",
+                        "type" : "string"
+                     }
+                  }
+               },
+               "additionalProperties" : false,
+               "type" : "object"
+            }
+         },
+         "required" : [
+            "history"
+         ],
+         "type" : "object",
+         "additionalProperties" : false
+      }
+   }
+}

@@ -1,0 +1,212 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : "",
+   "type" : "object",
+   "title" : "",
+   "additionalProperties" : false,
+   "required" : [
+      "landing_company_fullname",
+      "currency",
+      "balance",
+      "is_virtual",
+      "email",
+      "loginid",
+      "fullname",
+      "landing_company_name",
+      "country",
+      "scopes",
+      "stash",
+      "account_list",
+      "upgradeable_landing_companies",
+      "user_id",
+      "local_currencies",
+      "preferred_language"
+   ],
+   "properties" : {
+      "currency" : {
+         "type" : "string",
+         "pattern" : "^$"
+      },
+      "is_virtual" : {
+         "type" : "integer",
+         "enum" : [
+            0
+         ]
+      },
+      "country" : {
+         "pattern" : "^[_2]$",
+         "type" : "string"
+      },
+      "fullname" : {
+         "type" : "string",
+         "pattern" : "^Ms Example First Name MF Last Name Example$"
+      },
+      "email" : {
+         "pattern" : "^[_3]$",
+         "type" : "string"
+      },
+      "landing_company_fullname" : {
+         "pattern" : "^Deriv Investments \\(Europe\\) Limited$",
+         "type" : "string"
+      },
+      "balance" : {
+         "type" : "string",
+         "pattern" : "^0.00$"
+      },
+      "upgradeable_landing_companies" : {
+         "type" : "array"
+      },
+      "user_id" : {
+         "pattern" : "^[0-9]+$",
+         "type" : "string"
+      },
+      "local_currencies": {
+          "type": "object",
+          "minProperties": 1,
+          "patternProperties": {
+              "^[a-zA-Z0-9]{2,20}$": {
+                  "type": "object",
+                  "required": [
+                      "fractional_digits"
+                  ],
+                  "properties": {
+                      "fractional_digits": {
+                          "type": "number"
+                      }
+                  }
+              }
+          }
+      },
+      "loginid" : {
+         "type" : "string",
+         "pattern" : "^MF\\d+$"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "account_list" : {
+         "description" : "List of accounts for current user.",
+         "type" : "array",
+         "items" : {
+            "required" : [
+               "is_virtual",
+               "currency",
+               "loginid",
+               "is_disabled",
+               "landing_company_name"
+            ],
+            "properties" : {
+               "loginid" : {
+                  "type" : "string",
+                  "description" : "The account id of specified account."
+               },
+               "is_virtual" : {
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is a virtual-money account.",
+                  "type" : "integer",
+                  "enum" : [
+                     0,
+                     1
+                  ]
+               },
+               "broker" : {
+                   "type" : "string"
+               },
+               "currency" : {
+                  "description" : "Currency of specified account.",
+                  "type" : "string"
+               },
+               "currency_type" : {
+                  "description" : "Currency type for the corresponding currency.",
+                  "type" : "string"
+               },
+               "is_disabled" : {
+                  "enum" : [
+                     0,
+                     1
+                  ],
+                  "type" : "integer",
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is marked as disabled or not."
+               },
+               "landing_company_name" : {
+                  "description" : "Landing company shortcode the account belongs to.",
+                  "type" : "string"
+               },
+               "account_type": {
+                  "description": "Account type.",
+                  "type": "string"
+               },
+               "account_category": {
+                  "description": "Account category.",
+                  "type": "string",
+                  "enum" : [
+                     "trading",
+                     "wallet"
+                  ]
+               },
+              "linked_to": {
+                 "description": "list of linked accounts.",
+                 "type": "array",
+                 "items" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "required" : [
+                       "loginid",
+                       "platform"
+                    ],
+                    "properties" : {
+                       "loginid": {
+                          "type": "string"
+                       },
+                       "platform": {
+                          "type": "string"
+                       }
+                    }
+                 }
+              },
+               "created_at": {
+                  "description": "Creation time of the account as epoch.",
+                  "type": "integer"
+              }
+            },
+            "additionalProperties" : false,
+            "type" : "object"
+         }
+      },
+      "scopes" : {
+         "minItems" : 4,
+         "type" : "array",
+         "items" : {
+            "type" : "string",
+            "pattern" : "^(admin|payments|read|trade)$"
+         }
+      },
+      "landing_company_name" : {
+         "pattern" : "^maltainvest$",
+         "type" : "string"
+      },
+      "preferred_language" : {
+         "type" : "string",
+         "pattern": "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+      },
+      "linked_to": {
+         "description": "list of linked accounts.",
+         "type": "array",
+         "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [
+               "loginid",
+               "platform"
+            ],
+            "properties" : {
+               "loginid": {
+                  "type": "string"
+               },
+               "platform": {
+                  "type": "string"
+               }
+            }
+         }
+      }
+   }
+}

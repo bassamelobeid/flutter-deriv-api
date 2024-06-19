@@ -1,0 +1,49 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "array",
+   "description" : null,
+   "additionalProperties" : false,
+   "title" : null,
+   "required" : null,
+   "items" : {
+      "type" : "object",
+      "additionalProperties" : false,
+      "required" : [
+         "value",
+         "text"
+      ],
+      "properties" : {
+         "selected" : {
+            "type" : "string",
+            "enum" : [
+               "selected"
+            ]
+         },
+         "value" : {
+            "type" : "string",
+            "pattern" : "^[a-z]{2}$"
+         },
+         "phone_idd" : {
+            "type" : "integer"
+         },
+         "tin_format" : {
+            "type" : "array"
+         },
+         "account_opening_self_declaration_required" : {
+            "type" : "integer"
+         },
+         "text" : {
+            "type" : "string"
+         },
+         "identity" : {
+            "type" : "object"
+         },
+         "disabled" : {
+            "enum" : [
+               "DISABLED"
+            ],
+            "type" : "string"
+         }
+      }
+   }
+}

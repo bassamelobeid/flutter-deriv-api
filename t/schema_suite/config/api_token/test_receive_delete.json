@@ -1,0 +1,29 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "tokens",
+      "delete_token",
+      "stash"
+   ],
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : false,
+   "title" : null,
+   "properties" : {
+      "tokens" : {
+         "type" : "array",
+         "items" : {
+            "type" : "string"
+         }
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "delete_token" : {
+         "enum" : [
+            1
+         ],
+         "type" : "integer"
+      }
+   }
+}

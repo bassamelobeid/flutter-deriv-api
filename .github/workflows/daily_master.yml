@@ -1,0 +1,29 @@
+name: Daily master test
+run-name: Daily test on master branch
+env:
+  PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
+on:
+  workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: '03 11 * * *'
+
+jobs:
+  syntax_unit:
+    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
+    secrets: inherit
+  core:
+    uses: ./.github/workflows/base.yml
+    secrets: inherit
+    with:
+      need_upload_result: true
+  publish_test_results:
+    needs: [syntax_unit, core]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload results to DataDog
+        uses: regentmarkets/github-actions/datadog-publish@master
+        with:
+          datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
+          service-name: bom-rpc

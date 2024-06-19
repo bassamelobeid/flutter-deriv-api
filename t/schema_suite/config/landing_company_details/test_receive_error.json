@@ -1,0 +1,29 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "error"
+   ],
+   "properties" : {
+      "error" : {
+         "properties" : {
+            "code" : {
+               "type" : "string",
+               "pattern" : "^UnknownLandingCompany$"
+            },
+            "message_to_client" : {
+               "type" : "string"
+            }
+         },
+         "required" : [
+            "message_to_client",
+            "code"
+         ],
+         "additionalProperties" : false,
+         "type" : "object"
+      }
+   }
+}

@@ -1,0 +1,63 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "balance_after",
+      "payout",
+      "stash",
+      "contract_id",
+      "start_time",
+      "transaction_id",
+      "shortcode",
+      "buy_price",
+      "purchase_time",
+      "longcode"
+   ],
+   "properties" : {
+      "purchase_time" : {
+         "maximum" : 9999999999,
+         "minimum" : 1000000000,
+         "type" : "integer"
+      },
+      "shortcode" : {
+         "type" : "string"
+      },
+      "balance_after" : {
+         "pattern" : "^[_2]$",
+         "type" : "string"
+      },
+      "contract_id" : {
+         "type" : "string"
+      },
+      "buy_price" : {
+         "type" : "string"
+      },
+      "start_time" : {
+         "type" : "integer",
+         "minimum" : 1000000000,
+         "maximum" : 9999999999
+      },
+      "transaction_id" : {
+         "type" : "string"
+      },
+      "payout" : {
+         "type" : "number",
+         "mimimum" : 0
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "longcode" : {
+         "type" : "string"
+      },
+      "auth_time" : {
+        "type": "number"
+      },
+      "rpc_time" : {
+        "type": "number"
+      }
+   }
+}

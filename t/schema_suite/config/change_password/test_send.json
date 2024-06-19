@@ -1,0 +1,9 @@
+{
+    "token": "[_1]",
+    "token_type": "oauth_token",
+    "args": {
+      "change_password": "1",
+      "old_password": "[_2]",
+      "new_password": "[_3]"
+    }
+}

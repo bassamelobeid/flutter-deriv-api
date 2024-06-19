@@ -1,0 +1,24 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "stash",
+      "amount",
+      "currency"
+   ],
+   "title" : null,
+   "additionalProperties" : false,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "currency":{
+         "type" : "string"
+      },
+      "amount" : {
+         "type" : "integer"
+      },
+      "stash" : {
+         "type" : "object"
+      }
+   }
+}
+
