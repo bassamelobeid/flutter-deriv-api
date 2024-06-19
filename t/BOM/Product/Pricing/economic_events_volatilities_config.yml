@@ -1,0 +1,9 @@
+USD_Construction_Spending_m/m:
+  frxUSDJPY:
+    decay_factor: 5
+    vol_change: 0.02
+CAD_Employment_Change: 
+  frxUSDJPY:
+    decay_factor: 5
+    vol_change: 0.2
+    duration: 300

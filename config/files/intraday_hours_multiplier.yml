@@ -1,0 +1,1249 @@
+---
+00:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0.1
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0.1
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0.1
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0.1
+    non_dst: 0
+  minor_pairs:
+    dst: 0.1
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+01:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0.1
+    non_dst: 0
+  frxEURCAD:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURCHF:
+    dst: 0.1
+    non_dst: 0
+  frxEURGBP:
+    dst: 0.1
+    non_dst: 0
+  frxEURJPY:
+    dst: 0.15
+    non_dst: 0.1
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0.1
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0.15
+    non_dst: 0.1
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0.15
+    non_dst: 0.1
+  minor_pairs:
+    dst: 0.15
+    non_dst: 0.1
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+02:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0.1
+  frxEURCAD:
+    dst: 0
+    non_dst: 0.1
+  frxEURCHF:
+    dst: 0
+    non_dst: 0.1
+  frxEURGBP:
+    dst: 0
+    non_dst: 0.1
+  frxEURJPY:
+    dst: 0.1
+    non_dst: 0.15
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0.1
+  frxGBPJPY:
+    dst: 0.1
+    non_dst: 0.15
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0.1
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0.1
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0.15
+    non_dst: 0.15
+  minor_pairs:
+    dst: 0.1
+    non_dst: 0.15
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+03:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0.1
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0.1
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0.1
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0.1
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0.15
+  minor_pairs:
+    dst: 0
+    non_dst: 0.1
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+04:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+05:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+06:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+07:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+08:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+09:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+10:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+11:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+12:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+13:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+14:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0
+    non_dst: 0
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+15:
+  frxAUDJPY:
+    dst: 0.15
+    non_dst: 0.1
+  frxAUDUSD:
+    dst: 0.15
+    non_dst: 0
+  frxEURAUD:
+    dst: 0.2
+    non_dst: 0.1
+  frxEURCAD:
+    dst: 0.15
+    non_dst: 0.1
+  frxEURCHF:
+    dst: 0.15
+    non_dst: 0.1
+  frxEURGBP:
+    dst: 0.1
+    non_dst: 0
+  frxEURJPY:
+    dst: 0.1
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0.2
+    non_dst: 0.1
+  frxGBPJPY:
+    dst: 0.15
+    non_dst: 0.1
+  frxGBPUSD:
+    dst: 0.15
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0.2
+    non_dst: 0.1
+  frxUSDCHF:
+    dst: 0.1
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0.15
+    non_dst: 0.1
+  minor_pairs:
+    dst: 0.2
+    non_dst: 0.1
+  forex_basket:
+    dst: 0.1
+    non_dst: 0
+  commodity_basket:
+    dst: 0.1
+    non_dst: 0
+16:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0.15
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0.15
+  frxEURAUD:
+    dst: 0.1
+    non_dst: 0.2
+  frxEURCAD:
+    dst: 0.1
+    non_dst: 0.15
+  frxEURCHF:
+    dst: 0
+    non_dst: 0.15
+  frxEURGBP:
+    dst: 0
+    non_dst: 0.1
+  frxEURJPY:
+    dst: 0
+    non_dst: 0.1
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0.1
+    non_dst: 0.2
+  frxGBPJPY:
+    dst: 0.1
+    non_dst: 0.15
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0.15
+  frxUSDCAD:
+    dst: 0.1
+    non_dst: 0.2
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0.1
+  frxUSDJPY:
+    dst: 0.1
+    non_dst: 0.15
+  minor_pairs:
+    dst: 0.1
+    non_dst: 0.2
+  forex_basket:
+    dst: 0
+    non_dst: 0.1
+  commodity_basket:
+    dst: 0
+    non_dst: 0.1
+17:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURCAD:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURCHF:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURGBP:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURJPY:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0.1
+    non_dst: 0.1
+  frxGBPJPY:
+    dst: 0.1
+    non_dst: 0.1
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0.1
+    non_dst: 0.1
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+18:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0.1
+  frxEURCAD:
+    dst: 0
+    non_dst: 0.1
+  frxEURCHF:
+    dst: 0
+    non_dst: 0.1
+  frxEURGBP:
+    dst: 0
+    non_dst: 0.1
+  frxEURJPY:
+    dst: 0
+    non_dst: 0.1
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0.1
+    non_dst: 0.1
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0.1
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0.1
+    non_dst: 0.1
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+19:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0.1
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0.1
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0.1
+    non_dst: 0.1
+  frxGBPJPY:
+    dst: 0.1
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0
+    non_dst: 0
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0.1
+    non_dst: 0.1
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+20:
+  frxAUDJPY:
+    dst: 0.1
+    non_dst: 0.1
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0.15
+    non_dst: 0.15
+  frxEURGBP:
+    dst: 0.15
+    non_dst: 0.15
+  frxEURJPY:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0.2
+    non_dst: 0.2
+  frxGBPJPY:
+    dst: 0.15
+    non_dst: 0.15
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0
+    non_dst: 0
+  frxUSDCHF:
+    dst: 0.1
+    non_dst: 0.1
+  frxUSDJPY:
+    dst: 0.1
+    non_dst: 0.1
+  minor_pairs:
+    dst: 0.1
+    non_dst: 0.1
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+21:
+  frxAUDJPY:
+    dst: 0.15
+    non_dst: 0.15
+  frxAUDUSD:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURAUD:
+    dst: 0.15
+    non_dst: 0.15
+  frxEURCAD:
+    dst: 0.15
+    non_dst: 0.15
+  frxEURCHF:
+    dst: 0.15
+    non_dst: 0.15
+  frxEURGBP:
+    dst: 0.1
+    non_dst: 0.15
+  frxEURJPY:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0.2
+    non_dst: 0.2
+  frxGBPJPY:
+    dst: 0.1
+    non_dst: 0.1
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0.1
+    non_dst: 0.1
+  frxUSDCHF:
+    dst: 0.1
+    non_dst: 0.1
+  frxUSDJPY:
+    dst: 0.1
+    non_dst: 0.1
+  minor_pairs:
+    dst: 0.15
+    non_dst: 0.15
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+22:
+  frxAUDJPY:
+    dst: 0.15
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0.1
+    non_dst: 0
+  frxEURAUD:
+    dst: 0.15
+    non_dst: 0
+  frxEURCAD:
+    dst: 0.15
+    non_dst: 0.1
+  frxEURCHF:
+    dst: 0.15
+    non_dst: 0.1
+  frxEURGBP:
+    dst: 0.1
+    non_dst: 0.1
+  frxEURJPY:
+    dst: 0.1
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0.15
+    non_dst: 0.1
+  frxGBPJPY:
+    dst: 0.1
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0.1
+    non_dst: 0.1
+  frxUSDCHF:
+    dst: 0.1
+    non_dst: 0.1
+  frxUSDJPY:
+    dst: 0.1
+    non_dst: 0
+  minor_pairs:
+    dst: 0.15
+    non_dst: 0.15
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0
+23:
+  frxAUDJPY:
+    dst: 0
+    non_dst: 0
+  frxAUDUSD:
+    dst: 0
+    non_dst: 0
+  frxEURAUD:
+    dst: 0
+    non_dst: 0
+  frxEURCAD:
+    dst: 0
+    non_dst: 0
+  frxEURCHF:
+    dst: 0
+    non_dst: 0
+  frxEURGBP:
+    dst: 0
+    non_dst: 0
+  frxEURJPY:
+    dst: 0
+    non_dst: 0
+  frxEURUSD:
+    dst: 0
+    non_dst: 0
+  frxGBPAUD:
+    dst: 0
+    non_dst: 0
+  frxGBPJPY:
+    dst: 0
+    non_dst: 0
+  frxGBPUSD:
+    dst: 0
+    non_dst: 0
+  frxUSDCAD:
+    dst: 0.1
+    non_dst: 0.1
+  frxUSDCHF:
+    dst: 0.1
+    non_dst: 0.1
+  frxUSDJPY:
+    dst: 0
+    non_dst: 0
+  minor_pairs:
+    dst: 0.1
+    non_dst: 0.1
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
+    dst: 0
+    non_dst: 0

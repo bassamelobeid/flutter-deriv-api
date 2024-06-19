@@ -1,0 +1,131 @@
+name: Repository tests
+on:
+  workflow_call:
+    inputs:
+      debianci_image:
+        description: 'Docker container used by the workflow'
+        required: false
+        default: ${{ vars.DEBIAN_CI }}
+        type: string
+      need_upload_result:
+        description: 'Upload the test result'
+        required: false
+        default: false
+        type: boolean
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-regentmarkets/bom
+  cancel-in-progress: true
+jobs:
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        test_name: [contract, pricing, product_others]
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    secrets: inherit
+    with:
+      test_name: ${{ matrix.test_name }}
+      repository: regentmarkets/bom
+      debianci_image: ${{ inputs.debianci_image }}
+      need_upload_result: ${{ inputs.need_upload_result }}
+  benchmark:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-quant-benchmark
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom
+      - name: SDFX benchmark major
+        run: make SDFX_benchmark_major
+      - name: SDFX benchmark minor
+        run: make SDFX_benchmark_minor
+      - name: SDEQ benchmark OTC_DJI
+        run: make SDEQ_benchmark_OTC_DJI
+      - name: SDEQ benchmark OTC_FCHI
+        run: make SDEQ_benchmark_OTC_FCHI
+      - name: SDEQ benchmark OTC_SPC
+        run: make SDEQ_benchmark_OTC_SPC
+      - name: SDEQ benchmark SSECOMP
+        run: make SDEQ_benchmark_SSECOMP
+      - name: SDEQ benchmark OTC_FTSE
+        run: make SDEQ_benchmark_OTC_FTSE
+      - name: Merlin Benchmark
+        run: make merlin_benchmark
+      - name: OVRA benchmark
+        run: make OVRA_benchmark
+  Pricing-Engine-Tests:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.debianci_image }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom
+      - name: perl-Pricing-Engine-European-Digital-Slope
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-European-Digital-Slope
+          make test
+      - name: perl-Pricing-Engine-BlackScholes
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes
+          make test
+      - name: perl-Pricing-Engine-Digits
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Digits
+          make test
+      - name: perl-Pricing-Engine-HighLow-Ticks
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks
+          make test
+      - name: perl-Pricing-Engine-Intraday-Forex-Base
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
+          make test
+      - name: perl-Pricing-Engine-Lookback
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback
+          make test
+      - name: perl-Pricing-Engine-Markup
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Markup
+          make test
+      - name: perl-Pricing-Engine-Reset
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-Reset
+          make test
+      - name: perl-Pricing-Engine-TickExpiry
+        run: |
+          cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
+          make test
+  memory_test:
+    strategy:
+      matrix:
+        group_param: [1/2, 2/2]
+    uses: regentmarkets/github-actions/.github/workflows/make_test.yml@master
+    secrets: inherit
+    with:
+      env_vars: run_test_sub_group=${{ matrix.group_param }}
+      test_name: memory_test
+      repository: regentmarkets/bom
+      debianci_image: ${{ inputs.debianci_image }}
+      need_upload_result: false

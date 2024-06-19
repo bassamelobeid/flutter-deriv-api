@@ -1,0 +1,441 @@
+#!/etc/rmg/bin/perl
+
+use strict;
+use warnings;
+
+use Test::More tests => 7;
+use Test::Warnings;
+
+use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::MarketData               qw(create_underlying);
+use BOM::MarketData::Types;
+use Date::Utility;
+
+use BOM::Config::Runtime;
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use Test::MockModule;
+use BOM::Config::Chronicle;
+use Quant::Framework;
+
+my $weekend                        = Date::Utility->new('2016-03-26');
+my $weekday                        = Date::Utility->new('2016-03-29');
+my $forex_blackout_non_dst_weekday = Date::Utility->new('2024-01-03');
+my $forex_blackout_dst_weekday     = Date::Utility->new('2023-06-13');
+my $usdjpy_weekend_tick            = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxAUDUSD',
+    epoch      => $weekend->epoch
+});
+my $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxAUDUSD',
+    epoch      => $weekday->epoch
+});
+
+for my $date ($weekend, $weekday) {
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol        => $_,
+            recorded_date => $date
+        }) for qw(USD AUD HKD AUD-USD HKD-USD);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol        => 'OTC_HSI',
+            recorded_date => $date
+        });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol        => $_,
+            recorded_date => $date
+        }) for qw(RDBULL R_100);
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxAUDUSD',
+            recorded_date => $date,
+            spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $date, quote => '0.75'}),
+        });
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDKHD',
+            recorded_date => $date,
+            spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $date, quote => '7.76'}),
+        });
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol        => 'OTC_HSI',
+            recorded_date => $date
+        });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'correlation_matrix',
+        {
+            recorded_date => $date,
+            symbol        => 'indices',
+            correlations  => {
+                'OTC_HSI' => {
+                    USD => {
+                        '3M'  => 0.1,
+                        '12M' => 0.1
+                    },
+                    GBP => {
+                        '3M'  => 0.1,
+                        '12M' => 0.1
+                    },
+                    AUD => {
+                        '3M'  => 0.1,
+                        '12M' => 0.1
+                    },
+                    EUR => {
+                        '3M'  => 0.1,
+                        '12M' => 0.1
+                    },
+                }}});
+}
+
+subtest 'trading hours' => sub {
+    my $args = {
+        bet_type     => 'CALL',
+        underlying   => 'frxAUDUSD',
+        barrier      => 'S0P',
+        date_start   => $weekday,
+        date_pricing => $weekday,
+        duration     => '6h',
+        currency     => 'USD',
+        payout       => 10,
+        current_tick => $usdjpy_weekday_tick,
+    };
+
+    my $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy';
+    $args->{date_start}   = $args->{date_pricing} = $weekend;
+    $args->{current_tick} = $usdjpy_weekend_tick;
+    $c                    = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client},
+        ['This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.', '2016-03-28 00:00:00']);
+    is_deeply $c->primary_validation_error->{details}, {field => 'symbol'}, 'error detials is not correct';
+    is $c->primary_validation_error->code, 'MarketIsClosedTryVolatility', 'code is set correctly when market is closed';
+
+    my $hsi_open         = $weekday->plus_time_interval('1h30m');
+    my $hsi_time         = $hsi_open->plus_time_interval('11m');
+    my $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'OTC_HSI',
+        epoch      => $hsi_time->epoch,
+        quote      => 7150
+    });
+    $args->{underlying}   = 'OTC_HSI';
+    $args->{date_start}   = $args->{date_pricing} = $hsi_time;
+    $args->{current_tick} = $hsi_weekday_tick;
+    $args->{duration}     = '1h';
+    $c                    = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy';
+    $args->{date_start} = $args->{date_pricing} = $hsi_time->minus_time_interval('22m');
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client},
+        ['This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.', '2016-03-29 01:30:00']);
+    is_deeply $c->primary_validation_error->{details}, {field => 'symbol'}, 'error detials is not correct';
+    is $c->primary_validation_error->code, 'MarketIsClosedTryVolatility', 'code is set correctly when market is closed';
+
+    # for forward starting
+    $args->{date_pricing} = $hsi_open->minus_time_interval('20m');
+    $args->{date_start}   = $hsi_open->minus_time_interval('10m');
+    $c                    = produce_contract($args);
+    ok $c->is_forward_starting, 'forward starting';
+    ok !$c->is_valid_to_buy,    'not valid to buy';
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client},
+        ['The market must be open at the start time. Try out the Synthetic Indices which are always open.', '2016-03-29 01:30:00']);
+    is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
+    $args->{date_start} = $hsi_open->plus_time_interval('11m');
+    $c = produce_contract($args);
+    ok $c->is_forward_starting, 'forward starting';
+    ok $c->is_valid_to_buy,     'valid to buy';
+
+    my $valid_start = $hsi_open->plus_time_interval('2h');
+    $args->{date_start} = $args->{date_pricing} = $valid_start;
+    $args->{duration}   = '1h';
+    $hsi_weekday_tick   = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'OTC_HSI',
+        epoch      => $valid_start->epoch,
+        quote      => 7150
+    });
+    $args->{current_tick} = $hsi_weekday_tick;
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Contract must expire during trading hours.']);
+    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
+};
+
+subtest 'invalid expiry time for multiday contracts' => sub {
+    my $now       = Date::Utility->new;
+    my $fake_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch
+    });
+    my $bet_params = {
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_pricing => $now,
+        barrier      => 'S0P',
+        current_tick => $fake_tick,
+        date_pricing => $now,
+        date_start   => $now,
+        date_expiry  => $now->plus_time_interval('1d1s'),
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like(($c->primary_validation_error)[0]->{message}, qr/daily expiry must expire at close/, 'throws error');
+    is_deeply $c->primary_validation_error->{details}, {field => 'date_expiry'}, 'error detials is not correct';
+    $bet_params->{date_expiry} = $now->truncate_to_day->plus_time_interval('1d23h59m59s');
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+};
+
+subtest 'intraday must be same day' => sub {
+    my $eod      = $weekday->plus_time_interval('22h');
+    my $eod_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'RDBULL',
+        epoch      => $eod->epoch
+    });
+    my $bet_params = {
+        underlying   => 'RDBULL',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_pricing => $eod,
+        date_start   => $eod,
+        duration     => '59m59s',
+        barrier      => 'S0P',
+        current_tick => $eod_tick,
+    };
+    $bet_params->{disable_trading_at_quiet_period} = 0;
+    my $c = produce_contract($bet_params);
+    ok $c->underlying->intradays_must_be_same_day, 'intraday must be same day';
+    ok $c->is_valid_to_buy,                        'valid to buy';
+    $bet_params->{duration} = '2h1s';
+    $c = produce_contract($bet_params);
+    ok $c->underlying->intradays_must_be_same_day, 'intraday must be same day';
+    ok !$c->is_valid_to_buy,                       'not valid to buy';
+    like(($c->primary_validation_error)[0]->{message}, qr/Intraday duration must expire on same day/, 'throws error');
+    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
+
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok !$c->underlying->intradays_must_be_same_day, 'intraday can cross day';
+    ok $c->is_valid_to_buy,                         'valid to buy';
+};
+
+subtest 'too many holiday for multiday indices contracts' => sub {
+    my $hsi              = create_underlying('OTC_HSI');
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
+    my $monday_open      = $hsi->calendar->opening_on($hsi->exchange, Date::Utility->new('2016-04-04'))->plus_time_interval('15m');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDHKD',
+            recorded_date => $monday_open
+        });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol        => 'OTC_HSI',
+            recorded_date => $monday_open
+        });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'holiday',
+        {
+            recorded_date => $monday_open,
+            calendar      => {
+                $monday_open->plus_time_interval('4d')->date => {
+                    'Test Holiday' => ['HKSE_OTC'],
+                },
+                $monday_open->plus_time_interval('2d')->date => {
+                    'Test Holiday' => ['HKSE_OTC'],
+                },
+                $monday_open->plus_time_interval('1d')->date => {
+                    'Test Holiday 2' => ['HKSE_OTC'],
+                },
+            },
+        });
+    my $hsi_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'OTC_HSI',
+        epoch      => $monday_open->epoch,
+        quote      => 7150
+    });
+    my $bet_params = {
+        underlying   => 'OTC_HSI',
+        bet_type     => 'CALL',
+        barrier      => 'S10P',
+        payout       => 100,
+        date_start   => $monday_open,
+        date_pricing => $monday_open,
+        duration     => '7d',
+        currency     => 'USD',
+        current_tick => $hsi_tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like($c->primary_validation_error->message, qr/Not enough trading days for calendar days/, 'throws error');
+    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
+    $bet_params->{barrier} = 'S0P';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+};
+
+subtest 'sell multiday on weekend' => sub {
+    my $pricing_date = $weekday->plus_time_interval('5d');
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxUSDJPY',
+            epoch      => $_,
+            quote      => 100
+        }) for ($weekday->epoch, $pricing_date->epoch, $pricing_date->epoch + 1);
+    my $bet_params = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        barrier      => 'S0P',
+        payout       => 100,
+        date_start   => $weekday,        #monday
+        date_pricing => $pricing_date,
+        duration     => '10d',
+        currency     => 'USD',
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_sell, 'invalid to sell';
+    is $c->primary_validation_error->{message_to_client}->[0],
+        'This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.',
+        'market is presently closed';
+
+    $bet_params = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'MULTUP',
+        stake        => 100,
+        multiplier   => 50,
+        date_start   => $weekday,        #monday
+        date_pricing => $pricing_date,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $weekday->epoch,
+                basis_spot   => '100.00',
+            }
+        },
+    };
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_sell, 'invalid to sell';
+    is $c->primary_validation_error->{message_to_client}->[0],
+        'This market is presently closed. Market will open at [_1]. Try out the Synthetic Indices which are always open.',
+        'market is presently closed';
+};
+
+subtest 'forex trading blackout' => sub {
+    my $trading_dst_date     = $forex_blackout_dst_weekday->plus_time_interval('20h55m');
+    my $trading_non_dst_date = $forex_blackout_non_dst_weekday->plus_time_interval('21h55m');
+
+    # Tests during DST
+
+    my $usdjpy_tick_dst = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $trading_dst_date->epoch,
+    });
+
+    my $bet_params = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        barrier      => 'S0P',
+        payout       => 100,
+        date_start   => $trading_dst_date,
+        date_pricing => $trading_dst_date,
+        duration     => '2h',
+        currency     => 'USD',
+        current_tick => $usdjpy_tick_dst,
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+    my $bet_params2 = {
+        bet_type     => 'MULTUP',
+        underlying   => 'frxUSDJPY',
+        date_start   => $trading_dst_date,
+        date_pricing => $trading_dst_date,
+        amount_type  => 'stake',
+        amount       => 1000,
+        multiplier   => 100,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $trading_dst_date->epoch,
+                basis_spot   => '100.00',
+            }
+        },
+    };
+
+    $c = produce_contract($bet_params2);
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+    # Tests during Non-DST
+
+    my $usdjpy_tick_non_dst = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $trading_non_dst_date->epoch,
+    });
+
+    my $bet_params_non_dst = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        barrier      => 'S0P',
+        payout       => 100,
+        date_start   => $trading_non_dst_date,
+        date_pricing => $trading_non_dst_date,
+        duration     => '2h',
+        currency     => 'USD',
+        current_tick => $usdjpy_tick_non_dst,
+    };
+
+    my $c_non_dst = produce_contract($bet_params_non_dst);
+    ok !$c_non_dst->is_valid_to_buy, 'invalid to buy';
+
+    $bet_params_non_dst->{underlying} = 'R_100';
+    $c_non_dst = produce_contract($bet_params_non_dst);
+    ok $c_non_dst->is_valid_to_buy, 'valid to buy';
+
+    my $bet_params2_non_dst = {
+        bet_type     => 'MULTUP',
+        underlying   => 'frxUSDJPY',
+        date_start   => $trading_non_dst_date,
+        date_pricing => $trading_non_dst_date,
+        amount_type  => 'stake',
+        amount       => 1000,
+        multiplier   => 100,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $trading_non_dst_date->epoch,
+                basis_spot   => '100.00',
+            }
+        },
+    };
+
+    $c_non_dst = produce_contract($bet_params2_non_dst);
+    ok $c_non_dst->is_valid_to_buy, 'valid to buy';
+
+};

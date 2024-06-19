@@ -1,0 +1,127 @@
+#the values are in decimal
+R_10:
+  growth_rate_0.01: 0.000061255198
+  growth_rate_0.02: 0.000057252462
+  growth_rate_0.03: 0.000053692776
+  growth_rate_0.04: 0.000051086496
+  growth_rate_0.05: 0.000048625396
+R_25:
+  growth_rate_0.01: 0.000153137996
+  growth_rate_0.02: 0.000143131156
+  growth_rate_0.03: 0.000134231941
+  growth_rate_0.04: 0.00012771624
+  growth_rate_0.05: 0.000121563489
+R_50:
+  growth_rate_0.01: 0.000306275997
+  growth_rate_0.02: 0.000286262314
+  growth_rate_0.03: 0.000268463882
+  growth_rate_0.04: 0.00025543248
+  growth_rate_0.05: 0.000243126978
+R_75:
+  growth_rate_0.01: 0.000459414004
+  growth_rate_0.02: 0.000429393474
+  growth_rate_0.03: 0.000402695823
+  growth_rate_0.04: 0.000383148719
+  growth_rate_0.05: 0.000364690464
+R_100:
+  growth_rate_0.01: 0.000612552024
+  growth_rate_0.02: 0.000572524639
+  growth_rate_0.03: 0.000536927765
+  growth_rate_0.04: 0.000510864957
+  growth_rate_0.05: 0.000486253948
+1HZ10V:
+  growth_rate_0.01: 0.000043313966
+  growth_rate_0.02: 0.000040483604
+  growth_rate_0.03: 0.000037966526
+  growth_rate_0.04: 0.000036123608
+  growth_rate_0.05: 0.000034383347
+1HZ25V:
+  growth_rate_0.01: 0.000108284915
+  growth_rate_0.02: 0.000101209011
+  growth_rate_0.03: 0.000094916316
+  growth_rate_0.04: 0.00009030902
+  growth_rate_0.05: 0.000085958368
+1HZ50V:
+  growth_rate_0.01: 0.000216569832
+  growth_rate_0.02: 0.000202418022
+  growth_rate_0.03: 0.000189832631
+  growth_rate_0.04: 0.000180618039
+  growth_rate_0.05: 0.000171916735
+1HZ75V:
+  growth_rate_0.01: 0.000324854752
+  growth_rate_0.02: 0.000303627035
+  growth_rate_0.03: 0.000284748947
+  growth_rate_0.04: 0.000270927058
+  growth_rate_0.05: 0.000257875102
+1HZ100V:
+  growth_rate_0.01: 0.000433139675
+  growth_rate_0.02: 0.000404836049
+  growth_rate_0.03: 0.000379665263
+  growth_rate_0.04: 0.000361236077
+  growth_rate_0.05: 0.000343833468
+JD10:
+  growth_rate_0.01: 0.000046357939
+  growth_rate_0.02: 0.000041685730
+  growth_rate_0.03: 0.000038824006
+  growth_rate_0.04: 0.000036711451
+  growth_rate_0.05: 0.000035016250
+JD25:
+  growth_rate_0.01: 0.000115894848
+  growth_rate_0.02: 0.000104214327
+  growth_rate_0.03: 0.000097060015
+  growth_rate_0.04: 0.000091778627
+  growth_rate_0.05: 0.000087540625
+JD50:
+  growth_rate_0.01: 0.000231789699
+  growth_rate_0.02: 0.000208428655
+  growth_rate_0.03: 0.000194120030
+  growth_rate_0.04: 0.000183557255
+  growth_rate_0.05: 0.000175081251
+JD75:
+  growth_rate_0.01: 0.000347684555
+  growth_rate_0.02: 0.000312642985
+  growth_rate_0.03: 0.000291180046
+  growth_rate_0.04: 0.000275335882
+  growth_rate_0.05: 0.000262621876
+JD100:
+  growth_rate_0.01: 0.000463579420
+  growth_rate_0.02: 0.000416857317
+  growth_rate_0.03: 0.000388240062
+  growth_rate_0.04: 0.000367114509
+  growth_rate_0.05: 0.000350162501
+CRASH300N:
+  growth_rate_0.01: 0.000025869031
+  growth_rate_0.02: 0.000023291500
+  growth_rate_0.03: 0.000021834858
+  growth_rate_0.04: 0.000020782869
+  growth_rate_0.05: 0.000019945249
+CRASH500:
+  growth_rate_0.01: 0.000005852997
+  growth_rate_0.02: 0.000005317743
+  growth_rate_0.03: 0.000004998895
+  growth_rate_0.04: 0.000004764603
+  growth_rate_0.05: 0.000004576417
+CRASH1000:
+  growth_rate_0.01: 0.000002886964
+  growth_rate_0.02: 0.000002637737
+  growth_rate_0.03: 0.000002484245
+  growth_rate_0.04: 0.000002370110
+  growth_rate_0.05: 0.000002277869
+BOOM300N:
+  growth_rate_0.01: 0.000025967984
+  growth_rate_0.02: 0.000023380668
+  growth_rate_0.03: 0.000021918486
+  growth_rate_0.04: 0.000020862491
+  growth_rate_0.05: 0.000020021680
+BOOM500:
+  growth_rate_0.01: 0.000005861701
+  growth_rate_0.02: 0.000005325655
+  growth_rate_0.03: 0.000005006334
+  growth_rate_0.04: 0.000004771695
+  growth_rate_0.05: 0.000004583229
+BOOM1000:
+  growth_rate_0.01: 0.000002891209
+  growth_rate_0.02: 0.000002641616
+  growth_rate_0.03: 0.000002487898
+  growth_rate_0.04: 0.000002373597
+  growth_rate_0.05: 0.000002281220

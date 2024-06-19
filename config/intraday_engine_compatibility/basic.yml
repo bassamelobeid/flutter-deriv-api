@@ -1,0 +1,137 @@
+---
+# Intraday Pricing Engine compatibility check.
+#
+# E.g. For OTC_DJI we will only price with Intraday pricing engine if it meets the following specifications:
+# - contract_category: callput
+# - expiry_type: intraday
+# - start_type: spot
+# - barrier_category: euro_atm
+# - contract duration between 15 minutes to 1 hour (inclusive).
+
+OTC_DJI: &15m_equities
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 1h
+          min: 15m
+OTC_AEX: &30min_equities
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 1h
+          min: 30m
+OTC_AS51: *15m_equities
+OTC_FCHI: *15m_equities
+OTC_FTSE: *15m_equities
+OTC_GDAXI: *15m_equities
+OTC_HSI: *15m_equities
+OTC_IBEX35: *15m_equities
+OTC_N225: *30min_equities
+OTC_NDX: *15m_equities
+OTC_SSMI: *15m_equities
+OTC_SPC: *15m_equities
+OTC_SX5E: *30min_equities
+WLDAUD: &forex_basket
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 10h
+          min: 1m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 10h
+          min: 3m
+WLDEUR: *forex_basket
+WLDGBP: *forex_basket
+WLDUSD: *forex_basket
+WLDXAU: &commodity_basket
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 10h
+          min: 1m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 10h
+          min: 3m
+frxAUDCAD: &inactive_fx
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 3m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 3m
+frxAUDCHF: *inactive_fx
+frxAUDNZD: *inactive_fx
+frxAUDPLN: *inactive_fx
+frxEURNZD: *inactive_fx
+frxGBPCHF: *inactive_fx
+frxGBPNZD: *inactive_fx
+frxGBPCAD: *inactive_fx
+frxNZDUSD: *inactive_fx
+frxAUDJPY: &active_fx
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 1m
+        euro_non_atm:
+          max: 5h
+          min: 15m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 3m
+frxAUDUSD: *active_fx
+frxEURAUD: *active_fx
+frxEURCAD: *active_fx
+frxEURCHF: *active_fx
+frxEURGBP: *active_fx
+frxEURJPY: *active_fx
+frxEURUSD: *active_fx
+frxGBPAUD: *active_fx
+frxGBPJPY: *active_fx
+frxGBPUSD:
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 5m
+        euro_non_atm:
+          max: 5h
+          min: 15m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 5m
+frxUSDCAD: *active_fx
+frxUSDCHF: *active_fx
+frxUSDJPY: *active_fx
+frxXAGUSD: &euro_path_dependent_commodities
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 5m
+frxXAUUSD: *euro_path_dependent_commodities
