@@ -1,0 +1,104 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Get Account Types (response)",
+    "description": "Types of accounts available to create or link to.",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "get_account_types": {
+            "title": "get_account_types",
+            "description": "Returns accounts that are available to create or link to",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "trading",
+                "wallet"
+            ],
+            "properties": {
+                "trading": {
+                    "description": "Trading account types that are available to create or link to",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        "^(binary|ctrader|dxtrade|mt5|standard|derivez)$": {
+                            "description": "Details for trading account types",
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                "allowed_wallet_currencies",
+                                "linkable_to_different_currency",
+                                "linkable_wallet_types"
+                            ],
+                            "properties": {
+                                "allowed_wallet_currencies": {
+                                    "description": "Wallet currencies allowed for this trading account",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "linkable_to_different_currency": {
+                                    "description": "Can this trading account linked to another currency after opening",
+                                    "type": "integer",
+                                    "enum": [
+                                        0,
+                                        1
+                                    ]
+                                },
+                                "linkable_wallet_types": {
+                                    "description": "Wallet types that this trading account can be linked to.",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "wallet": {
+                    "description": "Wallet accounts types that are available to create or link to",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        "^(affiliate|crypto|doughflow|p2p|paymentagent|paymentagent_client|virtual)$": {
+                            "description": "Details for wallets account types",
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                "currencies"
+                            ],
+                            "properties": {
+                                "currencies": {
+                                    "description": "Allowed currencies for creating accounts of this type; used or disallowed currencies are not listed.",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "get_account_types"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

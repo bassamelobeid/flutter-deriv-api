@@ -1,0 +1,7 @@
+{
+    "trading_platform_investor_password_change": 1,
+    "account_id": "MTR1000",
+    "new_password": "InvestPwd123@!",
+    "old_password": "OldInvestPwd123@!",
+    "platform": "mt5"
+}

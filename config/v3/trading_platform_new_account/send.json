@@ -1,0 +1,100 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Trading Platform: New Account (request)",
+    "description": "This call creates new Trading account, either demo or real money.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "admin"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "trading_platform_new_account",
+        "account_type",
+        "market_type",
+        "platform"
+    ],
+    "properties": {
+        "trading_platform_new_account": {
+            "description": "Must be `1`",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "account_type": {
+            "description": "Account type.",
+            "type": "string",
+            "enum": [
+                "demo",
+                "real"
+            ]
+        },
+        "company": {
+            "description": "[Optional] Name of the client's company (For DerivEZ only)",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,@/-]{0,64}$"
+        },
+        "currency": {
+            "description": "[Optional] Trading account currency, the default value will be the qualified account currency.",
+            "type": "string",
+            "pattern": "^(|[a-zA-Z0-9]{2,20})$"
+        },
+        "dry_run": {
+            "description": "[Optional] If set to 1, only validation is performed.",
+            "type": "integer",
+            "default": 0,
+            "enum": [
+                0,
+                1
+            ]
+        },
+        "market_type": {
+            "description": "Market type",
+            "type": "string",
+            "enum": [
+                "financial",
+                "synthetic",
+                "all"
+            ]
+        },
+        "password": {
+            "description": "The master password of the account. For validation (Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address). Only for DXTrade.",
+            "type": "string",
+            "pattern": "^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$",
+            "sensitive": 1
+        },
+        "platform": {
+            "description": "Name of trading platform.",
+            "type": "string",
+            "enum": [
+                "dxtrade",
+                "derivez",
+                "ctrader"
+            ]
+        },
+        "sub_account_type": {
+            "description": "[Optional] Sub account type.",
+            "type": "string",
+            "enum": [
+                "financial",
+                "financial_stp",
+                "swap_free"
+            ]
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

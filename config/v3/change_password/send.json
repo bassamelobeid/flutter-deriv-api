@@ -1,0 +1,51 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Change Password (request)",
+    "description": "Change Password. Note: This call is only available when authenticated using an OAuth token.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "admin"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "change_password",
+        "new_password",
+        "old_password"
+    ],
+    "properties": {
+        "change_password": {
+            "description": "Must be `1`",
+            "type": "number",
+            "enum": [
+                1
+            ]
+        },
+        "new_password": {
+            "description": "New password (Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address)",
+            "type": "string",
+            "pattern": "^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$",
+            "sensitive": 1
+        },
+        "old_password": {
+            "description": "Old password for validation (non-empty string, accepts any printable ASCII character)",
+            "type": "string",
+            "pattern": "^[ -~]+$",
+            "sensitive": 1
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

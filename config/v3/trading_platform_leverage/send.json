@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Trading Platform: Leverage (request)",
+    "description": "Get dynamic leverage by trading platform",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 0,
+    "additionalProperties": false,
+    "required": [
+        "trading_platform_leverage",
+        "platform"
+    ],
+    "properties": {
+        "trading_platform_leverage": {
+            "description": "Must be `1`",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "platform": {
+            "description": "Name of trading platform.",
+            "type": "string",
+            "enum": [
+                "dxtrade",
+                "ctrader",
+                "mt5"
+            ]
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

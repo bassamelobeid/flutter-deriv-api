@@ -1,0 +1,8 @@
+{
+    "fault": {
+        "faultstring": "Not Found",
+        "detail": {
+            "errorcode": "Not Found"
+        }
+    }
+}

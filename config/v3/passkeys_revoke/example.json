@@ -1,0 +1,17 @@
+{
+    "passkeys_revoke": 1,
+    "id": 1234,
+    "publicKeyCredential": {
+        "type": "public-key",
+        "authenticatorAttachment": "cross-platform",
+        "clientExtensionResults": {},
+        "id": "9HZfNZyQsDI4Pb6uq3QJTiyVlaVsE3qo44eToGeKtQNGfofK6FDLCJEtdEBwVoT5",
+        "rawId": "9HZfNZyQsDI4Pb6uq3QJTiyVlaVsE3qo44eToGeKtQNGfofK6FDLCJEtdEBwVoT5",
+        "response": {
+            "authenticatorData": "IteEK9B-kZFJE-tmeQE0fTb9NToEt-_PeXqSq0tlVNcFAAA",
+            "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiQXU2SHpkR2NrTWNfanlXUmNkNXU0SlJHWXdDS3lValFPSTl1Q3FOVjhEayIsIm9yaWdpbiI6Imh0dHBzOi8vd3d3LnBhc3NrZXlzLmlvIiwiY3Jvc3NPcmlnaW4iOm",
+            "signature": "MEUCIChpKi7_hRWphmMDi33p4wMEoOH_yC7nAZBhhcQ7VnyOAiEA6Jr0yjtkam3aAhaLxynqlt8UE5ZlQrypHVQxR0GxssY",
+            "userHandle": "cBFzkXpxQ9e-VJaW7Vg"
+        }
+    }
+}

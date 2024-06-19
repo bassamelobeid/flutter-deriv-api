@@ -1,0 +1,102 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Passkeys revoke (request)",
+    "description": "Revoke the given passkey from the user's account.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "admin"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "passkeys_revoke"
+    ],
+    "properties": {
+        "passkeys_revoke": {
+            "description": "Must be `1`",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "id": {
+            "description": "The system id of the passkey.",
+            "type": "integer"
+        },
+        "publicKeyCredential": {
+            "description": "The public key credential returned from the authenticator.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "authenticatorAttachment",
+                "clientExtensionResults",
+                "id",
+                "response",
+                "type"
+            ],
+            "properties": {
+                "authenticatorAttachment": {
+                    "description": "The authenticator attachment.",
+                    "type": "string"
+                },
+                "clientExtensionResults": {
+                    "description": "The client extension results.",
+                    "type": "object"
+                },
+                "id": {
+                    "description": "The credential id. base64 encoded",
+                    "type": "string"
+                },
+                "rawId": {
+                    "description": "The raw credential id. base64 encoded. Should match id (Optional)",
+                    "type": "string"
+                },
+                "response": {
+                    "description": "The response from the authenticator.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "clientDataJSON",
+                        "signature"
+                    ],
+                    "properties": {
+                        "authenticatorData": {
+                            "description": "The authenticator data. base64 encoded (Optional)",
+                            "type": "string"
+                        },
+                        "clientDataJSON": {
+                            "description": "The client data json. base64 encoded",
+                            "type": "string"
+                        },
+                        "signature": {
+                            "description": "The signature. base64 encoded",
+                            "type": "string"
+                        },
+                        "userHandle": {
+                            "description": "The user handle. (Optional)",
+                            "type": "string"
+                        }
+                    }
+                },
+                "type": {
+                    "description": "The type of the credential.",
+                    "type": "string"
+                }
+            }
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

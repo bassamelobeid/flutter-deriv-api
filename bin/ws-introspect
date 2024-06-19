@@ -1,0 +1,55 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use Getopt::Long;
+use Data::Dumper;
+
+# load this file to force MOJO::JSON to use JSON::MaybeXS
+use Mojo::JSON::MaybeXS;
+
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
+use Time::HiRes ();
+
+use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
+
+my $redis = ws_redis_master() or die 'no redis connection';
+my ($cmd, @args) = @ARGV;
+die 'no command' unless $cmd;
+
+$redis->on(
+    message => sub {
+        my ($redis, $msg, $channel) = @_;
+        my $response = decode_json_utf8($msg);
+
+        if ($response->{error}){
+            warn "Failed with error: $response->{error}";
+        }
+        else{
+            print "Command succeeded with: ". Dumper $response;
+        }
+        Mojo::IOLoop->stop;
+    },
+);
+$redis->subscribe(
+    ['introspection_response'],
+    sub {
+        warn "subscribed";
+    	my $id = Time::HiRes::time() . '-' . rand();
+    
+    	$redis->publish(
+    	    introspection => encode_json_utf8({
+    		    command => $cmd,
+    		    args    => \@args,
+    		    id      => $id,
+    		    channel => 'introspection_response',
+    		}),
+    	    sub {
+    		    warn "published";
+    	    }
+    	);
+    }
+);
+
+Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+

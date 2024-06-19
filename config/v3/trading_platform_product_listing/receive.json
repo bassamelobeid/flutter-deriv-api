@@ -1,0 +1,128 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Trading Platform: Product List (response)",
+    "description": "Get list of Trading Platform products for client.",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "trading_platform_product_listing": {
+            "title": "trading_platform_product_listing",
+            "description": "Containing Trading product objects.",
+            "type": "object",
+            "patternProperties": {
+                "^[0-9]+$": {
+                    "description": "Platform product listing.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "available_markets": {
+                            "description": "Available markets for country.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "available_trade_types": {
+                            "description": "Available trade types for country.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "name": {
+                            "description": "Name of trading platform.",
+                            "type": "string"
+                        },
+                        "product_list": {
+                            "description": "Available product for the Trading Platform.",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "available_account_types": {
+                                        "description": "Available account types for this asset symbol.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "available_trade_types": {
+                                        "description": "Available trade types for this asset symbol.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "market": {
+                                        "description": "Information for a market.",
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                            "display_name": {
+                                                "description": "Display name of the market.",
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "description": "Internal name of the market..",
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "submarket": {
+                                        "description": "Information for submarket.",
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                            "display_name": {
+                                                "description": "Display name of the submarket.",
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "description": "Internal name of the submarket.",
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "symbol": {
+                                        "description": "Information for underlying symbol.",
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                            "display_name": {
+                                                "description": "Display name of the underlying symbol.",
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "description": "Internal name of the underlying symbol.",
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "trading_platform_product_listing"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

@@ -1,0 +1,147 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Wallet migration managment (response)",
+    "description": "The result of wallet migration api call",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "wallet_migration": {
+            "title": "wallet_migration",
+            "description": "The information regarding wallet migration state",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "state"
+            ],
+            "properties": {
+                "account_list": {
+                    "title": "It contains plan of migration with all accounts that are going to be created and linked to existing accounts",
+                    "description": "[Optional] This field is only presented when state is eligible. It contains a list of accounts that are eligible for migration and provide information what wallets are going to be created",
+                    "type": "array",
+                    "items": {
+                        "title": "account",
+                        "description": "Information about a wallet account that will be created",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "account_category",
+                            "account_type",
+                            "currency",
+                            "landing_company_short",
+                            "link_accounts",
+                            "platform"
+                        ],
+                        "properties": {
+                            "account_category": {
+                                "description": "The category of the account",
+                                "type": "string",
+                                "enum": [
+                                    "wallet"
+                                ]
+                            },
+                            "account_type": {
+                                "description": "The type of the account",
+                                "type": "string"
+                            },
+                            "currency": {
+                                "description": "The currency of the account",
+                                "type": "string"
+                            },
+                            "landing_company_short": {
+                                "description": "The landing company short code of the account",
+                                "type": "string"
+                            },
+                            "link_accounts": {
+                                "description": "The list of accounts that will be linked to this wallet account",
+                                "type": "array",
+                                "items": {
+                                    "title": "linked_account",
+                                    "description": "Information about a single linked account",
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "account_category",
+                                        "account_type",
+                                        "loginid",
+                                        "platform"
+                                    ],
+                                    "properties": {
+                                        "account_category": {
+                                            "description": "The category of the account",
+                                            "type": "string",
+                                            "enum": [
+                                                "trading"
+                                            ]
+                                        },
+                                        "account_type": {
+                                            "description": "The type of the account",
+                                            "type": "string",
+                                            "enum": [
+                                                "standard",
+                                                "mt5",
+                                                "dxtrade",
+                                                "derivez",
+                                                "ctrader"
+                                            ]
+                                        },
+                                        "loginid": {
+                                            "description": "The loginid of the account",
+                                            "type": "string"
+                                        },
+                                        "platform": {
+                                            "description": "The platform of the account",
+                                            "type": "string",
+                                            "enum": [
+                                                "dtrade",
+                                                "mt5",
+                                                "dxtrade",
+                                                "derivez",
+                                                "ctrader"
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            "platform": {
+                                "description": "The platform of the account",
+                                "type": "string",
+                                "enum": [
+                                    "dwallet"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "state": {
+                    "description": "Current state of migration process",
+                    "type": "string",
+                    "enum": [
+                        "ineligible",
+                        "eligible",
+                        "in_progress",
+                        "migrated",
+                        "failed"
+                    ]
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "wallet_migration"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

@@ -1,0 +1,230 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Affiliate: Register MyAffliates (request)",
+    "description": "Register a new affiliate in MyAffliates",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 0,
+    "auth_scopes": [],
+    "additionalProperties": false,
+    "required": [
+        "affiliate_register_person",
+        "address_city",
+        "address_state",
+        "address_street",
+        "commission_plan",
+        "country",
+        "date_of_birth",
+        "email",
+        "first_name",
+        "last_name",
+        "non_pep_declaration",
+        "over_18_declaration",
+        "phone",
+        "phone_code",
+        "tnc_accepted",
+        "tnc_affiliate_accepted",
+        "type_of_account",
+        "user_name",
+        "website_url",
+        "whatsapp_number",
+        "whatsapp_number_phoneCode"
+    ],
+    "properties": {
+        "affiliate_register_person": {
+            "description": "[Required] Must be `1`",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "address_city": {
+            "description": "City name within 50 characters.",
+            "type": "string",
+            "pattern": "^\\p{L}[\\p{L}\\s'.-]{0,49}$"
+        },
+        "address_postcode": {
+            "description": "Within 20 characters and may not contain '+'.",
+            "type": "string",
+            "pattern": "^([A-Za-z0-9][A-Za-z0-9\\s-]{0,20})?$"
+        },
+        "address_state": {
+            "description": "Possible value receive from `states_list` call.",
+            "type": "string",
+            "pattern": "^[\\s\\S]*"
+        },
+        "address_street": {
+            "description": "Within 70 characters, with no leading whitespaces and may contain letters/numbers and/or any of following characters '.,:;()@#/-",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}'.,:;()\\x{b0}@#/-][\\p{L}\\p{Nd}\\s'.,:;()\\x{b0}@#/-]{0,69}$"
+        },
+        "citizenship": {
+            "description": "Name of the country that the user is citizen of, 2-letter country code.",
+            "type": "string",
+            "pattern": "^([a-z]{2})?$"
+        },
+        "commission_plan": {
+            "description": "Commission plan selected by affiliate 2 RevShare, 4. Turnover",
+            "type": "integer",
+            "enum": [
+                2,
+                4,
+                6
+            ]
+        },
+        "company_name": {
+            "description": "Name of the company.",
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_ ]*$",
+            "sensitive": 1
+        },
+        "company_registration_number": {
+            "description": "Registration number of the company",
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_ ]*$",
+            "sensitive": 1
+        },
+        "country": {
+            "description": "Name of the country that currently reside, 2-letter country code.",
+            "type": "string",
+            "pattern": "^([a-z]{2})?$"
+        },
+        "currency": {
+            "description": "Currency of affiliate that wants to work with.",
+            "type": "string",
+            "pattern": "^([A-Z]{3})?$"
+        },
+        "date_of_birth": {
+            "description": "Birth date of affiliate user trying to register",
+            "type": "string",
+            "pattern": "^[0-9]{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[0-1])$"
+        },
+        "email": {
+            "description": "Email address",
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,63}$"
+        },
+        "first_name": {
+            "description": "The official first name of the affiliate. Within 1-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
+            "type": "string",
+            "pattern": "^(?!.*\\s{2,})[\\p{L}\\s'.-]{1,50}$",
+            "sensitive": 1
+        },
+        "last_name": {
+            "description": "The official last name of the affiliate. Within 1-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
+            "type": "string",
+            "pattern": "^(?!.*\\s{2,})[\\p{L}\\s'.-]{1,50}$",
+            "sensitive": 1
+        },
+        "non_pep_declaration": {
+            "description": "Indicates client's self-declaration of not being a PEP/RCA (Politically Exposed Person/Relatives and Close Associates).",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "over_18_declaration": {
+            "description": "Indicates client's self-declaration of being over 18 in age",
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ]
+        },
+        "password": {
+            "description": "Password for the affiliate account. (Accepts any printable ASCII character. Must be between 6-50 characters, and include numbers, lowercase and uppercase letters.).",
+            "type": "string",
+            "pattern": "^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{6,50}$",
+            "sensitive": 1
+        },
+        "phone": {
+            "description": "Registered phone number of the affiliate. Starting with `+` followed by 8-35 digits, allowing hyphens or space.",
+            "type": "string",
+            "pattern": "^\\+?((-|\\s)*[0-9]){8,35}$",
+            "sensitive": 1
+        },
+        "phone_code": {
+            "description": "Phone code without the starting + sign",
+            "type": "string",
+            "pattern": "^(\\d{1,3}|\\d{1,4})$",
+            "sensitive": 1
+        },
+        "promote_eu": {
+            "description": "Indicates client is going to promote its account to EU or not.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "receive_marketing_emails": {
+            "description": "Indicates client has agreed to receive marketing emails or not.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "social_media_url": {
+            "description": "Social media URL of the affiliate trying to register.",
+            "type": "string",
+            "pattern": "^[0-9A-Za-z.-]{5,250}$",
+            "sensitive": 1
+        },
+        "tnc_accepted": {
+            "description": "Indicates client has agreed to the terms and conditions.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "tnc_affiliate_accepted": {
+            "description": "Indicates client has agreed to the terms and conditions for affiliates.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "type_of_account": {
+            "description": "Account type select 1 business, 2 individual",
+            "type": "integer",
+            "enum": [
+                1,
+                2
+            ]
+        },
+        "user_name": {
+            "description": "Username of affiliate, will be unique everytime",
+            "type": "string"
+        },
+        "website_url": {
+            "description": "Social media URL of the affiliate trying to register.",
+            "type": "string",
+            "pattern": "^[\\w_@./:#&+-]*$",
+            "sensitive": 1
+        },
+        "whatsapp_number": {
+            "description": "Whatsapp phone number of the affiliate. Starting with `+` followed by 8-35 digits, allowing hyphens or space.",
+            "type": "string",
+            "pattern": "^\\+?((-|\\s)*[0-9]){8,35}$",
+            "sensitive": 1
+        },
+        "whatsapp_number_phoneCode": {
+            "description": "Whatsapp code without the starting + sign",
+            "type": "string",
+            "pattern": "^(\\d{1,3}|\\d{1,4})$",
+            "sensitive": 1
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

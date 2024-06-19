@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Affiliate: Register MyAffliates (response)",
+    "description": "A message with affiliate user trying to register details",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "affiliate_user_id": {
+            "description": "Registered Affiliate ID",
+            "type": "string"
+        },
+        "success": {
+            "description": "Affiliate was successfully added, 0:unsuccessful 1:successful",
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ]
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "affiliate_register_person"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

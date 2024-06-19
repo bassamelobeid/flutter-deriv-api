@@ -1,0 +1,35 @@
+# MSC for transaction flow
+msc {
+    hscale=4,arcgradient = 8;
+    client,  create_channel [label= "Wrapper::Transaction::transaction_channel"], transaction [label = "Subscription::Transaction"], pricer [label = "Wrapper::Pricer"], redis, outside, bom_rpc;
+    client ->  create_channel [ label = "call" ];
+    create_channel -> transaction [ label = "create subscription and do subscription"];
+    transaction -> redis [ label = "subscribe" ];
+    transaction -> client [label = "subscribing ok"];
+    --- [label = "boundary line between subscribing/processing"];
+    outside -> redis [label = "publish changes"];
+    redis -> transaction [label = "call process \n Please refer to Subscription Flow"];
+    |||;
+    transaction box transaction [label = "update balance\n if type is 'balance'", linecolor = "red", textcolor = "red"];
+    transaction -> client [label = "send balance message", linecolor = "red", textcolor = "red"];
+    transaction box transaction [label = "update transaction\n if type is 'transaction'", linecolor = "green", textcolor = "green"];
+    transaction -> "bom_rpc" [label = "call transaction", linecolor = "green", textcolor = "green"];
+    "bom_rpc" -> transaction [label = "return message", linecolor = "green", textcolor = "green", id = "transaction"];
+    transaction -> client [label = "return error\n if 'transaction' bom-rpc returned error", linecolor = "green", textcolor = "green", id = "transaction"];
+    transaction -> client [label = "send transaction message", linecolor = "green", textcolor = "green", id = "transaction"];
+
+    transaction box transaction [label = "call _create_poc_stream\n if type is 'buy' and action is 'buy'", linecolor = "blue", textcolor="blue"];
+    transaction -> "outside" [label = "create proposal_open_contract", linecolor = "blue", textcolor="blue"];
+    "outside" -> transaction [label = "get uuid", linecolor = "blue", textcolor="blue"];
+    transaction -> create_channel [label = "call\n to create transaction stream with the type of sell", linecolor = "blue", textcolor="blue"];
+    transaction -x client [label = "return", linecolor = "blue", textcolor="blue"];
+    transaction box transaction [label = "call _close_proposal_open_cntract_stream\n if type is sell and action is sell", linecolor = "purple", textcolor="purple"];
+    transaction -> pricer [label = "call Wrapper::Pricer::send_proposal_open_contract_last_time\n to  send the last poc message", linecolor = "purple", textcolor="purple"];
+    pricer -x "outside" [label = "forget poc stream",linecolor = "purple", textcolor="purple" ];
+    pricer -> "bom_rpc" [label = "ask for proposal_open_contract",linecolor = "purple", textcolor="purple"];
+    "bom_rpc" -> pricer [label = "return message", linecolor = "purple", textcolor="purple"];
+    pricer -> client [label = "send back message", linecolor = "purple", textcolor="purple"];
+    
+    ... [label = "process message again and again"];
+    
+}

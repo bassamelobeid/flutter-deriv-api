@@ -1,0 +1,56 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Change Email (request)",
+    "description": "Change Email.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "admin"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "change_email",
+        "new_email",
+        "verification_code"
+    ],
+    "properties": {
+        "change_email": {
+            "description": "Must be `verify` or `update`.",
+            "type": "string",
+            "enum": [
+                "verify",
+                "update"
+            ]
+        },
+        "new_email": {
+            "description": "Email address to be verified.",
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,63}$"
+        },
+        "new_password": {
+            "description": "[Optional] New password (Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address). Mandatory if change_email is update and user has social login.",
+            "type": "string",
+            "pattern": "^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$",
+            "sensitive": 1
+        },
+        "verification_code": {
+            "description": "Email verification code (received from a `verify_email` call, which must be done first)",
+            "type": "string",
+            "pattern": "^\\w{8,128}$"
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

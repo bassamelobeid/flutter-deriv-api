@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Cashier Withdrawal Cancel (response)",
+    "description": "Result of the crypto withdrawal cancellation.",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "cashier_withdrawal_cancel": {
+            "title": "cashier_withdrawal_cancel",
+            "description": "Cancellation details",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "status_code"
+            ],
+            "properties": {
+                "id": {
+                    "description": "The unique identifier for the transaction.",
+                    "type": "string"
+                },
+                "status_code": {
+                    "description": "The status code of the cancellation.",
+                    "type": "string",
+                    "enum": [
+                        "CANCELLED"
+                    ]
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "cashier_withdrawal_cancel"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

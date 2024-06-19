@@ -1,0 +1,99 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Trading Platform: Leverage (response)",
+    "description": "Response containing dynamic leverage details for the requested trading platform",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "trading_platform_leverage": {
+            "title": "trading_platform_leverage",
+            "description": "Information for dynamic leverage for the requested trading platform",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "leverage": {
+                    "description": "List of objects containing leverage data by category",
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-z_]{1,30}$": {
+                            "description": "Details about leverage for each category",
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "display_name": {
+                                    "description": "Display name for each category",
+                                    "type": "string"
+                                },
+                                "instruments": {
+                                    "description": "List of instruments supported for the category",
+                                    "type": "array"
+                                },
+                                "max": {
+                                    "description": "Maximum leverage",
+                                    "type": "integer"
+                                },
+                                "min": {
+                                    "description": "Minimum leverage",
+                                    "type": "integer"
+                                },
+                                "volume": {
+                                    "description": "Range of data and its corressponding leverage",
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "data": {
+                                            "description": "Leverage data",
+                                            "type": "array",
+                                            "additionalProperties": false,
+                                            "items": {
+                                                "description": "Leverage data record",
+                                                "type": "object",
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                    "from": {
+                                                        "description": "Range start point",
+                                                        "type": "number"
+                                                    },
+                                                    "leverage": {
+                                                        "description": "Record leverage",
+                                                        "type": "integer"
+                                                    },
+                                                    "to": {
+                                                        "description": "Range end point",
+                                                        "type": "integer"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "unit": {
+                                            "description": "Measurable unit of leverage",
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "trading_platform_leverage"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

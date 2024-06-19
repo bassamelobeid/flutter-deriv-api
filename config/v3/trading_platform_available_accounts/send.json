@@ -1,0 +1,48 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Trading Platform: Available Accounts (request)",
+    "description": "The company allows client to create trading account with multiple counter parties.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 0,
+    "additionalProperties": false,
+    "required": [
+        "trading_platform_available_accounts",
+        "platform"
+    ],
+    "properties": {
+        "trading_platform_available_accounts": {
+            "title": "Trading Platform: Available Accounts",
+            "description": "Must be `1`",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "country_code": {
+            "description": "[Optional] Country code for which available accounts are returned. If not specified (deprecated) the current user residence country is used or (not deprecated) country code corresponding to the caller IP address is used.",
+            "type": "string"
+        },
+        "platform": {
+            "description": "Name of trading platform.",
+            "type": "string",
+            "enum": [
+                "mt5",
+                "ctrader"
+            ]
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

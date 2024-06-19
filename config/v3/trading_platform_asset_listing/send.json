@@ -1,0 +1,311 @@
+{
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "title": "Trading Platform: Asset Listing (request)",
+    "description": "Get list of Trading Platform assets for client",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 0,
+    "unevaluatedProperties": false,
+    "required": [
+        "trading_platform_asset_listing",
+        "platform"
+    ],
+    "properties": {
+        "trading_platform_asset_listing": {
+            "description": "Must be `1`",
+            "const": 1
+        },
+        "filter_by": {
+            "$comment": "TODO: Add keys restriction to be categorial only and values restriction to be string|[string]",
+            "description": "[Optional] Defines single level filter like key -> value or key -> [value_1, or_value_2, ..., or_value_n]",
+            "type": "object"
+        },
+        "limit": {
+            "description": "Max amount of assets to return",
+            "type": "number"
+        },
+        "platform": {
+            "$ref": "#/$defs/platform",
+            "description": "Trading platform name. This field also carries semantics of account_category, which defines the domain of 'account_type' field values",
+            "type": "string"
+        },
+        "requested_fields": {
+            "description": "[Optional] This field should be used to limit the set of fields in objects returned from the API call.",
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/instrument_field"
+            }
+        },
+        "subscribe": {
+            "description": "[Optional] If set to 1, will send updates whenever asset listing is updated.",
+            "const": 1
+        },
+        "type": {
+            "description": "Can be either 'brief' or 'full'. Deprecated, use 'limit' field instead.",
+            "deprecated": true,
+            "type": "string",
+            "enum": [
+                "brief",
+                "full"
+            ]
+        },
+        "unique": {
+            "description": "[Optional] If set to 1, returns only unique values. Given 'requested_fields' field is specified and all key fields are omitted, the result may contain duplicate (uniqable) values.",
+            "type": "boolean"
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    },
+    "oneOf": [
+        {
+            "required": [
+                "region"
+            ],
+            "properties": {
+                "account_type": false,
+                "landing_company_short": false,
+                "market_type": false,
+                "region": {
+                    "description": "Region be either 'eu' (European Union) or 'row' (Rest of the World). Deprecated, consider using 'landing_company_short' field instead. Could not be used with 'landing_company_short'.",
+                    "deprecated": true,
+                    "type": "string",
+                    "enum": [
+                        "eu",
+                        "row"
+                    ]
+                },
+                "sub_account_category": false,
+                "sub_account_type": false
+            }
+        },
+        {
+            "required": [
+                "account_type",
+                "landing_company_short",
+                "market_type",
+                "server",
+                "sub_account_category",
+                "sub_account_type"
+            ],
+            "properties": {
+                "account_type": {
+                    "description": "One or several account types corresponding to account category denoted by trading platform (see 'platform' field)",
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/account_type"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/account_type"
+                            }
+                        }
+                    ]
+                },
+                "landing_company_short": {
+                    "description": "One or several short codes of landing companies",
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/landing_company_short"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/landing_company_short"
+                            }
+                        }
+                    ]
+                },
+                "market_type": {
+                    "description": "One or several market types.",
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/market_type"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/market_type"
+                            }
+                        }
+                    ]
+                },
+                "region": false,
+                "server": {
+                    "description": "???",
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/server"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/server"
+                            }
+                        }
+                    ]
+                },
+                "sub_account_category": {
+                    "description": "One or several platform-dependent subcategories. Subcategory influences on some properties of assets.",
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/sub_account_category"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/sub_account_category"
+                            }
+                        }
+                    ]
+                },
+                "sub_account_type": {
+                    "description": "One or several platform-dependent subtypes. Subtype influences on some properties of assets.",
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/sub_account_type"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/sub_account_type"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "$defs": {
+        "account_type": {
+            "description": "Platform-dependent (account category dependent) account type as described in https://wikijs.deriv.cloud/en/Backend/architecture/proposal/account-types#account-categories-account-types-and-groups",
+            "type": "string",
+            "enum": [
+                "demo",
+                "gaming",
+                "financial",
+                "real"
+            ]
+        },
+        "instrument_field": {
+            "description": "Field name, which is present in the Instrument entity.",
+            "type": "string",
+            "enum": [
+                "account_type",
+                "ask",
+                "asset_class",
+                "base_currency",
+                "bid",
+                "calc_mode",
+                "category",
+                "contract_size",
+                "country",
+                "day_percentage_change",
+                "description",
+                "digits",
+                "display_order",
+                "industry",
+                "isin",
+                "landing_company_short",
+                "margin_call_margin_level",
+                "margin_currency",
+                "margin_initial",
+                "margin_free_mode",
+                "margin_mode",
+                "margin_rate_long",
+                "margin_rate_short",
+                "market",
+                "market_type",
+                "platform",
+                "profit_currency",
+                "sector",
+                "shortcode",
+                "spread",
+                "stop_loss_min_distance",
+                "stop_out_margin_level",
+                "sub_account_category",
+                "sub_account_type",
+                "subcategory",
+                "swap_mode",
+                "swap_rate_long",
+                "swap_rate_per_weekday",
+                "swap_rate_short",
+                "symbol",
+                "take_profit_min_distance",
+                "trade_mode",
+                "trading_sessions_info",
+                "volume_limit",
+                "volume_max",
+                "volume_min",
+                "volume_step"
+            ]
+        },
+        "landing_company_short": {
+            "description": "Landing company short code",
+            "type": "string",
+            "examples": [
+                "bvi",
+                "labuan",
+                "maltainvest",
+                "seychelles",
+                "svg",
+                "vanuatu"
+            ]
+        },
+        "market_type": {
+            "description": "Market type of asset.",
+            "type": "string",
+            "examples": [
+                "all",
+                "financial",
+                "synthetic"
+            ]
+        },
+        "platform": {
+            "$comment": "'mt5' is not the only one possible value, but it is the only supported value in this API call",
+            "description": "Trading platform name. This entity also carries semantics of account_category, which defines the domain of 'account_type' field values",
+            "type": "string",
+            "enum": [
+                "mt5"
+            ]
+        },
+        "server": {
+            "description": "???",
+            "type": "string",
+            "examples": [
+                "p01_ts01"
+            ]
+        },
+        "sub_account_category": {
+            "description": "Subcategory as defined in mt5_account_types.yml. It is subject for schema change for other trading platform, but currently this call supports only MT5.",
+            "type": "string",
+            "examples": [
+                "",
+                "stp",
+                "swap_free",
+                "swap_free_high_risk"
+            ]
+        },
+        "sub_account_type": {
+            "description": "Subtype as defined for MT5 in mt5_account_types.yml. It is subject for schema change for other trading platform, but currently this call supports only MT5.",
+            "type": "string",
+            "examples": [
+                "standard",
+                "financial",
+                "financial_stp",
+                "derivez"
+            ]
+        }
+    }
+}
