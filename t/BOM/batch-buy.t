@@ -1,0 +1,1133 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use utf8;
+use open ':std', ':encoding(utf8)';
+use BOM::Test;
+use Test::Deep;
+use Test::MockTime qw/:all/;
+use Test::MockModule;
+use Test::More;
+use Test::Exception;
+use List::Util qw(min);
+
+use BOM::User::Client;
+use Date::Utility;
+use ExpiryQueue;
+use Guard;
+
+use BOM::MarketData qw(create_underlying);
+use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData::Types;
+use BOM::User::Password;
+use BOM::Product::ContractFactory qw( produce_contract );
+use Finance::Contract::Longcode   qw( shortcode_to_parameters );
+use BOM::Transaction::Validation;
+use BOM::Transaction;
+
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw( create_client top_up );
+
+my $expiryq = ExpiryQueue->new(redis => BOM::Config::Redis::redis_expiryq_write);
+
+my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
+$requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
+
+use Crypt::NamedKeys;
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
+my $datadog_mock = Test::MockModule->new('DataDog::DogStatsd');
+my @datadog_actions;
+for my $mock (qw(increment decrement timing gauge count)) {
+    $datadog_mock->mock($mock => sub { shift; push @datadog_actions => {action_name => $mock, data => \@_} });
+}
+
+{
+    no warnings 'redefine';
+    *BOM::Config::env = sub { return 'production' };    # for testing datadog
+}
+
+sub reset_datadog {
+    @datadog_actions = ();
+}
+
+sub check_datadog {
+    my $item = +{@_};
+    if ($item->{action_name} eq "timing") {
+        for my $action (grep { $_->{action_name} eq "timing" } @datadog_actions) {
+            # skip exact timing, compare only event name and tags
+            next if $action->{data}[0] ne $item->{data}[0];
+            cmp_deeply($item->{data}[1], $action->{data}[2], "found datadog action: timing");
+        }
+        return;
+    }
+    cmp_deeply($item, any(@datadog_actions), "found datadog action: @{[$item->{action_name}]}");
+}
+
+my $now = Date::Utility->new;
+#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
+#Because the code to prepare market data is called for all pricings in Contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        events => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]});
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for ('frxEURUSD', 'frxEURJPY');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol => 'WLDUSD',
+        date   => Date::Utility->new,
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol => 'R_100',
+        date   => Date::Utility->new,
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol => $_,
+        date   => Date::Utility->new,
+    }) for (qw/USD EUR JPY JPY-USD/);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new,
+    }) for qw/frxUSDJPY WLDUSD/;
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'R_50',
+        recorded_date => Date::Utility->new,
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'randomindex',
+    {
+        symbol => 'R_50',
+        date   => Date::Utility->new,
+    });
+
+initialize_realtime_ticks_db();
+
+my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch,
+    underlying => 'frxUSDJPY',
+});
+
+my $underlying           = create_underlying('frxUSDJPY');
+my $market               = $underlying->market->name;
+my $underlying_OTC_GDAXI = create_underlying('OTC_GDAXI');
+my $underlying_WLDUSD    = create_underlying('WLDUSD');
+my $underlying_R50       = create_underlying('R_50');
+
+sub db {
+    return BOM::Database::ClientDB->new({
+            broker_code => 'CR',
+        })->db;
+}
+
+sub check_one_result {
+    my ($title, $cl, $acc, $m, $balance_after) = @_;
+
+    subtest $title, sub {
+        my $err = 0;
+        if (not $cl->status->professional and $cl->landing_company->short eq 'maltainvest') {
+            $err++
+                unless is $m->{error}, "Sorry, your account is not authorised for any further contract purchases.",
+                "correct error for non professional MF client";
+            return $err;
+        }
+        $err++ unless is $m->{error}, undef, "no error should be provided";
+        $err++ unless is $m->{txn}->{account_id},              $acc->id, 'txn account_id';
+        $err++ unless is $m->{fmb}->{account_id},              $acc->id, 'fmb account_id';
+        $err++ unless is $m->{txn}->{financial_market_bet_id}, $m->{fmb}->{id}, 'txn financial_market_bet_id';
+        $err++ unless is $m->{txn}->{balance_after},           sprintf('%.2f', $balance_after), 'balance_after';
+        $err++ unless is $m->{loginid}, $cl->loginid, 'loginid';
+    };
+
+    subtest "$title - CONTRACT_PARAMS TTL" => sub {
+        my $duration_epoch =
+            min(86400, Date::Utility->new($m->{fmb}->{expiry_time})->epoch - Date::Utility->new($m->{fmb}->{start_time})->epoch) + 60;
+        _check_contract_parameter_ttl($cl, $m->{fmb}->{id}, $duration_epoch);
+    };
+}
+
+####################################################################
+# real tests begin here
+####################################################################
+
+subtest 'batch-buy success + multisell', sub {
+    plan tests => 15;
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+        my $cl3 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $cl3->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 5000;
+
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
+
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            purchase_date => $contract->date_start,
+        });
+
+        subtest 'check limits' => sub {
+            my $mock_client  = Test::MockModule->new('BOM::User::Client');
+            my $mocked_limit = 100;
+            $mock_client->mock(
+                get_limit_for_account_balance => sub {
+                    my $c = shift;
+                    return ($c->loginid);
+                });
+
+            $txn->prepare_batch_buy(1);
+            foreach my $m (@{$txn->multiple}) {
+                next if $m->{code} && $m->{code} eq 'ignore';
+                ok(!$m->{code},                                             'no error');
+                ok($m->{client} && ref $m->{client} eq 'BOM::User::Client', 'check client');
+
+                if ($m->{client}->landing_company->unlimited_balance) {
+                    is($m->{limits}{max_balance}, undef, 'check_limit');
+                } else {
+                    is($m->{limits}{max_balance}, $m->{client}->loginid, 'check_limit');
+                }
+            }
+        };
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            $expiryq->queue_flush;
+            note explain + $expiryq->queue_status;
+            $txn->batch_buy;
+        };
+
+        is $error, undef, 'successful batch_buy';
+        my $m = $txn->multiple;
+        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], 4950;
+        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], 4950;
+        check_one_result 'result for client #3', $cl2, $acc2, $m->[3], 4900;
+
+        my $expected_status = {
+            active_queues  => 2,    # TICK_COUNT and SETTLEMENT_EPOCH
+            open_contracts => 3,    # the ones just bought
+            ready_to_sell  => 0,    # obviously
+        };
+        is_deeply $expiryq->queue_status, $expected_status, 'ExpiryQueue';
+        sleep 1;
+        subtest "sell_by_shortcode", sub {
+            plan tests => 11;
+            my $contract_parameters = shortcode_to_parameters($contract->shortcode, $clm->currency);
+            $contract_parameters->{landing_company} = $clm->landing_company->short;
+            $contract = produce_contract($contract_parameters);
+            ok($contract, 'contract have produced');
+            my $trx = BOM::Transaction->new({
+                    purchase_date => $contract->date_start,
+                    client        => $clm,
+                    multiple      => [{
+                            loginid  => $cl2->loginid,
+                            currency => $clm->currency
+                        },
+                        {loginid => $cl3->loginid},
+                        {loginid => $cl1->loginid},
+                        {loginid => $cl2->loginid},
+                    ],
+                    contract => $contract,
+                    price    => 10,
+                    source   => 1,
+                });
+            my $err = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                $mock_validation->mock(_validate_sell_pricing_adjustment =>
+                        sub { note "mocked Transaction::Validation->_validate_sell_pricing_adjustment returning nothing"; () });
+                $mock_validation->mock(_validate_offerings => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () }
+                );
+                $trx->sell_by_shortcode;
+            };
+
+            is $err, undef, 'successful multisell';
+            $m = $trx->multiple;
+
+            $_->{txn} = $_->{tnx} for @$m;
+
+            ok(!$m->[1]->{fmb} && !$m->[1]->{tnx} && !$m->[1]->{buy_tr_id}, 'check undef fields for invalid sell');
+            is($m->[1]->{code},  'NoOpenPosition',                                         'check error code');
+            is($m->[1]->{error}, 'This contract was not found among your open positions.', 'check error message');
+            check_one_result 'result for client #1', $cl1, $acc1, $m->[2], 4960;
+            check_one_result 'result for client #2', $cl2, $acc2, $m->[0], 4910;
+            check_one_result 'result for client #3', $cl2, $acc2, $m->[3], 4920;
+        };
+    }
+    'survived';
+};
+
+subtest 'batch-buy success 2', sub {
+    plan tests => 3;
+    lives_ok {
+        my $clm = create_client;    # manager
+
+        $clm->set_default_account('USD');
+        $clm->save;
+
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [{code => 'ignore'}, {}, {code => 'ignore'},],
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            $txn->batch_buy;
+        };
+
+        is $error, undef, 'successful batch_buy';
+        my $expected = [
+            {code => 'ignore'},
+            {
+                code              => 'InvalidLoginid',
+                error             => 'Invalid loginid',
+                message_to_client => 'Invalid loginid',
+            },
+            {code => 'ignore'},
+        ];
+
+        delete $txn->multiple->[0]->{limits};
+        delete $txn->multiple->[1]->{limits};
+        is_deeply $txn->multiple, $expected, 'nothing bought';
+    }
+    'survived';
+};
+
+subtest 'contract already started', sub {
+    plan tests => 3;
+    lives_ok {
+        my $clm = create_client;    # manager
+
+        $clm->set_default_account('USD');
+        $clm->save;
+
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            purchase_date => Date::Utility::today()->plus_time_interval('3d'),
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [{code => 'ignore'}],
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            $txn->batch_buy;
+        };
+
+        isa_ok $error, 'Error::Base';
+        is $error->{-type}, 'ContractAlreadyStarted', 'ContractAlreadyStarted';
+    }
+    'survived';
+};
+
+subtest 'single contract fails in database', sub {
+    plan tests => 12;
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+
+        $clm->set_default_account('USD');
+        $clm->save;
+
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 90;
+
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 90,   'USD balance #2 is 90 got: ' . $bal;
+
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            $expiryq->queue_flush;
+            note explain + $expiryq->queue_status;
+            $txn->batch_buy;
+        };
+
+        is $error, undef, 'successful batch_buy';
+        my $m = $txn->multiple;
+        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], 4950;
+        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], 40;
+        subtest 'result for client #3', sub {
+            ok !exists($m->[3]->{fmb}), 'fmb does not exist';
+            ok !exists($m->[3]->{txn}), 'txn does not exist';
+            is $m->[3]->{code},  'InsufficientBalance',                                                                'code = InsufficientBalance';
+            is $m->[3]->{error}, 'Your account balance (40.00 USD) is insufficient to buy this contract (50.00 USD).', 'correct description';
+        };
+
+        my $expected_status = {
+            active_queues  => 2,    # TICK_COUNT and SETTLEMENT_EPOCH
+            open_contracts => 2,    # the ones just bought
+            ready_to_sell  => 0,    # obviously
+        };
+        is_deeply $expiryq->queue_status, $expected_status, 'ExpiryQueue';
+    }
+    'survived';
+};
+
+subtest 'batch-buy with exception', sub {
+    plan tests => 5;
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+
+        my $contract = produce_contract({
+            underlying   => 'cryBTCUSD',
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [{loginid => $cl1->loginid}],
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            $expiryq->queue_flush;
+            note explain + $expiryq->queue_status;
+            $txn->batch_buy;
+        };
+
+        ok $error, 'unsuccessful batch_buy';
+        is $error->{-type}, 'InvalidOfferings';
+
+    }
+    'survived';
+};
+
+subtest 'batch-buy multiple databases and datadog', sub {
+    plan tests => 18;
+    lives_ok {
+        my $clm = create_client 'VRTC';    # manager
+        my @cl;
+        push @cl, create_client;
+        push @cl, create_client;
+        push @cl, create_client 'VRTC';
+
+        $clm->set_default_account('USD');
+        $clm->save;
+
+        top_up $_, 'USD', 5000 for (@cl);
+
+        my @acc;
+        for (@cl) {
+            push @acc, $_->account;
+            is $acc[-1]->currency_code, 'USD', 'got USD account #' . @acc;
+        }
+
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [(map { +{loginid => $_->loginid} } @cl), {code => 'ignore'}, {loginid => 'NONE000'},],
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            $mock_validation->mock(compliance_checks => sub { note "mocked Transaction::Validation->compliance_checks returning nothing"; undef });
+            $mock_validation->mock(
+                check_tax_information => sub { note "mocked Transaction::Validation->check_tax_information returning nothing"; undef });
+
+            $expiryq->queue_flush;
+            # note explain +ExpiryQueue::queue_status;
+            reset_datadog;
+
+            $txn->batch_buy;
+        };
+
+        is $error, undef, 'successful batch_buy';
+        my $m = $txn->multiple;
+        for (my $i = 0; $i < @cl; $i++) {
+            check_one_result 'result for client ' . $m->[$i]->{loginid}, $cl[$i], $acc[$i], $m->[$i], 4950;
+        }
+
+        my $expected_status = {
+            active_queues  => 2,    # TICK_COUNT and SETTLEMENT_EPOCH
+            open_contracts => 3,    # the ones just bought
+            ready_to_sell  => 0,    # obviously
+        };
+        is_deeply $expiryq->queue_status, $expected_status, 'ExpiryQueue';
+        check_datadog
+            action_name => 'increment',
+            data        => [
+            "transaction.batch_buy.attempt" => {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        landing_company:virtual
+                        market:forex
+                        amount_type:payout
+                        expiry_type:duration
+                        /
+                ]}];
+        check_datadog
+            action_name => 'increment',
+            data        => [
+            "transaction.batch_buy.success" => {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        landing_company:virtual
+                        market:forex
+                        amount_type:payout
+                        expiry_type:duration
+                        /
+                ]}];
+        check_datadog
+            action_name => 'count',
+            data        => [
+            "transaction.buy.attempt" => 1,
+            {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        landing_company:virtual
+                        market:forex
+                        amount_type:payout
+                        expiry_type:duration
+                        /
+                ]}];
+        check_datadog
+            action_name => 'count',
+            data        => [
+            "transaction.buy.success" => 1,
+            {
+                tags => [
+                    qw/ broker:vrtc
+                        virtual:yes
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        landing_company:virtual
+                        market:forex
+                        amount_type:payout
+                        expiry_type:duration
+                        /
+                ]}];
+        check_datadog
+            action_name => 'count',
+            data        => [
+            "transaction.buy.attempt" => 2,
+            {
+                tags => [
+                    qw/ broker:cr
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        landing_company:virtual
+                        market:forex
+                        amount_type:payout
+                        expiry_type:duration
+                        /
+                ]}];
+        check_datadog
+            action_name => 'count',
+            data        => [
+            "transaction.buy.success" => 2,
+            {
+                tags => [
+                    qw/ broker:cr
+                        virtual:no
+                        rmgenv:production
+                        contract_class:higher_lower_bet
+                        landing_company:virtual
+                        market:forex
+                        amount_type:payout
+                        expiry_type:duration
+                        /
+                ]}];
+    }
+    'survived';
+};
+
+subtest 'batch_buy multiplier contract' => sub {
+
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+        my $cl3 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $cl3->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 5000;
+
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
+
+        my $contract = produce_contract({
+            underlying  => 'R_100',
+            bet_type    => 'MULTUP',
+            currency    => 'USD',
+            amount_type => 'stake',
+            amount      => 100,
+            multiplier  => 10,
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 100.00,
+            stake         => $contract->ask_price,
+            amount_type   => 'stake',
+            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            purchase_date => $contract->date_start,
+        });
+
+        subtest 'batch_buy' => sub {
+            my $error = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+                $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                        sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+                $mock_validation->mock(
+                    _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
+                $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+                my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+                $txn->batch_buy;
+            };
+
+            ok $error, 'unsuccessful batch_buy';
+
+            is $error->{'-mesg'},              'Multiplier not supported in batch_buy',  'correct -mesg';
+            is $error->{'-message_to_client'}, 'MULTUP and MULTDOWN are not supported.', 'correct -message_to_client';
+        };
+
+        subtest "sell_by_shortcode", sub {
+            my $trx = BOM::Transaction->new({
+                    purchase_date => $contract->date_start,
+                    client        => $clm,
+                    multiple      => [{
+                            loginid  => $cl2->loginid,
+                            currency => $clm->currency
+                        },
+                        {loginid => $cl3->loginid},
+                        {loginid => $cl1->loginid},
+                        {loginid => $cl2->loginid},
+                    ],
+                    contract_parameters => {
+                        shortcode       => $contract->shortcode,
+                        landing_company => $clm->landing_company->short,
+                        limit_order     => $contract->available_orders,
+                        currency        => $clm->currency
+                    },
+                    price  => 10,
+                    source => 1,
+                });
+            my $err = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                $mock_validation->mock(_validate_sell_pricing_adjustment =>
+                        sub { note "mocked Transaction::Validation->_validate_sell_pricing_adjustment returning nothing"; () });
+                $mock_validation->mock(_validate_offerings => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () }
+                );
+                $trx->sell_by_shortcode;
+            };
+            ok $err, 'unsuccessful multisell';
+            is $err->{'-mesg'},              'Multiplier not supported in sell_by_shortcode', 'correct -mesg';
+            is $err->{'-message_to_client'}, 'MULTUP and MULTDOWN are not supported.',        'correct -message_to_client';
+        };
+    }
+    'survived';
+};
+
+subtest 'batch_buy accumulator contract' => sub {
+
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+        my $cl3 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $cl3->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 5000;
+
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
+
+        my $contract = produce_contract({
+            bet_type    => 'ACCU',
+            underlying  => 'R_100',
+            amount_type => 'stake',
+            amount      => 100,
+            growth_rate => 0.01,
+            currency    => 'USD',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 100.00,
+            stake         => $contract->ask_price,
+            amount_type   => 'stake',
+            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            purchase_date => $contract->date_start,
+        });
+
+        subtest 'batch_buy' => sub {
+            my $error = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                $mock_validation->mock(
+                    _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
+                $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+                my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+                $txn->batch_buy;
+            };
+
+            ok $error, 'unsuccessful batch_buy';
+
+            is $error->{'-mesg'},              'Accumulator not supported in batch_buy', 'correct -mesg';
+            is $error->{'-message_to_client'}, 'ACCU is not supported.',                 'correct -message_to_client';
+        };
+
+        subtest "sell_by_shortcode", sub {
+            my $trx = BOM::Transaction->new({
+                    purchase_date => $contract->date_start,
+                    client        => $clm,
+                    multiple      => [{
+                            loginid  => $cl2->loginid,
+                            currency => $clm->currency
+                        },
+                        {loginid => $cl3->loginid},
+                        {loginid => $cl1->loginid},
+                        {loginid => $cl2->loginid},
+                    ],
+                    contract_parameters => {
+                        shortcode       => $contract->shortcode,
+                        landing_company => $clm->landing_company->short,
+                        # limit_order     => $contract->available_orders,
+                        currency => $clm->currency
+                    },
+                    price  => 10,
+                    source => 1,
+                });
+            my $err = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                $mock_validation->mock(_validate_offerings => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () }
+                );
+                $trx->sell_by_shortcode;
+            };
+            ok $err, 'unsuccessful multisell';
+            is $err->{'-mesg'},              'Accumulator not supported in sell_by_shortcode', 'correct -mesg';
+            is $err->{'-message_to_client'}, 'ACCU is not supported.',                         'correct -message_to_client';
+        };
+    }
+    'survived';
+};
+
+subtest 'batch buy slippage failure' => sub {
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 5000;
+
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
+
+        my $contract = produce_contract({
+            underlying => 'R_100',
+            bet_type   => 'CALL',
+            currency   => 'USD',
+            payout     => 100,
+            duration   => '1h',
+            barrier    => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 45,
+            amount_type   => 'payout',
+            multiple      => [{loginid => $cl2->loginid}, {loginid => $cl1->loginid}],
+            purchase_date => $contract->date_start,
+        });
+
+        subtest 'batch_buy' => sub {
+            my $error = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                #$mock_validation->mock(_validate_trade_pricing_adjustment =>
+                #        sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+                $mock_validation->mock(
+                    _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
+                $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+                my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+                $txn->batch_buy;
+            };
+            ok $error, 'unsuccessful batch_buy';
+            is $error->{'-type'}, 'PriceMoved', '-type = PriceMoved';
+            is $error->{'-mesg'}, 'Difference between submitted and newly calculated bet price: currency USD, amount: 45, recomputed amount: 50.99';
+        };
+    }
+    'survived';
+};
+
+subtest 'batch buy forex after friday close' => sub {
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 5000;
+
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
+
+        my $date = Date::Utility->new('2021-11-12 21:00:00');
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'volsurface_delta',
+            {
+                symbol        => $_,
+                recorded_date => $date->minus_time_interval('1h'),
+                spot_tick     => Postgres::FeedDB::Spot::Tick->new({epoch => $date->epoch, quote => '132.25'}),
+            }) for ('frxUSDJPY');
+
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'currency',
+            {
+                symbol        => $_,
+                recorded_date => $date->minus_time_interval('1h'),
+            }) for (qw/USD JPY JPY-USD/);
+
+        my $contract = produce_contract({
+            underlying   => 'frxUSDJPY',
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '10h',
+            date_start   => $date,
+            date_pricing => $date,
+            current_tick => $tick,
+            barrier      => 'S0P'
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => $contract->ask_price,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            source        => 19,
+            multiple      => [{loginid => $cl2->loginid}, {loginid => $cl1->loginid}],
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->batch_buy;
+        ok $error, 'invalid to buy';
+        is $error->get_type, 'InvalidtoBuy', 'InvalidtoBuy';
+        is $error->{'-message_to_client'},
+            'This market is presently closed. Market will open at 2021-11-15 00:00:00. Try out the Synthetic Indices which are always open.';
+
+    }
+    'survived';
+};
+
+sub _check_contract_parameter_ttl {
+    my ($cl, $contract_id, $expected_ttl) = @_;
+
+    my $key = join '::', 'CONTRACT_PARAMS', $contract_id, $cl->landing_company->short;
+    my $ttl = BOM::Config::Redis::redis_pricer()->ttl($key);
+    ok $ttl <= $expected_ttl, 'ttl for ' . $key . ' is less than or equal to ' . $expected_ttl . '. Got [' . $ttl . ']';
+}
+
+done_testing;
