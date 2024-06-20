@@ -3,8 +3,6 @@ run-name: Daily sync with master branch
 on:
   workflow_dispatch:
   workflow_call:
-  schedule:
-    - cron: '0 16 * * *' # This is MYT 12:00 AM everyday. would be midnight in Malaysia time
 jobs:
   sync:
     runs-on: ubuntu-latest
