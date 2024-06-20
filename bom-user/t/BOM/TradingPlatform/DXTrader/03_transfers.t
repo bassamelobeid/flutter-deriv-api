@@ -19,6 +19,8 @@ $dxconfig->suspend->demo(0);
 $dxconfig->suspend->real(0);
 $dxconfig->enable_all_market_type->demo(0);
 $dxconfig->enable_all_market_type->real(0);
+$dxconfig->token_authentication->demo(1);
+$dxconfig->token_authentication->real(1);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 my $user   = BOM::User->create(

@@ -126,7 +126,7 @@ async sub handle_http_request {
     try {
         die "Only POST is allowed\n" unless $req->method eq 'POST';
         my $params = decode_json_utf8($req->body || '{}');
-        $server = delete $params->{server} || '<none>';
+        $server = $params->{server}        || '<none>';
         $method = delete $params->{method} || '<none>';
         die "Invalid server: $server\n" unless exists $self->{clients}{$server};
         die "Invalid method: $method\n" unless $self->{clients}{$server}->can($method);

@@ -54,14 +54,20 @@ sub _add_to_loop {
 
     $self->add_child(
         $self->{clients}{demo} = WebService::Async::DevExperts::Dxsca::Client->new(
-            host => $self->{demo_host},
-            port => $self->{demo_port},
+            host   => $self->{demo_host},
+            port   => $self->{demo_port},
+            user   => $self->{demo_user},
+            pass   => $self->{demo_pass},
+            server => 'demo',
         ));
 
     $self->add_child(
         $self->{clients}{real} = WebService::Async::DevExperts::Dxsca::Client->new(
-            host => $self->{real_host},
-            port => $self->{real_port},
+            host   => $self->{real_host},
+            port   => $self->{real_port},
+            user   => $self->{real_user},
+            pass   => $self->{real_pass},
+            server => 'real',
         ));
 
     return $self->next::method;

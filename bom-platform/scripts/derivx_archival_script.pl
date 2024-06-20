@@ -99,6 +99,7 @@ for my $server_type (@servers) {
             port    => $config->{servers}{$server_type}{port},
             user    => $config->{servers}{$server_type}{user},
             pass    => $config->{servers}{$server_type}{pass},
+            server  => $server_type,
             timeout => 15
         ));
 
@@ -108,6 +109,7 @@ for my $server_type (@servers) {
             port    => $config->{servers}{$server_type}{port},
             user    => $config->{servers}{$server_type}{user},
             pass    => $config->{servers}{$server_type}{pass},
+            server  => $server_type,
             timeout => 15
         ));
 }
@@ -237,6 +239,7 @@ async sub process_account {
             account_code  => $dx_account,
             status        => 'TERMINATED',
             tokenAuth     => $auth_type,
+            server        => $type,
         );
     } catch ($e) {
         # 404 means account was not found on DerivX,

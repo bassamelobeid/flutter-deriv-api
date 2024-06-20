@@ -25,6 +25,8 @@ my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->system->dxtrade->suspend->all(0);
 $app_config->system->dxtrade->suspend->demo(0);
 $app_config->system->dxtrade->suspend->real(0);
+$app_config->system->dxtrade->token_authentication->demo(1);
+$app_config->system->dxtrade->token_authentication->real(1);
 $app_config->system->mt5->http_proxy->demo->p01_ts04(1);
 $app_config->system->mt5->http_proxy->real->p02_ts01(1);
 

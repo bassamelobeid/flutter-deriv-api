@@ -470,6 +470,7 @@ sub get_accounts {
 
     my @accounts;
     for my $server (@account_servers) {
+        next unless BOM::Config::Runtime->instance->app_config->system->dxtrade->token_authentication->$server;
         next unless any { $server eq $_ } $self->active_servers;
         next if $args{type} and $args{type} ne $server;
         try {

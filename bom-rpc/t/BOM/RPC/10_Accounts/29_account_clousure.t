@@ -542,6 +542,8 @@ subtest 'Account closure DXTrader' => sub {
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->token_authentication->demo(1);
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->token_authentication->real(1);
 
     my $email       = 'dxtrader@binary.com';
     my $password    = 'dxTest0909099';

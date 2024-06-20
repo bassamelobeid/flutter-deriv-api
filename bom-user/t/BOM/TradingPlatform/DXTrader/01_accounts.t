@@ -22,6 +22,9 @@ $dxconfig->suspend->real(0);
 $dxconfig->enable_all_market_type->demo(0);
 $dxconfig->enable_all_market_type->real(0);
 
+$dxconfig->token_authentication->demo(1);
+$dxconfig->token_authentication->real(1);
+
 my $dxtrader_mock                 = Test::MockModule->new('BOM::TradingPlatform::DXTrader');
 my $real_account_ids_offset       = undef;
 my $real_account_ids_login_prefix = undef;

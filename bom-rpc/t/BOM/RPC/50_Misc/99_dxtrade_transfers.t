@@ -21,6 +21,8 @@ BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
 BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->demo(1);
 BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->real(1);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->token_authentication->demo(1);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->token_authentication->real(1);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
