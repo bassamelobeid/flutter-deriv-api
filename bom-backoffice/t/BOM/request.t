@@ -66,5 +66,13 @@ subtest 'get_staff_nickname' => sub {
     ok BOM::Backoffice::Auth::get_staff_nickname($staff) ne 'test_name234', 'get_staff_nickname not match';
 };
 
+subtest 'request id' => sub {
+    ok request()->id, 'ID exists on request';
+    my $mock_request = Test::MockModule->new('BOM::Backoffice::Request::Base');
+    $mock_request->mock('id', sub { return 'dummy' });
+    is request()->id, 'dummy', 'request id matches';
+    $mock_request->unmock_all;
+};
+
 done_testing;
 

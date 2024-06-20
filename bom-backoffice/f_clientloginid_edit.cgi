@@ -67,8 +67,9 @@ PrintContentType();
 # We have 30 seconds time out at Cloudflare,
 # here we want to try to set up alarm with the same time out.
 alarm(30);
+$log->infof("%s: Setting up alarm for request", request()->id);
 local $SIG{ALRM} = sub {
-    $log->errorf('Timeout processing request f_clientloginid_edit.cgi');
+    $log->errorf("%s: Timeout processing request f_clientloginid_edit.cgi", request()->id);
     code_exit_BO(qq[ERROR: Timeout loading page, try again later]);
 };
 use constant {
@@ -128,6 +129,8 @@ my $is_readonly          = BOM::Backoffice::Auth::has_readonly_access();
 my $button_type          = $is_readonly ? 'btn btn--disabled' : 'btn btn--primary';
 code_exit_BO(_get_display_error_message("Access Denied: you do not have access to make this change "))
     if $is_readonly and request()->http_method eq 'POST';
+
+$log->infof("%s: Initialized values for client - %s", request()->id, $loginid);
 # Enabling onfido resubmission
 my $redis             = BOM::Config::Redis::redis_events_write();
 my $poi_status_reason = $input{poi_reason} // $client->status->reason('allow_poi_resubmission') // 'unselected';
@@ -1107,6 +1110,7 @@ my $skip_loop_all_clients = (defined $force_coc_acknowledgement || defined $risk
 # SAVE DETAILS
 # TODO:  Once we switch to userdb, we will not need to loop through all clients
 if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
+    $log->infof("%s: Edit client details", request()->id);
 
     # Trimming immutable text fields to avoid whitespaces which causes problems while creating a real account
     # If there are white spaces added from BO, then while creating a real account, the request has trimmed values,
@@ -1657,6 +1661,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
         place_of_birth residence salutation secret_answer secret_question mifir_id tax_identification_number tax_residence/;
 
     $updated_fields{date_of_birth} = $client->date_of_birth->ymd if any { defined $input{$_} } qw/dob_month dob_year dob_day/;
+    $log->infof("%s: Edited client details", request()->id);
 
     if (keys %updated_fields) {
         my $profile_change_args = {
@@ -1792,6 +1797,7 @@ my @statuses;
 ###############################################
 ## UNTRUSTED SECTION
 ###############################################
+$log->infof("%s: Loading statuses", request()->id);
 my %client_statuses =
     map { $_ => $client->status->$_ } @{$client->status->all};
 for my $type (get_untrusted_types()->@*) {
@@ -1829,6 +1835,7 @@ BOM::Backoffice::Request::template()->process(
         p2p_approved             => $p2p_approved,
         client_statuses_readonly => \%client_statuses,
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
+$log->infof("%s: Finished loading statuses", request()->id);
 
 my $payment_agent;
 
@@ -1944,6 +1951,7 @@ unless (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'
 }
 print '<div>Corresponding accounts:</div><ul>';
 
+$log->infof("%s: Fetching corressponding accounts", request()->id);
 # show all BOM loginids for user, include disabled acc
 foreach my $lid ($user_clients->@*) {
     next if ($lid->loginid eq $client->loginid);
@@ -2111,8 +2119,9 @@ try {
 } catch ($e) {
     print encode_entities($e);
 };
-
+$log->infof("%s: Fetched corressponding accounts", request()->id);
 if (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'])) {
+    $log->infof("%s: Page load complete", request()->id);
     code_exit_BO();
 }
 
@@ -2670,7 +2679,7 @@ if (not $client->is_virtual) {
 }
 
 Bar($user->{email} . " Login history", {nav_link => "Login History"});
-
+$log->infof("%s: Obtaining history", request()->id);
 my $limit     = 200;
 my $user_data = BOM::Service::user(
     context         => BOM::Backoffice::UserService::get_context(),
@@ -2848,7 +2857,7 @@ sub _assemble_dob_input {
 
     return undef;
 }
-
+$log->infof("%s: Page load complete", request()->id);
 code_exit_BO();
 
 =head2 update_needed

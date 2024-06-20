@@ -7,6 +7,7 @@ use Encode;
 use Sys::Hostname;
 use Plack::App::CGIBin::Streaming::Request;
 use HTML::Entities;
+use UUID::Tiny;
 
 use LandingCompany::Registry;
 use Brands;
@@ -85,6 +86,22 @@ has 'available_currencies' => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+has 'id' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 _build_id
+
+Generate a unique id for the request
+
+=cut
+
+sub _build_id {
+    my $uuid = UUID::Tiny::create_uuid_as_string(UUID::Tiny::UUID_V4);
+    return $uuid;
+}
 
 sub _build_broker_code {
     my $self = shift;
