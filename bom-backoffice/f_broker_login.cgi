@@ -191,7 +191,7 @@ if (BOM::Backoffice::Auth::has_authorisation(['CS'])) {
 }
 
 # App management
-if (BOM::Backoffice::Auth::has_authorisation(['Marketing'])) {
+if (BOM::Backoffice::Auth::has_authorisation(['Marketing', 'IT'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
