@@ -1,5 +1,5 @@
-name: Daily master test
-run-name: Daily test on master branch
+name: Daily workflow (bom-user)
+run-name: Daily workflow (bom-user)
 on:
   workflow_dispatch:
   workflow_call:
