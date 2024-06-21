@@ -174,11 +174,10 @@ rule 'paymentagent.action_is_allowed' => {
         if ($service eq 'cashier_withdraw') {
             my $limits = $pa->cashier_withdrawable_balance;
 
-            my $available = financialrounding('amount', $pa_client->currency, $limits->{available});
+            my $available = financialrounding('amount', $pa_client->currency, $pa->cashier_withdrawable_balance);
 
             return 1 if $available > 0 && abs($args->{amount} // 0) <= $available;
-            $self->fail('PACommisionWithdrawalLimit', params => [$pa_client->currency, $available])
-                if ($limits->{commission} // 0) > 0;
+            $self->fail('PACommisionWithdrawalLimit', params => [$pa_client->currency, $available]) if $available > 0;
         }
 
         my %error_mapping = (

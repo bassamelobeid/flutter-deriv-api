@@ -79,32 +79,17 @@
                 [% END %]
                 [% IF pa_summary %]
                     <td>
-                    <b>Payment agent commision withdrawal</b>
-                    [% IF pa_summary.withdrawal_allowed %]
-                    <br>Tier allows unlimited withdrawals.
+                    <table class="sortable collapsed hover alternate border">
+                    <tr><td><b>Payment agent commision withdrawal</b></td><td>
+                    [% IF pa_summary.unauthorized %]
+                    Unauthorized PA has no withdrawal resriction (PA status: [% pa_summary.unauthorized %])
+                    [% ELSIF pa_summary.withdrawal_allowed %]
+                    Tier allows unlimited withdrawals.
                     [% ELSE %]
-                    <table class="collapsed hover alternate border">
-                        <tr><td>Allowed to withdraw</td><td>[% pa_summary.available %]</td></tr>
-                        <tr><td>Commission received</td><td>[% pa_summary.commission %]</td></tr>
-                        <tr><td>Already withdrawn</td><td>[% pa_summary.payouts %]</td></tr>
-                        <tr><td colspan=2><table border=0>
-                            Active PA account(s) commission-related totals:
-                            [% FOR acc IN pa_summary.accounts %]
-                            <tr><td colspan=2><b>[% acc.loginid %] ([% acc.currency %])</b></td></tr>
-                                [% IF acc.totals.size %]
-                                    [% FOR total IN acc.totals %]
-                                        <tr><td>[% total.payment_type %]</td><td>[% total.net %]</td></tr>
-                                    [% END %]
-                                [% ELSE %]
-                                    <tr><td colspan=2>No commission related transactions</td></tr>
-                                [% END %]    
-                            [% END %]
-                        </table></td></tr>
-                    </table>
-                    [% END %]  
-                    </td> 
-                [% END %]        
-                    
+                    Allowed to withdraw: [% pa_summary.available %] 
+                    [% END %]
+                    </td></tr><table><br>
+                [% END %]
                     <td>
                         <b>Totals</b>
                         <table class="sortable collapsed hover alternate border">

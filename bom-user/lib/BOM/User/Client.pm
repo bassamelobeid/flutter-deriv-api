@@ -5851,9 +5851,7 @@ sub balance_for_doughflow {
     my ($self) = @_;
 
     my $pa = $self->get_payment_agent;
-    if ($pa && ($pa->status // '') eq 'authorized' && !$pa->service_is_allowed('cashier_withdraw')) {
-        return $pa->cashier_withdrawable_balance()->{available};
-    }
+    return $pa->cashier_withdrawable_balance() if $pa;
 
     return $self->account->balance;
 }

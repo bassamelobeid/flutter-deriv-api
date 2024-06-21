@@ -203,32 +203,13 @@ if (my $advertiser = $client->_p2p_advertiser_cached) {
 }
 
 my $pa_summary;
-if ($pa and $pa->status and $pa->status eq 'authorized') {
-    if ($pa->service_is_allowed('cashier_withdraw')) {
+if ($pa) {
+    if (!$pa->status || $pa->status ne 'authorized') {
+        $pa_summary->{unauthorized} = $pa->status || 'none';
+    } elsif ($pa->service_is_allowed('cashier_withdraw')) {
         $pa_summary->{withdrawal_allowed} = 1;
     } else {
-        $pa_summary = $pa->cashier_withdrawable_balance;
-        $pa_summary->{$_} = formatnumber('amount', $currency, $pa_summary->{$_} // 0) for qw(available commission payouts);
-
-        for my $acc (sort { $a->{loginid} cmp $b->{loginid} } $pa_summary->{accounts}->@*) {
-            for my $total (sort { $a->{payment_type} cmp $b->{payment_type} } $acc->{totals}->@*) {
-                $total->{net} = formatnumber('amount', $acc->{currency}, ($total->{credit} // 0) - ($total->{debit} // 0));
-                if ($acc->{currency} ne $currency) {
-                    my $converted = convert_currency($total->{net}, $acc->{currency}, $currency);
-                    $total->{net} .= " $acc->{currency} (" . formatnumber('amount', $currency, $converted) . " $currency)";
-                }
-
-                if ($total->{payment_type} =~ /^(mt5_transfer|affiliate_reward|arbitrary_markup)$/) {
-                    if ($total->{debit}) {
-                        $total->{net} .= ' (withdrawals: ' . formatnumber('amount', $acc->{currency}, $total->{debit});
-                        $total->{net} .= ', deposits: ' . formatnumber('amount', $acc->{currency}, ($total->{credit} // 0)) . ')';
-                    }
-                    $total->{payment_type} .= ' net deposits';
-                } else {
-                    $total->{payment_type} .= ' withdrawals';
-                }
-            }
-        }
+        $pa_summary->{available} = formatnumber('amount', $currency, $pa->cashier_withdrawable_balance);
     }
 }
 

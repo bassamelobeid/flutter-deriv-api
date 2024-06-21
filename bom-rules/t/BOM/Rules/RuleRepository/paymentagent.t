@@ -328,17 +328,18 @@ subtest $rule_name => sub {
 
     subtest 'commission withdrawal' => sub {
 
-        my $limits;
-        $mock_pa->redefine(cashier_withdrawable_balance => sub { $limits });
+        my $limit;
+        $mock_pa->redefine(cashier_withdrawable_balance => sub { $limit });
 
+        my $user = BOM::User->create(
+            email    => 'aff1@test.com',
+            password => 'x',
+        );
         my $usd_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            email       => 'aff1@test.com'
+            broker_code    => 'CR',
+            binary_user_id => $user->id,
         });
-        BOM::User->create(
-            email    => $usd_client->email,
-            password => 'x'
-        )->add_client($usd_client);
+        $user->add_client($usd_client);
         $usd_client->account('USD');
         $usd_client->payment_agent({
             payment_agent_name => 'bob1',
@@ -352,11 +353,7 @@ subtest $rule_name => sub {
             loginid           => $usd_client->loginid,
         );
 
-        $limits = {
-            available  => 0,
-            commission => 0,
-            payouts    => 0,
-        };
+        $limit = 0;
 
         is_deeply(
             exception { $rule_engine->apply_rules($rule_name, %args) },
@@ -367,27 +364,19 @@ subtest $rule_name => sub {
             'Error is ServiceNotAllowedForPA with no available and no commission'
         );
 
-        $limits = {
-            available  => 0,
-            commission => 1,
-            payouts    => 0,
-        };
+        $limit = 1;
 
         is_deeply(
             exception { $rule_engine->apply_rules($rule_name, %args, amount => 12) },
             {
                 rule       => $rule_name,
                 error_code => 'PACommisionWithdrawalLimit',
-                params     => ['USD', '0.00'],
+                params     => ['USD', '1.00'],
             },
             'Error is PACommisionWithdrawalLimit when commission was received'
         );
 
-        $limits = {
-            available  => 10,
-            commission => 10,
-            payouts    => 0,
-        };
+        $limit = 10;
 
         is_deeply(
             exception { $rule_engine->apply_rules($rule_name, %args, amount => 10.01) },
@@ -401,14 +390,15 @@ subtest $rule_name => sub {
 
         lives_ok { $rule_engine->apply_rules($rule_name, %args, amount => 10) } 'Allowed to withdraw full amount';
 
+        $user = BOM::User->create(
+            email    => 'aff2@test.com',
+            password => 'x',
+        );
         my $usdc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            email       => 'aff2@test.com'
+            broker_code    => 'CR',
+            binary_user_id => $user->id,
         });
-        BOM::User->create(
-            email    => $usdc_client->email,
-            password => 'x'
-        )->add_client($usdc_client);
+        $user->add_client($usdc_client);
         $usdc_client->account('USDC');
         $usdc_client->payment_agent({
             payment_agent_name => 'bob2',
@@ -422,18 +412,14 @@ subtest $rule_name => sub {
             loginid           => $usdc_client->loginid,
         );
 
-        $limits = {
-            available  => 0,
-            commission => 1,
-            payouts    => 0,
-        };
+        $limit = 1;
 
         is_deeply(
-            exception { $rule_engine->apply_rules($rule_name, %args, amount => 10.01) },
+            exception { $rule_engine->apply_rules($rule_name, %args, amount => 1.01) },
             {
                 rule       => $rule_name,
                 error_code => 'PACommisionWithdrawalLimit',
-                params     => ['USDC', '0.00'],
+                params     => ['USDC', '1.00'],
             },
             'Crypto PA gets PACommisionWithdrawalLimit'
         );

@@ -687,57 +687,29 @@ sub service_is_allowed {
 =head2 cashier_withdrawable_balance
 
 Gets balance available to withdraw via an external cashier.
-Returns a hashref with the following keys:
-
-=over 4
-
-=item C<available> - amount available to withdraw.
-
-=item C<commission_total> - commission received.
-
-=item C<payout_total> - amount already withdrawn via cashier or transfer to non-pa siblings
-
-=item C<accounts> - array of authorized pa siblings including self with details of each payment type
-
-=back
 
 =cut
 
 sub cashier_withdrawable_balance {
     my ($self) = @_;
 
-    my $result = {};
     my $client = $self->client;
 
-    my @sibling_pas = map { $_->client('replica') } grep { ($_->status // '') eq 'authorized' } $self->sibling_payment_agents;
+    return $client->account->balance if $self->status ne 'authorized' || $self->service_is_allowed('cashier_withdraw');
 
-    for my $sibling (@sibling_pas) {
-        my @sibling_accounts = map { $_->account->id } grep { $_->loginid ne $sibling->loginid } @sibling_pas;
+    my $old_db = $client->get_db;
+    $client->set_db('replica') if 'replica' ne $old_db;
 
-        my $totals = $sibling->db->dbic->run(
-            fixup => sub {
-                $_->selectall_arrayref('SELECT * FROM payment.payment_agent_totals(?, ?)', {Slice => {}}, $sibling->account->id, \@sibling_accounts);
-            });
+    my $result = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT betonmarkets.get_payment_agent_commission_total(?)', {Slice => {}}, $client->binary_user_id);
+        });
 
-        for my $total (@$totals) {
-            if ($total->{payment_type} =~ /^(mt5_transfer|affiliate_reward|arbitrary_markup)$/) {
-                $result->{commission} += convert_currency(($total->{credit} // 0) - ($total->{debit} // 0), $sibling->currency, $client->currency);
-            }
-            if ($total->{payment_type} =~ /^(external_cashier|crypto_cashier|internal_transfer)$/) {
-                $result->{payouts} += convert_currency(($total->{debit} // 0), $sibling->currency, $client->currency);
-            }
-        }
+    $result = max($result // 0, 0);
+    $result = convert_currency($result, 'USD', $client->currency);
+    $result = min($result, $self->client->account->balance);
 
-        push $result->{accounts}->@*,
-            {
-            loginid  => $sibling->loginid,
-            currency => $sibling->currency,
-            totals   => $totals,
-            };
-    }
-
-    $result->{available} = min(max(0, ($result->{commission} // 0) - ($result->{payouts} // 0)), $self->client->account->balance);
-
+    $client->set_db($old_db) if 'replica' ne $old_db;
     return $result;
 }
 

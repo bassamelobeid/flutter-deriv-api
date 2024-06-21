@@ -409,7 +409,7 @@ subtest 'Payment withdraw' => sub {
         $mock_pa->mock(status                       => sub { 'authorized' });
         $mock_pa->mock(tier_details                 => sub { return {} });
         $mock_pa->mock(sibling_payment_agents       => sub { return () });
-        $mock_pa->mock(cashier_withdrawable_balance => sub { return {available => 0, commission => 0} });
+        $mock_pa->mock(cashier_withdrawable_balance => sub { 0 });
 
         my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->redefine(get_payment_agent => $mock_pa);
