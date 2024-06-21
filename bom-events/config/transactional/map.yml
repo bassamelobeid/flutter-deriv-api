@@ -40,7 +40,10 @@ mt5_signup:
         contains: mtr
   - mt5_signup_financial:
       brand: deriv
-      account_type: financial
+      account_type:
+        contains:
+          - financial
+          - all
       mt5_server_environment:
         not_contains:
           - deriv-demo
@@ -48,6 +51,7 @@ mt5_signup:
         contains:
           - financial
           - financial_stp
+          - zero_spread
 trading_platform_account_created:
   - svg_all_derivx_signup:
       platform: dxtrade

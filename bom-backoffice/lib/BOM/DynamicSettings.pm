@@ -311,7 +311,7 @@ sub get_settings_by_group {
                 system.mt5.load_balance.demo.all.p01_ts01
                 system.mt5.load_balance.demo.all.p01_ts02
                 system.mt5.load_balance.demo.all.p01_ts03
-                system.mt5.load_balance.demo.all.p01_ts04
+                system.mt5.load_balance.demo.derivez.p01_ts04
                 system.mt5.load_balance.real.all.p01_ts01
                 system.mt5.load_balance.real.europe_synthetic.p01_ts04
                 system.mt5.load_balance.real.africa_synthetic.p02_ts02

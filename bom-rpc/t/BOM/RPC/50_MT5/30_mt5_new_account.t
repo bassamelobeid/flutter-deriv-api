@@ -440,7 +440,8 @@ subtest 'MT5 account opening under idv photoid allowed landing company' => sub {
             agent                => undef,
             login                => re('MTR\d+'),
             mt5_account_category => 'conventional',
-            product              => '',
+            sub_account_type     => 'standard',
+            product              => 'financial',
             stash                => {
                 app_markup_percentage      => 0,
                 source_type                => 'official',
@@ -509,7 +510,8 @@ subtest 'MT5 account opening under idv photoid allowed landing company' => sub {
             agent                => undef,
             login                => re('MTR\d+'),
             mt5_account_category => 'conventional',
-            product              => '',
+            sub_account_type     => 'standard',
+            product              => 'financial',
             stash                => {
                 app_markup_percentage      => 0,
                 source_type                => 'official',
@@ -560,7 +562,8 @@ subtest 'MT5 account opening under idv photoid allowed landing company' => sub {
             display_balance  => '0.00',
             agent            => undef,
             login            => re('MTR\d+'),
-            product          => '',
+            sub_account_type => 'stp',
+            product          => 'stp',
             stash            => {
                 app_markup_percentage      => 0,
                 source_type                => 'official',
@@ -1865,6 +1868,115 @@ subtest 'Don\'t allow creating MT5 account if there are failures in mt5_accounts
     is $add_loginid_attributes->{group},           'real\\p01_ts01\\financial\\bvi_std-hr_usd', 'Should be BVI hr group';
     is $add_loginid_attributes->{landing_company}, 'bvi',                                       'Should be BVI landing company';
     $mock_user->unmock_all;
+};
+
+subtest 'account_type=real, server=p01_ts01, country=id, mt5 zero spread account ' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    my $new_email  = 'zero_spread_real_' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'id'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->citizen('id');
+    $new_client->tax_residence('id');
+    $new_client->tax_identification_number('1234');
+    $new_client->account_opening_reason('Testing');
+    $new_client->save;
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'junkfile123',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'all',
+            email        => $new_email,
+            name         => $details{name},
+            mainPassword => $details{password}{main},
+            leverage     => 100,
+            company      => 'bvi',
+            product      => 'zero_spread',
+        },
+    };
+
+    # Test for zero spread real account on p01_ts01
+    $app_config->system->mt5->load_balance->real->africa_derivez->p02_ts01(0);
+    $app_config->system->mt5->load_balance->real->all->p01_ts01(100);
+    $app_config->system->mt5->suspend->auto_Bbook_bvi_financial(1);
+    $c->call_ok($method, $params)->has_no_error('real zero spread bvi account on p01_ts01 successfully created');
+    is($user->loginid_details->{MTR1001021}->{attributes}->{group}, 'real\\p01_ts01\\all\\bvi_zs-hr_usd', "created group is correct");
+
+    # Test for zero spread real account on p01_ts01 hr
+    $app_config->system->mt5->suspend->auto_Bbook_bvi_financial(0);
+    $c->call_ok($method, $params)->has_error('cannot create multiple zero spread account with different risk level')
+        ->error_code_is('MT5CreateUserError', 'correct error code')
+        ->error_message_is(
+        'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
+
+    # Test for zero spread real account on p02_ts01 hr
+    $app_config->system->mt5->suspend->auto_Bbook_bvi_financial(1);
+    $c->call_ok($method, $params)->has_error('cannot create multiple zero spread account with different risk level on different trade server')
+        ->error_code_is('MT5CreateUserError', 'is correct error code')
+        ->error_message_is(
+        'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
+
+};
+
+subtest 'account_type=demo, server=p01_ts01, country=id, mt5 zero spread account ' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    my $new_email  = 'zero_spread_demo_' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'id'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->citizen('id');
+    $new_client->tax_residence('id');
+    $new_client->tax_identification_number('1234');
+    $new_client->account_opening_reason('Testing');
+    $new_client->save;
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'junkfile123',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'demo',
+            email        => $new_email,
+            name         => $details{name},
+            mainPassword => $details{password}{main},
+            leverage     => 100,
+            company      => 'bvi',
+            product      => 'zero_spread',
+        },
+    };
+
+    # Test for zero spread real account on p01_ts01
+    $app_config->system->mt5->load_balance->demo->all->p01_ts01(100);
+    $app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+    $app_config->system->mt5->load_balance->demo->all->p01_ts03(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts01->all(0);
+    $c->call_ok($method, $params)->has_no_error('demo zero spread bvi account on p01_ts01 successfully created');
+
+    # Test for zero spread real account on p01_ts01 hr
+    $app_config->system->mt5->load_balance->demo->all->p01_ts01(0);
+    $app_config->system->mt5->load_balance->demo->all->p01_ts02(100);
+    $c->call_ok($method, $params)->has_error('only one demo zero spread account is allowed')
+        ->error_code_is('MT5CreateUserError', 'correct error code')
+        ->error_message_is(
+        'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
 };
 
 done_testing();

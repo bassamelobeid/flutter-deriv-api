@@ -127,6 +127,14 @@ my $max_deposit_key_mapping = {
     max_30day_deposit => 'max_deposit_30day',
 };
 
+# MT5 sub account type legacy naming
+my %mt5_mapping = (
+    stp         => 'financial_stp',
+    standard    => 'financial',
+    swap_free   => 'swap_free',
+    zero_spread => 'zero_spread',
+);
+
 my $json = JSON::MaybeXS->new;
 
 requires_auth('trading', 'wallet');
@@ -271,11 +279,6 @@ rpc "landing_company",
 
     # We don't want to send "mt" as key so need to delete from structure
     my $mt5_landing_company_details = delete $landing_company{mt};
-    my %output_map                  = (
-        stp       => 'financial_stp',
-        standard  => 'financial',
-        swap_free => 'swap_free',
-    );
 
     foreach my $mt5_type (keys %{$mt5_landing_company_details}) {
         foreach my $mt5_sub_type (keys %{$mt5_landing_company_details->{$mt5_type}}) {
@@ -284,7 +287,7 @@ rpc "landing_company",
             my $company_name = $mt5_landing_company_details->{$mt5_type}{$mt5_sub_type}[0];
             next if not $company_name or $company_name eq 'none';
 
-            $landing_company{"mt_${mt5_type}_company"}{$output_map{$mt5_sub_type}} =
+            $landing_company{"mt_${mt5_type}_company"}{$mt5_mapping{$mt5_sub_type}} =
                 __build_landing_company(LandingCompany::Registry->by_name($company_name), $country);
         }
     }

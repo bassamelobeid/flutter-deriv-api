@@ -395,7 +395,7 @@ subtest 'Virtual transfers' => sub {
         landing_company_short => 'svg',
         market_type           => 'synthetic',
         sub_account_type      => 'financial',
-        product               => '',
+        product               => 'synthetic',
     };
 
     $params->{token}              = $tokens{vrw};
@@ -775,7 +775,7 @@ subtest 'real transfers' => sub {
         market_type           => 'synthetic',
         landing_company_short => 'svg',
         sub_account_type      => 'financial',
-        product               => '',
+        product               => 'synthetic',
     };
 
     $params->{args} = {

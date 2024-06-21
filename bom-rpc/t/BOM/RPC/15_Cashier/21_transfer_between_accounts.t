@@ -719,7 +719,7 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
             landing_company_short => 'svg',
             market_type           => 'financial',
             sub_account_type      => 'financial',
-            product               => '',
+            product               => 'financial',
         },
         {
             loginid               => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'},
@@ -735,7 +735,7 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
             landing_company_short => 'labuan',
             market_type           => 'financial',
             sub_account_type      => 'financial_stp',
-            product               => '',
+            product               => 'stp',
         },
     );
     $params->{args} = {accounts => 'all'};

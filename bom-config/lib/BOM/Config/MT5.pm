@@ -183,7 +183,7 @@ Example:
     $self->server_by_country('id');
 
     # To get all real trade servers for Indonesia
-    $self->server_by_country('id', {group_type => 'real', sub_account_category => 'standard'});
+    $self->server_by_country('id', {group_type => 'real', sub_account_type => 'standard'});
 
 Returns a hash reference with server info for particular group / country.
 
@@ -195,7 +195,7 @@ sub server_by_country {
     die "country code is requird" unless $country_code;
 
     my $routing_config = $self->routing_config;
-    my ($group_type, $market_type, $sub_account_category) = @{$args}{'group_type', 'market_type', 'sub_account_category'};
+    my ($group_type, $market_type, $sub_account_type) = @{$args}{'group_type', 'market_type', 'sub_account_type'};
     my $servers;
 
     foreach my $group (keys %$routing_config) {
@@ -203,7 +203,7 @@ sub server_by_country {
         foreach my $market (keys %{$routing_config->{$group}{$country_code}}) {
             next if defined $market_type and $market_type ne $market;
             $servers->{$group}{$market} =
-                $self->_generate_server_info($group, $routing_config->{$group}{$country_code}{$market}{servers}{$sub_account_category});
+                $self->_generate_server_info($group, $routing_config->{$group}{$country_code}{$market}{servers}{$sub_account_type});
         }
     }
 

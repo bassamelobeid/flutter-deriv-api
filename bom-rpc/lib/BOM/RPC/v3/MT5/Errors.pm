@@ -148,6 +148,9 @@ my %category_message_mapping = do {
         DerivEZInvalidAccountCurrency => localize('Invalid Deriv EZ account currency. Please check the details and try again.'),
         DerivEZUnavailable            => localize("Deriv EZ platform is not available."),
         TradingPlatformInvalidAccount => localize("This [_1] account is not available for your account."),
+
+        # Zero Spread error codes
+        MT5ZeroSpreadNotAllowed => localize('MT5 Zero Spread [_1] account is not available in your country yet.'),
     );
 };
 

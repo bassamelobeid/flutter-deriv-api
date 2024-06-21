@@ -2402,6 +2402,11 @@ system:
                       isa: Bool
                       default: 0
                       global: 1
+            zero_spread_account_creation:
+              description: "Suspend Zero Spread Account Creation"
+              isa: Bool
+              default: 0
+              global: 1
         sync_user_with_mt5:
           description: "Configuration for sync user with mt5 process"
           isa: section

@@ -204,8 +204,8 @@ subtest 'server_by_country' => sub {
         $mocked_MT5_object->server_by_country(
             "ao",
             {
-                group_type           => 'real',
-                sub_account_category => 'standard'
+                group_type       => 'real',
+                sub_account_type => 'standard'
             }
         ),
         $expected,
@@ -488,6 +488,7 @@ subtest 'check mt5 account types structure' => sub {
             sub_account_type      => 1,
             sub_account_category  => 1,
             server                => 1,
+            product               => 1,
         };
 
         my $actual_keys = {};

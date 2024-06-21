@@ -306,7 +306,22 @@ my $AVAILABLE_ACCOUNTS = {
                 'signup'     => []
             },
             'linkable_landing_companies' => ['svg'],
-            'product'                    => '',
+            'product'                    => 'swap_free',
+        },
+        {
+            'name'             => 'Deriv (BVI) Ltd',
+            'market_type'      => 'all',
+            'shortcode'        => 'bvi',
+            'sub_account_type' => 'zero_spread',
+            'requirements'     => {
+                'signup'              => ['account_opening_reason'],
+                'after_first_deposit' => {'financial_assessment' => ['financial_information', 'trading_experience']},
+                'compliance'          => {
+                    'mt5'             => ['fully_authenticated', 'expiration_check'],
+                    'tax_information' => ['tax_residence',       'tax_identification_number']}
+            },
+            'linkable_landing_companies' => ['svg'],
+            'product'                    => 'zero_spread',
         },
         {
             'name'             => 'Deriv (SVG) LLC',
@@ -318,7 +333,7 @@ my $AVAILABLE_ACCOUNTS = {
                 'signup'     => []
             },
             'linkable_landing_companies' => ['svg'],
-            'product'                    => '',
+            'product'                    => 'financial',
         },
         {
             'name'         => 'Deriv (BVI) Ltd',
@@ -333,7 +348,7 @@ my $AVAILABLE_ACCOUNTS = {
             },
             'sub_account_type'           => 'standard',
             'linkable_landing_companies' => ['svg'],
-            'product'                    => '',
+            'product'                    => 'financial',
         },
         {
             'sub_account_type' => 'standard',
@@ -349,7 +364,7 @@ my $AVAILABLE_ACCOUNTS = {
             'market_type'                => 'financial',
             'name'                       => 'Deriv (V) Ltd',
             'linkable_landing_companies' => ['svg'],
-            'product'                    => '',
+            'product'                    => 'financial',
         },
         {
             'sub_account_type' => 'standard',
@@ -365,7 +380,7 @@ my $AVAILABLE_ACCOUNTS = {
             'market_type'                => 'gaming',
             'name'                       => 'Deriv (V) Ltd',
             'linkable_landing_companies' => ['svg'],
-            'product'                    => '',
+            'product'                    => 'synthetic',
         },
         {
             'requirements' => {
@@ -381,7 +396,7 @@ my $AVAILABLE_ACCOUNTS = {
             'market_type'                => 'financial',
             'name'                       => 'Deriv (FX) Ltd',
             'linkable_landing_companies' => ['svg'],
-            'product'                    => '',
+            'product'                    => 'stp',
         },
         {
             'requirements' => {
@@ -393,7 +408,7 @@ my $AVAILABLE_ACCOUNTS = {
             'market_type'                => 'gaming',
             'name'                       => 'Deriv (SVG) LLC',
             'linkable_landing_companies' => ['svg'],
-            'product'                    => '',
+            'product'                    => 'synthetic',
         },
         {
             'requirements' => {
@@ -409,7 +424,7 @@ my $AVAILABLE_ACCOUNTS = {
             'market_type'                => 'gaming',
             'name'                       => 'Deriv (BVI) Ltd',
             'linkable_landing_companies' => ['svg'],
-            'product'                    => '',
+            'product'                    => 'synthetic',
         },
         {
             'requirements' => {
@@ -423,7 +438,7 @@ my $AVAILABLE_ACCOUNTS = {
             'name'                       => 'Deriv Investments (Europe) Limited',
             'sub_account_type'           => 'standard',
             'linkable_landing_companies' => ['maltainvest'],
-            'product'                    => '',
+            'product'                    => 'financial',
         }
     ],
     at => [{
@@ -436,7 +451,7 @@ my $AVAILABLE_ACCOUNTS = {
             'name'                       => 'Deriv Investments (Europe) Limited',
             'sub_account_type'           => 'standard',
             'linkable_landing_companies' => ['maltainvest'],
-            'product'                    => '',
+            'product'                    => 'financial',
         }
     ],
     my => [],

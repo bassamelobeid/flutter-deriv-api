@@ -457,8 +457,8 @@ subtest 'server by country' => sub {
         my $result = $mt5->server_by_country(
             'id',
             {
-                group_type           => 'demo',
-                sub_account_category => 'swap_free'
+                group_type       => 'demo',
+                sub_account_type => 'swap_free'
             });
 
         is_deeply($result, $expected, 'output expected for swap_free account demo server on Indonesia');
@@ -468,9 +468,9 @@ subtest 'server by country' => sub {
         $result = $mt5->server_by_country(
             'id',
             {
-                group_type           => 'demo',
-                market_type          => 'synthetic',
-                sub_account_category => 'swap_free'
+                group_type       => 'demo',
+                market_type      => 'synthetic',
+                sub_account_type => 'swap_free'
             });
 
         is_deeply($result, $expected, 'output expected for swap_free account demo synthetic server on Indonesia');
@@ -563,8 +563,8 @@ subtest 'server by country' => sub {
         my $result = $mt5->server_by_country(
             'id',
             {
-                group_type           => 'demo',
-                sub_account_category => 'standard'
+                group_type       => 'demo',
+                sub_account_type => 'standard'
             });
 
         is_deeply($result, $expected, 'output expected for standard mt5 account demo server on Indonesia');
@@ -574,9 +574,9 @@ subtest 'server by country' => sub {
         $result = $mt5->server_by_country(
             'id',
             {
-                group_type           => 'demo',
-                market_type          => 'synthetic',
-                sub_account_category => 'standard'
+                group_type       => 'demo',
+                market_type      => 'synthetic',
+                sub_account_type => 'standard'
             });
 
         is_deeply($result, $expected, 'output expected for demo synthetic server on Indonesia');
@@ -619,8 +619,8 @@ subtest 'server by country' => sub {
         my $result = $mt5->server_by_country(
             'id',
             {
-                group_type           => 'real',
-                sub_account_category => 'swap_free'
+                group_type       => 'real',
+                sub_account_type => 'swap_free'
             });
 
         is_deeply($result, $expected, 'output expected for swap_free account real server on Indonesia');
@@ -630,9 +630,9 @@ subtest 'server by country' => sub {
         $result = $mt5->server_by_country(
             'id',
             {
-                group_type           => 'real',
-                market_type          => 'synthetic',
-                sub_account_category => 'swap_free'
+                group_type       => 'real',
+                market_type      => 'synthetic',
+                sub_account_type => 'swap_free'
             });
         is_deeply($result, $expected, 'output expected for swap_free account real synthetic server on Indonesia');
 
@@ -687,8 +687,8 @@ subtest 'server by country' => sub {
         my $result = $mt5->server_by_country(
             'id',
             {
-                group_type           => 'real',
-                sub_account_category => 'standard'
+                group_type       => 'real',
+                sub_account_type => 'standard'
             });
 
         is_deeply($result, $expected, 'output expected for real server on Indonesia');
@@ -696,9 +696,9 @@ subtest 'server by country' => sub {
         $result = $mt5->server_by_country(
             'id',
             {
-                group_type           => 'real',
-                market_type          => 'all',
-                sub_account_category => 'standard'
+                group_type       => 'real',
+                market_type      => 'all',
+                sub_account_type => 'standard'
             });
 
         is_deeply($result->{real}{all}, $expected->{real}{all}, 'output expected for demo derivez server on Indonesia');
@@ -708,11 +708,124 @@ subtest 'server by country' => sub {
         $result = $mt5->server_by_country(
             'id',
             {
-                group_type           => 'real',
-                market_type          => 'synthetic',
-                sub_account_category => 'standard'
+                group_type       => 'real',
+                market_type      => 'synthetic',
+                sub_account_type => 'standard'
             });
         is_deeply($result, $expected, 'output expected for real synthetic server on Indonesia');
+    };
+
+    subtest 'mt5 zero_spread demo servers' => sub {
+        my $mt5                       = BOM::Config::MT5->new();
+        my $expected_demo_zero_spread = {
+            'demo' => {
+                'all' => [{
+                        'environment' => 'Deriv-Demo',
+                        'disabled'    => 0,
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Ireland',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 1,
+                        'id'                 => 'p01_ts01'
+                    },
+                    {
+                        'environment' => 'Deriv-Demo',
+                        'disabled'    => 0,
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Frankfurt',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 0,
+                        'id'                 => 'p01_ts03'
+                    },
+                    {
+                        'environment' => 'Deriv-Demo',
+                        'disabled'    => 0,
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Frankfurt',
+                            group      => 'derivez',
+                        },
+                        'supported_accounts' => ['all'],
+                        'recommended'        => 0,
+                        'id'                 => 'p01_ts04'
+                    },
+                    {
+                        'environment' => 'Deriv-Demo',
+                        'disabled'    => 0,
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'US East',
+                            'location' => 'N. Virginia',
+                            group      => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 0,
+                        'id'                 => 'p01_ts02'
+                    }
+                ],
+                'financial' => [],
+                'synthetic' => []}};
+        my $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type       => 'demo',
+                sub_account_type => 'zero_spread'
+            });
+
+        is_deeply($result, $expected_demo_zero_spread, 'zero spread demo account offer both financial and synthetic');
+    };
+
+    subtest 'mt5 zero_spread demo servers' => sub {
+        my $mt5                       = BOM::Config::MT5->new();
+        my $expected_real_zero_spread = {
+            'real' => {
+                'all' => [{
+                        'environment' => 'Deriv-Server',
+                        'disabled'    => 0,
+                        'geolocation' => {
+                            'sequence' => 1,
+                            'region'   => 'Europe',
+                            'location' => 'Ireland',
+                            'group'    => 'all',
+                        },
+                        'supported_accounts' => ['gaming', 'financial', 'financial_stp', 'all'],
+                        'recommended'        => 1,
+                        'id'                 => 'p01_ts01'
+                    },
+                    {
+                        'disabled'    => 0,
+                        'environment' => 'Deriv-Server-02',
+                        'geolocation' => {
+                            'group'    => 'africa_derivez',
+                            'location' => 'South Africa',
+                            'region'   => 'Africa',
+                            'sequence' => 2
+                        },
+                        'id'                 => 'p02_ts01',
+                        'recommended'        => 0,
+                        'supported_accounts' => ['all']
+                    },
+                ],
+                'financial' => [],
+                'synthetic' => []}};
+
+        my $result = $mt5->server_by_country(
+            'id',
+            {
+                group_type       => 'real',
+                sub_account_type => 'zero_spread'
+            });
+
+        is_deeply($result, $expected_real_zero_spread, 'zero spread real account offer both financial and synthetic');
     };
 };
 
@@ -723,12 +836,12 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 118,
+            count   => 126,
             comment => 'real groups'
         },
         {
             filter  => {server_type => 'demo'},
-            count   => 29,
+            count   => 33,
             comment => 'demo groups'
         },
         {
@@ -950,7 +1063,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'bvi'
             },
-            count   => 21,
+            count   => 29,
             comment => 'real bvi groups'
         },
         {
@@ -976,7 +1089,7 @@ subtest 'available_groups' => sub {
                 server_type => 'demo',
                 company     => 'bvi'
             },
-            count   => 5,
+            count   => 9,
             comment => 'demo bvi groups'
         },
         {
@@ -1110,7 +1223,7 @@ subtest 'available_groups' => sub {
                 market_type => 'all'
             },
             count   => 2,
-            comment => 'demo svg derivez groups'
+            comment => 'demo svg all groups'
         },
         {
             filter => {
@@ -1119,7 +1232,25 @@ subtest 'available_groups' => sub {
                 market_type => 'all'
             },
             count   => 7,
-            comment => 'real svg derivez groups'
+            comment => 'real svg all groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'bvi',
+                market_type => 'all'
+            },
+            count   => 4,
+            comment => 'demo bvi all groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'bvi',
+                market_type => 'all'
+            },
+            count   => 8,
+            comment => 'real bvi derivez groups'
         },
 
     );

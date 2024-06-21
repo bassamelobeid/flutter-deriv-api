@@ -147,12 +147,14 @@
                         "type": "string"
                     },
                     "sub_account_type": {
-                        "description": "Sub account type",
+                        "description": "Indicate the different offerings for mt5 account.",
                         "type": "string",
                         "enum": [
                             "standard",
+                            "stp",
+                            "ibt",
                             "swap_free",
-                            "stp"
+                            "zero_spread"
                         ]
                     }
                 }

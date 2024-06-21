@@ -75,6 +75,18 @@ our %MT5_ACCOUNTS = (
 
     # real p02_ts01
     'real\p02_ts01\all\svg_std-sf_usd' => '80000020',
+
+    # Zero spread real test account
+    'real\p01_ts01\all\bvi_zs-hr_usd' => '1001021',
+    'real\p01_ts01\all\bvi_zs_usd'    => '1001022',
+    'real\p02_ts01\all\bvi_zs-hr_usd' => '80000001',
+    'real\p02_ts01\all\bvi_zs_usd'    => '80000002',
+
+    # Zero spread demo test account
+    'demo\p01_ts01\all\bvi_zs_usd' => '1010015',
+    'demo\p01_ts02\all\bvi_zs_usd' => '20100001',
+    'demo\p01_ts03\all\bvi_zs_usd' => '30100001',
+    'demo\p01_ts04\all\bvi_zs_usd' => '40100001',
 );
 
 our $ADD_INACTIVE_ACCOUNT = 0;

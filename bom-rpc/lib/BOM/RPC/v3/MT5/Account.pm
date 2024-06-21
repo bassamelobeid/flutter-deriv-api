@@ -79,6 +79,14 @@ my $error_handler  = sub {
     }
 };
 
+# MT5 is not allowed in client country error code
+my %not_allowed_error_map = (
+    standard    => 'MT5NotAllowed',
+    stp         => 'MT5NotAllowed',
+    swap_free   => 'MT5SwapFreeNotAllowed',
+    zero_spread => 'MT5ZeroSpreadNotAllowed',
+);
+
 sub create_error_future {
     my ($error_code, $details, @extra) = @_;
 
@@ -227,9 +235,9 @@ sub get_mt5_server_list {
     my $server_list = $mt5_config->server_by_country(
         $args{residence},
         {
-            group_type           => $args{account_type},
-            market_type          => $args{market_type},
-            sub_account_category => 'standard'
+            group_type       => $args{account_type},
+            market_type      => $args{market_type},
+            sub_account_type => 'standard'
         });
 
     my $mt5_account_count = $brand->mt_account_count_for_country(country => $args{residence});
@@ -478,45 +486,46 @@ mt5_account_category: conventional|empty for financial_stp
 sub _mt5_group {
     my $args = shift;
 
-    my ($landing_company_short, $account_type, $mt5_account_type, $currency, $sub_account_category, $country, $user_input_trade_server,
-        $restricted_group)
-        = @{$args}{qw(landing_company_short account_type mt5_account_type currency sub_account_category country server restricted_group)};
+    my ($landing_company_short, $account_type, $mt5_account_type, $currency, $country, $user_input_trade_server, $restricted_group, $sub_account_type)
+        = @{$args}{qw(landing_company_short account_type mt5_account_type currency country server restricted_group sub_account_type)};
 
-    my ($server_type, $sub_account_type, $group_type);
+    my ($server_type, $group_type);
 
     # affiliate LC should map to seychelles
     my $lc = LandingCompany::Registry->by_name($landing_company_short);
     return 'real\p02_ts02\synthetic\seychelles_ib_usd' if $lc->is_for_affiliates();
 
-    my $market_type = _get_market_type($account_type, $mt5_account_type, $sub_account_category);
+    my $market_type = _get_market_type($account_type, $mt5_account_type, $sub_account_type);
 
     if ($account_type eq 'demo') {
         $group_type       = $account_type;
-        $server_type      = _get_server_type($account_type, $country, $market_type, $sub_account_category);
-        $sub_account_type = _get_sub_account_type($mt5_account_type);
-
-        # Adding -sf tag for swap free account creation
-        $sub_account_type .= '-sf' if $sub_account_category eq 'swap_free';
+        $server_type      = _get_server_type($account_type, $country, $market_type, $sub_account_type);
+        $sub_account_type = _get_sub_account_type_short($sub_account_type);
     } else {
         # real group mapping
         $account_type     = 'real';
         $group_type       = $account_type;
-        $server_type      = _get_server_type($account_type, $country, $market_type, $sub_account_category);
-        $sub_account_type = _get_sub_account_type($mt5_account_type);
+        $server_type      = _get_server_type($account_type, $country, $market_type, $sub_account_type);
+        $sub_account_type = _get_sub_account_type_short($sub_account_type);
 
-        # All financial account will be B-book (put in hr[high-risk] upon sign-up. Decisions to A-book will be done
-        # on a case by case basis manually
-        my $app_config = BOM::Config::Runtime->instance->app_config;
-
+        my $app_config        = BOM::Config::Runtime->instance->app_config;
         my $apply_auto_b_book = (
-            $market_type eq 'financial' and (($landing_company_short eq 'svg' and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial)
-                or ($landing_company_short eq 'bvi' and not $app_config->system->mt5->suspend->auto_Bbook_bvi_financial)));
+                   ($landing_company_short eq 'svg' and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial)
+                or ($landing_company_short eq 'bvi' and not $app_config->system->mt5->suspend->auto_Bbook_bvi_financial));
 
-        # Adding -sf tag for swap free account creation
-        $sub_account_type .= '-sf' if $sub_account_category eq 'swap_free';
-
-        # as per requirements of mt5 operation team, australian financial account will not be categorised as high-risk (hr)
-        $sub_account_type .= '-hr' if $market_type eq 'financial' and $country ne 'au' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
+        # Check if the account should be categorized as high-risk based on requirements
+        #
+        # All financial accounts will initially be categorized as A-book (hr[high-risk]) upon sign-up.
+        # Decisions to B-book will be made on a case-by-case basis manually.
+        #
+        # High-Risk (HR) Requirement Criteria:
+        # 1. Client country is not Australia (country code: 'au')
+        # 2. Account sub-type is not 'stp'
+        # 3. Market type is 'financial' or 'all' (offers both financial and synthetic markets)
+        # 4. Automatic B-booking is suspended
+        if ($market_type =~ /^(financial|all)$/ and $country ne 'au' and $sub_account_type ne 'stp' and not $apply_auto_b_book) {
+            $sub_account_type .= '-hr';    # Mark as high-risk
+        }
 
         # make the sub account type ib for affiliate accounts
         $sub_account_type = 'ib' if $lc->is_for_affiliates();
@@ -588,7 +597,7 @@ Returns a randomly selected trading server key in client's region
 =cut
 
 sub _get_server_type {
-    my ($account_type, $country, $market_type, $sub_account_category) = @_;
+    my ($account_type, $country, $market_type, $sub_account_type) = @_;
 
     my $server_routing_config = Business::Config::Country::Registry->new()->platform_server_routing('mt5');
 
@@ -597,8 +606,8 @@ sub _get_server_type {
         $country = country2code($country);
     }
 
-    # We are currently using business config mt5 routing.yml as the source of truth for the available server
-    my $server_type = $server_routing_config->{$account_type}->{$country}->{$market_type}->{servers}->{$sub_account_category};
+    # We are currently using mt5_server_routing_by_country.yml as the source of truth for the available server
+    my $server_type = $server_routing_config->{$account_type}->{$country}->{$market_type}->{servers}->{$sub_account_type};
 
     if (not defined $server_type) {
         $log->warnf("Routing config is missing for %s %s-%s", uc($country), $account_type, $market_type) if $account_type ne 'demo';
@@ -608,9 +617,9 @@ sub _get_server_type {
     # We have already sorted the server based on their geolocation and offering in business config mt5 routing.yml
     # We are not using symmetrical_servers anymore and just fetch the server info
     my $servers = BOM::Config::MT5->new(
-        group_type           => $account_type,
-        server_type          => $server_type,
-        sub_account_category => $sub_account_category
+        group_type       => $account_type,
+        server_type      => $server_type,
+        sub_account_type => $sub_account_type
     )->get_server_webapi_info();
 
     return _select_server($servers, $account_type);
@@ -684,7 +693,7 @@ sub _rand {
     return rand(@servers);
 }
 
-=head2 _get_sub_account_type
+=head2 _get_sub_account_type_short
 
 Returns sub account type that corresponds to the mt5 account type and account category.
 
@@ -698,16 +707,18 @@ Takes the following parameters:
 
 =cut
 
-sub _get_sub_account_type {
-    my ($mt5_account_type) = @_;
+sub _get_sub_account_type_short {
+    my ($sub_account_type) = @_;
 
     # $sub_account_type depends on $mt5_account_type and $account_category. It is a little confusing, but can't do much about it.
-    my $sub_account_type = 'std';
-    if (defined $mt5_account_type and $mt5_account_type eq 'financial_stp') {
-        $sub_account_type = 'stp';
-    }
+    my %sub_account_type_short_map = (
+        standard    => 'std',
+        stp         => 'stp',
+        swap_free   => 'std-sf',
+        zero_spread => 'zs',
+    );
 
-    return $sub_account_type;
+    return $sub_account_type_short_map{$sub_account_type};
 }
 
 async_rpc "mt5_new_account",
@@ -732,9 +743,9 @@ async_rpc "mt5_new_account",
     my $mt5_account_category    = delete $args->{mt5_account_category} // 'conventional';
     my $user_input_trade_server = delete $args->{server};
     my $landing_company_short   = delete $args->{company};
-    my $sub_account_category    = delete $args->{sub_account_category} // 'standard';
+    my $sub_account_category    = delete $args->{sub_account_category} // 'standard';    # We need to remove this following the naming convention
     my $migration_request       = delete $args->{migrate};
-    my $product                 = delete $args->{product} // '';
+    my $sub_account_type        = delete $args->{product} // '';
 
     my $trading_password = $args->{mainPassword};
 
@@ -797,11 +808,25 @@ async_rpc "mt5_new_account",
     my $user = $client->user;
 
     # demo accounts type determined if this parameter exists or not
-    my $company_type     = $mt5_account_type eq '' ? 'gaming' : 'financial';
-    my $sub_account_type = $mt5_account_type;
+    my $company_type = $mt5_account_type eq '' ? 'gaming' : 'financial';
 
-    # Setting up company_type for swap free account
-    $company_type = $account_type eq 'all' ? $account_type : $company_type;
+    # Ensure sub_account_type is set if not defined
+    unless (defined $sub_account_type and $sub_account_type ne '') {
+        my %subtype_map = (
+            financial     => 'standard',
+            financial_stp => 'stp',
+        );
+
+        $sub_account_type = $subtype_map{$mt5_account_type} // 'standard';
+
+        # We need to refactor this since we are follow the group naming convention
+        # sub_account_category = additional risk management, use a dash separator (hr, ab(B book), ba(A book), empty(''))
+        # This require FE changes
+        $sub_account_type = 'swap_free' if $sub_account_category eq 'swap_free';
+    }
+
+    # Set $company_type for swap free or zero spread accounts
+    $company_type = 'all' if $sub_account_type =~ /^(swap_free|zero_spread)$/;
 
     my %mt_args = (
         country          => $residence,
@@ -828,9 +853,7 @@ async_rpc "mt5_new_account",
     return create_error_future('MT5NotAllowed', {params => $company_type})
         if not $countries_instance->is_mt_company_supported($residence, $company_type, $landing_company_short);
 
-    # MT5 is not allowed in client country
-    return create_error_future($sub_account_category eq 'swap_free' ? 'MT5SwapFreeNotAllowed' : 'MT5NotAllowed', {params => $company_type})
-        if $landing_company_short eq 'none';
+    return create_error_future($not_allowed_error_map{$sub_account_type}, {params => $company_type}) if $landing_company_short eq 'none';
 
     my $binary_company_name = _get_landing_company($client, $landing_company_short);
 
@@ -943,7 +966,6 @@ async_rpc "mt5_new_account",
         account_type          => $account_type,
         mt5_account_type      => $mt5_account_type,
         currency              => $mt5_account_currency,
-        sub_account_category  => $sub_account_category,
         sub_account_type      => $sub_account_type,
         server                => $user_input_trade_server,
         restricted_group      => $countries_instance->is_mt5_restricted_group($residence),
@@ -952,6 +974,9 @@ async_rpc "mt5_new_account",
     my $group_config = get_mt5_account_type_config($group);
     # something is wrong if we're not able to get group config
     return create_error_future('permission') unless $group_config;
+
+    # Suspend zero spread account creation
+    return create_error_future('permission') if BOM::Config::Runtime->instance->app_config->system->mt5->suspend->zero_spread_account_creation;
 
     my $compliance_requirements = $requirements->{compliance};
 
@@ -1102,7 +1127,7 @@ async_rpc "mt5_new_account",
                         $migration_request
                     and lc($mt5_account->{group}) =~ /svg/
                     and not(lc($mt5_account->{group}) =~ /demo/)
-                    and not(defined $mt5_account->{sub_account_category} and lc($mt5_account->{sub_account_category}) =~ m/(swap_free)/)
+                    and not(defined $mt5_account->{sub_account_type} and lc($mt5_account->{sub_account_type}) =~ m/(swap_free)/)
                     and (  ($account_type eq 'gaming' and lc($mt5_account->{group}) =~ /synthetic/)
                         or ($account_type eq 'financial' and lc($mt5_account->{group}) =~ /financial/)));
 
@@ -1205,7 +1230,7 @@ async_rpc "mt5_new_account",
                     my $mt5_login    = $status->{login};
                     my $mt5_currency = $args->{currency};
                     my $mt5_leverage = $args->{leverage};
-                    my $market_type  = _get_market_type($account_type, $mt5_account_type, $sub_account_category);
+                    my $market_type  = _get_market_type($account_type, $mt5_account_type, $sub_account_type);
                     my $acc_type     = _is_account_demo($args->{group}) ? 'demo' : 'real';
 
                     my $mt5_attributes = {
@@ -1225,7 +1250,7 @@ async_rpc "mt5_new_account",
                         {
                             loginid          => $client->loginid,
                             account_type     => $account_type,
-                            sub_account_type => $mt5_account_type,
+                            sub_account_type => $sub_account_type,
                             mt5_group        => $group,
                             mt5_login_id     => $mt5_login,
                             cs_email         => $brand->emails('support'),
@@ -1285,15 +1310,16 @@ async_rpc "mt5_new_account",
                                 if ref $group_details eq 'HASH' and $group_details->{error};
 
                             return Future->done({
-                                login           => $mt5_login,
-                                balance         => $balance,
-                                display_balance => formatnumber('amount', $args->{currency}, $balance),
-                                currency        => $args->{currency},
-                                account_type    => $account_type,
-                                agent           => $args->{agent},
+                                login            => $mt5_login,
+                                balance          => $balance,
+                                display_balance  => formatnumber('amount', $args->{currency}, $balance),
+                                currency         => $args->{currency},
+                                account_type     => $account_type,
+                                agent            => $args->{agent},
+                                sub_account_type => $sub_account_type,
                                 ($mt5_account_category) ? (mt5_account_category => $mt5_account_category) : (),
                                 ($mt5_account_type)     ? (mt5_account_type     => $mt5_account_type)     : (),
-                                product => $product,
+                                product => $group_config->{product},
                             });
                         });
                 });
@@ -2797,15 +2823,21 @@ sub _is_identical_group {
 
     foreach my $existing_group (map { get_mt5_account_type_config($_) } keys %$existing_groups) {
         # Since our get_mt5_account_type_config is a state variable we need to make sure we dont remove it entirely
-        # Setting a temporary varaibles without 'server' keys in hash
         my $group_temp;
         my $existing_group_temp;
+
+        next unless defined $existing_group;
+
+        # We are skipping 'server' since client could not have same account in multiple server
         map { $_ eq 'server' ? () : ($group_temp->{$_}          = $group_config->{$_}) } keys %$group_config;
         map { $_ eq 'server' ? () : ($existing_group_temp->{$_} = $existing_group->{$_}) } keys %$existing_group;
 
-        # Check if all varaibles have similar value except for 'server'
-        # We are skipping 'server' since client could not have same account in multiple server
-        return $existing_group if defined $existing_group_temp and all { $group_temp->{$_} eq $existing_group_temp->{$_} } keys %$group_temp;
+        # We are removing sub_account_category since it is used for risk management
+        delete $group_temp->{sub_account_category}          if defined $group_temp->{sub_account_category};
+        delete $existing_group_temp->{sub_account_category} if defined $existing_group_temp->{sub_account_category};
+
+        # Check if all varaibles have similar value
+        return $existing_group if all { $group_temp->{$_} eq $existing_group_temp->{$_} } keys %$group_temp;
     }
 
     return undef;
@@ -2818,19 +2850,16 @@ Return the market type for the mt5 account details
 =cut
 
 sub _get_market_type {
-    my ($account_type, $mt5_account_type, $sub_account_category) = @_;
+    my ($account_type, $mt5_account_type, $sub_account_type) = @_;
 
-    my $market_type = '';
-    if ($account_type eq 'all' or $sub_account_category eq 'swap_free') {
-        $market_type = 'all';
-    } elsif ($account_type eq 'demo') {
-        # if $mt5_account_type is undefined, it maps to $market_type=synthetic, else $market_type=financial
-        $market_type = $mt5_account_type ? 'financial' : 'synthetic';
-    } else {
-        $market_type = $account_type eq 'gaming' ? 'synthetic' : 'financial';
+    return 'all' if $account_type eq 'all';
+
+    if ($account_type eq 'demo') {
+        return 'all' if $sub_account_type eq 'swap_free' or $sub_account_type eq 'zero_spread';
+        return $mt5_account_type ? 'financial' : 'synthetic';
     }
 
-    return $market_type;
+    return $account_type eq 'gaming' ? 'synthetic' : 'financial';
 }
 
 =head2 _mt5_acc_opening_reason
@@ -2863,7 +2892,7 @@ A reference to the client object representing the user account.
 
 =item $mt5_account
 
-A hash reference containing mt5 account information, including keys such as 'sub_account_category', 'market_type', and 'landing_company_short'.
+A hash reference containing mt5 account information, including keys such as 'sub_account_type', 'market_type', and 'landing_company_short'.
 
 =back
 
@@ -2903,7 +2932,7 @@ If the client's POA status is 'verified', they are eligible for 'vanuatu' migrat
 
     my $client = BOM::User::Client->new('CR123');
     my $mt5_account = {
-        'sub_account_category' => 'standard',
+        'sub_account_type' => 'standard',
         'landing_company_short' => 'svg',
         # other account information...
     };
@@ -2917,7 +2946,7 @@ If the client's POA status is 'verified', they are eligible for 'vanuatu' migrat
 
 sub _eligible_to_migrate {
     my ($client, $mt5_account) = @_;
-    my $sub_account_category  = $mt5_account->{sub_account_category};
+    my $sub_account_type      = $mt5_account->{sub_account_type};
     my $landing_company_short = $mt5_account->{landing_company_short};
     my $group                 = $mt5_account->{group};
 
@@ -2925,7 +2954,7 @@ sub _eligible_to_migrate {
     return if $mt5_account->{status} and grep { $_ eq $mt5_account->{status} } ('migrated_with_position', 'migrated_without_position');
 
     # Step 2: Check eligibility based on sub-account category and landing company
-    if ($sub_account_category =~ /^(swap_free|swap_free_high_risk)$/ || $landing_company_short ne 'svg' || $group =~ /demo/) {
+    if ($sub_account_type =~ /^(swap_free|swap_free_high_risk)$/ || $landing_company_short ne 'svg' || $group =~ /demo/) {
         return;    # Not eligible
     }
 
