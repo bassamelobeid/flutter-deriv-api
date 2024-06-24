@@ -1,0 +1,53 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Notifications List (request)",
+    "description": "Retrieve the list of notifications for the user.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "read"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "notifications_list"
+    ],
+    "properties": {
+        "notifications_list": {
+            "description": "Must be `1`",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "size": {
+            "description": "The number of messages to show beginning from the 'starts_from' position",
+            "type": "integer"
+        },
+        "starts_from": {
+            "description": "The initial notification to begin with (0 for first)",
+            "type": "integer"
+        },
+        "subscribe": {
+            "description": "[Optional] If set to 1, will send updates whenever new notications are received.",
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ]
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

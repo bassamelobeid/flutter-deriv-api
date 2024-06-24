@@ -1,0 +1,47 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Notifications Update Status (request)",
+    "description": "API request to update the status of one or more notifications to read, remove, received.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "admin"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "notifications_update_status"
+    ],
+    "properties": {
+        "notifications_update_status": {
+            "description": "The new status for the notification(s). Allowed values: 'read', 'unread', 'remove', 'received'",
+            "type": "string",
+            "enum": [
+                "read",
+                "unread",
+                "remove",
+                "received"
+            ]
+        },
+        "ids": {
+            "description": "An array of IDs for the notifications to change status for.",
+            "type": "array",
+            "items": {
+                "type": "integer"
+            }
+        },
+        "loginid": {
+            "description": "[Optional] The login id of the user. If left unspecified, it defaults to the initial authorized token's login id.",
+            "type": "string",
+            "pattern": "^[A-Za-z]+[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

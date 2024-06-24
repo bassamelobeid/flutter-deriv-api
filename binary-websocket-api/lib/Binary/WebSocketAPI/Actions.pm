@@ -344,6 +344,22 @@ sub actions_config {
         ],
         ['new_account_wallet', {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['notification_event'],
+        [
+            'notifications_list',
+            {
+                category           => 'notifications',
+                stash_params       => [qw/ jtoken /],
+                instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
+            }
+        ],
+        [
+            'notifications_update_status',
+            {
+                category           => 'notifications',
+                stash_params       => [qw/ jtoken /],
+                instead_of_forward => \&Binary::WebSocketAPI::Hooks::add_jtoken_to_stash,
+            }
+        ],
         ['oauth_apps'],
         [
             'p2p_advert_create',

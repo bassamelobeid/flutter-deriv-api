@@ -27,6 +27,7 @@ my $unsupported_schemas = {
     'new_account_maltainvest/send.json'                => 1,
     'new_account_real/send.json'                       => 1,
     'new_account_virtual/send.json'                    => 1,
+    'notifications_list/receive.json'                  => 1,
     'p2p_advert_create/send.json'                      => 1,
     'p2p_advert_info/receive.json'                     => 1,
     'p2p_advert_list/receive.json'                     => 1,

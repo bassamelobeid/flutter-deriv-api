@@ -1,0 +1,134 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Notifications List (response)",
+    "description": "Retrieve the list of notifications for the user.",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "notifications_list": {
+            "title": "Notifications List",
+            "description": "The list of notifications for a user.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "count_actionable",
+                "count_total",
+                "count_unread",
+                "messages"
+            ],
+            "properties": {
+                "count_actionable": {
+                    "description": "Total count of actionable notifications.",
+                    "type": "integer"
+                },
+                "count_total": {
+                    "description": "Total count of notifications (read/unread), excl. removed messages.",
+                    "type": "integer"
+                },
+                "count_unread": {
+                    "description": "Total count of unread notifications.",
+                    "type": "integer"
+                },
+                "messages": {
+                    "title": "Notifications Messages",
+                    "description": "The list of notifications messages.",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "id",
+                            "payload"
+                        ],
+                        "properties": {
+                            "category": {
+                                "description": "The category of message.",
+                                "type": "string",
+                                "comment": "Indicates whether the notification requires action by the user or merely needs to be read."
+                            },
+                            "id": {
+                                "description": "Unique id for notification - this can be used to mark it as read/unread/removed/received.",
+                                "type": "integer"
+                            },
+                            "links": {
+                                "description": "Links to actions that can be taken for this notification.",
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "href": {
+                                            "description": "URL to open when the link is clicked.",
+                                            "type": "string"
+                                        },
+                                        "rel": {
+                                            "description": "Text to display for the link.",
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "message_id": {
+                                "description": "Message id for the type of message.",
+                                "type": "string",
+                                "comment": "A unique identifier for the type of message associated with this notification, e.g., 'poi-required', 'account-verified'."
+                            },
+                            "payload": {
+                                "description": "Notification Payload (JSON).",
+                                "type": "string"
+                            },
+                            "read": {
+                                "description": "Has the message been read.",
+                                "type": "boolean"
+                            },
+                            "removed": {
+                                "description": "Has the message been removed.",
+                                "type": "boolean"
+                            },
+                            "valid_until": {
+                                "description": "The time at which this notification expires.",
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "subscription": {
+            "title": "Subscription information",
+            "description": "For subscription requests only.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "description": "A per-connection unique identifier. Can be passed to the `forget` API call to unsubscribe.",
+                    "type": "string",
+                    "examples": [
+                        "c84a793b-8a87-7999-ce10-9b22f7ceead3"
+                    ]
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "notifications_list"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}
