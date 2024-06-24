@@ -13,10 +13,11 @@ use BOM::Service;
 use BOM::User;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Service::User::Attributes::Update::FinaliseHandlers;
 use UserServiceTestHelper;
 
 my $user    = UserServiceTestHelper::create_user('frieren@strahl.com');
-my $context = UserServiceTestHelper::create_context($user);
+my $context = UserServiceTestHelper::get_user_service_context();
 
 my $dump_response    = 0;
 my $default_password = 'A new password 1234 !!';
@@ -150,7 +151,6 @@ subtest 'user password to empty check' => sub {
 };
 
 subtest 'That password is incorrect. Please try again' => sub {
-    # Now try and wipe the passwords, should fail
     $context->{correlation_id} = BOM::Service::random_uuid();
     my $response = BOM::Service::user(
         context    => $context,
@@ -168,7 +168,6 @@ subtest 'That password is incorrect. Please try again' => sub {
 };
 
 subtest 'Current password and new password cannot be the same' => sub {
-    # Now try and wipe the passwords, should fail
     $context->{correlation_id} = BOM::Service::random_uuid();
     my $response = BOM::Service::user(
         context    => $context,
@@ -186,7 +185,6 @@ subtest 'Current password and new password cannot be the same' => sub {
 };
 
 subtest 'Your password must be 8 to 25 characters long, no special' => sub {
-    # Now try and wipe the passwords, should fail
     $context->{correlation_id} = BOM::Service::random_uuid();
     my $response = BOM::Service::user(
         context    => $context,
@@ -204,7 +202,6 @@ subtest 'Your password must be 8 to 25 characters long, no special' => sub {
 };
 
 subtest 'Your password must be 8 to 25 characters long, no number' => sub {
-    # Now try and wipe the passwords, should fail
     $context->{correlation_id} = BOM::Service::random_uuid();
     my $response = BOM::Service::user(
         context    => $context,
@@ -222,7 +219,6 @@ subtest 'Your password must be 8 to 25 characters long, no number' => sub {
 };
 
 subtest 'Your password must be 8 to 25 characters long, too short' => sub {
-    # Now try and wipe the passwords, should fail
     $context->{correlation_id} = BOM::Service::random_uuid();
     my $response = BOM::Service::user(
         context    => $context,
@@ -240,7 +236,6 @@ subtest 'Your password must be 8 to 25 characters long, too short' => sub {
 };
 
 subtest 'Your password must be 8 to 25 characters long, no upper case' => sub {
-    # Now try and wipe the passwords, should fail
     $context->{correlation_id} = BOM::Service::random_uuid();
     my $response = BOM::Service::user(
         context    => $context,
@@ -258,7 +253,6 @@ subtest 'Your password must be 8 to 25 characters long, no upper case' => sub {
 };
 
 subtest 'Your password must be 8 to 25 characters long, no lower case' => sub {
-    # Now try and wipe the passwords, should fail
     $context->{correlation_id} = BOM::Service::random_uuid();
     my $response = BOM::Service::user(
         context    => $context,
@@ -276,7 +270,6 @@ subtest 'Your password must be 8 to 25 characters long, no lower case' => sub {
 };
 
 subtest 'You cannot use your email address as your password' => sub {
-    # Now try and wipe the passwords, should fail
     $context->{correlation_id} = BOM::Service::random_uuid();
     my $response = BOM::Service::user(
         context    => $context,
@@ -291,6 +284,29 @@ subtest 'You cannot use your email address as your password' => sub {
     is $response->{status}, 'error',         'call failed, new password not suitable, email as password';
     is $response->{class},  'PasswordError', 'error class is correct';
     like $response->{message}, qr/You cannot use your email address as your password.+/, 'correct error message returned';
+};
+
+subtest 'Check finalise is called' => sub {
+    my $finalise_called = 0;
+    # Need to redefine the handler map as the mock as its already setup
+    $BOM::Service::User::Attributes::Update::finalise_handler_map{user_password} = \&{$finalise_called = 1;};
+
+    my $response = BOM::Service::user(
+        context    => $context,
+        command    => 'update_attributes',
+        user_id    => $user->id,
+        attributes => {password => 'AbCdef12345!.*$'},
+        flags      => {
+            password_update_reason => 'change_password',
+            password_previous      => $default_password,
+        });
+    print JSON::MaybeXS->new->pretty->encode($response) . "\n" if $dump_response;
+    is $response->{status}, 'ok', 'password was changed';
+    is $finalise_called,    1,    'user_password finalise was called';
+
+    # Restore the handler
+    $BOM::Service::User::Attributes::Update::finalise_handler_map{user_password} =
+        \&BOM::Service::User::Attributes::Update::FinaliseHandlers::user_password;
 };
 
 done_testing();

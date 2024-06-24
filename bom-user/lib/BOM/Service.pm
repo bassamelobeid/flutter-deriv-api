@@ -344,6 +344,7 @@ sub _dispatch_command {
                     spec   => {
                         correlation_id => {type => SCALAR},
                         auth_token     => {type => SCALAR},
+                        environment    => {type => SCALAR},
                     });
             } catch ($e) {
                 die "Context validation failed. $e";

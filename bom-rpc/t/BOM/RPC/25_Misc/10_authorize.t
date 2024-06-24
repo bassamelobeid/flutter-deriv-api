@@ -322,8 +322,9 @@ subtest $method => sub {
         );
         # create wallet
         my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRW',
-            date_joined => '2021-06-06 23:59:59'
+            broker_code    => 'VRW',
+            date_joined    => '2021-06-06 23:59:59',
+            binary_user_id => $user->id,
         });
         $vr_wallet->email($email);
         $vr_wallet->set_default_account('USD');
@@ -333,8 +334,9 @@ subtest $method => sub {
         $user->add_client($vr_wallet);
 
         my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            date_joined => '2021-06-06 23:59:59',
+            broker_code    => 'VRTC',
+            date_joined    => '2021-06-06 23:59:59',
+            binary_user_id => $user->id,
         });
         $test_client_vr->email($email);
         $test_client_vr->set_default_account('USD');
@@ -503,8 +505,9 @@ subtest $method => sub {
         );
         # create wallet
         my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRW',
-            date_joined => '2021-06-06 23:59:59'
+            broker_code    => 'VRW',
+            date_joined    => '2021-06-06 23:59:59',
+            binary_user_id => $user->id,
         });
         $vr_wallet->email($email);
         $vr_wallet->set_default_account('USD');
@@ -514,8 +517,9 @@ subtest $method => sub {
         $user->add_client($vr_wallet);
 
         my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            date_joined => '2021-06-06 23:59:59',
+            broker_code    => 'VRTC',
+            date_joined    => '2021-06-06 23:59:59',
+            binary_user_id => $user->id,
         });
         $test_client_vr->email($email);
         $test_client_vr->set_default_account('USD');
@@ -668,9 +672,10 @@ subtest 'upgradeable_landing_companies' => sub {
     );
 
     my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        residence   => 'be',
-        email       => $email2
+        broker_code    => 'VRTC',
+        residence      => 'be',
+        email          => $email2,
+        binary_user_id => $user2->id,
     });
 
     $user2->add_client($client2);
@@ -687,9 +692,10 @@ subtest 'upgradeable_landing_companies' => sub {
         password => '1234',
     );
     my $vr_client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        residence   => 'gb',
-        email       => $email3
+        broker_code    => 'VRTC',
+        residence      => 'gb',
+        email          => $email3,
+        binary_user_id => $user3->id,
     });
 
     $user3->add_client($vr_client3);
@@ -702,9 +708,10 @@ subtest 'upgradeable_landing_companies' => sub {
 
     # Create MF account (United Kingdom) since MX can upgrade to maltainvest
     my $client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-        residence   => 'gb',
-        email       => $email3
+        broker_code    => 'MF',
+        residence      => 'gb',
+        email          => $email3,
+        binary_user_id => $user3->id,
     });
 
     $user3->add_client($client3);
@@ -720,9 +727,10 @@ subtest 'upgradeable_landing_companies' => sub {
         password => '1234',
     );
     my $vr_client4 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        residence   => 'de',
-        email       => $email4
+        broker_code    => 'VRTC',
+        residence      => 'de',
+        email          => $email4,
+        binary_user_id => $user4->id,
     });
 
     $user4->add_client($vr_client4);
@@ -734,9 +742,10 @@ subtest 'upgradeable_landing_companies' => sub {
     is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client can upgrade to maltainvest.';
     # Create MF account (Germany)
     my $client4 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-        residence   => 'de',
-        email       => $email4
+        broker_code    => 'MF',
+        residence      => 'de',
+        email          => $email4,
+        binary_user_id => $user4->id,
     });
 
     $user4->add_client($client4);
@@ -753,9 +762,10 @@ subtest 'upgradeable_landing_companies' => sub {
         password => '1234',
     );
     my $vr_client5 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        residence   => 'id',
-        email       => $email5,
+        broker_code    => 'VRTC',
+        residence      => 'id',
+        email          => $email5,
+        binary_user_id => $user5->id,
     });
     $user5->add_client($vr_client5);
 
@@ -765,9 +775,10 @@ subtest 'upgradeable_landing_companies' => sub {
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client can upgrade to svg and maltainvest.';
     my $client5 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'id',
-        email       => $email5,
+        broker_code    => 'CR',
+        residence      => 'id',
+        email          => $email5,
+        binary_user_id => $user5->id,
     });
     $user5->add_client($client5);
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client5->loginid);

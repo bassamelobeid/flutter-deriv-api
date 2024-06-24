@@ -195,9 +195,10 @@ subtest 'transfer between accounts' => sub {
     populate_exchange_rates();
 
     my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $client_usd->email,
-        residence   => 'id',
+        broker_code    => 'CR',
+        email          => $client_usd->email,
+        residence      => 'id',
+        binary_user_id => $user_client->id,
     });
     $client_btc->set_default_account('BTC');
     $user_client->add_client($client_btc);

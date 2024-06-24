@@ -5,13 +5,15 @@ use Test::MockObject;
 use Test::MockModule;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test/;
-use BOM::Platform::Token;
 use Test::Deep;
 use await;
-use BOM::User;
 
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use BOM::Test::Customer;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Platform::Token;
+use BOM::Service;
+use BOM::User;
 
 # We don't want to fail due to hitting limits
 $ENV{BOM_TEST_RATE_LIMITATIONS} = '/home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/rate_limitations.yml';
@@ -21,22 +23,18 @@ my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
 subtest 'confirm_email Input Field Validation' => sub {
-    my $email = 'test@deriv.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => BOM::User::Password::hashpw('Abcd1234!'),
-        email_verified => 0,
-        email_consent  => 0,
-    );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    $user->add_client($client);
+    my $customer = BOM::Test::Customer->create({
+            email    => BOM::Test::Customer->get_random_email_address(),
+            password => BOM::User::Password::hashpw('jskjd8292922'),
+        },
+        [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
     my $verification_code = BOM::Platform::Token->new(
-        email       => $email,
+        email       => $customer->get_email(),
         created_for => 'account_verification',
     )->token;
 
@@ -88,24 +86,18 @@ subtest 'confirm_email Input Field Validation' => sub {
 };
 
 subtest 'confirm_email token validation' => sub {
-    my $email    = 'test1@deriv.com';
-    my $hash_pwd = BOM::User::Password::hashpw('Abcd1234!');
-
-    my $user = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 0,
-        email_consent  => 0,
-    );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    $user->add_client($client);
+    my $customer = BOM::Test::Customer->create({
+            email    => BOM::Test::Customer->get_random_email_address(),
+            password => BOM::User::Password::hashpw('jskjd8292922'),
+        },
+        [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
     my $verification_code = BOM::Platform::Token->new(
-        email       => $email,
+        email       => $customer->get_email(),
         created_for => 'account_verification',
     )->token;
 
@@ -122,21 +114,40 @@ subtest 'confirm_email token validation' => sub {
     ok($res->{confirm_email}, 'confirm_email RPC response sucess');
     test_schema('confirm_email', $res);
 
-    $user = BOM::User->new(email => $email);
-    ok $user->email_consent,  'Email consent updated for user';
-    ok $user->email_verified, 'User is email verified';
-
-    $user->update_email_fields(
-        email_consent  => 0,
-        email_verified => 0
+    my $user_data = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $customer->get_email(),
+        attributes => [qw(email_consent email_verified)],
     );
+    is($user_data->{status}, 'ok', 'user service call succeeded');
+    ok($user_data->{attributes}{email_verified}, 'Email consent updated for user');
+    ok($user_data->{attributes}{email_consent},  'User is email verified');
 
-    ok !$user->email_consent,  'Email consent flag unset';
-    ok !$user->email_verified, 'User marked not email verified';
+    $user_data = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'update_attributes',
+        user_id    => $customer->get_email(),
+        attributes => {
+            email_consent  => 0,
+            email_verified => 0
+        },
+    );
+    is $user_data->{status}, 'ok', 'user service call succeeded';
+
+    $user_data = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $customer->get_email(),
+        attributes => [qw(email_consent email_verified)],
+    );
+    is($user_data->{status}, 'ok', 'user service call succeeded');
+    ok(!$user_data->{attributes}{email_verified}, 'Email consent flag unset');
+    ok(!$user_data->{attributes}{email_consent},  'User marked not email verified');
 
     #Wrong verification token type
     $verification_code = BOM::Platform::Token->new(
-        email       => $email,
+        email       => $customer->get_email(),
         created_for => 'account_opening',
     )->token;
 
@@ -154,12 +165,19 @@ subtest 'confirm_email token validation' => sub {
         'Invalid token error'
     );
 
-    ok !$user->email_verified, 'User is not email verified when token verification fails';
-    ok !$user->email_consent,  'Email consent not updated when token verification fails';
+    $user_data = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $customer->get_email(),
+        attributes => [qw(email_consent email_verified)],
+    );
+    is($user_data->{status}, 'ok', 'user service call succeeded');
+    ok(!$user_data->{attributes}{email_verified}, 'User is not email verified when token verification fails');
+    ok(!$user_data->{attributes}{email_consent},  'Email consent not updated when token verification fails');
 
     #Expired verification token
     $verification_code = BOM::Platform::Token->new(
-        email       => $email,
+        email       => $customer->get_email(),
         created_for => 'account_verification',
         expires_in  => -1
     )->token;
@@ -177,11 +195,18 @@ subtest 'confirm_email token validation' => sub {
         'Expired token error'
     );
 
-    ok !$user->email_verified, 'User is not email verified when token verification fails';
-    ok !$user->email_consent,  'Email consent not updated when token verification fails';
+    $user_data = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $customer->get_email(),
+        attributes => [qw(email_consent email_verified)],
+    );
+    is($user_data->{status}, 'ok', 'user service call succeeded');
+    ok(!$user_data->{attributes}{email_verified}, 'User is not email verified when token verification fails');
+    ok(!$user_data->{attributes}{email_consent},  'Email consent not updated when token verification fails');
 
     #Incorrect user
-    $email = 'test2@deriv.com';
+    my $email = 'test2@deriv.com';
 
     $verification_code = BOM::Platform::Token->new(
         email       => $email,
@@ -202,21 +227,30 @@ subtest 'confirm_email token validation' => sub {
         'Incorrect user error as user not found for email extracted from token'
     );
 
-    $user = BOM::User->new(email => $email);
-    is($user, undef, 'User not found');
+    $user_data = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $email,
+        attributes => [qw(email_consent email_verified)],
+    );
+    is($user_data->{status}, 'error',        'User not found');
+    is($user_data->{class},  'UserNotFound', 'User not found');
 
     #user already verified
-    $email = 'test3@gmail.com';
-
-    $user = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-        email_consent  => 0,
-    );
+    $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('jskjd8292922'),
+            email_verified => 1,
+            email_consent  => 0,
+        },
+        [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
     $verification_code = BOM::Platform::Token->new(
-        email       => $email,
+        email       => $customer->get_email(),
         created_for => 'account_verification',
     )->token;
 
@@ -234,9 +268,15 @@ subtest 'confirm_email token validation' => sub {
         'Correct User already verified error'
     );
 
-    $user = BOM::User->new(email => $email);
-    ok $user->email_verified, 'User is already email verified';
-    ok !$user->email_consent, 'Email consent not updated when user already verified';
+    $user_data = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $customer->get_email(),
+        attributes => [qw(email_consent email_verified)],
+    );
+    is($user_data->{status}, 'ok', 'user service call succeeded');
+    ok($user_data->{attributes}{email_verified}, 'User is already email verified');
+    ok(!$user_data->{attributes}{email_consent}, 'Email consent not updated when user already verified');
 
     #Close websocket connection
     $t->finish_ok;

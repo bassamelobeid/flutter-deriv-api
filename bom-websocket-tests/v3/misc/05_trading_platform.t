@@ -470,15 +470,16 @@ my $AVAILABLE_ACCOUNTS = {
 
 subtest 'trading_platform_available_accounts authenticated case' => sub {
     # indonesia
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code               => 'CR',
-        residence                 => 'za',
-        tax_identification_number => '123'
-    });
     my $user = BOM::User->create(
         email    => 'tradingplatform_test@binary.com',
         password => 'test'
     );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code               => 'CR',
+        residence                 => 'za',
+        tax_identification_number => '123',
+        binary_user_id            => $user->id,
+    });
     $user->add_client($client);
 
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
@@ -500,19 +501,19 @@ subtest 'trading_platform_available_accounts authenticated case' => sub {
     $resp->{trading_platform_available_accounts}->@* = sort { $a->{name} cmp $b->{name} } $resp->{trading_platform_available_accounts}->@*;
     $expected_resp = [sort { $a->{name} cmp $b->{name} } $AVAILABLE_ACCOUNTS->{za}->@*];
     is Dumper($resp->{error}), "\$VAR1 = undef;\n", 'no error in response';
-
     cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for South Africa with CR and MF accounts');
-
-    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code               => 'MF',
-        residence                 => 'at',
-        tax_identification_number => '123'
-    });
 
     $user = BOM::User->create(
         email    => 'tradingplatform_test1@binary.com',
         password => 'test'
     );
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code               => 'MF',
+        residence                 => 'at',
+        tax_identification_number => '123',
+        binary_user_id            => $user->id,
+    });
+
     $user->add_client($client);
 
     $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
@@ -527,8 +528,9 @@ subtest 'trading_platform_available_accounts authenticated case' => sub {
     cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for Austria');
 
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'my'
+        broker_code    => 'CR',
+        residence      => 'my',
+        binary_user_id => $user->id,
     });
     $user->add_client($client);
 
@@ -546,15 +548,18 @@ subtest 'trading_platform_available_accounts authenticated case' => sub {
 };
 
 subtest 'trading_platform_available_accounts not authenticated case' => sub {
+    my $user = BOM::User->create(
+        email    => 'tpaanac@deriv.com',
+        password => 'secret_pwd'
+    );
+
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code               => 'CR',
         residence                 => 'za',
+        binary_user_id            => $user->id,
+        email                     => $user->email,
         tax_identification_number => '123'
     });
-    my $user = BOM::User->create(
-        email    => $client->loginid . '@deriv.com',
-        password => 'secret_pwd'
-    );
     $user->add_client($client);
 
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);

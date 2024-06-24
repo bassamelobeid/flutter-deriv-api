@@ -10,9 +10,11 @@ use BOM::Test::Helper::P2P;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Platform::Context                     qw(request);
+use BOM::Test::Customer;
+use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::Config::Runtime;
+use BOM::Service;
 use Brands;
 
 my (@identify_args, @track_args, @transactional_args, @emissions);
@@ -94,8 +96,19 @@ subtest 'p2p order event validation' => sub {
 };
 
 subtest 'p2p order created' => sub {
-    $client->user->update_preferred_language('ID');
-    $advertiser->user->update_preferred_language('RU');
+    my $response = BOM::Service::user(
+        context    => BOM::Test::Customer::get_user_service_context(),
+        command    => 'update_attributes',
+        user_id    => $client->user->id,
+        attributes => {preferred_language => 'ID'});
+    is $response->{status}, 'ok', 'update client preferred_language ok';
+
+    $response = BOM::Service::user(
+        context    => BOM::Test::Customer::get_user_service_context(),
+        command    => 'update_attributes',
+        user_id    => $advertiser->user->id,
+        attributes => {preferred_language => 'RU'});
+    is $response->{status}, 'ok', 'update advertiser preferred_language ok';
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_created};
     undef @identify_args;

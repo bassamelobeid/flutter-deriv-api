@@ -6,11 +6,12 @@ use Test::More;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request/;
-
+use BOM::Test::Customer;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
+use BOM::Service;
 use await;
 
 ## do not send email
@@ -40,7 +41,7 @@ my %client_details = (
 
 subtest 'new CR real account' => sub {
     # create VR acc
-    my ($vr_client, $user) = create_vr_account({
+    my ($vr_client) = create_vr_account({
         email           => 'test@binary.com',
         client_password => 'abc123',
         residence       => 'au',
@@ -69,7 +70,7 @@ subtest 'new CR real account' => sub {
 
 subtest 'create account failed' => sub {
     # create VR acc
-    my ($vr_client, $user) = create_vr_account({
+    my ($vr_client) = create_vr_account({
         email           => 'test+id@binary.com',
         client_password => 'abc123',
         residence       => 'id',
@@ -89,7 +90,13 @@ subtest 'create account failed' => sub {
     };
 
     subtest 'email unverified' => sub {
-        $user->update_email_fields(email_verified => 'f');
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $vr_client->binary_user_id,
+            attributes => {email_verified => 0},
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
 
         # create real acc
         my %details = %client_details;
@@ -103,7 +110,13 @@ subtest 'create account failed' => sub {
         is($res->{new_account_real}, undef,              'NO account created');
     };
 
-    $user->update_email_fields(email_verified => 't');
+    my $user_data = BOM::Service::user(
+        context    => BOM::Test::Customer::get_user_service_context(),
+        command    => 'update_attributes',
+        user_id    => $vr_client->binary_user_id,
+        attributes => {email_verified => 1},
+    );
+    is $user_data->{status}, 'ok', 'user service call succeeded';
 
     $vr_client->residence('id');
     $vr_client->save;
@@ -210,7 +223,7 @@ subtest 'create account failed' => sub {
 
 subtest 'new_real_account with currency provided' => sub {
     # create VR acc
-    my ($vr_client, $user) = create_vr_account({
+    my ($vr_client) = create_vr_account({
         email           => 'test+111@binary.com',
         client_password => 'abC123',
         residence       => 'au',
@@ -266,7 +279,7 @@ subtest 'validate phone field' => sub {
     $details{date_of_birth} = '1999-01-01';
 
     subtest 'phone can be empty' => sub {
-        my ($vr_client, $user) = create_vr_account({
+        my ($vr_client) = create_vr_account({
             email           => 'emptyness+111@binary.com',
             client_password => 'abC123',
             residence       => 'br',
@@ -288,7 +301,7 @@ subtest 'validate phone field' => sub {
     };
 
     subtest 'user can enter invalid or dummy phone number' => sub {
-        my ($vr_client, $user) = create_vr_account({
+        my ($vr_client) = create_vr_account({
             email           => 'dummy-phone-number@binary.com',
             client_password => 'abC123',
             residence       => 'br',
@@ -309,7 +322,7 @@ subtest 'validate phone field' => sub {
     };
 
     subtest 'no alphabetic characters are allowed in the phone number' => sub {
-        my ($vr_client, $user) = create_vr_account({
+        my ($vr_client) = create_vr_account({
             email           => 'alpha-phone-number@binary.com',
             client_password => 'abC123',
             residence       => 'br',
@@ -328,7 +341,7 @@ subtest 'validate phone field' => sub {
         is($res->{error}->{code}, 'InvalidPhone', 'phone number can not contain alphabetic characters.');
     };
     subtest 'more than one special characters are not allowed in a row' => sub {
-        my ($vr_client, $user) = create_vr_account({
+        my ($vr_client) = create_vr_account({
             email           => 'multiple-special-characters@binary.com',
             client_password => 'abC123',
             residence       => 'br',
@@ -349,7 +362,7 @@ subtest 'validate phone field' => sub {
 };
 
 subtest 'Address validation' => sub {
-    my ($vr_client, $user) = create_vr_account({
+    my ($vr_client) = create_vr_account({
         email           => 'addr@binary.com',
         client_password => 'abc123',
         residence       => 'br',

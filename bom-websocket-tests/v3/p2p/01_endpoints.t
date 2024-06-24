@@ -38,16 +38,15 @@ my $t = build_wsapi_test();
 my $email_advertiser = 'p2p_advertiser@test.com';
 my $email_client     = 'p2p_client@test.com';
 my $user_advertiser  = BOM::User->create(
-    email    => $email_advertiser,
-    password => 'test'
+    email          => $email_advertiser,
+    password       => 'test',
+    email_verified => 1
 );
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'VRTC',
     email          => $email_advertiser,
     binary_user_id => $user_advertiser->id,
 });
-
-$user_advertiser->update_email_fields(email_verified => 't');
 $user_advertiser->add_client($client_vr);
 
 my $user_client = BOM::User->create(

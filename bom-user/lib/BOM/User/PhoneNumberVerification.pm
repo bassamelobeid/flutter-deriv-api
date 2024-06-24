@@ -9,6 +9,7 @@ This packages provides the logic and storage access for the Phone Number Verific
 use strict;
 use warnings;
 use Moo;
+use BOM::Service;
 
 use constant PNV_VERIFY_PREFIX     => 'PHONE::NUMBER::VERIFICATION::VERIFY::';
 use constant PNV_NEXT_PREFIX       => 'PHONE::NUMBER::VERIFICATION::NEXT::';
@@ -19,16 +20,26 @@ use constant ONE_MINUTE            => 60;                                       
 use constant ONE_HOUR              => 3600;                                          # 1 hour in seconds
 use constant SPAM_TOO_MUCH         => 3;
 
-=head2 user
+=head2 binary_user_id
 
-The L<BOM::User> instance, a little convenience for operations that might require this reference.
+The L<binary_user_id> value, a little convenience for operations that might require this reference.
 
 =cut
 
-has user => (
+has binary_user_id => (
     is       => 'ro',
-    required => 1,
-    weak_ref => 1,
+    required => 1
+);
+
+=head2 user_service_context
+
+The L<Hashref>, user service context
+
+=cut
+
+has user_service_context => (
+    is       => 'ro',
+    required => 1
 );
 
 =head2 verified 
@@ -40,23 +51,59 @@ Either C<1> or C<0>.
 =cut
 
 has verified => (
-    is      => 'lazy',
-    clearer => '_clear_verified',
+    is       => 'ro',
+    required => 1,
 );
 
-=head2 _build_verified 
+=head2 phone
 
-Compute the current status of the Phone Number Verification.
-
-Returns C<1> or C<0>.
+The L<String>, user phone number
 
 =cut
 
-sub _build_verified {
-    my ($self) = @_;
+has phone => (
+    is       => 'ro',
+    required => 1,
+);
 
-    return $self->user->phone_number_verified ? 1 : 0;
-}
+=head2 email
+
+The L<String>, user phone number
+
+=cut
+
+has email => (
+    is       => 'ro',
+    required => 1,
+);
+
+=head2 BUILDARGS
+
+Compute the current status of the Phone Number Verification.
+
+Returns Object or undef on failure.
+
+=cut
+
+# Constructor
+around BUILDARGS => sub {
+    my ($orig, $class, $user_id, $user_service_context) = @_;
+
+    my $user_data = BOM::Service::user(
+        context    => $user_service_context,
+        command    => 'get_attributes',
+        user_id    => $user_id,
+        attributes => [qw(binary_user_id email phone phone_number_verified)],
+    );
+    return undef unless ($user_data->{status} eq 'ok');
+
+    return $class->$orig(
+        binary_user_id       => $user_data->{attributes}{binary_user_id},
+        user_service_context => $user_service_context,
+        phone                => $user_data->{attributes}{phone},
+        email                => $user_data->{attributes}{email},
+        verified             => $user_data->{attributes}{phone_number_verified});
+};
 
 =head2 clear_verify_attempts
 
@@ -71,7 +118,7 @@ sub clear_verify_attempts {
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
-    $redis->del(PNV_VERIFY_PREFIX . $self->user->id);
+    $redis->del(PNV_VERIFY_PREFIX . $self->binary_user_id);
 }
 
 =head2 clear_attempts
@@ -87,7 +134,7 @@ sub clear_attempts {
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
-    $redis->del(PNV_NEXT_PREFIX . $self->user->id);
+    $redis->del(PNV_NEXT_PREFIX . $self->binary_user_id);
 }
 
 =head2 email_blocked
@@ -101,7 +148,7 @@ sub email_blocked {
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
-    my $ttl = $redis->ttl(PNV_NEXT_EMAIL_PREFIX . $self->user->id) // 0;
+    my $ttl = $redis->ttl(PNV_NEXT_EMAIL_PREFIX . $self->binary_user_id) // 0;
 
     return $ttl > 0;
 }
@@ -121,7 +168,7 @@ sub next_email_attempt {
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
-    my $ttl = $redis->ttl(PNV_NEXT_EMAIL_PREFIX . $self->user->id) // 0;
+    my $ttl = $redis->ttl(PNV_NEXT_EMAIL_PREFIX . $self->binary_user_id) // 0;
 
     $ttl = 0 if $ttl < 0;
 
@@ -139,7 +186,7 @@ sub verify_blocked {
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
-    my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->user->id) // 0;
+    my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->binary_user_id) // 0;
 
     return $attempts > SPAM_TOO_MUCH;
 }
@@ -159,7 +206,7 @@ sub next_attempt {
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
-    my $ttl = $redis->ttl(PNV_NEXT_PREFIX . $self->user->id) // 0;
+    my $ttl = $redis->ttl(PNV_NEXT_PREFIX . $self->binary_user_id) // 0;
 
     $ttl = 0 if $ttl < 0;
 
@@ -181,9 +228,9 @@ sub next_verify_attempt {
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
-    my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->user->id) // 0;
+    my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->binary_user_id) // 0;
 
-    my $ttl = $redis->ttl(PNV_VERIFY_PREFIX . $self->user->id) // 0;
+    my $ttl = $redis->ttl(PNV_VERIFY_PREFIX . $self->binary_user_id) // 0;
 
     $ttl = 0 unless $attempts > SPAM_TOO_MUCH;
 
@@ -209,10 +256,13 @@ Returns C<undef>.
 sub update {
     my ($self, $verified) = @_;
 
-    $self->user->dbic(operation => 'write')->run(
-        fixup => sub {
-            $_->do('SELECT * FROM users.update_phone_number_verified(?::BIGINT, ?::BOOLEAN)', undef, $self->user->id, $verified ? 1 : 0);
-        });
+    my $response = BOM::Service::user(
+        context    => $self->user_service_context,
+        command    => 'update_attributes',
+        user_id    => $self->binary_user_id,
+        attributes => {phone_number_verified => $verified},
+    );
+    die "Error updating phone number verification status: $response->{message}" if ($response->{status} ne 'ok');
 
     return undef;
 }
@@ -229,12 +279,12 @@ sub generate_otp {
     my ($self) = @_;
 
     # yes, the mocked OTP is just the user id
-    my $otp = $self->user->id;
+    my $otp = $self->binary_user_id;
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
     # this OTP will be valid for ten minutes
-    $redis->set(PNV_OTP_PREFIX . $self->user->id, $otp, 'EX', TEN_MINUTES);
+    $redis->set(PNV_OTP_PREFIX . $self->binary_user_id, $otp, 'EX', TEN_MINUTES);
 
     return $otp;
 }
@@ -249,11 +299,11 @@ Adjust the next attempt timestamp accordingly.
 sub increase_verify_attempts {
     my ($self)   = @_;
     my $redis    = BOM::Config::Redis::redis_events_write();
-    my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->user->id) // 0;
+    my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->binary_user_id) // 0;
 
     $attempts++;
 
-    $redis->set(PNV_VERIFY_PREFIX . $self->user->id, $attempts, 'EX', ONE_HOUR);
+    $redis->set(PNV_VERIFY_PREFIX . $self->binary_user_id, $attempts, 'EX', ONE_HOUR);
 
     return $attempts;
 }
@@ -268,7 +318,7 @@ Adjust the next attempt timestamp accordingly.
 sub increase_attempts {
     my ($self)   = @_;
     my $redis    = BOM::Config::Redis::redis_events_write();
-    my $attempts = $redis->get(PNV_NEXT_PREFIX . $self->user->id) // 0;
+    my $attempts = $redis->get(PNV_NEXT_PREFIX . $self->binary_user_id) // 0;
 
     # the next attempt will be unlocked as soon as the OTP expires
     my $next_attempt = ONE_MINUTE;
@@ -278,7 +328,7 @@ sub increase_attempts {
     # unless the client spams too much
     $attempts++;
 
-    $redis->set(PNV_NEXT_PREFIX . $self->user->id, $attempts, 'EX', $next_attempt);
+    $redis->set(PNV_NEXT_PREFIX . $self->binary_user_id, $attempts, 'EX', $next_attempt);
 
     return $attempts;
 }
@@ -293,7 +343,7 @@ Adjust the next email attempt timestamp accordingly.
 sub increase_email_attempts {
     my ($self)   = @_;
     my $redis    = BOM::Config::Redis::redis_events_write();
-    my $attempts = $redis->get(PNV_NEXT_EMAIL_PREFIX . $self->user->id) // 0;
+    my $attempts = $redis->get(PNV_NEXT_EMAIL_PREFIX . $self->binary_user_id) // 0;
 
     # the next attempt will be unlocked as soon as the OTP expires
     my $next_attempt = ONE_MINUTE;
@@ -303,7 +353,7 @@ sub increase_email_attempts {
     # unless the client spams too much
     $attempts++;
 
-    $redis->set(PNV_NEXT_EMAIL_PREFIX . $self->user->id, $attempts, 'EX', $next_attempt);
+    $redis->set(PNV_NEXT_EMAIL_PREFIX . $self->binary_user_id, $attempts, 'EX', $next_attempt);
 
     return $attempts;
 }
@@ -323,13 +373,13 @@ sub verify_otp {
 
     my $redis = BOM::Config::Redis::redis_events_write();
 
-    my $stored_otp = $redis->get(PNV_OTP_PREFIX . $self->user->id);
+    my $stored_otp = $redis->get(PNV_OTP_PREFIX . $self->binary_user_id);
 
     return undef unless defined $stored_otp;
 
     return undef unless $otp eq $stored_otp;
 
-    $redis->del(PNV_OTP_PREFIX . $self->user->id);
+    $redis->del(PNV_OTP_PREFIX . $self->binary_user_id);
 
     return 1;
 }

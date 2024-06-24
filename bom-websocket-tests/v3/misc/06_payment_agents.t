@@ -8,9 +8,11 @@ use await;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw(top_up);
+use BOM::Test::Customer;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
+use BOM::Service;
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
@@ -20,26 +22,21 @@ $app_config->set({'payment_agents.initial_deposit_per_country' => '{ "default": 
 my $t = build_wsapi_test();
 
 subtest 'paymentagent create and info' => sub {
-    my $email = 'pa@test.com';
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('jskjd8292922'),
+            email_verified => 1,
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
 
-    my $user = BOM::User->create(
-        email    => $email,
-        password => 'x'
-    );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    my $client = $customer->get_client_object('CR');
 
-    $client->account('USD');
-
-    $user->update_email_fields(email_verified => 't');
-    $user->add_client($client);
-
-    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test', ['admin']);
-
-    $t->await::authorize({authorize => $token});
+    $t->await::authorize({authorize => $customer->get_client_token('CR', ['admin'])});
 
     my %params = (
         'phone_numbers'             => [{'phone_number' => '+923-22-23-13'}],
@@ -86,19 +83,18 @@ subtest 'paymentagent create and info' => sub {
 };
 
 subtest 'payment agent withdraw justification' => sub {
-
-    my $user = BOM::User->create(
-        email    => 'testing@forthewin.com',
-        password => 'x'
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $user->email,
-        binary_user_id => $user->id,
-    });
-
-    $user->add_client($client);
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('jskjd8292922'),
+            email_verified => 1,
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+    my $client = $customer->get_client_object('CR');
 
     my $params = {
         paymentagent_withdraw_justification => 1,

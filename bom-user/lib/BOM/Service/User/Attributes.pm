@@ -101,11 +101,11 @@ our %ATTRIBUTES = (
         get_handler => \&BOM::Service::User::Attributes::Get::get_client_data,
         set_handler => \&BOM::Service::User::Attributes::Update::set_client_data
     },
-    # date_first_contact => {                        Not supported, doesn't look to actually be used
-    #     type        => 'date',
-    #     get_handler => \&get_user_data,
-    #     set_handler => \&set_user_data
-    # },
+    date_first_contact => {
+        type        => 'date',
+        get_handler => \&BOM::Service::User::Attributes::Get::get_user_data,
+        set_handler => \&BOM::Service::User::Attributes::Update::set_not_supported
+    },
     date_joined => {
         type        => 'date',
         get_handler => \&BOM::Service::User::Attributes::Get::get_client_data,
@@ -154,8 +154,8 @@ our %ATTRIBUTES = (
     },
     feature_flag => {
         type        => 'json',
-        get_handler => \&BOM::Service::User::Attributes::Get::get_feature_flag,
-        set_handler => \&BOM::Service::User::Attributes::Update::set_feature_flag
+        get_handler => \&BOM::Service::User::Attributes::Get::get_feature_flags,
+        set_handler => \&BOM::Service::User::Attributes::Update::set_feature_flags
     },
     financial_assessment => {
         type        => 'json',
@@ -171,6 +171,11 @@ our %ATTRIBUTES = (
         type        => 'bool',
         get_handler => \&BOM::Service::User::Attributes::Get::get_client_data,
         set_handler => \&BOM::Service::User::Attributes::Update::set_client_data
+    },
+    full_name => {
+        type        => 'string',
+        get_handler => \&BOM::Service::User::Attributes::Get::get_full_name,
+        set_handler => \&BOM::Service::User::Attributes::Update::set_not_supported
     },
     gclid_url => {
         type        => 'string',
@@ -251,10 +256,10 @@ our %ATTRIBUTES = (
         get_handler => \&BOM::Service::User::Attributes::Get::get_client_data,
         set_handler => \&BOM::Service::User::Attributes::Update::set_client_data
     },
-    phone_number_verification => {
+    phone_number_verified => {
         type        => 'bool',
-        get_handler => \&BOM::Service::User::Attributes::Get::get_user_phone_number_verification,
-        set_handler => \&BOM::Service::User::Attributes::Update::set_user_phone_number_verification
+        get_handler => \&BOM::Service::User::Attributes::Get::get_user_data,
+        set_handler => \&BOM::Service::User::Attributes::Update::set_user_phone_number_verified
     },
     place_of_birth => {
         type        => 'string',
@@ -262,7 +267,7 @@ our %ATTRIBUTES = (
         set_handler => \&BOM::Service::User::Attributes::Update::set_client_data
     },
     preferred_language => {
-        type        => 'string',
+        type        => 'string-nullable',
         get_handler => \&BOM::Service::User::Attributes::Get::get_user_data,
         set_handler => \&BOM::Service::User::Attributes::Update::set_user_preferred_language
     },
@@ -318,6 +323,11 @@ our %ATTRIBUTES = (
     },
     tax_residence => {
         type        => 'string',
+        get_handler => \&BOM::Service::User::Attributes::Get::get_client_data,
+        set_handler => \&BOM::Service::User::Attributes::Update::set_client_data
+    },
+    tin_approved_time => {
+        type        => 'date',
         get_handler => \&BOM::Service::User::Attributes::Get::get_client_data,
         set_handler => \&BOM::Service::User::Attributes::Update::set_client_data
     },

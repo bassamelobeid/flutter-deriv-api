@@ -21,10 +21,11 @@ use BOM::Test::Email qw(:no_event);
 use BOM::Platform::Token;
 use BOM::User::Client;
 use BOM::User::Wallet;
-use BOM::Test::Customer;
+use BOM::Service;
 use Email::Stuffer::TestLinks;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Test::Helper::FinancialAssessment;
+use BOM::Test::Customer;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
@@ -106,23 +107,23 @@ $params = {
 };
 # Used it to enable wallet migration in progress
 sub _enable_wallet_migration {
-    my $user       = shift;
+    my $user_id    = shift;
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->system->suspend->wallets(0);
     my $redis_rw = BOM::Config::Redis::redis_replicated_write();
     $redis_rw->set(
-        "WALLET::MIGRATION::IN_PROGRESS::" . $user->id, 1,
+        "WALLET::MIGRATION::IN_PROGRESS::" . $user_id, 1,
         EX => 30 * 60,
         "NX"
     );
 }
 # Used it to disable wallet migration
 sub _disable_wallet_migration {
-    my $user       = shift;
+    my $user_id    = shift;
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->system->suspend->wallets(1);
     my $redis_rw = BOM::Config::Redis::redis_replicated_write();
-    $redis_rw->del("WALLET::MIGRATION::IN_PROGRESS::" . $user->id);
+    $redis_rw->del("WALLET::MIGRATION::IN_PROGRESS::" . $user_id);
 }
 
 subtest 'Initialization' => sub {
@@ -214,16 +215,21 @@ subtest $method => sub {
     my $token_db = BOM::Database::Model::AccessToken->new();
     my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
     is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
-    my $user = BOM::User->new(
-        email => $email,
-    );
 
-    is $user->{utm_source},         'google.com',                 'utm registered as expected';
-    is $user->{gclid_url},          'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
-    is $user->{date_first_contact}, $date_first_contact,          'date first contact value returned as expected';
-    is $user->{signup_device},      'mobile',                     'signup_device value returned as expected';
-    is $user->{email_consent},      1,                            'email consent for new account is 1 for residence under svg';
-    is_deeply decode_json_utf8($user->{utm_data}), $expected_utm_data, 'utm data registered as expected';
+    my $user_data = BOM::Service::user(
+        context    => BOM::Test::Customer::get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $email,
+        attributes => [qw(utm_source gclid_url date_first_contact signup_device utm_data email_consent)],
+    );
+    is $user_data->{status}, 'ok', 'user service call succeeded';
+
+    is $user_data->{attributes}{utm_source},         'google.com',                 'utm registered as expected';
+    is $user_data->{attributes}{gclid_url},          'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
+    is $user_data->{attributes}{date_first_contact}, $date_first_contact,          'date first contact value returned as expected';
+    is $user_data->{attributes}{signup_device},      'mobile',                     'signup_device value returned as expected';
+    is $user_data->{attributes}{email_consent},      1,                            'email consent for new account is 1 for residence under svg';
+    is_deeply decode_json_utf8($user_data->{attributes}{utm_data}), $expected_utm_data, 'utm data registered as expected';
 
     my ($resp_loginid, $t, $uaf) =
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
@@ -249,7 +255,7 @@ subtest $method => sub {
     };
 
     subtest 'European client - de' => sub {
-        my $vr_email = 'new_email' . rand(999) . '@binary.com';
+        my $vr_email = BOM::Test::Customer::get_random_email_address();
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $vr_email,
             created_for => 'account_opening'
@@ -263,15 +269,19 @@ subtest $method => sub {
         is $dd_inc_metrics->{'bom_rpc.v_3.new_account_real_success.count'}, undef, "new account real count is not increased for virtual account";
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
-        $user = BOM::User->new(
-            email => $vr_email,
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'get_attributes',
+            user_id    => $vr_email,
+            attributes => [qw(email_consent)],
         );
-        is $user->{email_consent}, 1, 'email consent for new account is 1 for european clients - de';
+        is $user_data->{status},                    'ok', 'user service call succeeded';
+        is $user_data->{attributes}{email_consent}, 1,    'email consent for new account is 1 for european clients - de';
 
     };
 
     subtest 'European client - gb' => sub {
-        my $vr_email = 'new_email' . rand(999) . '@binary.com';
+        my $vr_email = BOM::Test::Customer::get_random_email_address();
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $vr_email,
             created_for => 'account_opening'
@@ -334,7 +344,7 @@ subtest $method => sub {
     };
 
     subtest 'email consent given' => sub {
-        my $vr_email = 'consent_given' . rand(999) . '@binary.com';
+        my $vr_email = BOM::Test::Customer::get_random_email_address();
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $vr_email,
             created_for => 'account_opening'
@@ -349,14 +359,18 @@ subtest $method => sub {
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
-        $user = BOM::User->new(
-            email => $vr_email,
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'get_attributes',
+            user_id    => $vr_email,
+            attributes => [qw(email_consent)],
         );
-        is $user->{email_consent}, 1, 'email consent is given';
+        is $user_data->{status},                    'ok', 'user service call succeeded';
+        is $user_data->{attributes}{email_consent}, 1,    'email consent is given';
     };
 
     subtest 'email consent not given' => sub {
-        my $vr_email = 'not_consent' . rand(999) . '@binary.com';
+        my $vr_email = BOM::Test::Customer::get_random_email_address();
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $vr_email,
             created_for => 'account_opening'
@@ -371,14 +385,18 @@ subtest $method => sub {
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
-        $user = BOM::User->new(
-            email => $vr_email,
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'get_attributes',
+            user_id    => $vr_email,
+            attributes => [qw(email_consent)],
         );
-        is $user->{email_consent}, 0, 'email consent is not given';
+        is $user_data->{status},                    'ok', 'user service call succeeded';
+        is $user_data->{attributes}{email_consent}, 0,    'email consent is not given';
     };
 
     subtest 'email consent undefined' => sub {
-        my $vr_email = 'undefined_consent' . rand(999) . '@binary.com';
+        my $vr_email = BOM::Test::Customer::get_random_email_address();
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $vr_email,
             created_for => 'account_opening'
@@ -394,14 +412,18 @@ subtest $method => sub {
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
-        $user = BOM::User->new(
-            email => $vr_email,
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'get_attributes',
+            user_id    => $vr_email,
+            attributes => [qw(email_consent)],
         );
-        is $user->{email_consent}, 1, 'email concent is accepted by default';
+        is $user_data->{status},                    'ok', 'user service call succeeded';
+        is $user_data->{attributes}{email_consent}, 1,    'email consent is accepted by default';
     };
 
     subtest 'invalid utm data' => sub {
-        my $vr_email = 'invalid_utm_data' . rand(999) . '@binary.com';
+        my $vr_email = BOM::Test::Customer::get_random_email_address();
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $vr_email,
             created_for => 'account_opening'
@@ -418,11 +440,15 @@ subtest $method => sub {
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
-        $user = BOM::User->new(
-            email => $vr_email,
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'get_attributes',
+            user_id    => $vr_email,
+            attributes => [qw(utm_data)],
         );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
+        my $utm_data = decode_json_utf8($user_data->{attributes}{utm_data});
 
-        my $utm_data = decode_json_utf8($user->{utm_data});
         foreach my $key (keys $utm_data->%*) {
             if ($params->{args}->{$key} !~ /^[\w\s\.\-_]{1,100}$/) {
                 is $utm_data->{$key}, undef, "$key is skipped as expected";
@@ -433,7 +459,7 @@ subtest $method => sub {
     };
 
     subtest 'account_category' => sub {
-        my $email_c = 'account_category' . rand(999) . '@binary.com';
+        my $email_c = BOM::Test::Customer::get_random_email_address();
         $params->{args}                      = {};
         $params->{args}->{residence}         = 'lb';
         $params->{args}->{client_password}   = '123Abas!';
@@ -497,8 +523,14 @@ subtest $method => sub {
         is %initial_emissions + 1, %emitted, 'new signup event emission made for successful signup';
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, 'signup event emitted';
 
-        my $user = BOM::User->new(email => $email);
-        ok !$user->email_verified, 'If signup when suspended email verification, user is not email verified.';
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'get_attributes',
+            user_id    => $email,
+            attributes => [qw(utm_data)],
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
+        ok !$user_data->{attributes}{email_verified}, 'If signup when suspended email verification, user is not email verified.';
 
         BOM::Config::Runtime->instance->app_config->email_verification->suspend->virtual_accounts(0);
     };
@@ -513,42 +545,22 @@ $params = {
 };
 
 subtest $method => sub {
-    my ($user, $client, $vclient, $auth_token);
-
-    subtest 'Initialization' => sub {
-        lives_ok {
-            # Make real client
-            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'CR',
-                email       => 'new_email' . rand(999) . '@binary.com',
-            });
-            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-            # Make virtual client with user
-            my $password = 'Abcd33!@#';
-            my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
-            );
-
-            $vclient = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-            });
-
-            $user->add_client($vclient);
-        };
-        'Initial users and clients';
-    };
-
     subtest 'Check new account permission' => sub {
         # We have made a decision to disable trading upon mt5 account creation
         is(Deriv::TradingPlatform::MT5::UserRights::get_new_account_permissions(), 485, 'MT5 New account permission check');
     };
 
     subtest 'Auth client' => sub {
+        my $customer = BOM::Test::Customer->create({
+                email    => BOM::Test::Customer::get_random_email_address(),
+                password => BOM::User::Password::hashpw('Abcd33!@'),
+            },
+            [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+            ]);
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('InvalidToken', 'It should return error: InvalidToken');
 
         $params->{token} = 'wrong token';
@@ -557,7 +569,7 @@ subtest $method => sub {
         delete $params->{token};
         $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('InvalidToken', 'It should return error: InvalidToken');
 
-        $params->{token} = $auth_token;
+        $params->{token} = $customer->get_client_token('CR');
 
         {
             my $module = Test::MockModule->new('BOM::User::Client');
@@ -568,8 +580,18 @@ subtest $method => sub {
     };
 
     subtest 'Create new account' => sub {
+        my $customer = BOM::Test::Customer->create({
+                email    => BOM::Test::Customer::get_random_email_address(),
+                password => BOM::User::Password::hashpw('Abcd33!@'),
+            },
+            [{
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                },
+            ]);
+
         $emit_data = {};
-        $params->{token} = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
+        $params->{token} = $customer->get_client_token('VRTC');
 
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
         isnt $result->{error}->{code}, 'InvalidAccount', 'No error with duplicate details but residence not provided so it errors out';
@@ -582,16 +604,18 @@ subtest $method => sub {
         @{$params->{args}}{keys %$client_details} = values %$client_details;
 
         $params->{args}{citizen} = "at";
-        # These are here because our test helper function "create_client" creates a virtual client with details such as first name which never happens in production. This causes the new_account_real call to fail as it checks against some details can't be changed but is checked against the details of the virtual account
-        # $params->{args}{first_name} = $vclient->first_name;
-        # $params->{args}{last_name} = $vclient->last_name;
-        # $params->{args}{date_of_birth} = $vclient->date_of_birth;
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
 
-        $user->update_email_fields(email_verified => 1);
+        my $user_data = BOM::Service::user(
+            context    => $customer->get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $customer->get_user_id(),
+            attributes => {email_verified => 1},
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
 
         $params->{args}->{phone} = 'a1234567890';
         $rpc_ct->call_ok($method, $params)
@@ -604,12 +628,12 @@ subtest $method => sub {
         $params->{args}->{phone} = '1234256789';
 
         # Added to check, it will not allow if we have any migration in progress
-        _enable_wallet_migration($user);
+        _enable_wallet_migration($customer->get_user_id());
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('WalletMigrationInprogress', 'The wallet migration is in progress.')
             ->error_message_is(
             'This may take up to 2 minutes. During this time, you will not be able to deposit, withdraw, transfer, and add new accounts.');
-        _disable_wallet_migration($user);
+        _disable_wallet_migration($customer->get_user_id());
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
@@ -703,7 +727,7 @@ subtest $method => sub {
     };
 
     subtest 'Whitespaces should be trimmed' => sub {
-        $email = 'new_email' . rand(999) . '@binary.com';
+        $email = BOM::Test::Customer::get_random_email_address();
 
         $params->{args}->{email} = $email;
 
@@ -746,7 +770,7 @@ subtest $method => sub {
     };
 
     subtest 'Create new client untrimmed fields exception' => sub {
-        $email = 'new_email' . rand(999) . '@binary.com';
+        $email = BOM::Test::Customer::get_random_email_address();
 
         $params->{args}->{email} = $email;
 
@@ -792,7 +816,7 @@ subtest $method => sub {
 
     subtest 'Create multiple accounts in CR' => sub {
         $params->{args}->{secret_answer} = 'test';
-        $email = 'new_email' . rand(999) . '@binary.com';
+        $email = BOM::Test::Customer::get_random_email_address();
 
         delete $params->{token};
         $params->{args}->{email}           = $email;
@@ -869,8 +893,6 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },      'BTC',    'crypto account currency is BTC')
             ->result_value_is(sub { shift->{currency_type} }, 'crypto', 'crypto account currency type is crypto');
 
-        sleep 2;
-
         my $loginid = $rpc_ct->result->{client_id};
 
         $rpc_ct->call_ok('get_account_status', {token => $params->{token}});
@@ -939,26 +961,21 @@ $params = {
     args     => BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)};
 
 subtest $method => sub {
-    my ($user, $client, $auth_token);
+    my $customer;
 
     subtest 'Initialization' => sub {
         lives_ok {
-            my $password = 'Abcd3s3!@';
-            my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
-            );
-            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-                citizen     => '',
-                first_name  => ''
-            });
-            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-            $user->add_client($client);
+            $customer = BOM::Test::Customer->create({
+                    email      => BOM::Test::Customer::get_random_email_address(),
+                    password   => BOM::User::Password::hashpw('Abcd33!@'),
+                    first_name => '',
+                    citizen    => '',
+                },
+                [{
+                        name        => 'VRTC',
+                        broker_code => 'VRTC',
+                    },
+                ]);
         }
         'Initial users and clients';
     };
@@ -972,7 +989,7 @@ subtest $method => sub {
         delete $params->{token};
         $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('InvalidToken', 'It should return error: InvalidToken');
 
-        $params->{token} = $auth_token;
+        $params->{token} = $customer->get_client_token('VRTC');
 
         {
             my $module = Test::MockModule->new('BOM::User::Client');
@@ -983,60 +1000,59 @@ subtest $method => sub {
     };
 
     subtest 'resident self-declaration' => sub {
-        my $password = 'Abcd33!@#';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        $email = 'new_email' . rand(999) . '@binary.com';
-        my $user_mf = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1
+        my $customer = BOM::Test::Customer->create({
+                email          => BOM::Test::Customer::get_random_email_address(),
+                password       => BOM::User::Password::hashpw('Abcd33!@'),
+                email_verified => 1,
+                first_name     => 'tsett',
+                residence      => 'es',
+            },
+            [{
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                },
+            ]);
+
+        $params->{token}                           = $customer->get_client_token('VRTC');
+        $params->{args}{tax_residence}             = 'es';
+        $params->{args}{tax_identification_number} = 'MRTSVT79M29F8P9P';
+        $params->{args}{accept_risk}               = 1;
+        $params->{args}{citizen}                   = "es";
+        $params->{args}{currency}                  = 'EUR';
+        $params->{args}{date_of_birth}             = '1986-05-10';
+
+        my $user_data = BOM::Service::user(
+            context    => $customer->get_user_service_context(),
+            command    => 'get_attributes',
+            user_id    => $customer->get_user_id(),
+            attributes => [qw(residence)],
         );
-
-        my $vclient = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            first_name  => 'tsett',
-            residence   => 'es',
-        });
-
-        $user_mf->add_client($vclient);
-
-        $params->{token}                             = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
-        $params->{args}->{tax_residence}             = 'es';
-        $params->{args}->{tax_identification_number} = 'MRTSVT79M29F8P9P';
-        $params->{args}->{accept_risk}               = 1;
-        $params->{args}{citizen}                     = "es";
-        $params->{args}->{currency}                  = 'EUR';
-        $params->{args}->{date_of_birth}             = '1986-05-10';
+        ok $user_data->{status} eq 'ok', 'User service read ok';
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ResidentSelfDeclarationRequired',
             'It should return error: ResidentSelfDeclarationRequired')->error_message_is('Resident Self Declaration required for country.',
-            'It should return error_message: Resident Self Declaration required for country.')->error_details_is({residence => $vclient->residence});
+            'It should return error_message: Resident Self Declaration required for country.')
+            ->error_details_is({residence => $user_data->{attributes}{residence}});
 
         delete $params->{args};
         $params->{args} = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
     };
 
     subtest 'new maltainvest account with resident self declaration' => sub {
-        my $password = 'Abcd33!@#';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        $email = 'new_email' . rand(999) . '@binary.com';
-        my $user_mf = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1
-        );
+        my $customer = BOM::Test::Customer->create({
+                email          => BOM::Test::Customer::get_random_email_address(),
+                password       => BOM::User::Password::hashpw('Abcd33!@'),
+                email_verified => 1,
+                first_name     => 'tsett',
+                residence      => 'es',
+            },
+            [{
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                },
+            ]);
 
-        my $vclient = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            first_name  => 'tsett',
-            residence   => 'es',
-        });
-
-        $user_mf->add_client($vclient);
-
-        $params->{token}                             = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
+        $params->{token}                             = $customer->get_client_token('VRTC');
         $params->{args}->{tax_residence}             = 'es';
         $params->{args}->{tax_identification_number} = 'MRTSVT79M29F8P9P';
         $params->{args}->{accept_risk}               = 1;
@@ -1066,24 +1082,41 @@ subtest $method => sub {
     };
 
     subtest 'Create new account maltainvest' => sub {
+        my $user_data = BOM::Service::user(
+            context    => $customer->get_user_service_context(),
+            command    => 'update_attributes_force',
+            user_id    => $customer->get_user_id(),
+            attributes => {residence => 'ng'},
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
+
         $params->{args}->{accept_risk} = 1;
         delete $params->{args}->{non_pep_declaration};
         delete $params->{args}->{fatca_declaration};
-        $params->{token} = $auth_token;
+        $params->{token} = $customer->get_client_token('VRTC');
 
-        $client->residence('ng');
-        $client->save;
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
-        is $result->{error}->{code}, 'PermissionDenied', 'It should return error if client residense does not fit for maltainvest';
+        is $result->{error}->{code}, 'PermissionDenied', 'It should return error if client residence does not fit for maltainvest';
 
-        $client->residence('de');
-        $client->save;
+        $user_data = BOM::Service::user(
+            context    => $customer->get_user_service_context(),
+            command    => 'update_attributes_force',
+            user_id    => $customer->get_user_id(),
+            attributes => {residence => 'de'},
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
 
-        $user->update_email_fields(email_verified => 1);
+        $user_data = BOM::Service::user(
+            context    => $customer->get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $customer->get_user_id(),
+            attributes => {email_verified => 1},
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
 
         delete $params->{args}->{accept_risk};
 
@@ -1131,8 +1164,13 @@ subtest $method => sub {
 
         $params->{args}->{residence} = 'de';
 
-        $client->citizen('');
-        $client->save;
+        $user_data = BOM::Service::user(
+            context    => $customer->get_user_service_context(),
+            command    => 'update_attributes_force',
+            user_id    => $customer->get_user_id(),
+            attributes => {citizen => ''},
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
 
         $params->{args}->{citizen} = 'xx';
 
@@ -1167,12 +1205,20 @@ subtest $method => sub {
         delete $params->{args}->{employment_industry};
         delete $params->{args}->{occupation};
 
-        $params->{args}->{citizen}   = 'de';
-        $params->{args}->{residence} = 'de';
-        $client->residence('de');
-        $client->address_postcode('');
+        $params->{args}->{citizen}          = 'de';
+        $params->{args}->{residence}        = 'de';
         $params->{args}->{address_postcode} = '';
-        $client->save();
+
+        $user_data = BOM::Service::user(
+            context    => $customer->get_user_service_context(),
+            command    => 'update_attributes_force',
+            user_id    => $customer->get_user_id(),
+            attributes => {
+                residence        => 'de',
+                address_postcode => ''
+            },
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
 
         my @fields_should_be_trimmed = grep {
             my $element = $_;
@@ -1239,30 +1285,24 @@ subtest $method => sub {
     };
 
     subtest 'Create new account maltainvest with manual tin approval' => sub {
-
-        my $password = 'Abcd33!@';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-
-        $user = BOM::User->create(
-            email          => 'new_email' . rand(999) . '@binary.com',
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            email       => $email,
-            residence   => 'de',
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-        $user->add_client($client);
+        my $customer = BOM::Test::Customer->create({
+                email          => BOM::Test::Customer::get_random_email_address(),
+                password       => BOM::User::Password::hashpw('Abcd33!@'),
+                email_verified => 1,
+                residence      => 'de',
+            },
+            [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+            ]);
 
         my $params = {
             language => 'EN',
             source   => $app_id,
             country  => 'ru',
             args     => BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1),
-            token    => $auth_token
+            token    => $customer->get_client_token('CR'),
         };
 
         $params->{args}->{accept_risk} = 1;
@@ -1273,6 +1313,7 @@ subtest $method => sub {
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
             ->error_details_is({missing => ["tax_identification_number"]});
 
+        my $client = $customer->get_client_object('CR');
         $client->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
         $client->save;
 
@@ -1284,46 +1325,41 @@ subtest $method => sub {
 
         my $new_loginid = $rpc_ct->result->{client_id};
 
-        my $cl = BOM::User::Client->new({loginid => $new_loginid});
+        $client = BOM::User::Client->new({loginid => $new_loginid});
 
-        ok defined $cl->tin_approved_time, 'tin_approved_time is copied from previous account';
+        ok defined $client->tin_approved_time, 'tin_approved_time is copied from previous account';
 
     };
 
     subtest 'Create new account maltainvest giving tax_identification_number with already approved tin' => sub {
-
-        my $password = 'Abcd33!@';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-
-        $user = BOM::User->create(
-            email          => 'new_email' . rand(999) . '@binary.com',
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            email       => $email,
-            residence   => 'de',
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-        $user->add_client($client);
+        my $customer = BOM::Test::Customer->create({
+                email                    => BOM::Test::Customer::get_random_email_address(),
+                password                 => BOM::User::Password::hashpw('Abcd33!@'),
+                email_verified           => 1,
+                residence                => 'de',
+                secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+                non_pep_declaration_time => '2020-01-02',
+                fatca_declaration_time   => '2020-01-02',
+                tin_approved_time        => Date::Utility->new()->datetime_yyyymmdd_hhmmss,
+            },
+            [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+            ]);
 
         my $params = {
             language => 'EN',
             source   => $app_id,
             country  => 'ru',
             args     => BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1),
-            token    => $auth_token
+            token    => $customer->get_client_token('CR'),
         };
 
         $params->{args}->{accept_risk} = 1;
         @{$params->{args}}{keys %$client_details} = values %$client_details;
         $params->{args}->{tax_residence}             = 'de,nl';
         $params->{args}->{tax_identification_number} = '111222';
-
-        $client->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
-        $client->save;
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
@@ -1332,7 +1368,7 @@ subtest $method => sub {
         )->result_value_is(sub { shift->{landing_company_shortcode} },
             'maltainvest', 'Account is created successfully with existing tax_identification_number and manual tin approval');
 
-        $client = BOM::User::Client->new({loginid => $client->loginid});
+        my $client = BOM::User::Client->new({loginid => $customer->get_client_loginid('CR')});
         ok !$client->tin_approved_time, 'tin_approved_time is removed if tax_idenitification_number is given';
 
         my $new_loginid = $rpc_ct->result->{client_id};
@@ -1343,39 +1379,28 @@ subtest $method => sub {
     };
 
     my $client_cr1;
-    subtest 'Init CR MF' => sub {
+    subtest 'Init CR CR' => sub {
         lives_ok {
-            my $password = 'Abcd33!@';
-            my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'cr1_email' . rand(999) . '@binary.com';
-            $user  = BOM::User->create(
-                email          => $email,
-                password       => $hash_pwd,
-                email_verified => 1,
-            );
-            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-                residence   => 'za',
-            });
-            $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                    broker_code   => 'CR',
-                    email         => $email,
-                    residence     => 'za',
-                    secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
-            $auth_token = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
+            $customer = BOM::Test::Customer->create({
+                    email                    => BOM::Test::Customer::get_random_email_address(),
+                    password                 => BOM::User::Password::hashpw('Abcd33!@'),
+                    email_verified           => 1,
+                    residence                => 'za',
+                    secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+                    non_pep_declaration_time => '2020-01-02',
+                    fatca_declaration_time   => '2020-01-02',
+                },
+                [{
+                        name        => 'VRTC',
+                        broker_code => 'VRTC',
+                    },
+                    {
+                        name        => 'CR',
+                        broker_code => 'CR',
+                    },
+                ]);
 
-            $user->add_client($client);
-            $user->add_client($client_cr1);
-
-            is $client_cr1->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
-                'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args (test create_account call)';
-            $client_cr1->non_pep_declaration_time('2020-01-02');
-            is $client_cr1->fatca_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
-                'fatca_declaration_time is auto-initialized with no fatca_declaration in args (test create_account call)';
-            is $client_cr1->fatca_declaration, 1,
-                'fatca_declaration is auto-initialized with no fatca_declaration in args (test create_account call)';
-            $client_cr1->fatca_declaration_time('2020-01-02');
+            $client_cr1 = $customer->get_client_object('CR');
             $client_cr1->status->set('age_verification', 'system', 'Age verified client');
             $client_cr1->save;
         }
@@ -1384,7 +1409,7 @@ subtest $method => sub {
 
     subtest 'Create new account maltainvest from CR' => sub {
         $params->{args}->{accept_risk} = 1;
-        $params->{token}               = $auth_token;
+        $params->{token}               = $customer->get_client_token('CR');
         $params->{args}->{residence}   = 'za';
         $params->{args}->{citizen}     = 'za';
         delete $params->{args}->{non_pep_declaration};
@@ -1424,26 +1449,22 @@ subtest $method => sub {
     };
 
     subtest 'Check tax information and account opening reason is synchronize to CR from MF new account' => sub {
-        my $password = 'Abcd33!@';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        $email = 'cr1_email' . rand(999) . '@binary.com';
-        $user  = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code               => 'CR',
-                binary_user_id            => $user->id,
-                email                     => $email,
+        my $customer = BOM::Test::Customer->create({
+                email                     => BOM::Test::Customer::get_random_email_address(),
+                password                  => BOM::User::Password::hashpw('Abcd33!@'),
+                email_verified            => 1,
                 residence                 => 'za',
                 tax_residence             => 'ag',
                 tax_identification_number => '1234567891',
                 account_opening_reason    => 'Speculative',
-                secret_answer             => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
-        $auth_token = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
+                secret_answer             => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+            },
+            [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+            ]);
 
-        $user->add_client($client_cr1);
         my @hash_array = ({
                 field_name => "tax_residence",
                 value      => "agd",
@@ -1457,7 +1478,7 @@ subtest $method => sub {
                 value      => "Income Earning",
             });
 
-        $params->{token}                             = $auth_token;
+        $params->{token}                             = $customer->get_client_token('CR');
         $params->{args}->{residence}                 = 'za';
         $params->{args}->{citizen}                   = 'za';
         $params->{args}->{tax_residence}             = $hash_array[0]->{value};
@@ -1477,7 +1498,7 @@ subtest $method => sub {
         my $auth_token_mf = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token');
 
         my $result_mf = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
-        my $result_cr = $rpc_ct->call_ok('get_settings', {token => $auth_token})->result;
+        my $result_cr = $rpc_ct->call_ok('get_settings', {token => $customer->get_client_token('CR')})->result;
 
         foreach my $hash (@hash_array) {
             is($result_mf->{$hash->{field_name}}, $hash->{value}, "MF client has $hash->{field_name} set as $hash->{value}");
@@ -1487,26 +1508,21 @@ subtest $method => sub {
 
     subtest 'Create a new account maltainvest from a virtual account' => sub {
         #create a virtual de client
-        my $password = 'Abcd33!@';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        $email = 'virtual_email' . rand(999) . '@binary.com';
-        $user  = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'de',
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-        $user->add_client($client);
+        my $customer = BOM::Test::Customer->create({
+                email          => BOM::Test::Customer::get_random_email_address(),
+                password       => BOM::User::Password::hashpw('Abcd33!@'),
+                email_verified => 1,
+                residence      => 'de',
+            },
+            [{
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                },
+            ]);
 
         $params->{args}->{accept_risk} = 1;
-        $params->{token}               = $auth_token;
+        $params->{token}               = $customer->get_client_token('VRTC');
         $params->{args}->{residence}   = 'de';
-
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
         $params->{args}->{phone}         = '+62 21 12345678';
@@ -1518,26 +1534,23 @@ subtest $method => sub {
         ok $emitted{'signup_' . $result->{client_id}}, "signup event emitted";
 
         #create a virtual de client
-        $email = 'virtual_germany_email' . rand(999) . '@binary.com';
+        $customer = BOM::Test::Customer->create({
+                email          => BOM::Test::Customer::get_random_email_address(),
+                password       => BOM::User::Password::hashpw('Abcd33!@'),
+                email_verified => 1,
+                residence      => 'de',
+            },
+            [{
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                },
+            ]);
+
+        $params->{token} = $customer->get_client_token('VRTC');
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_ . rand(9)) =~ s/_// for qw/first_name last_name residence address_city/;
-        $params->{args}->{phone}         = '+62 21 12345999';
-        $params->{args}->{date_of_birth} = '1990-09-09';
-
-        $user = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'de',
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-        $user->add_client($client);
-
-        $params->{token}                   = $auth_token;
+        $params->{args}->{phone}           = '+62 21 12345999';
+        $params->{args}->{date_of_birth}   = '1990-09-09';
         $params->{args}->{residence}       = 'de';
         $params->{args}->{secret_answer}   = 'test';
         $params->{args}->{secret_question} = 'test';
@@ -1554,30 +1567,24 @@ subtest $method => sub {
         ok $cl->fatca_declaration,      'fatca_declaration is auto-initialized with no fatca_declaration in args (test create_account call)';
     };
 
+    my $auth_token;
     subtest 'Create new account maltainvest without MLT' => sub {
-        my $password = 'Abcd33!@';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        #create a virtual cz client
-        $email = 'virtual_de_email' . rand(999) . '@binary.com';
-        # call with totally random values - our client still should have correct one
+        my $customer = BOM::Test::Customer->create({
+                email          => BOM::Test::Customer::get_random_email_address(),
+                password       => BOM::User::Password::hashpw('Abcd33!@'),
+                email_verified => 1,
+                residence      => 'at',
+            },
+            [{
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                },
+            ]);
+
+        $params->{token} = $customer->get_client_token('VRTC');
         ($params->{args}->{$_} = $_ . rand(9)) =~ s/_// for qw/first_name last_name residence address_city/;
-        $params->{args}->{phone}         = '+62 21 12098999';
-        $params->{args}->{date_of_birth} = '1990-09-09';
-
-        $user = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'at',
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-        $user->add_client($client);
-
-        $params->{token}                   = $auth_token;
+        $params->{args}->{phone}           = '+62 21 12098999';
+        $params->{args}->{date_of_birth}   = '1990-09-09';
         $params->{args}->{residence}       = 'at';
         $params->{address_state}           = 'Salzburg';
         $params->{args}->{secret_answer}   = 'test';
@@ -1614,7 +1621,7 @@ $method = 'new_account_real';
 subtest 'Duplicate accounts are not created in race condition' => sub {
     my $params = {};
 
-    $email                               = 'new_email' . rand(999) . '@binary.com';
+    $email                               = BOM::Test::Customer::get_random_email_address();
     $params->{args}->{client_password}   = 'Abcd333@!';
     $params->{args}->{residence}         = 'id';
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
@@ -1626,8 +1633,6 @@ subtest 'Duplicate accounts are not created in race condition' => sub {
         ->result_value_is(sub { shift->{currency} },      'USD',  'It should return new account data')
         ->result_value_is(sub { shift->{currency_type} }, 'fiat', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} },  10000,  'It should return new account data');
-
-    my $user = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}})->user;
 
     my $client_cr = {
         first_name    => 'James' . rand(999),
@@ -1670,26 +1675,21 @@ $params = {
 };
 
 subtest $method => sub {
-    my ($user, $client, $vr_client, $auth_token);
+    my $customer;
 
     subtest 'Initialization' => sub {
         lives_ok {
-            my $password = 'Abcd3s3!@';
-            my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
-            );
-            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-                citizen     => 'id',
-                residence   => 'id'
-            });
-            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-            $user->add_client($client);
+            $customer = BOM::Test::Customer->create({
+                    email     => BOM::Test::Customer::get_random_email_address(),
+                    password  => BOM::User::Password::hashpw('Abcd3s3!@'),
+                    residence => 'id',
+                    citizen   => 'id',
+                },
+                [{
+                        name        => 'VRTC',
+                        broker_code => 'VRTC',
+                    },
+                ]);
         }
         'Initial users and clients';
     };
@@ -1698,9 +1698,15 @@ subtest $method => sub {
 
     subtest 'Create new CRW wallet real' => sub {
         $emit_data = {};
-        $params->{token} = $auth_token;
+        $params->{token} = $customer->get_client_token('VRTC');
 
-        $user->update_email_fields(email_verified => 1);
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $customer->get_user_id(),
+            attributes => {email_verified => 1},
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
 
         my $app_config = BOM::Config::Runtime->instance->app_config;
         ok $app_config->system->suspend->wallets, 'wallets are suspended';
@@ -1758,15 +1764,15 @@ subtest $method => sub {
             'It should return error code if no wallets were found in the account.')
             ->error_message_is('Permission denied.', 'Error message about service unavailability.');
 
-        my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRW',
-            email       => $email,
-            citizen     => 'id',
-            residence   => 'id'
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
-        $user->add_client($vr_client);
-        $params->{token} = $auth_token;
+        $customer->create_client(
+            'VRW',
+            {
+                broker_code => 'VRW',
+                citizen     => 'id',
+                residence   => 'id'
+            });
+        $params->{token} = $customer->get_client_token('VRW');
+
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_no_error('If passed argumets are ok a new real wallet will be created successfully');
         $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return wallet landing company');
@@ -1808,26 +1814,21 @@ $params = {
 };
 
 subtest $method => sub {
-    my ($user, $client, $vr_client, $auth_token);
+    my ($customer);
 
     subtest 'Initialization' => sub {
         lives_ok {
-            my $password = 'Abcd3s3!@';
-            my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
-            );
-            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-                citizen     => 'de',
-                residence   => 'de'
-            });
-            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-            $user->add_client($client);
+            $customer = BOM::Test::Customer->create({
+                    email     => BOM::Test::Customer::get_random_email_address(),
+                    password  => BOM::User::Password::hashpw('Abcd3s3!@'),
+                    residence => 'de',
+                    citizen   => 'de',
+                },
+                [{
+                        name        => 'VRTC',
+                        broker_code => 'VRTC',
+                    },
+                ]);
         }
         'Initial users and clients';
     };
@@ -1836,9 +1837,15 @@ subtest $method => sub {
 
     subtest 'Create new MFW wallet real - EU country' => sub {
         $emit_data = {};
-        $params->{token} = $auth_token;
+        $params->{token} = $customer->get_client_token('VRTC');
 
-        $user->update_email_fields(email_verified => 1);
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $customer->get_user_id(),
+            attributes => {email_verified => 1},
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
 
         my $app_config = BOM::Config::Runtime->instance->app_config;
         ok $app_config->system->suspend->wallets, 'wallets are suspended';
@@ -1898,15 +1905,15 @@ subtest $method => sub {
             'It should return error code if no wallets were found in the account.')
             ->error_message_is('Permission denied.', 'Error message about service unavailability.');
 
-        my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRW',
-            email       => $email,
-            citizen     => 'de',
-            residence   => 'de'
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
-        $user->add_client($vr_client);
-        $params->{token} = $auth_token;
+        $customer->create_client(
+            'VRW',
+            {
+                broker_code => 'VRW',
+                citizen     => 'de',
+                residence   => 'de'
+            });
+
+        $params->{token} = $customer->get_client_token('VRW');
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error code if missing any details')
             ->error_message_is('Please provide complete details for your account.', 'It should return error message if missing any details')
@@ -1956,26 +1963,23 @@ $params = {
 };
 
 subtest $method => sub {
-    my ($user, $client, $auth_token);
+    my $customer;
 
     subtest 'Initialization' => sub {
         lives_ok {
-            my $password = 'Abcd3s3!@';
-            my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
-            );
-            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-                citizen     => 'id',
-                residence   => 'id'
-            });
-            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+            $customer = BOM::Test::Customer->create({
+                    email          => BOM::Test::Customer::get_random_email_address(),
+                    password       => BOM::User::Password::hashpw('Abcd3s3!@'),
+                    email_verified => 1,
+                    residence      => 'id',
+                    citizen        => 'id',
+                },
+                [{
+                        name        => 'VRTC',
+                        broker_code => 'VRTC',
+                    },
+                ]);
 
-            $user->add_client($client);
         }
         'Initial users and clients';
     };
@@ -2000,26 +2004,22 @@ $params = {
 };
 
 subtest $method => sub {
-    my ($user, $client, $vr_client, $auth_token);
+    my $customer;
 
     subtest 'Initialization' => sub {
         lives_ok {
-            my $password = 'Abcd3s3!@';
-            my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
-            );
-            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-                citizen     => 'za',
-                residence   => 'za'
-            });
-            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-            $user->add_client($client);
+            $customer = BOM::Test::Customer->create({
+                    email          => BOM::Test::Customer::get_random_email_address(),
+                    password       => BOM::User::Password::hashpw('Abcd3s3!@'),
+                    email_verified => 1,
+                    residence      => 'za',
+                    citizen        => 'za',
+                },
+                [{
+                        name        => 'VRTC',
+                        broker_code => 'VRTC',
+                    },
+                ]);
         }
         'Initial users and clients';
     };
@@ -2028,9 +2028,17 @@ subtest $method => sub {
 
     subtest 'Create new MFW/CRW wallet real - Diel country' => sub {
         $emit_data = {};
-        $params->{token} = $auth_token;
+        $params->{token} = $customer->get_client_token('VRTC');
         my $app_config = BOM::Config::Runtime->instance->app_config;
-        $user->update_email_fields(email_verified => 1);
+
+        my $user_data = BOM::Service::user(
+            context    => BOM::Test::Customer::get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $customer->get_user_id(),
+            attributes => {email_verified => 1},
+        );
+        is $user_data->{status}, 'ok', 'user service call succeeded';
+
         $app_config->system->suspend->wallets(0);
 
         $params->{args}->{currency}     = 'USD';
@@ -2039,16 +2047,15 @@ subtest $method => sub {
         $mock_countries->redefine(wallet_companies_for_country => ['maltainvest', 'svg']);
         $params->{args}->{landing_company_short} = 'maltainvest';
 
-        my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRW',
-            email       => $email,
-            citizen     => 'za',
-            residence   => 'za'
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
-        $user->add_client($vr_client);
-        $params->{token} = $auth_token;
+        $customer->create_client(
+            'VRW',
+            {
+                broker_code => 'VRW',
+                citizen     => 'za',
+                residence   => 'za'
+            });
 
+        $params->{token}                             = $customer->get_client_token('VRW');
         $params->{args}->{tax_residence}             = 'de';
         $params->{args}->{tax_identification_number} = 'MRTSVT79M29F8P9P';
         $params->{args}->{financial_assessment}      = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
@@ -2285,28 +2292,26 @@ subtest 'Forbidden postcodes' => sub {
             return 1;
         });
 
-    my $password = 'Abcd33!@';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'the_forbidden_one' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => $email,
-        residence   => 'gb',
-    });
+    my $hash_pwd = BOM::User::Password::hashpw('Abcd33!@');
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer::get_random_email_address(),
+            password       => $hash_pwd,
+            email_verified => 1,
+            residence      => 'gb',
+        },
+        [{
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            },
+        ]);
 
-    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
     $params->{country} = 'gb';
     $params->{args}    = {
         "residence"                 => 'gb',
         "first_name"                => 'mr family',
         "last_name"                 => 'man',
         "date_of_birth"             => '1999-01-02',
-        "email"                     => $email,
+        "email"                     => $customer->get_email(),
         "phone"                     => '+15417541234',
         "salutation"                => 'hello',
         "citizen"                   => 'gb',
@@ -2314,7 +2319,7 @@ subtest 'Forbidden postcodes' => sub {
         "tax_identification_number" => 'E1241241',
         BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)->%*
     };
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($customer->get_client_loginid('VRTC'), 'test token');
 
     $params->{args}->{address_postcode} = 'JE2';
     $rpc_ct->call_ok('new_account_maltainvest', $params)
@@ -2336,21 +2341,18 @@ subtest 'Italian TIN test' => sub {
                 return 1;
             });
 
-        my $password = 'Alienbatata20';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        my $email    = 'bat2021' . rand(999) . '@binary.com';
-        my $user     = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'it',
-        });
-
-        my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+        my $hash_pwd = BOM::User::Password::hashpw('Alienbatata20');
+        my $customer = BOM::Test::Customer->create({
+                email          => BOM::Test::Customer::get_random_email_address(),
+                password       => $hash_pwd,
+                email_verified => 1,
+                residence      => 'it',
+            },
+            [{
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                },
+            ]);
 
         $params->{country}                 = 'it';
         $params->{args}->{residence}       = 'it';
@@ -2359,12 +2361,12 @@ subtest 'Italian TIN test' => sub {
         $params->{args}->{first_name}      = 'Josue Lee';
         $params->{args}->{last_name}       = 'King';
         $params->{args}->{date_of_birth}   = '1989-09-01';
-        $params->{args}->{email}           = $email;
+        $params->{args}->{email}           = $customer->get_email();
         $params->{args}->{phone}           = '+393678917832';
         $params->{args}->{salutation}      = 'Op';
         $params->{args}->{citizen}         = 'it';
         $params->{args}->{accept_risk}     = 1;
-        $params->{token}                   = $auth_token;
+        $params->{token}                   = $customer->get_client_token('VRTC');
 
         $params->{args} = {
             $params->{args}->%*,
@@ -2386,21 +2388,18 @@ subtest 'Italian TIN test' => sub {
                 return 1;
             });
 
-        my $password = 'Alienbatata20';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        my $email    = 'batata2020' . rand(999) . '@binary.com';
-        my $user     = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'it',
-        });
-
-        my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+        my $hash_pwd = BOM::User::Password::hashpw('Alienbatata20');
+        my $customer = BOM::Test::Customer->create({
+                email          => BOM::Test::Customer::get_random_email_address(),
+                password       => $hash_pwd,
+                email_verified => 1,
+                residence      => 'it',
+            },
+            [{
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                },
+            ]);
 
         $params->{country}                 = 'it';
         $params->{args}->{residence}       = 'it';
@@ -2409,12 +2408,12 @@ subtest 'Italian TIN test' => sub {
         $params->{args}->{first_name}      = 'Joseph Batata';
         $params->{args}->{last_name}       = 'Junior';
         $params->{args}->{date_of_birth}   = '1997-01-01';
-        $params->{args}->{email}           = $email;
+        $params->{args}->{email}           = $customer->get_email();
         $params->{args}->{phone}           = '+393678916732';
         $params->{args}->{salutation}      = 'Hi';
         $params->{args}->{citizen}         = 'it';
         $params->{args}->{accept_risk}     = 1;
-        $params->{token}                   = $auth_token;
+        $params->{token}                   = $customer->get_client_token('VRTC');
 
         $params->{args} = {
             $params->{args}->%*,
@@ -2436,21 +2435,18 @@ subtest 'Italian TIN test' => sub {
                 return 1;
             });
 
-        my $password = 'Allison90';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        my $email    = 'Allison2020' . rand(999) . '@binary.com';
-        my $user     = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'it',
-        });
-
-        my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+        my $hash_pwd = BOM::User::Password::hashpw('Allison90');
+        my $customer = BOM::Test::Customer->create({
+                email          => BOM::Test::Customer::get_random_email_address(),
+                password       => $hash_pwd,
+                email_verified => 1,
+                residence      => 'it',
+            },
+            [{
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                },
+            ]);
 
         $params->{country}                 = 'it';
         $params->{args}->{residence}       = 'it';
@@ -2459,12 +2455,12 @@ subtest 'Italian TIN test' => sub {
         $params->{args}->{first_name}      = 'Allison Laura';
         $params->{args}->{last_name}       = 'Sean';
         $params->{args}->{date_of_birth}   = '1997-01-01';
-        $params->{args}->{email}           = $email;
+        $params->{args}->{email}           = $customer->get_email();
         $params->{args}->{phone}           = '+393678916702';
         $params->{args}->{salutation}      = 'Helloo';
         $params->{args}->{citizen}         = 'it';
         $params->{args}->{accept_risk}     = 1;
-        $params->{token}                   = $auth_token;
+        $params->{token}                   = $customer->get_client_token('VRTC');
 
         $params->{args} = {
             $params->{args}->%*,
@@ -2480,25 +2476,18 @@ subtest 'Italian TIN test' => sub {
 };
 
 subtest 'MF under Duplicated account' => sub {
-    my $password = 'Abcd1234!!';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'test+mf+dup+' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => $email,
-        residence   => 'it',
-    });
-
-    $user->add_client($client_vr);
-    $client_vr->binary_user_id($user->id);
-    $client_vr->save;
-
-    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+    my $hash_pwd = BOM::User::Password::hashpw('Abcd1234!!');
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer::get_random_email_address(),
+            password       => $hash_pwd,
+            email_verified => 1,
+            residence      => 'it',
+        },
+        [{
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            },
+        ]);
 
     $params->{country}                 = 'it';
     $params->{args}->{residence}       = 'it';
@@ -2509,12 +2498,12 @@ subtest 'MF under Duplicated account' => sub {
     $params->{args}->{first_name}      = 'Not her';
     $params->{args}->{last_name}       = 'not';
     $params->{args}->{date_of_birth}   = '1997-01-02';
-    $params->{args}->{email}           = $email;
+    $params->{args}->{email}           = $customer->get_email();
     $params->{args}->{phone}           = '+393678916703';
     $params->{args}->{salutation}      = 'hey';
     $params->{args}->{citizen}         = 'it';
     $params->{args}->{accept_risk}     = 1;
-    $params->{token}                   = $auth_token;
+    $params->{token}                   = $customer->get_client_token('VRTC');
 
     $params->{args} = {
         $params->{args}->%*,
@@ -2535,28 +2524,21 @@ subtest 'MF under Duplicated account' => sub {
 };
 
 subtest 'MF under Duplicated account - DIEL country' => sub {
-    my $password = 'Abcd1234!!';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'test+mf+dup+za' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code               => 'VRTC',
-        email                     => $email,
-        residence                 => 'za',
-        account_opening_reason    => 'Hedging',
-        tax_residence             => 'it',
-        tax_identification_number => 'MRTSVT79M29F8_9P',
-    });
-
-    $user->add_client($client_vr);
-    $client_vr->binary_user_id($user->id);
-    $client_vr->save;
-
-    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+    my $hash_pwd = BOM::User::Password::hashpw('Abcd1234!!');
+    my $customer = BOM::Test::Customer->create({
+            email                     => BOM::Test::Customer::get_random_email_address(),
+            password                  => $hash_pwd,
+            email_verified            => 1,
+            residence                 => 'za',
+            account_opening_reason    => 'Hedging',
+            tax_residence             => 'it',
+            tax_identification_number => 'MRTSVT79M29F8_9P',
+        },
+        [{
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            },
+        ]);
 
     $params->{country}                 = 'za';
     $params->{args}->{residence}       = 'za';
@@ -2568,12 +2550,12 @@ subtest 'MF under Duplicated account - DIEL country' => sub {
     $params->{args}->{first_name}      = 'Not him';
     $params->{args}->{last_name}       = 'yes';
     $params->{args}->{date_of_birth}   = '1997-01-02';
-    $params->{args}->{email}           = $email;
+    $params->{args}->{email}           = $customer->get_email();
     $params->{args}->{phone}           = '+393678916703';
     $params->{args}->{salutation}      = 'hey';
     $params->{args}->{citizen}         = 'za';
     $params->{args}->{accept_risk}     = 1;
-    $params->{token}                   = $auth_token;
+    $params->{token}                   = $customer->get_client_token('VRTC');
 
     $params->{args} = {
         $params->{args}->%*,
@@ -2635,14 +2617,8 @@ subtest 'MF under Duplicated account - DIEL country' => sub {
     subtest 'added from the CR account' => sub {
         $result = $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error('za cr account created successfully')->result;
 
-        my $client_cr = BOM::User::Client->new({loginid => $result->{client_id}});
-
-        $user->add_client($client_cr);
-        $client_cr->binary_user_id($user->id);
-        $client_cr->save;
-
-        $auth_token = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
-        $params->{token} = $auth_token;
+        $customer->add_client('CR', $result->{client_id});
+        $params->{token} = $customer->get_client_token('CR');
 
         $new_client2->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
         $new_client2->status->_clear_all;
@@ -2686,28 +2662,21 @@ subtest 'MF under Duplicated account - DIEL country' => sub {
 };
 
 subtest 'MF under Duplicated account - Spain' => sub {
-    my $password = 'Abcd1234!!';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'test+mf+dup+es' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code               => 'VRTC',
-        email                     => $email,
-        residence                 => 'es',
-        account_opening_reason    => 'Hedging',
-        tax_residence             => 'es',
-        tax_identification_number => 'MRTSVT79M29F8_9P',
-    });
-
-    $user->add_client($client_vr);
-    $client_vr->binary_user_id($user->id);
-    $client_vr->save;
-
-    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+    my $hash_pwd = BOM::User::Password::hashpw('Abcd1234!!');
+    my $customer = BOM::Test::Customer->create({
+            email                     => 'test+mf+dup+es' . rand(999) . '@binary.com',
+            password                  => $hash_pwd,
+            email_verified            => 1,
+            residence                 => 'es',
+            account_opening_reason    => 'Hedging',
+            tax_residence             => 'es',
+            tax_identification_number => 'MRTSVT79M29F8_9P',
+        },
+        [{
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            },
+        ]);
 
     $params->{country}                           = 'es';
     $params->{args}->{residence}                 = 'es';
@@ -2719,12 +2688,12 @@ subtest 'MF under Duplicated account - Spain' => sub {
     $params->{args}->{first_name}                = 'Not ES';
     $params->{args}->{last_name}                 = 'spain is all I feel';
     $params->{args}->{date_of_birth}             = '1997-01-02';
-    $params->{args}->{email}                     = $email;
+    $params->{args}->{email}                     = $customer->get_email();
     $params->{args}->{phone}                     = '+393678916703';
     $params->{args}->{salutation}                = 'hey';
     $params->{args}->{citizen}                   = 'es';
     $params->{args}->{accept_risk}               = 1;
-    $params->{token}                             = $auth_token;
+    $params->{token}                             = $customer->get_client_token('VRTC');
     $params->{args}->{resident_self_declaration} = 1;
 
     $params->{args} = {

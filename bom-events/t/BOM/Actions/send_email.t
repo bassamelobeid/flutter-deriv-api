@@ -10,24 +10,25 @@ use Test::Deep;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User;
+use BOM::Service;
+use BOM::Test::Customer;
 
 use BOM::Platform::Context qw(request);
 
 use BOM::Event::Actions::Email;
 
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-
-$client->email('test@deriv.com');
-$client->salutation('MR');
-$client->save;
-
-my $user = BOM::User->create(
-    email          => $client->email,
-    password       => "hello",
-    email_verified => 1,
-)->add_client($client);
+my $customer = BOM::Test::Customer->create({
+        email          => 'test@deriv.com',
+        password       => 'hello',
+        salutation     => 'MR',
+        email_verified => 1,
+    },
+    [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+    ]);
+my $client = $customer->get_client_object('CR');
 
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
@@ -92,7 +93,12 @@ subtest 'send_email with request context language (default)' => sub {
 };
 
 subtest 'send_email with user preferred language' => sub {
-    $user->update_preferred_language('RU');    # set preferred_language
+    my $response = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'update_attributes',
+        user_id    => $customer->get_user_id(),
+        attributes => {preferred_language => 'RU'});
+    is $response->{status}, 'ok', 'update preferred_language ok';
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',

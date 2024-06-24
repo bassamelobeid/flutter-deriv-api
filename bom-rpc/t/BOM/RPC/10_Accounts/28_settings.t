@@ -9,7 +9,6 @@ use Test::MockModule;
 use Test::MockTime qw(set_fixed_time restore_time);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::Token;
-use BOM::Test::Helper::UserService;
 use BOM::Test::Customer;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::BOM::RPC::QueueClient;
@@ -32,8 +31,6 @@ scope_guard { $app_config->cgi->terms_conditions_versions($orig_config) };
 my $tnc_version = 'Version 1 2020-01-01';
 $app_config->cgi->terms_conditions_versions('{ "deriv": "' . $tnc_version . '" }');
 
-my $user_service_context = BOM::Test::Helper::UserService::get_context();
-
 # init db
 my $token_gen = BOM::Platform::Token::API->new;
 my $hash_pwd  = BOM::User::Password::hashpw('jskjd8292922');
@@ -42,8 +39,6 @@ my $customer_X = BOM::Test::Customer->create({
         email                    => 'abc@binary.com',
         password                 => $hash_pwd,
         non_pep_declaration_time => undef,
-        fatca_declaration_time   => undef,
-        fatca_declaration        => undef,
     },
     [{
             name            => 'MF',
@@ -211,12 +206,11 @@ subtest 'get settings' => sub {
     );
 
     my $response = BOM::Service::user(
-        context    => $user_service_context,
+        context    => $customer_Y->get_user_service_context(),
         command    => 'update_attributes',
         user_id    => $customer_Y->get_user_id(),
         attributes => {preferred_language => 'FA'});
     is $response->{status}, 'ok', 'update preferred_language ok';
-
     my $params = {
         token => $customer_Y->get_client_token('CR0'),
     };
@@ -268,11 +262,11 @@ subtest 'get settings' => sub {
 
     subtest 'PNV verified' => sub {
         my $response = BOM::Service::user(
-            context    => $user_service_context,
+            context    => $customer_Y->get_user_service_context(),
             command    => 'update_attributes',
             user_id    => $customer_Y->get_user_id(),
-            attributes => {phone_number_verification => 1});
-        is $response->{status}, 'ok', 'update phone_number_verification ok';
+            attributes => {phone_number_verified => 1});
+        is $response->{status}, 'ok', 'update phone_number_verified ok';
 
         $result = $c->tcall($method, $params);
         note explain $result;
@@ -318,15 +312,15 @@ subtest 'get settings' => sub {
             });
 
         $response = BOM::Service::user(
-            context    => $user_service_context,
+            context    => $customer_Y->get_user_service_context(),
             command    => 'update_attributes',
             user_id    => $customer_Y->get_user_id(),
-            attributes => {phone_number_verification => 0});
-        is $response->{status}, 'ok', 'update phone_number_verification ok';
+            attributes => {phone_number_verified => 0});
+        is $response->{status}, 'ok', 'update phone_number_verified ok';
     };
 
     $response = BOM::Service::user(
-        context    => $user_service_context,
+        context    => $customer_X->get_user_service_context(),
         command    => 'update_attributes',
         user_id    => $customer_X->get_user_id(),
         attributes => {preferred_language => 'AZ'});
@@ -345,7 +339,7 @@ subtest 'get settings' => sub {
     is($result->{employment_status},  'Employed',   'employment_status set');
 
     $response = BOM::Service::user(
-        context    => $user_service_context,
+        context    => $customer_Q->get_user_service_context(),
         command    => 'update_attributes',
         user_id    => $customer_Q->get_user_id(),
         attributes => {preferred_language => 'EN'});
@@ -449,7 +443,7 @@ subtest 'get settings' => sub {
     );
 
     $response = BOM::Service::user(
-        context    => $user_service_context,
+        context    => $customer_X->get_user_service_context(),
         command    => 'update_attributes',
         user_id    => $customer_X->get_user_id(),
         attributes => {preferred_language => 'DE'});
@@ -1262,11 +1256,11 @@ subtest 'set_settings on virtual account should not change real account settings
 
     # Stop PNV next attempt from failing and breaking the test
     my $response = BOM::Service::user(
-        context    => $user_service_context,
+        context    => $customer_X->get_user_service_context(),
         command    => 'update_attributes',
         user_id    => $customer_X->get_user_id(),
-        attributes => {phone_number_verification => 1});
-    is $response->{status}, 'ok', 'update phone_number_verification ok';
+        attributes => {phone_number_verified => 1});
+    is $response->{status}, 'ok', 'update phone_number_verified ok';
 
     my $get_settings_cr = $c->tcall('get_settings', {token => $customer_X->get_client_token('VRTC')});
 
@@ -1293,15 +1287,16 @@ subtest 'set_settings on virtual account should not change real account settings
 };
 
 subtest 'set_settings with empty phone' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        phone       => '',
-    });
-
     my $user = BOM::User->create(
         email    => 'testematil@example.com',
         password => $hash_pwd,
     );
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        phone          => '',
+        email          => $user->email,
+        binary_user_id => $user->id,
+    });
     $user->add_client($test_client);
 
     my $m      = BOM::Platform::Token::API->new;
@@ -1351,15 +1346,16 @@ subtest 'set_settings set tax_identification_number with client with tin_approve
 };
 
 subtest 'set_settings with feature flag' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        phone       => ''
-    });
-
     my $user = BOM::User->create(
         email    => 'a001+feature-flag@example.com',
         password => $hash_pwd,
     );
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email          => $user->email,
+        broker_code    => 'CR',
+        phone          => '',
+        binary_user_id => $user->id,
+    });
     $user->add_client($test_client);
 
     my $m      = BOM::Platform::Token::API->new;
@@ -1466,23 +1462,23 @@ subtest 'set_settings duplicate account' => sub {
 
 subtest 'set_settings address mismatch' => sub {
     # Positive Test
-    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        email         => 'address_mismatch01@test.com',
-        broker_code   => 'CR',
-        first_name    => 'bob',
-        last_name     => 'smith',
-        date_of_birth => '2000-01-01',
-    });
-
     my $user1 = BOM::User->create(
-        email    => $client1->email,
+        email    => 'address_mismatch01@test.com',
         password => 'x',
     );
 
+    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email          => $user1->email,
+        broker_code    => 'CR',
+        first_name     => 'bob',
+        last_name      => 'smith',
+        date_of_birth  => '2000-01-01',
+        address_line_1 => 'GATITO',
+        address_line_2 => '456',
+        binary_user_id => $user1->id,
+    });
+
     $user1->add_client($client1);
-    $client1->address_1('GATITO');
-    $client1->address_2('456');
-    $client1->save;
 
     my $token = $token_gen->create_token($client1->loginid, 'cli1 token test');
 
@@ -1517,23 +1513,22 @@ subtest 'set_settings address mismatch' => sub {
     ok !$redis->get('POA_ADDRESS_MISMATCH::' . $client1->binary_user_id), 'Redis key should be deleted';
 
     # Negative test
-    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        email         => 'address_mismatch02@test.com',
-        broker_code   => 'CR',
-        first_name    => 'bob',
-        last_name     => 'smith',
-        date_of_birth => '2000-01-01',
-    });
 
     my $user2 = BOM::User->create(
-        email    => $client2->email,
+        email    => 'address_mismatch02@test.com',
         password => 'x',
     );
-
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email          => $user2->email,
+        broker_code    => 'CR',
+        first_name     => 'bob',
+        last_name      => 'smith',
+        date_of_birth  => '2000-01-01',
+        address_line_1 => 'GATITO',
+        address_line_2 => '456',
+        binary_user_id => $user2->id,
+    });
     $user2->add_client($client2);
-    $client2->address_1('GATITO');
-    $client2->address_2('456');
-    $client2->save;
 
     $token = $token_gen->create_token($client2->loginid, 'cli2 token test');
 
@@ -1565,6 +1560,11 @@ subtest 'set_settings address mismatch' => sub {
 
 subtest 'set_settings check salutation not removed' => sub {
 
+    my $user_1 = BOM::User->create(
+        email    => 'salutuation_1@test.com',
+        password => 'x',
+    );
+
     my $client_CR = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         email                  => 'salutuation_1@test.com',
         first_name             => "wqeqweq",
@@ -1577,7 +1577,8 @@ subtest 'set_settings check salutation not removed' => sub {
         address_postcode       => "33424234",
         residence              => "za",
         broker_code            => 'CR',
-        account_opening_reason => 'pensioner'
+        account_opening_reason => 'pensioner',
+        binary_user_id         => $user_1->id,
     });
 
     my $client_MF = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -1598,13 +1599,10 @@ subtest 'set_settings check salutation not removed' => sub {
         address_city              => "werwerwerw",
         address_state             => "GT",
         address_postcode          => "33424234",
-        residence                 => "za"
+        residence                 => "za",
+        binary_user_id            => $user_1->id,
     });
 
-    my $user_1 = BOM::User->create(
-        email    => $client_MF->email,
-        password => 'x',
-    );
     $user_1->add_client($client_MF);
     $user_1->add_client($client_CR);
 
@@ -1668,8 +1666,15 @@ subtest 'get settings from virtual with a dup account' => sub {
 
     my $dup_token = $token_gen->create_token($dup_client->loginid, 'test token for a dup');
     $user->add_client($dup_client);
+
     # Stop pnv next_update from being a changeable time and breaking the immutable check
-    $user->pnv->update(1);
+    my $response = BOM::Service::user(
+        context    => BOM::Test::Customer::get_user_service_context(),
+        command    => 'update_attributes',
+        user_id    => $user->id,
+        attributes => {phone_number_verified => 1});
+    is $response->{status}, 'ok', 'update pnv ok';
+
     $dup_client->user($user);
     $dup_client->binary_user_id($user->id);
     $dup_client->save;

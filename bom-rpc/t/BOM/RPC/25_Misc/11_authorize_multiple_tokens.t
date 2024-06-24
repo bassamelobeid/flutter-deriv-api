@@ -148,9 +148,24 @@ subtest "$method with multiple tokens" => sub {
     $params->{args}{tokens} = [$token_mf, $token_mf_2];
     $c->call_ok($method, $params)->has_error->error_message_is('Token is not valid for current user.', "check tokens don't belong to user");
 
-    my $cr_login  = create_client('CR',   undef, {date_joined => '2021-06-06 23:59:59'});
-    my $cr2_login = create_client('CR',   undef, {date_joined => '2021-06-06 23:59:59'});
-    my $vr_login  = create_client('VRTC', undef, {date_joined => '2021-06-06 23:59:59'});
+    my $cr_login = create_client(
+        'CR', undef,
+        {
+            date_joined    => '2021-06-06 23:59:59',
+            binary_user_id => $user->id
+        });
+    my $cr2_login = create_client(
+        'CR', undef,
+        {
+            date_joined    => '2021-06-06 23:59:59',
+            binary_user_id => $user->id
+        });
+    my $vr_login = create_client(
+        'VRTC', undef,
+        {
+            date_joined    => '2021-06-06 23:59:59',
+            binary_user_id => $user->id
+        });
 
     $user->add_client($cr_login);
     $user->add_client($cr2_login);

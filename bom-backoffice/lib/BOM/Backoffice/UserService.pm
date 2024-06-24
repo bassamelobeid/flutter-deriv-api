@@ -31,6 +31,7 @@ sub get_context {
     return {
         correlation_id => 'backoffice:' . ($ENV{AUDIT_STAFF_NAME} // '' . ':' . $ENV{AUDIT_STAFF_IP}),
         auth_token     => 'Unused but required to be present',
+        environment    => 'backoffice',
     };
 }
 

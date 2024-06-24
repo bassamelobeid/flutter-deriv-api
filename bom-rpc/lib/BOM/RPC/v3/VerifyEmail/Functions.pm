@@ -21,6 +21,7 @@ use BOM::Rules::Engine;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
 use BOM::User::Client;
+use BOM::User::PhoneNumberVerification;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
 use List::Util                      qw/any/;
 use DataDog::DogStatsd::Helper      qw(stats_inc);
@@ -673,15 +674,15 @@ sub pre_validations {
     my $type = $self->{args}->{type} // '';
 
     if ($type eq 'phone_number_verification') {
-        my $user = $self->create_existing_user;
+        my $pnv = BOM::User::PhoneNumberVerification->new($self->{email}, $self->{user_service_context});
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'AlreadyVerified',
-                message_to_client => localize('This account is already phone number verified')}) if $user->pnv->verified;
+                message_to_client => localize('This account is already phone number verified')}) if $pnv->verified;
 
-        my $is_email_blocked = $user->pnv->email_blocked();
+        my $is_email_blocked = $pnv->email_blocked();
 
-        $user->pnv->increase_email_attempts();
+        $pnv->increase_email_attempts();
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'NoAttemptsLeft',
@@ -774,9 +775,10 @@ sub phone_number_verification {
             message_to_client => localize('You can not perform the phone number verification while impersonating an account')}
     ) if BOM::RPC::v3::Utility::is_impersonating_client($self->{token});
 
+    my $pnv = BOM::User::PhoneNumberVerification->new($self->{email}, $self->{user_service_context});
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AlreadyVerified',
-            message_to_client => localize('This account is already phone number verified')}) if $self->{client}->user->pnv->verified;
+            message_to_client => localize('This account is already phone number verified')}) if $pnv->verified;
 
     my $data = $self->{email_verification}->{phone_number_verification}->();
 

@@ -16,6 +16,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::RPC::QueueClient;
 use BOM::Test::Email qw(:no_event);
+use BOM::Test::Customer;
 use BOM::Platform::Token;
 use BOM::User::Client;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
@@ -110,7 +111,7 @@ subtest 'new affiliate account MyAffiliate die with MYAFFRuntimeError error' => 
             return Future->fail('website does not exist');
         });
 
-    my $email = 'new_aff' . rand(999) . '@deriv.com';
+    my $email = BOM::Test::Customer::get_random_email_address();
 
     $params->{args} = {
         affiliate_register_person => 1,
@@ -152,7 +153,7 @@ subtest 'new affiliate account MyAffiliate successful' => sub {
             return Future->done(1);
         });
 
-    my $email = 'new_aff' . rand(999) . '@deriv.com';
+    my $email = BOM::Test::Customer::get_random_email_address();
 
     $params->{args} = {
         affiliate_register_person => 1,
@@ -194,7 +195,7 @@ subtest 'new affiliate business account MyAffiliate successful' => sub {
             return Future->done(1);
         });
 
-    my $email = 'new_aff' . rand(999) . '@deriv.com';
+    my $email = BOM::Test::Customer::get_random_email_address();
 
     $params->{args} = {
         affiliate_register_person   => 1,
@@ -237,7 +238,7 @@ subtest 'new affiliate business account die with MYAFFRuntimeError error' => sub
             return Future->fail('Company name and company registration number are required for business account');
         });
 
-    my $email = 'new_aff' . rand(999) . '@deriv.com';
+    my $email = BOM::Test::Customer::get_random_email_address();
 
     $params->{args} = {
         affiliate_register_person => 1,
@@ -279,7 +280,7 @@ subtest 'new affiliate account with password MyAffiliate successful' => sub {
             return Future->done(1);
         });
 
-    my $email = 'new_aff' . rand(999) . '@deriv.com';
+    my $email = BOM::Test::Customer::get_random_email_address();
 
     $params->{args} = {
         affiliate_register_person => 1,
@@ -322,7 +323,7 @@ subtest 'new affiliate account with address_state with a special character MyAff
             return Future->done(1);
         });
 
-    my $email = 'new_aff' . rand(999) . '@deriv.com';
+    my $email = BOM::Test::Customer::get_random_email_address();
 
     $params->{args} = {
         affiliate_register_person => 1,

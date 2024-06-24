@@ -88,16 +88,18 @@ $app_config->set({'payments.p2p.advert_counterparty_terms.completion_rate_steps'
 $app_config->set({'payments.p2p.advert_counterparty_terms.join_days_steps'       => $vals{counterparty_term_steps}{join_days}});
 $app_config->set({'payments.p2p.advert_counterparty_terms.rating_steps'          => $vals{counterparty_term_steps}{rating}});
 
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'client@test.com',
-    residence   => 'id'
-});
-
 my $user = BOM::User->create(
     email    => 'client@test.com',
     password => 'test'
 );
+
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    email          => 'client@test.com',
+    residence      => 'id',
+    binary_user_id => $user->id,
+});
+
 $user->add_client($client);
 $client->account('USD');
 

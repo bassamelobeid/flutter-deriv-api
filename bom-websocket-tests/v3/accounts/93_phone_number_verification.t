@@ -10,6 +10,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Customer;
 
 use BOM::User::PhoneNumberVerification;
 use BOM::Platform::Account::Virtual;
@@ -19,22 +20,26 @@ use await;
 
 my $t = build_wsapi_test();
 
-my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'pnv+challenge@deriv.com',
-});
+my $customer = BOM::Test::Customer->create({
+        email          => 'pnv+challenge@deriv.com',
+        password       => 'secret_pwd',
+        account_type   => 'binary',
+        email_verified => 1,
+        residence      => 'br',
+    },
+    [{
+            name        => 'CR',
+            broker_code => 'CR'
+        },
+        {
+            name        => 'VRTC',
+            broker_code => 'VRTC'
+        },
+    ]);
 
-my ($vr_client, $user) = create_vr_account({
-    email           => 'pnv+challenge@deriv.com',
-    client_password => 'secret_pwd',
-});
+my $pnv = BOM::User::PhoneNumberVerification->new($customer->get_user_id(), $customer->get_user_service_context());
 
-$user->add_client($client_cr);
-$client_cr->user($user);
-$client_cr->binary_user_id($user->id);
-$client_cr->save;
-
-my ($token_cr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr->loginid);
+my ($token_cr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $customer->get_client_loginid('CR'));
 $t->await::authorize({authorize => $token_cr});
 
 subtest 'generate an email' => sub {
@@ -50,7 +55,7 @@ subtest 'generate an email' => sub {
 };
 
 subtest 'attempted too many times' => sub {
-    $user->pnv->increase_attempts() for (1 .. 10);
+    $pnv->increase_attempts() for (1 .. 10);
 
     my $email_code = get_email_code({
         reset_block => 1,
@@ -65,7 +70,7 @@ subtest 'attempted too many times' => sub {
         },
         'Expected error message';
 
-    $user->pnv->clear_attempts;
+    $pnv->clear_attempts;
 };
 
 subtest 'generate an otp' => sub {
@@ -92,16 +97,16 @@ subtest 'submit invalid otp' => sub {
 };
 
 subtest 'submit a valid otp' => sub {
-    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => $user->id . ''});
+    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => $customer->get_user_id() . ''});
     test_schema('phone_number_verify', $res);
 
     cmp_deeply $res->{phone_number_verify}, 1, 'Expected response object';
 };
 
 subtest 'already verified accounts should not verify again' => sub {
-    $user->pnv->update(1);
+    $pnv->update(1);
 
-    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => $user->id . ''});
+    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => $customer->get_user_id() . ''});
     test_schema('phone_number_verify', $res);
 
     cmp_deeply $res->{error},
@@ -111,23 +116,8 @@ subtest 'already verified accounts should not verify again' => sub {
         },
         'Expected error message';
 
-    $user->pnv->update(0);
+    $pnv->update(0);
 };
-
-sub create_vr_account {
-    my $args = shift;
-    my $acc  = BOM::Platform::Account::Virtual::create_account({
-            details => {
-                email           => $args->{email},
-                client_password => $args->{client_password},
-                account_type    => 'binary',
-                email_verified  => 1,
-                residence       => 'br',
-            },
-        });
-
-    return ($acc->{client}, $acc->{user});
-}
 
 sub get_email_code {
     my ($args) = @_;
@@ -135,11 +125,11 @@ sub get_email_code {
     if ($args->{reset_block}) {
         my $redis = BOM::Config::Redis::redis_events_write();
 
-        $redis->del(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $user->id);
+        $redis->del(+BOM::User::PhoneNumberVerification::PNV_NEXT_EMAIL_PREFIX . $customer->get_user_id());
     }
 
     my $res = $t->await::verify_email({
-        verify_email => $client_cr->email,
+        verify_email => $customer->get_email(),
         type         => 'phone_number_verification'
     });
 

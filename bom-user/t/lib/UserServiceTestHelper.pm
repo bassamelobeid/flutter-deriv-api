@@ -12,11 +12,11 @@ use UUID::Tiny;
 
 our @app_ids = ();
 
-sub create_context {
-    my $user = shift;
+sub get_user_service_context {
     return {
         'correlation_id' => UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4),
         'auth_token'     => 'Test Token, just for testing',
+        'environment'    => 'Test Environment',
     };
 }
 
@@ -34,23 +34,26 @@ sub create_user {
     my %clients =
         map {
         $_ => BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                email                    => 'bad@realbad.bad',                 # User has real email, should NEVER see this
-                client_password          => 'badbadbad',                       # User has real password, should NEVER see this
-                broker_code              => $_ eq 'virtual' ? 'VRTC' : 'CR',
-                broker_code              => 'CR',
-                residence                => $_ eq 'enabled' ? 'aq'                                 : 'no',
-                first_name               => $_ eq 'enabled' ? 'Frieren'                            : 'Bad',
-                last_name                => $_ eq 'enabled' ? 'Elf'                                : 'Bad',
-                address_line_1           => $_ eq 'enabled' ? '456 Ancient Heroes Lane'            : 'Bad',
-                address_line_1           => $_ eq 'enabled' ? 'Sage\'s Rest, Eternal Highlands'    : 'Bad',
-                address_city             => $_ eq 'enabled' ? 'Afterlife\'s Gate, The Great North' : 'Bad',
-                phone                    => $_ eq 'enabled' ? '+44123456789'                       : 'Bad',
-                secret_question          => $_ eq 'enabled' ? '42'                                 : 'Bad',
-                secret_answer            => $_ eq 'enabled' ? 'What was the question?'             : 'Bad',
-                account_opening_reason   => $_ eq 'enabled' ? 'Fern made me do it'                 : 'Bad',
-                non_pep_declaration_time => Date::Utility->new()->_plus_years(1)->date_yyyymmdd,
-                date_of_birth            => $_ eq 'enabled' ? '1984-01-01' : '2000-01-01',
-                fatca_declaration        => undef,
+                email                     => 'bad@realbad.bad',                 # User has real email, should NEVER see this
+                client_password           => 'badbadbad',                       # User has real password, should NEVER see this
+                broker_code               => $_ eq 'virtual' ? 'VRTC' : 'CR',
+                broker_code               => 'CR',
+                residence                 => $_ eq 'enabled' ? 'aq'                                 : 'no',
+                salutation                => $_ eq 'enabled' ? 'Miss'                               : 'Bad',
+                first_name                => $_ eq 'enabled' ? 'Frieren'                            : 'Bad',
+                last_name                 => $_ eq 'enabled' ? 'Elf'                                : 'Bad',
+                address_line_1            => $_ eq 'enabled' ? '456 Ancient Heroes Lane'            : 'Bad',
+                address_line_1            => $_ eq 'enabled' ? 'Sage\'s Rest, Eternal Highlands'    : 'Bad',
+                address_city              => $_ eq 'enabled' ? 'Afterlife\'s Gate, The Great North' : 'Bad',
+                phone                     => $_ eq 'enabled' ? '+44123456789'                       : 'Bad',
+                secret_question           => $_ eq 'enabled' ? '42'                                 : 'Bad',
+                secret_answer             => $_ eq 'enabled' ? 'What was the question?'             : 'Bad',
+                account_opening_reason    => $_ eq 'enabled' ? 'Fern made me do it'                 : 'Bad',
+                non_pep_declaration_time  => Date::Utility->new()->_plus_years(1)->date_yyyymmdd,
+                date_of_birth             => $_ eq 'enabled' ? '1984-01-01T00:00:00' : '2000-01-01',
+                tax_identification_number => $_ eq 'enabled' ? '9999999999'          : 'Bad',
+                tin_approved_time         => $_ eq 'enabled' ? '1984-01-01T00:00:00' : '2000-01-01',
+                fatca_declaration         => undef,
             })
         } qw( disabled self_closed enabled );
 

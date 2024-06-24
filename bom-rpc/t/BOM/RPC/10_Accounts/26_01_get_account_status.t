@@ -12,6 +12,7 @@ use Encode                                     qw(encode);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Customer;
 use BOM::Platform::Token::API;
 use BOM::Platform::Utility;
 use BOM::User::Password;
@@ -27,146 +28,84 @@ BOM::Test::Helper::P2P::bypass_sendbird();
 
 my $idv_limit    = 2;
 my $onfido_limit = BOM::User::Onfido::limit_per_user;
-my $email        = 'abc@binary.com';
-my $password     = 'jskjd8292922';
-my $hash_pwd     = BOM::User::Password::hashpw($password);
+my $hash_pwd     = BOM::User::Password::hashpw('jskjd8292922');
+my $customer_mf  = BOM::Test::Customer->create({
+        email          => 'abc@binary.com',
+        password       => $hash_pwd,
+        email_verified => 1,
+    },
+    [{
+            name            => 'MF',
+            broker_code     => 'MF',
+            default_account => 'EUR'
+        },
+        {
+            name            => 'MFDIS',
+            broker_code     => 'MF',
+            default_account => 'EUR'
+        },
+        {
+            name        => 'VRTC',
+            broker_code => 'VRTC',
+        },
+    ]);
+my $test_client = $customer_mf->get_client_object('MF');
+$customer_mf->get_client_object('MFDIS')->status->set('disabled', 1, 'test disabled');
 
-my $user = BOM::User->create(
-    email          => $email,
-    password       => $hash_pwd,
-    email_verified => 1
-);
-
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    binary_user_id => $user->id,
-});
-
-$test_client->email($email);
-$test_client->set_default_account('EUR');
-$test_client->save;
-
-my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    binary_user_id => $user->id,
-});
-$test_client_vr->email($email);
-$test_client_vr->save;
-
-$user->add_client($test_client);
-$user->add_client($test_client_vr);
-
-my $user_cr = BOM::User->create(
-    email          => 'sample@binary.com',
-    password       => $hash_pwd,
-    email_verified => 1
-);
-
-my $test_client_cr_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    binary_user_id => $user_cr->id,
-});
-
-$test_client_cr_vr->email('sample@binary.com');
-$test_client_cr_vr->save;
-
-my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    citizen        => 'at',
-    binary_user_id => $user_cr->id,
-});
-
-$test_client_cr->email('sample@binary.com');
-$test_client_cr->set_default_account('USD');
-$test_client_cr->save;
-
-my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user_cr->id,
-});
-$test_client_cr_2->email('sample@binary.com');
-$test_client_cr_2->save;
-
-my $test_client_p2p = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    citizen        => 'id',
-    binary_user_id => $user_cr->id,
-});
-
-$test_client_p2p->email('sample@binary.com');
-$test_client_p2p->set_default_account('USD');
-$test_client_p2p->save;
-
-$user_cr->add_client($test_client_cr_vr);
-$user_cr->add_client($test_client_cr);
-$user_cr->add_client($test_client_cr_2);
-$user_cr->add_client($test_client_p2p);
-
+my $customer_cr = BOM::Test::Customer->create({
+        email          => 'sample@binary.com',
+        password       => $hash_pwd,
+        email_verified => 1,
+        citizen        => 'id',
+    },
+    [{
+            name        => 'VRTC',
+            broker_code => 'VRTC',
+        },
+        {
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        },
+        {
+            name        => 'CR2',
+            broker_code => 'CR',
+        },
+        {
+            name            => 'P2P',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        },
+    ]);
+my $test_client_cr  = $customer_cr->get_client_object('CR');
+my $test_client_p2p = $customer_cr->get_client_object('P2P');
 # Add mt5 account to return mt5_additional_kyc_required tag
-$user_cr->add_loginid("MTR1234", 'mt5', 'real', 'USD', {group => 'test/test'});
+BOM::User->new(id => $customer_cr->get_user_id())->add_loginid("MTR1234", 'mt5', 'real', 'USD', {group => 'test/test'});
 
-my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
+my $customer_wallet = BOM::Test::Customer->create({
+        email    => 'wallet@test.com',
+        password => 'something',
+    },
+    [{
+            name            => 'CRW',
+            broker_code     => 'CRW',
+            account_type    => 'doughflow',
+            default_account => 'USD',
+        },
+        {
+            name            => 'CR',
+            broker_code     => 'CR',
+            account_type    => 'standard',
+            default_account => 'USD',
+        },
+    ]);
+
+BOM::User->new(id => $customer_wallet->get_user_id())->link_wallet_to_trading_account({
+    wallet_id => $customer_wallet->get_client_object('CRW')->loginid,
+    client_id => $customer_wallet->get_client_object('CR')->loginid
 });
 
-$test_client_disabled->status->set('disabled', 1, 'test disabled');
-
-my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-});
-$test_client_vr_2->email($email);
-$test_client_vr_2->set_default_account('USD');
-$test_client_vr_2->save;
-
-my $email_mf = 'mf@binary.com';
-
-my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    residence   => 'at',
-});
-$test_client_mf->email($email_mf);
-$test_client_mf->save;
-
-my $user_mf = BOM::User->create(
-    email          => $email_mf,
-    password       => $hash_pwd,
-    email_verified => 1,
-);
-$user_mf->add_client($test_client_vr_2);
-$user_mf->add_client($test_client_mf);
-
-my $test_client_crw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code  => 'CRW',
-    account_type => 'doughflow',
-    email        => 'wallet@test.com',
-});
-
-my $test_client_std = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code  => 'CR',
-    account_type => 'standard',
-    email        => $test_client_crw->email,
-});
-
-my $wallet_user = BOM::User->create(
-    email    => $test_client_crw->email,
-    password => 'x',
-);
-
-$wallet_user->add_client($test_client_crw);
-$wallet_user->add_client($test_client_std);
-$test_client_crw->account('USD');
-$test_client_std->account('USD');
-$wallet_user->link_wallet_to_trading_account({wallet_id => $test_client_crw->loginid, client_id => $test_client_std->loginid});
-
-my $m              = BOM::Platform::Token::API->new;
-my $token          = $m->create_token($test_client->loginid,          'test token');
-my $token_vr       = $m->create_token($test_client_cr_vr->loginid,    'test token');
-my $token_cr       = $m->create_token($test_client_cr->loginid,       'test token');
-my $token_p2p      = $m->create_token($test_client_p2p->loginid,      'test token');
-my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-my $token_crw      = $m->create_token($test_client_crw->loginid,      'test token');
-my $token_std      = $m->create_token($test_client_std->loginid,      'test token');
-
+my $m = BOM::Platform::Token::API->new;
 my $c = Test::BOM::RPC::QueueClient->new();
 
 my $documents_expired;
@@ -206,7 +145,7 @@ subtest 'get account status' => sub {
         subtest 'cashier statuses' => sub {
             my $mocked_cashier_validation = Test::MockModule->new("BOM::Platform::Client::CashierValidation");
 
-            my $result = $c->tcall('get_account_status', {token => $token_vr});
+            my $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('VRTC')});
             cmp_deeply(
                 $result->{status},
                 [
@@ -218,7 +157,7 @@ subtest 'get account status' => sub {
                 "cashier is locked for virtual accounts"
             );
 
-            # base validatioon: empty action type
+            # base validation: empty action type
             my $validation = {'' => {error => 1}};
             $mocked_cashier_validation->redefine(
                 validate => sub {
@@ -226,7 +165,7 @@ subtest 'get account status' => sub {
 
                     return $validation->{$args{action}};
                 });
-            $result = $c->tcall('get_account_status', {token => $token_cr});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 [
@@ -239,7 +178,7 @@ subtest 'get account status' => sub {
             );
 
             $validation->{''} = {};
-            $result = $c->tcall('get_account_status', {token => $token_cr});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
 
             cmp_deeply(
                 $result->{status},
@@ -252,7 +191,7 @@ subtest 'get account status' => sub {
             );
 
             $validation->{withdrawal} = {error => 1};
-            $result = $c->tcall('get_account_status', {token => $token_cr});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 [
@@ -265,7 +204,7 @@ subtest 'get account status' => sub {
             );
 
             $validation->{withdrawal} = {};
-            $result = $c->tcall('get_account_status', {token => $token_cr});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 [
@@ -277,7 +216,7 @@ subtest 'get account status' => sub {
             );
 
             $validation->{deposit} = {error => 1};
-            $result = $c->tcall('get_account_status', {token => $token_cr});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 [
@@ -290,7 +229,7 @@ subtest 'get account status' => sub {
             );
 
             $validation->{deposit} = {};
-            $result = $c->tcall('get_account_status', {token => $token_cr});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 [
@@ -305,7 +244,7 @@ subtest 'get account status' => sub {
                 ''         => {},
                 deposit    => {error => 1},
                 withdrawal => {error => 1}};
-            $result = $c->tcall('get_account_status', {token => $token_cr});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 [
@@ -320,29 +259,29 @@ subtest 'get account status' => sub {
             $mocked_cashier_validation->unmock_all();
 
             cmp_deeply(
-                $c->tcall('get_account_status', {token => $token_vr})->{cashier_validation},
+                $c->tcall('get_account_status', {token => $customer_cr->get_client_token('VRTC')})->{cashier_validation},
                 supersetof('CashierNotAllowed'),
                 'VRTC gets CashierNotAllowed in cashier_validation'
             );
 
             cmp_deeply(
-                $c->tcall('get_account_status', {token => $token_crw})->{cashier_validation},
+                $c->tcall('get_account_status', {token => $customer_wallet->get_client_token('CRW')})->{cashier_validation},
                 none('CashierNotAllowed'),
                 'CRW does not get CashierNotAllowed in cashier_validation'
             );
 
             cmp_deeply(
-                $c->tcall('get_account_status', {token => $token_std})->{cashier_validation},
+                $c->tcall('get_account_status', {token => $customer_wallet->get_client_token('CR')})->{cashier_validation},
                 supersetof('CashierNotAllowed'),
                 'CR standard gets CashierNotAllowed in cashier_validation'
             );
             $c->tcall(
                 'set_self_exclusion',
                 {
-                    token => $token_cr,
+                    token => $customer_cr->get_client_token('CR'),
                     args  => \%arg_values,
                 });
-            $result = $c->tcall('get_account_status', {token => $token_cr});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 [
@@ -360,21 +299,21 @@ subtest 'get account status' => sub {
         };
 
         subtest 'p2p status' => sub {
-            my $result = $c->tcall('get_account_status', {token => $token_cr});
+            my $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             is $result->{p2p_status}, "none", "client is not a P2P advertiser";
 
-            my $advertiser = $test_client_p2p->p2p_advertiser_create(name => "p2p test user");
+            $test_client_p2p->p2p_advertiser_create(name => "p2p test user");
 
-            $result = $c->tcall('get_account_status', {token => $token_p2p});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('P2P')});
             is $result->{p2p_status}, "active", "client is a P2P advertiser";
 
             BOM::Test::Helper::P2P::set_advertiser_blocked_until($test_client_p2p, 1);
             BOM::Test::Helper::P2P::set_advertiser_is_enabled($test_client_p2p, 0);
-            $result = $c->tcall('get_account_status', {token => $token_p2p});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('P2P')});
             is $result->{p2p_status}, "perm_ban", "P2P advertiser is fully blocked, permanent block takes precedence over temporary block";
 
             BOM::Test::Helper::P2P::set_advertiser_is_enabled($test_client_p2p, 1);
-            $result = $c->tcall('get_account_status', {token => $token_p2p});
+            $result = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('P2P')});
             is $result->{p2p_status}, "temp_ban", "P2P advertiser is temporarily blocked";
 
             BOM::Test::Helper::P2P::set_advertiser_blocked_until($test_client_p2p, 0);
@@ -382,14 +321,14 @@ subtest 'get account status' => sub {
         };
 
         subtest 'tin_manually_approved' => sub {
-            my $result                = $c->tcall('get_account_status', {token => $token_cr});
+            my $result                = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             my $tin_manually_approved = scalar grep { $_ eq 'tin_manually_approved' } $result->{status}->@*;
             ok !$tin_manually_approved, "tin not manually approved";
 
             $test_client_cr->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
             $test_client_cr->save();
 
-            $result                = $c->tcall('get_account_status', {token => $token_cr});
+            $result                = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             $tin_manually_approved = scalar grep { $_ eq 'tin_manually_approved' } $result->{status}->@*;
             ok $tin_manually_approved, "tin manually approved";
 
@@ -397,7 +336,7 @@ subtest 'get account status' => sub {
             $test_client_cr->tax_identification_number('123456789');
             $test_client_cr->save();
 
-            $result                = $c->tcall('get_account_status', {token => $token_cr});
+            $result                = $c->tcall('get_account_status', {token => $customer_cr->get_client_token('CR')});
             $tin_manually_approved = scalar grep { $_ eq 'tin_manually_approved' } $result->{status}->@*;
             ok !$tin_manually_approved, "tin manually approved but tax_identification_number is present";
 
@@ -483,7 +422,7 @@ subtest 'get account status' => sub {
                 $c->tcall(
                     $method,
                     {
-                        token => $token,
+                        token => $customer_mf->get_client_token('MF'),
                     }
                 )->{error}{message_to_client},
                 'The token is invalid.',
@@ -493,7 +432,7 @@ subtest 'get account status' => sub {
                 $c->tcall(
                     $method,
                     {
-                        token => $token_disabled,
+                        token => $customer_mf->get_client_token('MFDIS'),
                     }
                 )->{error}{message_to_client},
                 'This account is unavailable.',
@@ -512,7 +451,7 @@ subtest 'get account status' => sub {
                     data => encode_json_utf8($data),
                 });
                 $test_client->save();
-                my $result = $c->tcall($method, {token => $token});
+                my $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
                 my $financial_assessment_not_complete =
                     ((grep { $_ eq 'financial_assessment_not_complete' } @{$result->{status}}) == $is_financial_assessment_present);
                 my $financial_information_not_complete =
@@ -543,7 +482,7 @@ subtest 'get account status' => sub {
             # duplicate_account is not supposed to be shown to the users
             $test_client->status->set('duplicate_account');
 
-            my $result = $c->tcall($method, {token => $token_cr});
+            my $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
 
             cmp_deeply(
                 $result,
@@ -620,7 +559,7 @@ subtest 'get account status' => sub {
             $test_client->aml_risk_classification('low');
             $test_client->save();
 
-            $result = $c->tcall($method, {token => $token});
+            $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
             $test_client->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
             $test_client->status->set('crs_tin_information',     'SYSTEM', 'Client accepted financial risk disclosure');
 
@@ -699,7 +638,7 @@ subtest 'get account status' => sub {
             $test_client->status->set("professional");
             $test_client->save;
 
-            $result = $c->tcall($method, {token => $token});
+            $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
             cmp_deeply(
                 $result,
                 {
@@ -774,7 +713,7 @@ subtest 'get account status' => sub {
             my @latest_poi_by;
             $mocked_client->mock('latest_poi_by',  sub { return @latest_poi_by });
             $mocked_client->mock('get_poi_status', sub { return 'expired' });
-            $result = $c->tcall($method, {token => $token});
+            $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
             cmp_deeply(
                 $result,
                 {
@@ -864,7 +803,7 @@ subtest 'get account status' => sub {
                 },
             };
 
-            $result = $c->tcall($method, {token => $token});
+            $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
             cmp_deeply(
                 $result,
                 {
@@ -941,7 +880,7 @@ subtest 'get account status' => sub {
         };
 
         subtest 'costarica account' => sub {
-            my $result = $c->tcall($method, {token => $token_cr});
+            my $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result,
                 {
@@ -1014,7 +953,7 @@ subtest 'get account status' => sub {
             );
 
             $test_client_cr->status->set('withdrawal_locked', 'system', 'For test purposes');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
 
             cmp_deeply(
                 $result,
@@ -1091,7 +1030,7 @@ subtest 'get account status' => sub {
             my $mocked_client = Test::MockModule->new(ref($test_client_cr));
             $mocked_client->mock(locked_for_false_profile_info => sub { return 1 });
             cmp_deeply(
-                $c->tcall($method, {token => $token_cr})->{status},
+                $c->tcall($method, {token => $customer_cr->get_client_token('CR')})->{status},
                 superbagof(qw(allow_document_upload)),
                 'allow_document_upload found due to locked account for false profile info'
             );
@@ -1099,14 +1038,14 @@ subtest 'get account status' => sub {
 
             $test_client_cr->status->set('unwelcome', 'system', 'For test purposes');
             cmp_deeply(
-                $c->tcall($method, {token => $token_cr})->{status},
+                $c->tcall($method, {token => $customer_cr->get_client_token('CR')})->{status},
                 superbagof(qw(unwelcome)),
                 'allow_document_upload is not added along with unwelcome'
             );
 
             $test_client_cr->status->upsert('unwelcome', 'system', 'potential corporate account');
             cmp_deeply(
-                $c->tcall($method, {token => $token_cr})->{status},
+                $c->tcall($method, {token => $customer_cr->get_client_token('CR')})->{status},
                 superbagof(qw(unwelcome allow_document_upload)),
                 'allow_document_upload is automatically added along with unwelcome if account is locked for false info'
             );
@@ -1114,14 +1053,14 @@ subtest 'get account status' => sub {
 
             $test_client_cr->status->set('cashier_locked', 'system', 'fake profile info');
             cmp_deeply(
-                $c->tcall($method, {token => $token_cr})->{status},
+                $c->tcall($method, {token => $customer_cr->get_client_token('CR')})->{status},
                 superbagof(qw(cashier_locked allow_document_upload)),
                 'allow_document_upload is automatically added along with cashier_locked if account is locked for false info'
             );
 
             $test_client_cr->status->upsert('cashier_locked', 'system', 'For test purposes');
             cmp_deeply(
-                $c->tcall($method, {token => $token_cr})->{status},
+                $c->tcall($method, {token => $customer_cr->get_client_token('CR')})->{status},
                 superbagof(qw(cashier_locked)),
                 'allow_document_upload is not added along with cashier_locked'
             );
@@ -1129,7 +1068,7 @@ subtest 'get account status' => sub {
 
             $test_client_cr->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
             $test_client_cr->save;
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result,
                 {
@@ -1210,7 +1149,7 @@ subtest 'get account status' => sub {
                         last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
                     };
                 });
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result,
                 {
@@ -1324,7 +1263,7 @@ subtest 'get account status' => sub {
                 ok $test_client_cr->status->age_verification, 'Age verified';
                 ok $is_poi_already_expired,                   'POI expired';
                 @latest_poi_by = ('manual');
-                $result        = $c->tcall($method, {token => $token_cr});
+                $result        = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
 
                 cmp_deeply(
                     $result,
@@ -1461,7 +1400,7 @@ subtest 'get account status' => sub {
                 ok $test_client_cr->documents->expired(),                          'Client expiry is required';
                 ok $test_client_cr->fully_authenticated,                           'Account is fully authenticated';
                 @latest_poi_by = ('manual');
-                $result        = $c->tcall($method, {token => $token_cr});
+                $result        = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
                 $mocked_lc->unmock('is_authentication_mandatory');
 
                 cmp_deeply(
@@ -1547,7 +1486,7 @@ subtest 'get account status' => sub {
 
             $test_client_cr->aml_risk_classification('high');
             $test_client_cr->save;
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result,
                 {
@@ -1627,7 +1566,7 @@ subtest 'get account status' => sub {
             $test_client_cr->status->set('age_verification', 'system', 'age verified');
             $test_client_cr->status->setnx('allow_document_upload', 'system', 1);
             $test_client_cr->save;
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result,
                 {
@@ -1702,7 +1641,7 @@ subtest 'get account status' => sub {
             # mark as fully authenticated
             $mocked_client->mock('fully_authenticated', sub { return 1 });
 
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result,
                 {
@@ -1781,7 +1720,7 @@ subtest 'get account status' => sub {
             $test_client_cr->status->clear_allow_document_upload();
             $test_client_cr->save;
 
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result,
                 {
@@ -1862,13 +1801,13 @@ subtest 'get account status' => sub {
                 sub {
                     return 0;
                 });
-            my $result = $c->tcall($method, {token => $token_cr});
+            my $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply $result->{authentication}->{needs_verification}, noneof(qw/document identity/),     'Make sure needs verification is empty';
             cmp_deeply $result->{status},                               noneof(qw/allow_document_upload/), 'Make sure allow_document_upload is off';
 
             subtest 'poi resubmission' => sub {
                 $test_client_cr->status->set('allow_poi_resubmission', 'test', 'test');
-                my $result = $c->tcall($method, {token => $token_cr});
+                my $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
                 cmp_deeply(
                     $result,
                     {
@@ -1944,7 +1883,7 @@ subtest 'get account status' => sub {
 
             subtest 'poa resubmission' => sub {
                 $test_client_cr->status->set('allow_poa_resubmission', 'test', 'test');
-                my $result = $c->tcall($method, {token => $token_cr});
+                my $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
 
                 cmp_deeply(
                     $result,
@@ -2042,7 +1981,7 @@ subtest 'get account status' => sub {
                     };
                 });
 
-            my $result = $c->tcall($method, {token => $token});
+            my $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
             subtest "with valid documents" => sub {
                 cmp_deeply(
                     $result,
@@ -2118,37 +2057,32 @@ subtest 'get account status' => sub {
             };
 
             subtest "email not verified" => sub {
-                my $user = BOM::User->create(
-                    email          => 'test01@deriv.com',
-                    password       => $hash_pwd,
-                    email_verified => 0,
-                );
+                my $customer = BOM::Test::Customer->create({
+                        email          => BOM::Test::Customer->get_random_email_address(),
+                        password       => $hash_pwd,
+                        email_verified => 0,
+                    },
+                    [{
+                            name            => 'CR',
+                            broker_code     => 'CR',
+                            default_account => 'USD',
+                        },
+                    ]);
 
-                my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                    broker_code    => 'CR',
-                    binary_user_id => $user->id,
-                });
-
-                $test_client->email('test01@deriv.com');
-                $test_client->set_default_account('USD');
-                $test_client->save;
-
-                $user->add_client($test_client);
-
-                my $token  = $m->create_token($test_client->loginid, 'test token');
-                my $result = $c->tcall($method, {token => $token});
+                my $result = $c->tcall($method, {token => $customer->get_client_token('CR')});
 
                 my $email_not_verified = scalar grep { $_ eq 'email_not_verified' } $result->{status}->@*;
 
                 ok $email_not_verified, 'Email not verified';
 
-                my $updated_email_fields = {
-                    email_verified => 1,
-                };
-                $user->update_email_fields($updated_email_fields->%*);
+                my $response = BOM::Service::user(
+                    context    => $customer->get_user_service_context(),
+                    command    => 'update_attributes',
+                    user_id    => $customer->get_user_id(),
+                    attributes => {email_verified => 1});
+                is $response->{status}, 'ok', 'update email_verified ok';
 
-                $token  = $m->create_token($test_client->loginid, 'test token');
-                $result = $c->tcall($method, {token => $token});
+                $result = $c->tcall($method, {token => $customer->get_client_token('CR')});
 
                 $email_not_verified = scalar grep { $_ eq 'email_not_verified' } $result->{status}->@*;
 
@@ -2188,7 +2122,7 @@ subtest 'get account status' => sub {
                 };
 
                 @latest_poi_by = ('manual');
-                my $result = $c->tcall($method, {token => $token});
+                my $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
                 cmp_deeply(
                     $result,
                     {
@@ -2297,7 +2231,7 @@ subtest 'get account status' => sub {
                     },
                 };
 
-                my $method_response = $c->tcall($method, {token => $token});
+                my $method_response = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
                 my $expected_result = {
                     document => {
                         status                => "verified",
@@ -2382,7 +2316,7 @@ subtest 'get account status' => sub {
             $test_client->save;
 
             subtest "with valid documents" => sub {
-                my $result = $c->tcall($method, {token => $token});
+                my $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
                 cmp_deeply(
                     $result,
                     {
@@ -2475,7 +2409,7 @@ subtest 'get account status' => sub {
                     },
                 };
 
-                my $result = $c->tcall($method, {token => $token});
+                my $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
                 cmp_deeply(
                     $result,
                     {
@@ -2560,7 +2494,7 @@ subtest 'get account status' => sub {
             $test_client->get_authentication('ID_DOCUMENT')->delete;
             $test_client->save;
 
-            my $result = $c->tcall($method, {token => $token});
+            my $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
             cmp_deeply(
                 $result,
                 {
@@ -2638,16 +2572,16 @@ subtest 'get account status' => sub {
             my $mocked_client = Test::MockModule->new('BOM::User::Client');
 
             $test_client_cr->status->clear_allow_document_upload;
-            my $result = $c->tcall($method, {token => $token_cr});
+            my $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply($result->{status}, superbagof(qw(financial_information_not_complete)), 'no idv_disallowed if no allow_document_upload');
 
             $test_client_cr->status->setnx('unwelcome', 'system', 'reason');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply($result->{status}, superbagof(qw(idv_disallowed)), 'no idv_disallowed if no allow_document_upload');
             $test_client_cr->status->clear_unwelcome;
 
             $mocked_client->mock(aml_risk_classification => 'high');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed financial_information_not_complete financial_assessment_not_complete)),
@@ -2656,12 +2590,12 @@ subtest 'get account status' => sub {
             $mocked_client->mock(aml_risk_classification => 'low');
 
             $test_client_cr->status->upsert('age_verification', 'system', 'verified');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply($result->{status}, superbagof(qw(allow_document_upload idv_disallowed)), 'idv_disallowed if client has age verified');
             $test_client_cr->status->clear_age_verification;
 
             $test_client_cr->status->upsert('allow_poi_resubmission', 'system', 'resubmission');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply($result->{status}, superbagof(qw(allow_document_upload idv_disallowed)),
                 'idv_disallowed if client has allow_poi_resubmission');
             $test_client_cr->status->clear_allow_poi_resubmission;
@@ -2670,18 +2604,18 @@ subtest 'get account status' => sub {
                 qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/)
             {
                 $test_client_cr->status->upsert('allow_document_upload', 'system', $reason);
-                $result = $c->tcall($method, {token => $token_cr});
+                $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
                 cmp_deeply($result->{status}, noneof(qw(idv_disallowed)), 'no idv_disallowed if allow_document_upload with allowed reason');
                 cmp_deeply($result->{status}, superbagof(qw(allow_document_upload)), "correct statuses for reason $reason");
             }
 
             $test_client_cr->status->upsert('allow_document_upload', 'system', 'ANYTHING_ELSE');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply($result->{status}, noneof(qw(idv_disallowed)), 'idv allowed correctly for ANYTHING_ELSE');
 
             $mocked_client->mock('get_onfido_status', 'expired');
             $test_client_cr->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload)),
@@ -2690,7 +2624,7 @@ subtest 'get account status' => sub {
 
             $mocked_client->mock('get_onfido_status', 'rejected');
             $test_client_cr->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload)),
@@ -2700,7 +2634,7 @@ subtest 'get account status' => sub {
 
             $mocked_client->mock('get_manual_poi_status', 'expired');
             $test_client_cr->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload)),
@@ -2709,7 +2643,7 @@ subtest 'get account status' => sub {
 
             $mocked_client->mock('get_manual_poi_status', 'rejected');
             $test_client_cr->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload)),
@@ -2718,7 +2652,7 @@ subtest 'get account status' => sub {
 
             $mocked_client->unmock('get_manual_poi_status');
             $test_client_cr->status->clear_allow_document_upload;
-            $result = $c->tcall($method, {token => $token});
+            $result = $c->tcall($method, {token => $customer_mf->get_client_token('MF')});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete)),
@@ -2726,7 +2660,7 @@ subtest 'get account status' => sub {
             );
 
             $test_client_cr->status->set('age_verification', 'test', 'test');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete)),
@@ -2734,7 +2668,7 @@ subtest 'get account status' => sub {
             );
 
             $mocked_client->mock(get_idv_status => 'expired');
-            $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result->{status},
                 superbagof(qw(allow_document_upload financial_information_not_complete)),
@@ -2750,7 +2684,7 @@ subtest 'get account status' => sub {
             $test_client_cr->status->set('shared_payment_method');
             $test_client_cr->status->set('cashier_locked');
 
-            my $result = $c->tcall($method, {token => $token_cr});
+            my $result = $c->tcall($method, {token => $customer_cr->get_client_token('CR')});
             cmp_deeply(
                 $result,
                 {

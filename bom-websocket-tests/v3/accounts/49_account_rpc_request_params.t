@@ -46,9 +46,10 @@ is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, ['maltainves
 
 # Create client (UK - MX)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MX',
-    residence   => 'gb',
-    email       => $email
+    broker_code    => 'MX',
+    residence      => 'gb',
+    email          => $email,
+    binary_user_id => $user->id,
 });
 
 $user->add_client($client);
@@ -61,9 +62,10 @@ is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, ['maltainves
 
 # Create client (UK - MF)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    residence   => 'gb',
-    email       => $email
+    broker_code    => 'MF',
+    residence      => 'gb',
+    email          => $email,
+    binary_user_id => $user->id,
 });
 
 $user->add_client($client);
@@ -77,21 +79,20 @@ is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, [], 'UK clie
 # UK Client testing (Done)
 
 # prepare client (normal cr account)
-$email  = 'test-binary@binary.com';
-$client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
+$email = 'test-binary@binary.com';
 
-$client->email($email);
-$client->save;
-$client->set_default_account('USD');
-
-my $loginid = $client->loginid;
 $user = BOM::User->create(
     email    => $email,
     password => '1234',
 );
+$client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    email          => $email,
+    broker_code    => 'CR',
+    binary_user_id => $user->id,
+});
+$client->set_default_account('USD');
 $user->add_client($client);
+my $loginid = $client->loginid;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 

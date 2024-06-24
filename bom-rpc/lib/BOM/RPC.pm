@@ -8,6 +8,7 @@ use List::Util qw(any);
 use Scalar::Util q(blessed);
 use Syntax::Keyword::Try;
 use Time::HiRes qw();
+use Text::Trim;
 
 use BOM::Config::Runtime;
 use BOM::Database::Rose::DB;
@@ -162,6 +163,13 @@ sub wrap_rpc_sub {
         $params->{user_service_context} = {
             correlation_id => $params->{correlation_id},
             auth_token     => "Unused but required to be present",
+            environment    => trim(
+                      ($params->{website_name} // '') . ' '
+                    . ($params->{client_ip}    // '') . ' '
+                    . ($params->{user_agent}   // '')
+                    . ' LANG='
+                    . ($params->{language} // '')
+            ),
         };
         # RPCs that use user service need to have the user_id set
         $params->{user_id} = defined($params->{client}) ? $params->{client}->binary_user_id : undef;

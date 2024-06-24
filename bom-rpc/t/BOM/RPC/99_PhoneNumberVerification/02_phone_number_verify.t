@@ -11,33 +11,26 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::Test::RPC::QueueClient;
-use BOM::Test::Helper::Client;
+use BOM::Test::Customer;
 use BOM::User;
+use BOM::User::PhoneNumberVerification;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my $user = BOM::User->create(
-    email    => 'example@binary.com',
-    password => 'test_passwd'
-);
-my $uid = $user->id;
+my $customer = BOM::Test::Customer->create({
+        email    => 'example@binary.com',
+        password => 'test_passwd',
+    },
+    [{
+            name        => 'CR',
+            broker_code => 'CR'
+        },
+    ]);
 
-my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $uid
-});
+my $pnv = BOM::User::PhoneNumberVerification->new($customer->get_user_id(), $customer->get_user_service_context());
 
-$user->add_client($client_cr);
-$client_cr->user($user);
-$client_cr->binary_user_id($uid);
-$client_cr->save;
-
-my $token_model = BOM::Platform::Token::API->new;
-my $token_cr    = $token_model->create_token($client_cr->loginid, 'test token');
-
-my $pnv = $user->pnv;
 my $verify_blocked;
 my $verify_otp;
 my $verified;
@@ -83,7 +76,7 @@ $pnv_mock->mock(
     });
 
 my $params = {
-    token    => $token_cr,
+    token    => $customer->get_client_token('CR'),
     language => 'EN',
     args     => {
         otp => undef,
@@ -138,7 +131,7 @@ subtest 'Invalid OTP' => sub {
         [{
             category => 'BOM::RPC::v3::PhoneNumberVerification',
             level    => 'debug',
-            message  => "Verifying OTP $otp, for user $uid",
+            message  => "Verifying OTP $otp, for user " . $customer->get_user_id(),
         }
         ],
         'expected log generated';
@@ -171,12 +164,11 @@ subtest 'Valid OTP' => sub {
     is $res, 1, 'Expected result';
 
     is $verify_otp, 1, 'verify otp called';
-
     cmp_deeply $log->msgs(),
         [{
             category => 'BOM::RPC::v3::PhoneNumberVerification',
             level    => 'debug',
-            message  => "Verifying OTP $otp, for user $uid",
+            message  => "Verifying OTP $otp, for user " . $customer->get_user_id(),
         }
         ],
         'expected log generated';

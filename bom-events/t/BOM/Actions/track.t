@@ -13,38 +13,30 @@ use Brands;
 use WebService::Async::Segment::Customer;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Context                     qw(request);
+use BOM::Test::Customer;
+use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::Event::Actions::User;
 use BOM::User;
+use BOM::Service;
 use BOM::Platform::Locale qw(get_state_by_id);
 
-my %GENDER_MAPPING = (
-    MR   => 'male',
-    MRS  => 'female',
-    MISS => 'female',
-    MS   => 'female'
-);
-
-my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-    email       => 'test1@bin.com',
-});
-
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'test1@bin.com',
-});
-
-my $email = $test_client->email;
-my $user  = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
-    email_verified => 1,
-);
-
-$user->add_client($test_client);
-$user->add_client($test_client_vr);
+my $test_customer = BOM::Test::Customer->create({
+        email          => 'test1@bin.com',
+        password       => 'hello',
+        email_verified => 1,
+    },
+    [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+        {
+            name        => 'VRTC',
+            broker_code => 'VRTC',
+        },
+    ]);
+my $test_client = $test_customer->get_client_object('CR');
+my $user        = BOM::User->new(id => $test_customer->get_user_id());
 
 my (@identify_args, @track_args, @transactional_args);
 
@@ -214,7 +206,13 @@ subtest 'General event validation - filtering by brand' => sub {
         undef @track_args;
         undef @identify_args;
 
-        $user->update_email_fields(email_consent => 1);
+        my $response = BOM::Service::user(
+            context    => $test_customer->get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $test_customer->get_user_id(),
+            attributes => {email_consent => 1});
+        is $response->{status}, 'ok', 'update email_consent ok';
+
         ok BOM::Event::Services::Track::track_event(
             event      => 'profile_change',
             client     => $test_client,
@@ -259,7 +257,13 @@ subtest 'General event validation - filtering by brand' => sub {
         undef @track_args;
         undef @identify_args;
 
-        $user->update_email_fields(email_consent => 0);
+        my $response = BOM::Service::user(
+            context    => $test_customer->get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $test_customer->get_user_id(),
+            attributes => {email_consent => 0});
+        is $response->{status}, 'ok', 'update email_consent ok';
+
         ok BOM::Event::Services::Track::track_event(
             event      => 'account_closure',
             client     => $test_client,
@@ -339,7 +343,13 @@ subtest 'General event validation - filtering by brand' => sub {
         undef @track_args;
         undef @identify_args;
 
-        $user->update_email_fields(email_consent => 1);
+        my $response = BOM::Service::user(
+            context    => $test_customer->get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $test_customer->get_user_id(),
+            attributes => {email_consent => 1});
+        is $response->{status}, 'ok', 'update email_consent ok';
+
         ok BOM::Event::Services::Track::track_event(
             event      => 'profile_change',
             client     => $test_client,
@@ -633,7 +643,12 @@ subtest 'General event validation - filtering by brand' => sub {
         undef @track_args;
         undef @identify_args;
 
-        $test_client->user->update_preferred_language("RU");
+        my $response = BOM::Service::user(
+            context    => $test_customer->get_user_service_context(),
+            command    => 'update_attributes',
+            user_id    => $test_customer->get_user_id(),
+            attributes => {preferred_language => 'RU'});
+        is $response->{status}, 'ok', 'update preferred_language ok';
 
         ok BOM::Event::Services::Track::track_event(
             event      => 'email_subscription',

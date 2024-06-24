@@ -15,6 +15,7 @@ use warnings;
 use Log::Any qw($log);
 use BOM::RPC::Registry '-dsl';
 use BOM::Platform::Context qw (localize);
+use BOM::User::PhoneNumberVerification;
 use BOM::Platform::Token;
 use BOM::RPC::v3::Utility;
 
@@ -38,12 +39,10 @@ Returns 1 if the procedure was successful.
 
 rpc phone_number_challenge => sub {
     my $params = shift;
-
     my $args   = $params->{args};
-    my $client = $params->{client};
+    my $pnv    = BOM::User::PhoneNumberVerification->new($params->{user_id}, $params->{user_service_context});
 
-    my $user = $client->user;
-    my $pnv  = $user->pnv;
+    return BOM::RPC::v3::Utility::client_error() unless defined $pnv;
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AlreadyVerified',
@@ -54,7 +53,7 @@ rpc phone_number_challenge => sub {
     $pnv->increase_attempts();
 
     my $verification_code     = $args->{email_code};
-    my $verification_response = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $client->email, 'phone_number_verification');
+    my $verification_response = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $pnv->email, 'phone_number_verification');
 
     return $verification_response if $verification_response->{error};
 
@@ -63,10 +62,10 @@ rpc phone_number_challenge => sub {
             message_to_client => localize('Please wait for some time before requesting another OTP code')}) if time < $next_attempt;
 
     my $carrier = $args->{carrier};
-    my $phone   = $client->phone;
+    my $phone   = $pnv->phone;
     my $otp     = $pnv->generate_otp();
 
-    $log->debugf("Sending OTP %s to %s, via %s, for user %d", $otp, $phone, $carrier, $user->id);
+    $log->debugf("Sending OTP %s to %s, via %s, for user %d", $otp, $phone, $carrier, $params->{user_id});
 
     $pnv->clear_verify_attempts();
 
@@ -91,12 +90,10 @@ Returns 1 if the procedure was successful.
 
 rpc phone_number_verify => sub {
     my $params = shift;
-
     my $args   = $params->{args};
-    my $client = $params->{client};
+    my $pnv    = BOM::User::PhoneNumberVerification->new($params->{user_id}, $params->{user_service_context});
 
-    my $user = $client->user;
-    my $pnv  = $user->pnv;
+    return BOM::RPC::v3::Utility::client_error() unless defined $pnv;
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AlreadyVerified',
@@ -104,7 +101,7 @@ rpc phone_number_verify => sub {
 
     my $otp = $args->{otp} // '';
 
-    $log->debugf("Verifying OTP %s, for user %d", $otp, $user->id);
+    $log->debugf("Verifying OTP %s, for user %d", $otp, $params->{user_id});
 
     $pnv->increase_verify_attempts();
 

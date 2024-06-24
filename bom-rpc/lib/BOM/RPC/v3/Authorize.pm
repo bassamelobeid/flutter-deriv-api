@@ -45,9 +45,16 @@ rpc authorize => sub {
     my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
-    my $user = $client->user;
-    BOM::Service::User::Transitional::PreferredLanguage::setnx_preferred_language($user, $params->{language})
-        if $params->{language} && $params->{language} =~ /^[A-Z]{2}$|^[A-Z]{2}_[A-Z]{2}$/i;
+    my $user    = $client->user;
+    my $user_id = $client->binary_user_id;
+
+    if ($params->{language} && $params->{language} =~ /^[A-Z]{2}$|^[A-Z]{2}_[A-Z]{2}$/i) {
+        BOM::Service::user(
+            context    => $params->{user_service_context},
+            command    => 'update_attributes_nx',
+            user_id    => $user_id,
+            attributes => {preferred_language => $params->{language}});
+    }
 
     $params->{app_id} = $params->{source};
 
@@ -73,6 +80,19 @@ rpc authorize => sub {
                 message_to_client => BOM::Platform::Context::localize("Token is not valid for current user.")});
     }
 
+    my $user_data = BOM::Service::user(
+        context    => $params->{user_service_context},
+        command    => 'get_attributes',
+        user_id    => $user_id,
+        attributes => [qw(preferred_language email full_name residence)],
+    );
+    unless ($user_data->{status} eq 'ok') {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'UserServiceFailed',
+                message           => $user_data->{message},
+                message_to_client => localize('There was a problem reading your user data.')});
+    }
+
     my $token_type;
     if (_is_api_token($token)) {
         $token_type = _handle_api_token($params, $user);
@@ -96,31 +116,31 @@ rpc authorize => sub {
     my $account_links   = $migration_state eq 'migrated' ? $user->get_accounts_links() : +{};
 
     return {
-        fullname                      => $client->full_name,
-        user_id                       => $client->binary_user_id,
+        fullname                      => $user_data->{attributes}{full_name},
+        user_id                       => $user_id,
         loginid                       => $client->loginid,
         balance                       => $account ? formatnumber('amount', $account->currency_code(), $account->balance) : '0.00',
         currency                      => ($account ? $account->currency_code() : ''),
         local_currencies              => $local_currencies,
-        email                         => $client->email,
-        country                       => $client->residence,
+        email                         => $user_data->{attributes}{email},
+        country                       => $user_data->{attributes}{residence},
         landing_company_name          => $lc->short,
         landing_company_fullname      => $lc->name,
         linked_to                     => $account_links->{$client->loginid} // [],
-        preferred_language            => $user->preferred_language,
+        preferred_language            => $user_data->{attributes}{preferred_language},
         scopes                        => $scopes,
         is_virtual                    => $client->is_virtual ? 1 : 0,
         upgradeable_landing_companies => \@upgradeable_companies,
         account_list                  => $account_list,
         stash                         => {
             loginid              => $client->loginid,
-            email                => $client->email,
+            email                => $user_data->{attributes}{email},
             token                => $token,
             account_tokens       => $account_tokens,
             token_type           => $token_type,
             scopes               => $scopes,
             account_id           => ($account ? $account->id : ''),
-            country              => $client->residence,
+            country              => $user_data->{attributes}{residence},
             currency             => ($account ? $account->currency_code() : ''),
             landing_company_name => $lc->short,
             is_virtual           => ($client->is_virtual ? 1 : 0),

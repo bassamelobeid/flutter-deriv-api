@@ -91,6 +91,8 @@ sub get_client_data {
     my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
     if ($type eq 'string') {
         return trim($client->$attribute);
+    } elsif ($type eq 'string-nullable') {
+        return defined $client->$attribute ? trim($client->$attribute) : undef;
     } elsif ($type eq 'bool') {
         return $client->$attribute // 0;
     } elsif ($type eq 'bool-nullable') {
@@ -119,6 +121,8 @@ sub get_user_data {
     my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
     if ($type eq 'string') {
         return trim($user->{$attribute});
+    } elsif ($type eq 'string-nullable') {
+        return defined $user->{$attribute} ? trim($user->{$attribute}) : undef;
     } elsif ($type eq 'bool') {
         return $user->{$attribute} // 0;
     } elsif ($type eq 'bool-nullable') {
@@ -153,32 +157,6 @@ sub get_accepted_tnc_version {
         }) // '';
 }
 
-=head2 get_user_phone_number_verification
-
-This subroutine retrieves the verification status of the user's phone number. It first gets the user object using the user_id and correlation_id from the request. Then, it returns a hash reference containing the verification status and the next attempt time (if defined).
-
-=over 4
-
-=item * Input: HashRef (request), String (attribute), String (type)
-
-=item * Return: HashRef (hash reference containing the verification status and the next attempt time)
-
-=back
-
-=cut
-
-sub get_user_phone_number_verification {
-    my ($request, $attribute, $type) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-
-    return {
-        verified => $user->pnv->verified,
-        defined $user->pnv->next_attempt        ? (next_attempt        => $user->pnv->next_attempt)        : (),
-        defined $user->pnv->next_email_attempt  ? (next_email_attempt  => $user->pnv->next_email_attempt)  : (),
-        defined $user->pnv->next_verify_attempt ? (next_verify_attempt => $user->pnv->next_verify_attempt) : (),
-    };
-}
-
 =head2 get_financial_assessment
 
 This subroutine retrieves the financial assessment of a client. It first gets the client object using the user_id and correlation_id from the request. Then, it decodes the financial assessment of the client and returns it.
@@ -199,9 +177,9 @@ sub get_financial_assessment {
     return BOM::User::FinancialAssessment::decode_fa($client->financial_assessment);
 }
 
-=head2 get_feature_flag
+=head2 get_feature_flags
 
-This subroutine retrieves the feature flag of a user. It first gets the user object using the user_id and correlation_id from the request. Then, it returns the feature flag of the user.
+This subroutine retrieves the feature flags of a user. It first gets the user object using the user_id and correlation_id from the request. Then, it returns the feature flag of the user.
 
 =over 4
 
@@ -213,10 +191,21 @@ This subroutine retrieves the feature flag of a user. It first gets the user obj
 
 =cut
 
-sub get_feature_flag {
+sub get_feature_flags {
     my ($request, $attribute, $type) = @_;
     my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    return $user->get_feature_flag();
+
+    my $result = $user->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM users.get_feature_flag(?)', {Slice => {}}, $user->{id});
+        });
+
+    my %default_flags = (
+        wallet => 0,
+    );
+
+    # Make sure default flags are always present in the result, even if they are not in the database
+    return +{%default_flags, map { $_->{name} => $_->{enabled} } $result->@*};
 }
 
 =head2 get_immutable_attributes
@@ -302,4 +291,23 @@ sub get_user_id {
     return $user->id;
 }
 
+=head2 get_full_name
+
+This subroutine retrieves full name of the user, its a concatenation of salutation, first name and last name.
+
+=over 4
+
+=item * Input: HashRef (request), String (attribute), String (type)
+
+=item * Return: User's full name
+
+=back
+
+=cut
+
+sub get_full_name {
+    my ($request, $attribute, $type) = @_;
+    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    return $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
+}
 1;

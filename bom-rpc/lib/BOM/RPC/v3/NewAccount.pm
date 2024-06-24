@@ -323,7 +323,6 @@ rpc new_account_maltainvest => annotate_db_calls(
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
-    my $user = $client->user;
     $args = BOM::User::Utility::trim_immutable_client_fields($args);
 
     # this API call will be depricated and only available for legacy accounts.

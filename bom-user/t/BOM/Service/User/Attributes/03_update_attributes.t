@@ -16,7 +16,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use UserServiceTestHelper;
 
 my $user    = UserServiceTestHelper::create_user('frieren@strahl.com');
-my $context = UserServiceTestHelper::create_context($user);
+my $context = UserServiceTestHelper::get_user_service_context();
 
 my $dump_response = 0;
 

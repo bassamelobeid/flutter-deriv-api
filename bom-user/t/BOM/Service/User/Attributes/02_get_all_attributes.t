@@ -15,7 +15,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use UserServiceTestHelper;
 
 my $user    = UserServiceTestHelper::create_user('frieren@strahl.com');
-my $context = UserServiceTestHelper::create_context($user);
+my $context = UserServiceTestHelper::get_user_service_context();
 
 my $dump_response = 0;
 
@@ -42,6 +42,24 @@ subtest 'get all the things' => sub {
     my $attr_ref  = BOM::Service::User::Attributes::get_all_attributes();
     my @attr_list = keys %$attr_ref;
     is scalar(keys %{$response->{attributes}}), scalar @attr_list, 'all attributes returned';
+};
+
+subtest 'get full_name test' => sub {
+    my $response = BOM::Service::user(
+        context    => $context,
+        command    => 'get_attributes',
+        attributes => [qw(full_name salutation first_name last_name)],
+        user_id    => $user->id
+    );
+    print JSON::MaybeXS->new->pretty->encode($response) . "\n" if $dump_response;
+
+    is $response->{status}, 'ok', 'call succeeded';
+
+    # Won't check them all just a couple to be sure from user/client
+    is $response->{attributes}{first_name}, 'Frieren',          'first_name ok';
+    is $response->{attributes}{last_name},  'Elf',              'last_name ok';
+    is $response->{attributes}{salutation}, 'Miss',             'salutation ok';
+    is $response->{attributes}{full_name},  'Miss Frieren Elf', 'full_name ok';
 };
 
 done_testing();

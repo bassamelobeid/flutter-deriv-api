@@ -2138,16 +2138,16 @@ rpc get_settings => sub {
     my $client = $params->{client};
 
     my $wanted_attributes = [qw(
-            account_opening_reason         default_client                 non_pep_declaration_time
-            address_city                   email                          phone
-            address_line_1                 email_consent                  place_of_birth
-            address_line_2                 fatca_declaration              preferred_language
-            address_postcode               feature_flag                   address_state
-            phone_number_verification      financial_assessment           residence
-            binary_user_id                 first_name                     salutation
-            citizen                        secret_answer                  tax_identification_number
-            accepted_tnc_version           immutable_attributes           tax_residence
-            date_of_birth                  last_name
+            accepted_tnc_version           account_opening_reason      address_city
+            address_line_1                 address_line_2              address_postcode
+            address_state                  binary_user_id              citizen
+            date_of_birth                  default_client              email
+            email_consent                  fatca_declaration           feature_flag
+            financial_assessment           first_name                  immutable_attributes
+            last_name                      non_pep_declaration_time    phone
+            phone_number_verified          place_of_birth              preferred_language
+            residence                      salutation                  secret_answer
+            tax_identification_number      tax_residence
         )];
 
     my $user_data = BOM::Service::user(
@@ -2156,7 +2156,6 @@ rpc get_settings => sub {
         user_id    => $params->{user_id},
         attributes => $wanted_attributes,
     );
-
     unless ($user_data->{status} eq 'ok') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'UserServiceFailed',
@@ -2198,6 +2197,14 @@ rpc get_settings => sub {
         $settings->{employment_status} = $settings->{financial_assessment}->{employment_status};
     }
 
+    my $pnv = BOM::User::PhoneNumberVerification->new($params->{user_id}, $params->{user_service_context});
+    $settings->{phone_number_verification} = {
+        verified => $settings->{phone_number_verified},
+        defined $pnv->next_attempt        ? (next_attempt        => $pnv->next_attempt)        : (),
+        defined $pnv->next_email_attempt  ? (next_email_attempt  => $pnv->next_email_attempt)  : (),
+        defined $pnv->next_verify_attempt ? (next_verify_attempt => $pnv->next_verify_attempt) : (),
+    };
+
     if (BOM::Config::third_party()->{elevio}{account_secret}) {
         $settings->{user_hash} = hmac_sha256_hex($settings->{email}, BOM::Config::third_party()->{elevio}{account_secret});
     }
@@ -2218,7 +2225,7 @@ rpc get_settings => sub {
     delete $settings->{citizen}              unless defined $settings->{citizen};
     delete $settings->{financial_assessment} unless defined $settings->{financial_assessment} && %{$settings->{financial_assessment}};
     delete $settings->@{qw(default_client non_pep_declaration_time broker_code secret_answer)};
-    delete $settings->@{qw(accepted_tnc_version immutable_attributes binary_user_id)};
+    delete $settings->@{qw(accepted_tnc_version immutable_attributes binary_user_id phone_number_verified)};
 
     return $settings;
 };
@@ -2283,9 +2290,6 @@ rpc set_settings => sub {
 
     my $user = $current_client->user;
 
-    $user->update_preferred_language($args->{preferred_language}) if $args->{preferred_language};
-    $user->set_feature_flag($args->{feature_flag})                if $args->{feature_flag};
-
     # Set trading_hub as a client status_code if the user has it enabled
     if (defined $args->{trading_hub}) {
         my $siblings = $current_client->get_siblings_information();
@@ -2296,10 +2300,17 @@ rpc set_settings => sub {
         }
     }
 
-    # Email consent is per user whereas other settings are per client
-    # so need to save it separately
-    if (defined $args->{email_consent}) {
-        $user->update_email_fields(email_consent => $args->{email_consent});
+    # These 3 props are user service for sure
+    my @user_attrs = qw(preferred_language feature_flag email_consent);
+    if (grep { defined $args->{$_} } @user_attrs) {
+        my %attributes = map { $_ => $args->{$_} } grep { defined $args->{$_} } @user_attrs;
+        my $result     = BOM::Service::user(
+            context    => $params->{user_service_context},
+            command    => 'update_attributes',
+            user_id    => $params->{user_id},
+            attributes => \%attributes,
+        );
+        return BOM::RPC::v3::Utility::client_error() unless ($result->{status} eq 'ok');
     }
 
     # Should not allow client to change TIN number if we have TIN format for the country and it doesn't match
@@ -3602,13 +3613,13 @@ rpc account_closure => sub {
     # Return error if NO loginids have been disabled
     return $error if ($error && $loginids_disabled_success eq '');
 
-    my $data_email_consent = {
-        loginid       => $loginid,
-        email_consent => 0
-    };
-
-    # Remove email consents for the user (and update the clients as well)
-    $user->update_email_fields(email_consent => $data_email_consent->{email_consent});
+    # Remove email consent for the user
+    BOM::Service::user(
+        context    => $params->{user_service_context},
+        command    => 'update_attributes',
+        user_id    => $params->{user_id},
+        attributes => {email_consent => 0},
+    );
 
     my $data_closure = {
         new_campaign      => 1,
@@ -3616,7 +3627,7 @@ rpc account_closure => sub {
         loginid           => $loginid,
         loginids_disabled => $loginids_disabled_success,
         loginids_failed   => $loginids_disabled_failed,
-        email_consent     => $data_email_consent->{email_consent},
+        email_consent     => 0,
         name              => $client->first_name,
     };
 
@@ -4091,37 +4102,40 @@ rpc "unsubscribe_email",
     my $checksum       = $params->{args}->{checksum};
     my $binary_user_id = $params->{args}->{binary_user_id};
 
-    my $user;
-    try {
-        $user = BOM::User->new(id => $binary_user_id);
-    } catch {
-        log_exception();
+    my $user_data = BOM::Service::user(
+        context    => $params->{user_service_context},
+        command    => 'get_attributes',
+        user_id    => $binary_user_id,
+        attributes => [qw(email_consent email)],
+    );
+    unless ($user_data->{status} eq 'ok') {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidUser',
+                message_to_client => localize('Your User ID appears to be invalid.')});
     }
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidUser',
-            message_to_client => localize('Your User ID appears to be invalid.')}) unless $user;
+    my $unsub_status = 1;
+    # Only unsubscribe if the user is subscribed
+    if ($user_data->{attributes}{email_consent}) {
+        my $generated_checksum = BOM::User::Utility::generate_email_unsubscribe_checksum($binary_user_id, $user_data->{attributes}{email});
 
-    my $generated_checksum = BOM::User::Utility::generate_email_unsubscribe_checksum($binary_user_id, $user->email);
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidChecksum',
+                message_to_client => localize('The security hash used in your request appears to be invalid.')}
+        ) unless $generated_checksum eq $checksum;
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidChecksum',
-            message_to_client => localize('The security hash used in your request appears to be invalid.')}) unless $generated_checksum eq $checksum;
-
-    # Remove email consents for the user on request
-
-    $user->update_email_fields(email_consent => 0);
-    my @all_loginid = $user->loginids();
-
-    # After update notify customer io
-    my $data_subscription = {
-        loginid      => $all_loginid[0],
-        unsubscribed => 1,
-    };
-    BOM::Platform::Event::Emitter::emit('email_subscription', $data_subscription);
+        # Remove email consent for the user as requested
+        $user_data = BOM::Service::user(
+            context    => $params->{user_service_context},
+            command    => 'update_attributes',
+            user_id    => $binary_user_id,
+            attributes => {email_consent => 0},
+        );
+        $unsub_status = $user_data->{status} eq 'ok';
+    }
 
     return {
-        email_unsubscribe_status => $user->email_consent ? 0 : 1,
+        email_unsubscribe_status => $unsub_status,
         binary_user_id           => $binary_user_id
     };
 

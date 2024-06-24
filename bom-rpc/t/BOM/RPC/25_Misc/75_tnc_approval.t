@@ -6,6 +6,7 @@ use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::Customer;
 use BOM::User::Client;
 use BOM::Config::Runtime;
 use BOM::Platform::Token::API;
@@ -62,15 +63,11 @@ my $res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({
-        user_id              => $user->id,
-        user_service_context => {
-            auth_token     => 'test_token',
-            correlation_id => 'test_correlation_id',
-        },
-        client   => $test_client,
-        language => 'EN'
-    });
-print Data::Dumper::Dumper($res);
+    user_id              => $user->id,
+    user_service_context => BOM::Test::Customer->get_user_service_context(),
+    client               => $test_client,
+    language             => 'EN'
+});
 is $res->{client_tnc_status}, 'Version 1', 'version 1';
 
 # switch to version 2
@@ -89,14 +86,11 @@ $res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({
-        user_id              => $user->id,
-        user_service_context => {
-            auth_token     => 'test_token',
-            correlation_id => 'test_correlation_id',
-        },
-        client   => $test_client,
-        language => 'EN'
-    });
+    user_id              => $user->id,
+    user_service_context => BOM::Test::Customer->get_user_service_context(),
+    client               => $test_client,
+    language             => 'EN'
+});
 is $res->{client_tnc_status}, 'Version 2', 'version 2';
 
 done_testing();

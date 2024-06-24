@@ -12,6 +12,7 @@ use Test::Warn;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::RPC::QueueClient;
+use BOM::Test::Customer;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates populate_exchange_rates_db/;
 use BOM::RPC::v3::MT5::Account;
 use Test::BOM::RPC::Accounts;
@@ -65,7 +66,7 @@ my $params = {
 };
 
 subtest 'Basic transfers' => sub {
-    my $email = 'new_email' . rand(999) . '@binary.com';
+    my $email = BOM::Test::Customer::get_random_email_address();
     my $user  = BOM::User->create(
         email          => $email,
         password       => BOM::User::Password::hashpw('hello'),
@@ -135,7 +136,7 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
 
     # Test 1: Fiat -> Crypto
 
-    my $email       = 'new_email' . rand(999) . '@binary.com';
+    my $email       = BOM::Test::Customer::get_random_email_address();
     my $client_fiat = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -206,7 +207,7 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
 
 subtest 'In statuses transfers_blocked and sibling_transfers_blocked Fiat <-> Crypto transfers are not allowed' => sub {
 
-    my $email       = 'new_email' . rand(999) . '@binary.com';
+    my $email       = BOM::Test::Customer::get_random_email_address();
     my $client_fiat = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -296,7 +297,7 @@ subtest 'In statuses transfers_blocked and sibling_transfers_blocked Fiat <-> Cr
 };
 
 subtest 'Crypto <-> Crypto account transfers' => sub {
-    my $email      = 'new_email' . rand(999) . '@binary.com';
+    my $email      = BOM::Test::Customer::get_random_email_address();
     my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -355,7 +356,7 @@ subtest 'Crypto <-> Crypto account transfers' => sub {
 };
 
 subtest 'Crypto <-> Fiat account transfers' => sub {
-    my $email      = 'new_email' . rand(999) . '@binary.com';
+    my $email      = BOM::Test::Customer::get_random_email_address();
     my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -415,7 +416,7 @@ subtest 'Crypto <-> Fiat account transfers' => sub {
 
 subtest 'Virtual accounts' => sub {
 
-    my $email1     = 'new_email' . rand(999) . '@binary.com';
+    my $email1     = BOM::Test::Customer::get_random_email_address();
     my $client_vr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         email       => $email1,
@@ -437,7 +438,7 @@ subtest 'Virtual accounts' => sub {
 
     $user1->add_client($client_vr1);
 
-    my $email2 = 'new_email2' . rand(999) . '@binary.com';
+    my $email2 = BOM::Test::Customer::get_random_email_address();
 
     my $user2 = BOM::User->create(
         email          => $email2,
@@ -612,7 +613,7 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->mock(fully_authenticated => sub { return 1 });
 
-    my $email       = 'new_email' . rand(999) . '@binary.com';
+    my $email       = BOM::Test::Customer::get_random_email_address();
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code            => 'CR',
         email                  => $email,
@@ -761,7 +762,7 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
 
 subtest 'Current account is withdrawal_locked but its siblings can transfer between other two real accounts' => sub {
     #use Token of account that is withdrawal_locked
-    my $email      = 'new_email' . rand(999) . '@binary.com';
+    my $email      = BOM::Test::Customer::get_random_email_address();
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -868,7 +869,7 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
 
 subtest 'Current account is no_withdrawal_or_trading but its siblings can transfer between other two real accounts' => sub {
     #use Token of account that is no_withdrawal_or_trading
-    my $email      = 'new_email' . rand(999) . '@binary.com';
+    my $email      = BOM::Test::Customer::get_random_email_address();
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -956,7 +957,7 @@ subtest 'Current account is no_withdrawal_or_trading but its siblings can transf
 
 subtest 'Current account is cashier_locked but its siblings can transfer between other two real accounts' => sub {
     #use Token of account that is cashier_locked
-    my $email      = 'new_email' . rand(999) . '@binary.com';
+    my $email      = BOM::Test::Customer::get_random_email_address();
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -1022,7 +1023,7 @@ subtest 'Current account is cashier_locked but its siblings can transfer between
 
 subtest 'Transfer to Sibling account when current account is withdrawal_locked or cashier_locked or no_withdrawal_or_trading' => sub {
     #use Token of account that is cashier_locked or withdrawal_locked
-    my $email      = 'new_email' . rand(999) . '@binary.com';
+    my $email      = BOM::Test::Customer::get_random_email_address();
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
@@ -1087,7 +1088,7 @@ subtest 'Transfer to Sibling account when current account is withdrawal_locked o
 
 subtest 'Transfer from Sibling account when current account is withdrawal_locked or cashier_locked or no_withdrawal_or_trading' => sub {
     #use Token of account that is cashier_locked or withdrawal_locked
-    my $email      = 'new_email' . rand(999) . '@binary.com';
+    my $email      = BOM::Test::Customer::get_random_email_address();
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email

@@ -4,6 +4,9 @@ use warnings;
 
 use BOM::User;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use UUID::Tiny;
+use Digest::SHA qw(sha1_hex);
+use Storable 'dclone';
 
 =head1 NAME
 
@@ -29,13 +32,17 @@ BOM::Test::Customer - Manages customer information and client interactions for b
 
 This module provides methods to manage a customer's credentials and their interactions with different brokerage clients. It supports initialization of client-specific settings and caching of client data.
 
+=head2 create
+
+Function that returns a customer object with the specified attributes and clients.
+
 =cut
 
 sub create {
-    my ($class, $user_args, $clients) = @_;
+    my ($class, $customer_attributes, $clients) = @_;
 
     # Initialize user
-    my $user = BOM::User->create(%{$user_args});
+    my $user = BOM::User->create(%{$customer_attributes});
 
     # ******************************************************************************
     # UNDER NO CIRCUMSTANCES SHOULD YOU ATTEMPT TO ACCESS THESE OBJECTS DIRECTLY
@@ -56,43 +63,52 @@ sub create {
     # ******************************************************************************
 
     # Initialize clients
-    for my $client (@{$clients}) {
-
-        my $name            = $client->{name};
-        my $broker_code     = $client->{broker_code};
-        my $default_account = $client->{default_account} // undef;
-        die "Missing 'name'"        unless defined $name;
-        die "Missing 'broker_code'" unless defined $broker_code;
-
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code    => $broker_code,
-                email          => $user->email,
-                binary_user_id => $user->id,
-                (defined $user_args->{citizen}                ? (citizen   => $user_args->{citizen})                : ()),
-                (defined $user_args->{residence}              ? (residence => $user_args->{residence})              : ()),
-                (defined $user_args->{fatca_declaration_time} ? (residence => $user_args->{fatca_declaration_time}) : ()),
-                (defined $user_args->{fatca_declaration}      ? (residence => $user_args->{fatca_declaration})      : ()),
-                # There is a hidden constraint here non_pep can only be null IF its a virtual client
-                (
-                    ($broker_code =~ /^VR/ && exists $user_args->{non_pep_declaration_time})
-                        || defined $user_args->{non_pep_declaration_time} ? (non_pep_declaration_time => $user_args->{non_pep_declaration_time}) : ()
-                ),
-            });
-
-        if (exists($client->{default_account})) {
-            $client->set_default_account($default_account);
-        }
-        $user->add_client($client);
-
-        $self->{clients}{$name}  = $client;
-        $self->{loginids}{$name} = $client->loginid;
-        $self->{tokens}{$name}   = BOM::Platform::Token::API->new->create_token($client->loginid, 'Test Token');
+    for my $client_request (@{$clients}) {
+        my $name = $client_request->{name};
+        $self->_create_client($name, dclone $client_request, dclone $customer_attributes);
     }
 
     return $self;
 }
 
-=head2 get_client_loginid
+=head2 get_service_contexts
+
+Static function that returns all available contexts for all services
+
+=cut
+
+sub get_service_contexts {
+    return {
+        user => get_user_service_context(),
+    };
+}
+
+=head2 get_user_context
+
+Static function that returns a context for use with the user service calls
+
+=cut
+
+sub get_user_service_context {
+    return {
+        'correlation_id' => UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4),
+        'auth_token'     => 'Test Token, just for testing',
+        'environment'    => 'Test Environment',
+    };
+}
+
+=head2 get_random_email_address
+
+Static function that returns random but unique email address
+
+=cut
+
+sub get_random_email_address {
+    my $hash = substr(sha1_hex(time . $$ . rand), 0, 20);
+    return "$hash\@deriv.com";
+}
+
+=head2 get_user_id
 
 Retrieves the user ID for a specified customer
 
@@ -103,7 +119,7 @@ sub get_user_id {
     return $self->{user}->id;
 }
 
-=head2 get_client_loginid
+=head2 get_email
 
 Retrieves the email for a customer
 
@@ -112,6 +128,66 @@ Retrieves the email for a customer
 sub get_email {
     my ($self) = @_;
     return $self->{user}->email;
+}
+
+=head2 get_first_name
+
+Retrieves the first name for a customer
+
+=cut
+
+sub get_first_name {
+    my ($self) = @_;
+
+    my $user_data = BOM::Service::user(
+        context    => $self->get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $self->{user}->id,
+        attributes => [qw(first_name)],
+    );
+    die "User service failure $user_data->{message}" unless $user_data->{status} eq 'ok';
+
+    return $user_data->{attributes}{first_name};
+}
+
+=head2 get_last_name
+
+Retrieves the last name for a customer
+
+=cut
+
+sub get_last_name {
+    my ($self) = @_;
+
+    my $user_data = BOM::Service::user(
+        context    => $self->get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $self->{user}->id,
+        attributes => [qw(last_name)],
+    );
+    die "User service failure $user_data->{message}" unless $user_data->{status} eq 'ok';
+
+    return $user_data->{attributes}{last_name};
+}
+
+=head2 get_full_name
+
+Retrieves the name for a customer
+
+=cut
+
+sub get_full_name {
+    my ($self) = @_;
+
+    my $user_data = BOM::Service::user(
+        context    => $self->get_user_service_context(),
+        command    => 'get_attributes',
+        user_id    => $self->{user}->id,
+        attributes => [qw(full_name)],
+    );
+    die "User service failure $user_data->{message}" unless $user_data->{status} eq 'ok';
+
+    return $user_data->{attributes}{full_name};
 }
 
 =head2 get_client_loginid
@@ -143,8 +219,96 @@ Retrieves the client token for a specified name.
 =cut
 
 sub get_client_token {
-    my ($self, $name) = @_;
-    return $self->{tokens}{$name};
+    my ($self, $name, $scope) = @_;
+    if (defined $scope) {
+        return BOM::Platform::Token::API->new->create_token($self->{loginids}{$name}, 'Test Token', $scope);
+    } else {
+        return $self->{tokens}{$name};
+    }
+}
+
+=head2 add_client
+
+Adds a client for the specified login id, also returns client object added.
+
+=cut
+
+sub add_client {
+    my ($self, $name, $loginid) = @_;
+
+    my $new_client = BOM::User::Client->new({loginid => $loginid});
+    $self->{user}->add_client($new_client);
+    $new_client->binary_user_id($self->{user}->id);
+    $new_client->save;
+
+    $self->{clients}{$name}  = $new_client;
+    $self->{loginids}{$name} = $new_client->loginid;
+    $self->{tokens}{$name}   = BOM::Platform::Token::API->new->create_token($new_client->loginid, 'Test Token');
+
+    return $new_client;
+}
+
+=head2 create_client
+
+Creates and add a client given the passed client parameters
+
+=cut
+
+sub create_client {
+    my ($self, $name, $client_request) = @_;
+    return $self->_create_client($name, $client_request, {});
+}
+
+=head2 _create_client
+
+Private function to create and add a client to the object
+
+=cut
+
+sub _create_client {
+    my ($self, $name, $client_request, $customer_attributes) = @_;
+    my $broker_code = $client_request->{broker_code};
+    die "Missing 'name'"        unless defined $name;
+    die "Missing 'broker_code'" unless defined $broker_code;
+
+    my $client_keys = [
+        # non_pep_declaration_time is removed as special case, see below
+        qw(account_opening_reason address_city address_line_1 address_line_2 address_postcode address_state allow_login aml_risk_classification cashier_setting_password checked_affiliate_exposures citizen comment custom_max_acbal custom_max_daily_turnover custom_max_payout date_joined date_of_birth default_client fatca_declaration_time fatca_declaration first_name first_time_login gender last_name latest_environment mifir_id myaffiliates_token myaffiliates_token_registered payment_agent_withdrawal_expiration_date phone place_of_birth residence restricted_ip_address salutation secret_answer secret_question small_timer source tax_identification_number tax_residence)
+    ];
+
+    my $client_args = {
+        broker_code    => $broker_code,
+        email          => $self->{user}->email,
+        binary_user_id => $self->{user}->id,
+        (exists $client_request->{account_type} ? (account_type => $client_request->{account_type}) : ()),
+        # There is a hidden constraint here non_pep can only be null IF its a virtual client
+        (
+            ($broker_code =~ /^VR/ && exists $customer_attributes->{non_pep_declaration_time})
+                || defined $customer_attributes->{non_pep_declaration_time}
+            ? (non_pep_declaration_time => $customer_attributes->{non_pep_declaration_time})
+            : ()
+        ),
+    };
+
+    # Copy the relevant keys from the customer attributes to the client arguments
+    for my $key (@{$client_keys}) {
+        # Customer attributes take priority over client request
+        $client_args->{$key} = $client_request->{$key}      if exists $client_request->{$key};
+        $client_args->{$key} = $customer_attributes->{$key} if exists $customer_attributes->{$key};
+    }
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_args);
+
+    if (exists($client_request->{default_account})) {
+        $client->set_default_account($client_request->{default_account});
+    }
+
+    $self->{user}->add_client($client);
+
+    $self->{clients}{$name}  = $client;
+    $self->{loginids}{$name} = $client->loginid;
+    $self->{tokens}{$name}   = BOM::Platform::Token::API->new->create_token($client->loginid, 'Test Token');
+
+    return $client;
 }
 
 1;

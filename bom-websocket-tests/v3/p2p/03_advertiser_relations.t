@@ -19,7 +19,6 @@ use List::Util qw(first);
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
-my $json = JSON::MaybeXS->new;
 
 $app_config->set({'system.suspend.p2p'         => 0});
 $app_config->set({'payments.p2p.enabled'       => 1});

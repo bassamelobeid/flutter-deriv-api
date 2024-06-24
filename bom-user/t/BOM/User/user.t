@@ -326,7 +326,7 @@ subtest 'User Login' => sub {
 
     subtest 'can login if self-closed' => sub {
         my $response = BOM::Service::user(
-            context         => UserServiceTestHelper::create_context($user),
+            context         => UserServiceTestHelper::get_user_service_context($user),
             command         => 'get_login_history',
             user_id         => $user->id,
             limit           => 100,
@@ -344,7 +344,7 @@ subtest 'User Login' => sub {
             'Correct  error for eslf-closed accounts';
 
         $response = BOM::Service::user(
-            context         => UserServiceTestHelper::create_context($user),
+            context         => UserServiceTestHelper::get_user_service_context($user),
             command         => 'get_login_history',
             user_id         => $user->id,
             limit           => 100,
@@ -548,21 +548,6 @@ subtest 'test load' => sub {
     is_deeply(BOM::User->new(id      => $user->id), $user, 'load from id ok');
     is_deeply(BOM::User->new(loginid => $vr_1),     $user, 'load from loginid ok');
     is(BOM::User->new(id => -1), undef, 'return undefine if the user not exist');
-};
-
-subtest 'test update email' => sub {
-    my $old_email = $user->email;
-    ok(!defined($user->email_consent), 'email consent is not defined');
-    my $new_email = $old_email . '.test';
-    lives_ok { $user->update_email_fields(email => $new_email, email_consent => 1) } 'do update';
-    my $new_user = BOM::User->new(email => $new_email);
-    is_deeply($new_user, $user, 'get same object after updated');
-    is($user->email,         $new_email, 'email updated');
-    is($user->email_consent, 1,          'email_consent was updated');
-    lives_ok { $new_user->update_email_fields(email => $old_email, email_consent => 0) } 'update back to old email';
-    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
-    is($user->email,         $old_email, 'old email come back');
-    is($user->email_consent, 0,          'email_consent is false now');
 };
 
 subtest 'test update totp' => sub {
@@ -1037,23 +1022,6 @@ subtest 'update trading password' => sub {
     ok $user->dx_trading_password, 'user has set deriv x trading password successfully';
 
     ok BOM::User::Password::checkpw('Random123', $user->dx_trading_password), 'deriv x trading password is OK';
-};
-
-subtest 'feature flag' => sub {
-    my $user_flags = $user->get_feature_flag();
-
-    foreach my $flag (keys %$user_flags) {
-        is $user_flags->{$flag}, 0, 'default values returned correctly';
-    }
-
-    my $feature_flag = {wallet => 1};
-    lives_ok { $user->set_feature_flag($feature_flag) } 'feature flags are being set';
-
-    $user_flags = $user->get_feature_flag();
-
-    foreach my $flag (keys %$feature_flag) {
-        is $feature_flag->{$flag}, $user_flags->{$flag}, "flag $flag has been set correctly";
-    }
 };
 
 subtest 'Populate users table on signup' => sub {

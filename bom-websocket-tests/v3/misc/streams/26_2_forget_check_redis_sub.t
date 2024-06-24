@@ -145,19 +145,20 @@ for my $s (@symbols) {
 build_test_R_50_data();
 
 # prepare client
-my $email  = 'test-binary@binary.com';
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$client->email($email);
-$client->save;
-my $loginid = $client->loginid;
-my $user    = BOM::User->create(
+my $email = 'test-binary@binary.com';
+my $user  = BOM::User->create(
     email    => $email,
     password => '1234',
 );
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    email          => $email,
+    binary_user_id => $user->id,
+});
 $user->add_client($client);
 $user->set_tnc_approval;
+
+my $loginid = $client->loginid;
 
 $client->set_default_account('USD');
 $client->smart_payment(

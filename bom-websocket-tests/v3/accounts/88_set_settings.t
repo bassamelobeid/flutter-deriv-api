@@ -8,6 +8,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_group
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
 use await;
@@ -38,13 +39,22 @@ my %client_details = (
 );
 
 subtest 'Address validation' => sub {
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'addr@binary.com',
-        client_password => 'abc123',
-        residence       => 'br',
-    });
-
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'br',
+        },
+        [{
+                name            => 'VRTC',
+                broker_code     => 'VRTC',
+                default_account => 'USD',
+            },
+        ]);
+    my $vr_client = $customer->get_client_object('VRTC');
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+
     $t->await::authorize({authorize => $token});
     my $cli_details = {
         %client_details,
@@ -80,12 +90,20 @@ subtest 'Address validation' => sub {
 };
 
 subtest 'Tax residence on restricted country' => sub {
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'addr-tax-residence@binary.com',
-        client_password => 'abc123',
-        residence       => 'br',
-    });
-
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'br',
+        },
+        [{
+                name            => 'VRTC',
+                broker_code     => 'VRTC',
+                default_account => 'USD',
+            },
+        ]);
+    my $vr_client = $customer->get_client_object('VRTC');
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t->await::authorize({authorize => $token});
     my $cli_details = {
@@ -136,13 +154,20 @@ subtest 'feature flag test' => sub {
     # Set feature flag from virtual account
     # get feature flag from real account
     # compare the results to make sure it has been set on user level
-
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'a001+feature-flag@binary.com',
-        client_password => 'abc123',
-        residence       => 'br',
-    });
-
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'br',
+        },
+        [{
+                name            => 'VRTC',
+                broker_code     => 'VRTC',
+                default_account => 'USD',
+            },
+        ]);
+    my $vr_client = $customer->get_client_object('VRTC');
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t->await::authorize({authorize => $token});
 
@@ -185,21 +210,6 @@ subtest 'feature flag test' => sub {
         is $feature_flag->{$flag}, $feature_flag_res->{$flag}, "flag $flag has been set correctly";
     }
 };
-
-sub create_vr_account {
-    my $args = shift;
-    my $acc  = BOM::Platform::Account::Virtual::create_account({
-            details => {
-                email           => $args->{email},
-                client_password => $args->{client_password},
-                residence       => $args->{residence},
-                account_type    => 'binary',
-                email_verified  => 1,
-            },
-        });
-
-    return ($acc->{client}, $acc->{user});
-}
 
 $t->finish_ok;
 

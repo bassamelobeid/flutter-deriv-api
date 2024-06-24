@@ -10,7 +10,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_group
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-
+use BOM::Test::Customer;
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
 use BOM::User::Onfido;
@@ -25,19 +25,26 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $t = build_wsapi_test();
 
 subtest 'Onfido country code' => sub {
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'addr@binary.com',
-        client_password => 'abc123',
-        residence       => 'br',
-    });
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'br',
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+            {
+                name            => 'VRTC',
+                broker_code     => 'VRTC',
+                default_account => 'USD',
+            },
+        ]);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        binary_user_id => $user->id,
-    });
-
-    $user->add_client($client);
-
+    my $client = $customer->get_client_object('CR');
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
     $t->await::authorize({authorize => $token});
 
@@ -218,20 +225,28 @@ subtest 'POI Attempts' => sub {
 };
 
 subtest 'Proof of ownership' => sub {
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'poo@binary.com',
-        client_password => 'abc123',
-        residence       => 'br',
-    });
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'br',
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+            {
+                name            => 'VRTC',
+                broker_code     => 'VRTC',
+                default_account => 'USD',
+            },
+        ]);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
+    my $client = $customer->get_client_object('CR');
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
     $t->await::authorize({authorize => $token});
-
-    $user->add_client($client);
 
     my $res = $t->await::get_account_status({get_account_status => 1});
     test_schema('get_account_status', $res);
@@ -346,28 +361,30 @@ subtest 'Proof of ownership' => sub {
 };
 
 subtest 'Onfido status with pending flag' => sub {
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'onfido+pending+flag@binary.com',
-        client_password => 'abc123',
-        residence       => 'co',
-    });
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'co',
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+            {
+                name            => 'VRTC',
+                broker_code     => 'VRTC',
+                default_account => 'USD',
+            },
+        ]);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'co',
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $client->save;
-
-    $user->add_client($client);
-    $client->binary_user_id($user->id);
-
+    my $client = $customer->get_client_object('CR');
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
     $t->await::authorize({authorize => $token});
 
-    my $pending_key = +BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $user->id;
+    my $pending_key = +BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $customer->get_user_id();
     my $redis       = BOM::Config::Redis::redis_events();
     $redis->set($pending_key, 1);
 
@@ -380,21 +397,6 @@ subtest 'Onfido status with pending flag' => sub {
     test_schema('get_account_status', $res);
     is $res->{get_account_status}->{authentication}->{identity}->{services}->{onfido}->{status}, 'none', 'expected status without pending flag';
 };
-
-sub create_vr_account {
-    my $args = shift;
-    my $acc  = BOM::Platform::Account::Virtual::create_account({
-            details => {
-                email           => $args->{email},
-                client_password => $args->{client_password},
-                residence       => $args->{residence},
-                account_type    => 'binary',
-                email_verified  => 1,
-            },
-        });
-
-    return ($acc->{client}, $acc->{user});
-}
 
 $t->finish_ok;
 

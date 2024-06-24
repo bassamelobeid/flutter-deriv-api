@@ -14,6 +14,8 @@ use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
 use BOM::Test::Helper::FinancialAssessment;
+use BOM::Test::Customer;
+use BOM::Service;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use Date::Utility;
@@ -1303,27 +1305,33 @@ subtest 'test tin manual approval' => sub {
 };
 
 subtest 'Phone Number verification' => sub {
-    my $email  = 'pnv@test.com';
-    my $client = create_client('CR');
-    $client->email($email);
-    $client->save;
+    my $customer = BOM::Test::Customer->create({
+            email    => BOM::Test::Customer::get_random_email_address(),
+            password => 'test_passwd',
+        },
+        [{
+                name        => 'CR',
+                broker_code => 'CR'
+            },
+        ]);
 
-    my $user = BOM::User->create(
-        email          => $email,
-        password       => "hey you",
-        email_verified => 1,
-    );
+    my $client = $customer->get_client_object('CR');
 
-    $user->add_client($client);
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $client->save;
-
-    $user->pnv->update(1);
+    my $response = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'update_attributes',
+        user_id    => $customer->get_user_id(),
+        attributes => {phone_number_verified => 1});
+    is $response->{status}, 'ok', 'phone_number_verified updated ok';
 
     cmp_bag [$client->immutable_fields], ['residence', 'secret_answer', 'secret_question', 'phone'], 'Expected immutable fields for a PNV user';
 
-    $user->pnv->update(0);
+    $response = BOM::Service::user(
+        context    => $customer->get_user_service_context(),
+        command    => 'update_attributes',
+        user_id    => $customer->get_user_id(),
+        attributes => {phone_number_verified => 0});
+    is $response->{status}, 'ok', 'phone_number_verified updated ok';
 
     cmp_bag [$client->immutable_fields], ['residence', 'secret_answer', 'secret_question'], 'Expected immutable fields for a non PNV user';
 };

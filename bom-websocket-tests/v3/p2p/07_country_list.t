@@ -9,6 +9,7 @@ use BOM::Test::Helper qw/build_wsapi_test test_schema/;
 use await;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Test::Helper::P2P;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
@@ -20,16 +21,23 @@ my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 my $json = JSON::MaybeXS->new;
 
-my $client_escrow = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'p2p_escrow@test.com'
-});
-$client_escrow->account('USD');
+my $customer = BOM::Test::Customer->create({
+        email          => 'p2p_escrow@test.com',
+        password       => 'something insecure',
+        email_verified => 1,
+        residence      => 'id',
+    },
+    [{
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD'
+        },
+    ]);
 
 $app_config->set({'system.suspend.p2p'     => 0});
 $app_config->set({'payments.p2p.enabled'   => 1});
 $app_config->set({'payments.p2p.available' => 1});
-$app_config->set({'payments.p2p.escrow'    => [$client_escrow->loginid]});
+$app_config->set({'payments.p2p.escrow'    => [$customer->get_client_loginid('CR')]});
 $app_config->set({
         'payments.p2p.payment_method_countries' => $json->encode({
                 bank_transfer => {mode => 'exclude'},

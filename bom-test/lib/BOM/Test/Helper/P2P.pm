@@ -58,7 +58,7 @@ sub create_advertiser {
         password => 'test'
     );
 
-    $param{binary_user_uid} = $user->id;
+    $param{client_details}{binary_user_id} = $user->id;
     my $client = BOM::Test::Helper::Client::create_client(undef, undef, $param{client_details});
 
     $user->add_client($client);

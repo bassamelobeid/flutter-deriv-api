@@ -11,9 +11,10 @@ use BOM::Service;
 use BOM::Service::Helpers;
 use BOM::Service::User::Attributes;
 use BOM::Service::User::Attributes::Get;
-use BOM::Service::User::Transitional::UpdateEmail;
+use BOM::Service::User::Attributes::Update::SaveHandlersClient;
+use BOM::Service::User::Attributes::Update::SaveHandlersUser;
+use BOM::Service::User::Attributes::Update::FinaliseHandlers;
 use BOM::Service::User::Transitional::Password;
-use BOM::Service::User::Transitional::PreferredLanguage;
 use BOM::Service::User::Transitional::SocialSignup;
 use BOM::Service::User::Transitional::TotpFields;
 use BOM::User;
@@ -51,16 +52,28 @@ The module also includes a map of save handlers for different attributes. Not ev
 # set handler. If the writing to the DB via updater is more complex with multiple fields then we use the
 # save handler to make sure we only trigger a save after all fields have been set in the request
 my %save_handler_map = (
-    user_phone_number_verification => \&save_user_phone_number_verification,
-    user_preferred_language        => \&save_user_preferred_language,
-    user_password                  => \&save_user_password,
-    user_email                     => \&save_user_email,
-    user_email_fields              => \&save_user_email_fields,
-    user_dx_trading_password       => \&save_user_dx_trading_password,
-    user_trading_password          => \&save_user_trading_password,
-    user_totp_fields               => \&save_user_totp_fields,
-    user_has_social_signup         => \&save_user_has_social_signup,
-    client                         => \&save_client,
+    client                      => \&BOM::Service::User::Attributes::Update::SaveHandlersClient::save_client,
+    client_financial_assessment => \&BOM::Service::User::Attributes::Update::SaveHandlersClient::save_client_financial_assessment,
+
+    user_phone_number_verified => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_phone_number_verified,
+    user_preferred_language    => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_preferred_language,
+    user_password              => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_password,
+    user_email                 => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_email,
+    user_email_consent         => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_email_consent,
+    user_email_verified        => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_email_verified,
+    user_dx_trading_password   => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_dx_trading_password,
+    user_trading_password      => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_trading_password,
+    user_totp_fields           => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_totp_fields,
+    user_has_social_signup     => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_has_social_signup,
+    user_feature_flags         => \&BOM::Service::User::Attributes::Update::SaveHandlersUser::save_user_feature_flags,
+);
+
+my %finalise_handler_map = (
+    poi_check   => \&BOM::Service::User::Attributes::Update::FinaliseHandlers::poi_check,
+    onfido_sync => \&BOM::Service::User::Attributes::Update::FinaliseHandlers::onfido_sync,
+
+    user_password => \&BOM::Service::User::Attributes::Update::FinaliseHandlers::user_password,
+    user_email    => \&BOM::Service::User::Attributes::Update::FinaliseHandlers::user_email,
 );
 
 =head2 update_attributes
@@ -130,7 +143,7 @@ After all attributes have been processed, it executes the save handlers for the 
 
 =over 4
 
-=item * Input: Boolean(force), Boolean(not_exist), HashRef (request)
+=item * Input: Boolean(force_flag), Boolean(nx_flag), HashRef (request, containing attributes to be changed)
 
 =item * Return: HashRef (status, command, affected)
 
@@ -139,7 +152,7 @@ After all attributes have been processed, it executes the save handlers for the 
 =cut
 
 sub _update_attributes {
-    my ($force, $not_exist, $request) = @_;
+    my ($force_flag, $nx_flag, $request) = @_;
     my $attributes = $request->{attributes} // [];
     my $parameters = [];
 
@@ -155,8 +168,9 @@ sub _update_attributes {
         $parameters = BOM::Service::User::Attributes::get_requested_attributes([keys %{$attributes}]);
     }
 
-    my %requested_saves = ();
-    my @affected        = ();
+    my %requested_saves  = ();
+    my %requested_finals = ();
+    my @affected         = ();
     if (keys %$parameters) {
         # Before we start we should check out if any attributes have flags and if they are present
         for my $attribute (keys %$parameters) {
@@ -177,11 +191,14 @@ sub _update_attributes {
         }
 
         # Some attributes are immutable and cannot be changed but its ...variable
-        unless ($force) {
+        unless ($force_flag) {
             # It will already have been checked if an attribute is set/unset and matched so if we
             # see it then its not allowed to be set and fail straight away
             my $immutable_attributes = BOM::Service::User::Attributes::Get::get_immutable_attributes($request, 'immutable_attributes');
             for my $attribute (keys %$parameters) {
+                # Check each attribute against the immutable list, if it is immutable and already set then
+                # we should throw an error, if its unset we will allow setting it, there is little point in
+                # an immutable and unset attribute
                 if (grep { $_ eq $attribute } @$immutable_attributes) {
                     die "Immutable|::|Attribute $attribute is immutable";
                 }
@@ -194,18 +211,31 @@ sub _update_attributes {
         for my $attribute (sort keys %$parameters) {
             my $attribute_handler = $parameters->{$attribute};
             my $value             = $request->{attributes}->{$attribute};
-            # Execute the handler for the attribute
-            my $result = $attribute_handler->{set_handler}->($request, $attribute_handler->{remap} // $attribute, $attribute_handler->{type}, $value);
-            # Might be nothing changed, in which case no result returned
-            if (defined $result) {
-                if (defined $result->{save_handlers}) {
-                    foreach my $handler (@{$result->{save_handlers}}) {
-                        $requested_saves{$handler} = 1;
+
+            # Handle the not_exist scenario, if not_exist is set we must read the value and
+            # only save if it is not defined
+            if (   !$nx_flag
+                || !defined $attribute_handler->{get_handler}->($request, $attribute_handler->{remap} // $attribute, $attribute_handler->{type}))
+            {
+                # Execute the handler for the attribute
+                my $result =
+                    $attribute_handler->{set_handler}->($request, $attribute_handler->{remap} // $attribute, $attribute_handler->{type}, $value);
+                # Might be nothing changed, in which case no result returned
+                if (defined $result) {
+                    if (defined $result->{save_handlers}) {
+                        foreach my $item (@{$result->{save_handlers}}) {
+                            $requested_saves{$item} = 1;
+                        }
                     }
-                }
-                if (defined $result->{affected}) {
-                    foreach my $item (@{$result->{affected}}) {
-                        push @affected, $item;
+                    if (defined $result->{affected}) {
+                        foreach my $item (@{$result->{affected}}) {
+                            push @affected, $item;
+                        }
+                    }
+                    if (defined $result->{finalise_handlers}) {
+                        foreach my $item (@{$result->{finalise_handlers}}) {
+                            $requested_finals{$item} = 1;
+                        }
                     }
                 }
             }
@@ -220,10 +250,12 @@ sub _update_attributes {
 
     # We are guaranteed that the user and client objects are in the cache because correlation_id
     for my $save_handler (sort keys %requested_saves) {
-        if (!exists $save_handler_map{$save_handler}) {
-            die "Invalid save handler: $save_handler";
-        }
+        die "Invalid save handler: $save_handler" if (!exists $save_handler_map{$save_handler});
         $save_handler_map{$save_handler}->($request);
+    }
+    for my $final_handler (sort keys %requested_finals) {
+        die "Invalid finalise handler: $final_handler" if (!exists $finalise_handler_map{$final_handler});
+        $finalise_handler_map{$final_handler}->($request);
     }
 
     return {
@@ -243,7 +275,7 @@ Note: This is ROSE behind the client and so how you get the member value is crit
 
 =item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
 
-=item * Return: HashRef (save_handlers, affected) or undef if no change
+=item * Return: HashRef (save_handlers, finalise_handlers, affected) or undef if no change
 
 =back
 
@@ -253,15 +285,77 @@ sub set_client_data {
     my ($request, $attribute, $type, $value) = @_;
     my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
     if (_value_has_changed($client->$attribute, $value, $type)) {
+        my @handlers = ('client');
+        my @affected = ();
+        my @finalise = ();
+
+        # Special cases, salutation, removed from the set_settings endpoint
+        if ($attribute eq 'salutation') {
+            my $updated_gender = (uc $value eq 'MR') ? 'm' : 'f';
+            $client->gender($updated_gender);
+            push @affected, 'gender';
+        }
+
+        # Special cases, tin_approved_time, removed from the set_settings endpoint
+        # As per CRS/FATCA regulatory requirement we need to
+        # save this information as client status, so updating
+        # tax residence and tax number will create client status
+        # as we have database trigger for that now
+        if ($attribute eq 'tax_identification_number') {
+            $client->tin_approved_time(undef);
+            push @affected, 'tin_approved_time';
+        }
+
+        # Special cases, poi, removed from the set_settings endpoint, if the user changes one of these
+        # fields we need to check the rules and sync the details with onfido, but not virtual, client
+        # can only ever be virtual IF there is no real client so its a safe test.
+        if (!$client->is_virtual() && grep { $_ eq $attribute } qw(first_name last_name date_of_birth)) {
+            push @finalise, 'poi_check';
+        }
+        if (!$client->is_virtual()) {
+            push @finalise, 'onfido_sync';
+        }
+
         # Important note that this is ROSE behind the client and so how you get the member value
         # is critical to IF rose will detect its changed and update the row when you call 'save'
         # $client->$attribute         => This will set the value but rose will NOT detect the change
         # $client->$attribute($value) => This will set the value and rose WILL detect the change
         # That was a 2 hour lesson in debugging why the client wasn't saving.
         $client->$attribute($value);
+        push @affected, $attribute;
+
         return {
-            save_handlers => [qw(client)],
-            affected      => [$attribute]};
+            save_handlers     => \@handlers,
+            finalise_handlers => \@finalise,
+            affected          => \@affected
+        };
+    }
+    return undef;
+}
+
+=head2 set_financial_assessment
+
+This subroutine sets the financial assessment data for the default client and returns the handlers/affected status
+
+=over 4
+
+=item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
+
+=item * Return: Currently, it does not return anything and throws an error stating it's not implemented.
+
+=back
+
+=cut
+
+sub set_financial_assessment {
+    my ($request, $attribute, $type, $value) = @_;
+    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    if (_value_has_changed($client->{$attribute}, $value, $type)) {
+        $client->{$attribute} = $value;
+        return {
+            save_handlers     => [qw(client_financial_assessment)],
+            finalise_handlers => [],
+            affected          => [$attribute]};
     }
     return undef;
 }
@@ -276,7 +370,7 @@ If the attribute is 'email' and the user has social signup, it sets the 'has_soc
 
 =item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
 
-=item * Return: HashRef (save_handlers, affected) or undef if no change
+=item * Return: HashRef (save_handlers, finalise_handlers, affected) or undef if no change
 
 =back
 
@@ -288,6 +382,7 @@ sub set_user_email {
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
         my @affected = ();
         my @handlers = ();
+        my @finalise = ();
 
         $user->{$attribute} = $value;
         push @affected, $attribute;
@@ -301,12 +396,18 @@ sub set_user_email {
                 }
             }
             push @handlers, 'user_email';
+            push @finalise, 'user_email';
+        } elsif ($attribute eq 'email_consent') {
+            push @handlers, 'user_email_consent';
+        } elsif ($attribute eq 'email_verified') {
+            push @handlers, 'user_email_verified';
         } else {
-            push @handlers, 'user_email_fields';
+            die "DeveloperError|::|Invalid attribute: $attribute passed to set_user_email";
         }
         return {
-            save_handlers => \@handlers,
-            affected      => \@affected
+            save_handlers     => \@handlers,
+            finalise_handlers => \@finalise,
+            affected          => \@affected
         };
     }
     return undef;
@@ -322,7 +423,7 @@ Note: The function will update the field value. If the new value is undefined, i
 
 =item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
 
-=item * Return: HashRef (save_handlers, affected) or undef if no change
+=item * Return: HashRef (save_handlers, finalise_handlers, affected) or undef if no change
 
 =back
 
@@ -337,8 +438,9 @@ sub set_user_dx_trading_password {
         if (defined $value) {
             $user->{$attribute} = $value;
             return {
-                save_handlers => [qw(user_dx_trading_password)],
-                affected      => [$attribute]};
+                save_handlers     => [qw(user_dx_trading_password)],
+                finalise_handlers => [],
+                affected          => [$attribute]};
         } else {
             die "set_user_dx_trading_password: Cannot erase trading password";
         }
@@ -356,7 +458,7 @@ Note: The function will update the field value. If the new value is undefined, i
 
 =item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
 
-=item * Return: HashRef (save_handlers, affected) or undef if no change
+=item * Return: HashRef (save_handlers, finalise_handlers, affected) or undef if no change
 
 =back
 
@@ -371,8 +473,9 @@ sub set_user_trading_password {
         if (defined $value) {
             $user->{$attribute} = $value;
             return {
-                save_handlers => [qw(user_trading_password)],
-                affected      => [$attribute]};
+                save_handlers     => [qw(user_trading_password)],
+                finalise_handlers => [],
+                affected          => [$attribute]};
         } else {
             die "set_user_trading_password: Cannot erase trading password";
         }
@@ -390,7 +493,7 @@ If the new value is false, it removes all other social accounts connected to the
 
 =item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
 
-=item * Return: HashRef (save_handlers, affected) or undef if no change
+=item * Return: HashRef (save_handlers, finalise_handlers, affected) or undef if no change
 
 =back
 
@@ -400,18 +503,11 @@ sub set_user_has_social_signup {
     my ($request, $attribute, $type, $value) = @_;
     my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
-        BOM::Service::User::Transitional::SocialSignup::update_has_social_signup($user, $value);
-
-        if (!$value) {
-            my $user_connect = BOM::Database::Model::UserConnect->new;
-            my @providers    = $user_connect->get_connects_by_user_id($user->id);
-            # remove all other social accounts
-            $user_connect->remove_connect($user->id, $_) for @providers;
-        }
-
+        $user->{$attribute} = $value;
         return {
-            save_handlers => [qw(user_has_social_signup)],
-            affected      => [$attribute]};
+            save_handlers     => [qw(user_has_social_signup)],
+            finalise_handlers => [],
+            affected          => [$attribute]};
     }
     return undef;
 }
@@ -426,7 +522,7 @@ Note: There is a consideration to move the setting of the attribute to the save 
 
 =item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
 
-=item * Return: HashRef (save_handlers, affected) or undef if no change
+=item * Return: HashRef (save_handlers, finalise_handlers, affected) or undef if no change
 
 =back
 
@@ -440,13 +536,14 @@ sub set_user_totp_fields {
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
         $user->{$attribute} = $value;
         return {
-            save_handlers => [qw(user_totp_fields)],
-            affected      => [$attribute]};
+            save_handlers     => [qw(user_totp_fields)],
+            finalise_handlers => [],
+            affected          => [$attribute]};
     }
     return undef;
 }
 
-=head2 set_user_phone_number_verification
+=head2 set_user_phone_number_verified
 
 This subroutine is currently not implemented. It is intended to set the phone number verification status for a user.
 
@@ -460,14 +557,15 @@ This subroutine is currently not implemented. It is intended to set the phone nu
 
 =cut
 
-sub set_user_phone_number_verification {
+sub set_user_phone_number_verified {
     my ($request, $attribute, $type, $value) = @_;
     my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
         $user->{$attribute} = $value;
         return {
-            save_handlers => [qw(user_phone_number_verification)],
-            affected      => [$attribute]};
+            save_handlers     => [qw(user_phone_number_verified)],
+            finalise_handlers => [],
+            affected          => [$attribute]};
     }
     return undef;
 }
@@ -489,7 +587,7 @@ If the 'password_update_reason' flag is set to 'reset_password' and the user has
 
 =item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
 
-=item * Return: HashRef (save_handlers, affected) or undef if no change
+=item * Return: HashRef (save_handlers, finalise_handlers, affected) or undef if no change
 
 =back
 
@@ -529,13 +627,12 @@ sub set_user_password {
 
             $user->{$attribute} = $hash_pw;
 
-            my @affected = ();
-            my @handlers = ();
-            push @handlers, 'user_password';
-            push @affected, 'password';
+            my @affected = ('password');
+            my @handlers = ('user_password');
+            my @finalise = ('user_password');
 
             my $reason = $request->{flags}->{password_update_reason};
-            if ($reason eq 'reset_password' && $user->has_social_signup) {
+            if ($reason eq 'reset_password' && $user->{has_social_signup}) {
                 my $result = set_user_has_social_signup($request, 'has_social_signup', 'bool', 0);
                 if (defined $result) {
                     push @affected, $result->{affected};
@@ -544,8 +641,9 @@ sub set_user_password {
             }
 
             return {
-                save_handlers => \@handlers,
-                affected      => \@affected
+                save_handlers     => \@handlers,
+                finalise_handlers => \@finalise,
+                affected          => \@affected
             };
         }
     }
@@ -564,7 +662,7 @@ If the new value does not pass the regex check, the function throws an error.
 
 =item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
 
-=item * Return: HashRef (save_handlers, affected) or undef if no change
+=item * Return: HashRef (save_handlers, finalise_handlers, affected) or undef if no change
 
 =back
 
@@ -579,8 +677,9 @@ sub set_user_preferred_language {
         if (uc($value) =~ /^[A-Z]{2}$|^[A-Z]{2}_[A-Z]{2}$/) {
             $user->{$attribute} = uc($value);
             return {
-                save_handlers => [qw(user_preferred_language)],
-                affected      => [$attribute]};
+                save_handlers     => [qw(user_preferred_language)],
+                finalise_handlers => [],
+                affected          => [$attribute]};
         } else {
             die "set_user_preferred_language: Failed rexeg check on value: '$value'";
         }
@@ -606,25 +705,7 @@ sub set_accepted_tnc_version {
     die "set_accepted_tnc_version: Not implemented";
 }
 
-=head2 set_financial_assessment
-
-This subroutine is currently not implemented. It is intended to set the financial assessment for a user.
-
-=over 4
-
-=item * Input: HashRef (request), String (attribute), String (type), Scalar (value)
-
-=item * Return: Currently, it does not return anything and throws an error stating it's not implemented.
-
-=back
-
-=cut
-
-sub set_financial_assessment {
-    die "set_financial_assessment: Not implemented";
-}
-
-=head2 set_feature_flag
+=head2 set_feature_flags
 
 This subroutine is currently not implemented. It is intended to set the feature flag for a user.
 
@@ -638,8 +719,16 @@ This subroutine is currently not implemented. It is intended to set the feature 
 
 =cut
 
-sub set_feature_flag {
-    die "set_feature_flag: Not implemented";
+sub set_feature_flags {
+    my ($request, $attribute, $type, $value) = @_;
+    if (_value_has_changed(BOM::Service::User::Attributes::Get::get_feature_flags($request, $attribute, $type), $value, $type)) {
+        return {
+            save_handlers     => [qw(user_feature_flags)],
+            finalise_handlers => [],
+            affected          => [$attribute]};
+    } else {
+        return undef;
+    }
 }
 
 =head2 set_immutable_attributes
@@ -678,266 +767,6 @@ sub set_not_supported {
     die "Setting of this attributed is not supported";
 }
 
-=head2 save_client
-
-This subroutine saves the client object. It first retrieves the client object using the user_id and correlation_id from the request. Then, it attempts to save the client object. If the save operation fails, it throws an error.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. If the save operation fails, it throws an error.
-
-=back
-
-=cut
-
-sub save_client {
-    my ($request) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
-    if (not $client->save()) {
-        die "Failed to save client";
-    }
-}
-
-# We cannot save the user as a single object because there are no methods to update a whole row, just a
-# number of methods for specific areas <insert face palm here>. This means we have to save the user in
-# parts, which is not ideal but it is what it is. User doesn't appear to have had a lot of TLC.
-
-=head2 save_user_email_fields
-
-This subroutine saves the email fields for a user. It first retrieves the user object using the user_id and correlation_id from the request. Then, it calls the 'update_email_fields' method from the 'BOM::Service::User::Transitional::UpdateEmail' module, passing the user object and a hash reference containing the 'email_verified' and 'email_consent' attributes of the user.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. The changes are saved directly to the user object.
-
-=back
-
-=cut
-
-sub save_user_email_fields {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    BOM::Service::User::Transitional::UpdateEmail::update_email_fields(
-        $user,
-        email_verified => $user->email_verified,
-        email_consent  => $user->email_consent
-    );
-}
-
-=head2 save_user_email
-
-This subroutine updates the email of a user. It first retrieves the user object using the user_id and correlation_id from the request. Then, it calls the 'update_email' method from the 'BOM::Service::User::Transitional::UpdateEmail' module, passing the user object and the user's email.
-
-After updating the email, it retrieves the client object using the same user_id and correlation_id. It then emits events to sync the user to MT5 and sync Onfido details, unless the client is virtual.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. The changes are saved directly to the user and client objects.
-
-=back
-
-=cut
-
-sub save_user_email {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-
-    # TODO Remove the transitional mess, this isn't an easy one
-    BOM::Service::User::Transitional::UpdateEmail::update_email($user, $user->email);
-
-    # Moved from rpc change_email
-    my $client                 = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
-    my $default_client_loginid = $client->loginid;
-    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',     {loginid => $default_client_loginid});
-    BOM::Platform::Event::Emitter::emit('sync_user_to_CTRADER', {loginid => $default_client_loginid});
-    BOM::Platform::Event::Emitter::emit('sync_onfido_details',  {loginid => $default_client_loginid}) unless $client->is_virtual;
-}
-
-=head2 save_user_dx_trading_password
-
-This subroutine updates the DX trading password of a user. It first retrieves the user object using the user_id and correlation_id from the request. Then, it calls the 'update_dx_trading_password' method from the 'BOM::Service::User::Transitional::Password' module, passing the user object and the user's DX trading password.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. The changes are saved directly to the user object.
-
-=back
-
-=cut
-
-sub save_user_dx_trading_password {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    BOM::Service::User::Transitional::Password::update_dx_trading_password($user, $user->{dx_trading_password});
-}
-
-=head2 save_user_trading_password
-
-This subroutine updates the trading password of a user. It first retrieves the user object using the user_id and correlation_id from the request. Then, it calls the 'update_trading_password' method from the 'BOM::Service::User::Transitional::Password' module, passing the user object and the user's trading password.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. The changes are saved directly to the user object.
-
-=back
-
-=cut
-
-sub save_user_trading_password {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    BOM::Service::User::Transitional::Password::update_trading_password($user, $user->{trading_password});
-}
-
-=head2 save_user_totp_fields
-
-This subroutine updates the Time-based One-Time Password (TOTP) fields for a user. It first retrieves the user object using the user_id and correlation_id from the request. Then, it calls the 'update_totp_fields' method on the user object, passing the 'is_totp_enabled' and 'secret_key' attributes of the user.
-
-Note: This function currently needs to pull in the functionality of 'BOM::User::update_totp_fields()'. There is a potential issue where 'update_totp_fields()' may not function as expected because user values have already been set.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. The changes are saved directly to the user object.
-
-=back
-
-=cut
-
-sub save_user_totp_fields {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    BOM::Service::User::Transitional::TotpFields::update_totp_fields(
-        $user,
-        is_totp_enabled => $user->is_totp_enabled,
-        secret_key      => $user->secret_key
-    );
-}
-
-=head2 save_user_has_social_signup
-
-This subroutine updates the social signup status of a user. It first retrieves the user object using the user_id and correlation_id from the request. Then, it calls the 'update_has_social_signup' method from the 'BOM::Service::User::Transitional::SocialSignup' module, passing the user object and the user's social signup status.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. The changes are saved directly to the user object.
-
-=back
-
-=cut
-
-sub save_user_has_social_signup {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    BOM::Service::User::Transitional::SocialSignup::update_has_social_signup($user, $user->{has_social_signup});
-}
-
-=head2 save_user_password
-
-This subroutine updates the password of a user. It first retrieves the user object using the user_id and correlation_id from the request. Then, it updates the user's password by running a database operation that calls the 'update_password' method from the 'users' table.
-
-After updating the password, it sends out a message to confirm the password reset. The message includes the loginid, first name, email, and the reason for the password update.
-
-Finally, it revokes all tokens associated with the user's loginids and refresh tokens associated with the user's id. It also logs the password update event.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. The changes are saved directly to the user object and the user's tokens are revoked.
-
-=back
-
-=cut
-
-sub save_user_password {
-    my ($request) = @_;
-    my $user      = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    my $reason    = $request->{flags}->{password_update_reason};
-    my $log       = $reason eq 'reset_password' ? 'Password has been reset' : 'Password has been changed';
-
-    $user->{password} = $user->dbic->run(
-        fixup => sub {
-            $_->selectrow_array('select * from users.update_password(?, ?)', undef, $user->id, $user->{password});
-        });
-
-    # Send out the messaging
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
-    BOM::Platform::Event::Emitter::emit(
-        'reset_password_confirmation',
-        {
-            loginid    => $client->loginid,    # TODO - REMOVE ME, SMALL COMMENT, BIG ACTION
-            properties => {
-                first_name => $client->first_name,
-                email      => $user->email,
-                type       => $request->{flags}->{password_update_reason},
-            }});
-
-    # Revoke all tokens
-    my $oauth = BOM::Database::Model::OAuth->new;
-    $oauth->revoke_tokens_by_loginid($_) for ($user->bom_loginids);
-    $oauth->revoke_refresh_tokens_by_user_id($user->id);
-    BOM::User::AuditLog::log($log, $user->email);
-}
-
-=head2 save_user_preferred_language
-
-This subroutine updates the preferred language of a user. It first retrieves the user object using the user_id and correlation_id from the request. Then, it calls the 'update_preferred_language' method from the 'BOM::Service::User::Transitional::PreferredLanguage' module, passing the user object and the user's preferred language.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. The changes are saved directly to the user object.
-
-=back
-
-=cut
-
-sub save_user_preferred_language {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    BOM::Service::User::Transitional::PreferredLanguage::update_preferred_language($user, $user->{preferred_language});
-}
-
-=head2 save_user_phone_number_verification
-
-This subroutine updates the phone_number_verification setting of a user. It first retrieves the user object using the user_id and correlation_id from the request. Then, it calls the 'update_phone_number_verified' method, passing the user id and the user's phone verification setting.
-
-=over 4
-
-=item * Input: HashRef (request)
-
-=item * Return: None. The changes are saved directly to the user object.
-
-=back
-
-=cut
-
-sub save_user_phone_number_verification {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-
-    $user->dbic(operation => 'write')->run(
-        fixup => sub {
-            $_->do('SELECT * FROM users.update_phone_number_verified(?::BIGINT, ?::BOOLEAN)',
-                undef, $user->id, $user->{phone_number_verification} ? 1 : 0);
-        });
-}
-
 =head2 _value_has_changed
 
 This subroutine checks if two values have changed based on their type. It first checks if both values are undefined, in which case it returns 0 (indicating no change). If one value is defined and the other is not, it returns 1 (indicating a change).
@@ -963,12 +792,15 @@ sub _value_has_changed {
     # Handle undef values consistently across types
     return 1 if (!defined $value1 && defined $value2) || (defined $value1 && !defined $value2);
     # Type-specific comparisons
-    if ($type eq 'string') {
+    if ($type eq 'string' || $type eq 'string-nullable') {
         return $value1 ne $value2 ? 1 : 0;
-    } elsif ($type eq 'bool') {
+    } elsif ($type eq 'bool' || $type eq 'bool-nullable') {
         return (!!$value1 != !!$value2) ? 1 : 0;
     } elsif ($type eq 'number') {
         return ($value1 != $value2) ? 1 : 0;
+    } elsif ($type eq 'json') {
+        # Compare top level keys and values
+        return (keys %$value1 != keys %$value2 || grep { !exists $value2->{$_} || $value1->{$_} ne $value2->{$_} } keys %$value1);
     } else {
         die "if_values_differ, unsupported type: $type.";
     }
