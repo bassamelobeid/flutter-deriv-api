@@ -1230,8 +1230,7 @@ sub _new_account_post_process {
         $new_client->set_affiliate_info({affiliate_plan => $args->{affiliate_plan}});
     }
 
-    if (any { $new_client->{account_type} eq $_ } qw/binary standard affiliate/) {
-
+    if (any { $new_client->{account_type} eq $_ } qw/binary standard affiliate crypto/) {
         # TODO: keep it as is for now, but FA sync probably should be done within single landing compamy
         # based on current logic it's done across all client accounts
         update_financial_assessment($client->user, decode_fa($client->financial_assessment()))

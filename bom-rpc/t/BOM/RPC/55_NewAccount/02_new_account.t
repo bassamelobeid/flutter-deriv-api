@@ -21,6 +21,7 @@ use BOM::Test::Email qw(:no_event);
 use BOM::Platform::Token;
 use BOM::User::Client;
 use BOM::User::Wallet;
+use BOM::Test::Customer;
 use Email::Stuffer::TestLinks;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Test::Helper::FinancialAssessment;
@@ -2085,6 +2086,94 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('DuplicateWallet', 'It should return error code when the same CRW is addeds')
             ->error_message_is('Sorry, a wallet already exists with those details.', 'It should return error message for duplicates');
+
+        $app_config->system->suspend->wallets(1);
+    };
+
+    $mock_countries->unmock_all;
+};
+
+$method = 'new_account_wallet';
+$params = {
+    language => 'EN',
+    source   => $app_id,
+    args     => {
+        last_name        => 'Test_first_name_FA_01',
+        first_name       => 'Test_last_name_FA_01',
+        date_of_birth    => '1987-09-04',
+        address_line_1   => 'Sovetskaya street bluewater’s lane# 6 sector AB/p01',
+        address_city     => 'Samara',
+        address_state    => 'Papua',
+        address_postcode => '112233',
+    },
+};
+
+subtest $method => sub {
+    my ($customer, $client, $vr_client, $auth_token);
+    my $password = 'Abcd3s3!@';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    $email = 'new_email+fa@binary.com';
+
+    $customer = BOM::Test::Customer->create({
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        },
+        [{
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+                citizen     => 'id',
+                residence   => 'id'
+            },
+            {
+                name        => 'VRW',
+                broker_code => 'VRW',
+                citizen     => 'id',
+                residence   => 'id'
+            },
+        ]);
+    $client     = $customer->get_client_object('VRTC');
+    $auth_token = $customer->get_client_token('VRTC');
+
+    my $mock_countries = Test::MockModule->new('Brands::Countries');
+
+    subtest 'Check Create Wallet will copy the FA if it exist' => sub {
+        $emit_data = {};
+        $params->{token} = $auth_token;
+        my $app_config = BOM::Config::Runtime->instance->app_config;
+        $app_config->system->suspend->wallets(0);
+        $params->{args}->{currency}     = 'USD';
+        $params->{args}->{account_type} = 'doughflow';
+        $mock_countries->redefine(wallet_companies_for_country => ['svg']);
+
+        $vr_client       = $customer->get_client_object('VRW');
+        $auth_token      = $customer->get_client_token('VRW');
+        $params->{token} = $auth_token;
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_no_error('If passed argumets are ok a new real wallet will be created successfully');
+
+        my $new_loginid = $rpc_ct->result->{client_id};
+
+        my $wallet_client = BOM::User::Client->get_client_instance($new_loginid);
+
+        # Set financial assessment for default client before making a new account to check if new account inherits the financial assessment data
+        my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+        $wallet_client->financial_assessment({
+            data => encode_json_utf8($data),
+        });
+        $wallet_client->save();
+
+        $auth_token = BOM::Platform::Token::API->new->create_token($wallet_client->loginid, 'test token');
+        $params->{token} = $auth_token;
+
+        $params->{args}->{currency}     = 'BTC';
+        $params->{args}->{account_type} = 'crypto';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
+            ->result_value_is(sub { shift->{currency} },      'BTC',    'crypto account currency is BTC')
+            ->result_value_is(sub { shift->{currency_type} }, 'crypto', 'crypto account currency type is crypto');
+
+        my $cl_ltc = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+        ok(defined($cl_ltc->financial_assessment()), 'new client has financial assessment if previous client has FA as well');
 
         $app_config->system->suspend->wallets(1);
     };
