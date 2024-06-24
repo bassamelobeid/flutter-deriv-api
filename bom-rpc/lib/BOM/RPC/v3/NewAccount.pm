@@ -1715,8 +1715,12 @@ rpc "affiliate_register_person",
     my $args   = $params->{args};
 
     my $response = {};
-
     $params->{third_party_function} = \&BOM::RPC::v3::Services::MyAffiliates::affiliate_add_person;
+
+    if ($args->{commission_plan} == 6) {
+        my $cpa_country_check = Brands::Countries::check_diel($args->{country}) // 0;
+        return BOM::RPC::v3::Utility::create_error_by_code('InvalidResidence') unless $cpa_country_check;
+    }
 
     try {
         my $myAff_response = $params->{third_party_function}->($args->{email}, $args);
