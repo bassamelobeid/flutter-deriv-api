@@ -201,12 +201,15 @@ sub withdrawal_rejected_handler {
         BOM::Platform::Event::Emitter::emit(
             'crypto_withdrawal_rejected_email_v2',
             {
-                amount        => $txn_info->{amount},
-                loginid       => $txn_metadata->{loginid},
-                currency      => $txn_metadata->{currency_code},
-                reference_no  => $txn_info->{id},
-                reject_code   => $txn_metadata->{reason_code},
-                reject_remark => (($txn_metadata->{reason} && $txn_metadata->{reason_code} eq 'other')) ? $txn_metadata->{reason} : '',
+                amount           => $txn_info->{amount},
+                loginid          => $txn_metadata->{loginid},
+                currency         => $txn_metadata->{currency_code},
+                reference_no     => $txn_info->{id},
+                reject_code      => $txn_metadata->{reason_code},
+                reject_remark    => (($txn_metadata->{reason} && $txn_metadata->{reason_code} eq 'other')) ? $txn_metadata->{reason} : '',
+                is_priority      => $txn_metadata->{is_priority}   // 0,
+                fee_paid         => $txn_metadata->{estimated_fee} // 0,
+                requested_amount => $txn_metadata->{is_priority} ? $txn_metadata->{client_amount} : $txn_info->{amount},
             },
         );
     } catch ($e) {

@@ -131,8 +131,9 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
-    crypto_withdrawal_rejected_email_v2              =>
-        [qw(loginid reject_code reject_remark meta_data fiat_account amount currency title live_chat_url reference_no )],
+    crypto_withdrawal_rejected_email_v2              => [
+        qw(loginid reject_code reject_remark meta_data fiat_account amount currency title live_chat_url reference_no is_priority fee_paid requested_amount)
+    ],
     crypto_deposit_confirmed_email => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
     crypto_deposit_pending_email   => [qw(loginid transaction_hash transaction_url transaction_status amount currency live_chat_url title)],
     crypto_withdrawal_sent_email   =>

@@ -362,4 +362,105 @@ subtest 'withdrawal_estimated_fee_updated' => sub {
     $mocked_redis->unmock_all;
 };
 
+subtest 'withdrawal_rejected_handler' => sub {
+    # Regular withdrawal
+    my $txn_info = {
+        id                 => 1,
+        address_hash       => 'address_hash',
+        address_url        => 'address_url',
+        amount             => 1,
+        is_valid_to_cancel => 0,
+        status_code        => 'REJECTED',
+        status_message     => 'message',
+        submit_date        => '162',
+        transaction_type   => 'withdrawal',
+    };
+
+    my $txn_metadata = {
+        loginid       => 'loginid',
+        currency_code => 'ETH',
+        reason_code   => 'other',
+    };
+
+    my $expected_events = [{
+            crypto_withdrawal_rejected_email_v2 => {
+                amount           => $txn_info->{amount},
+                loginid          => $txn_metadata->{loginid},
+                currency         => $txn_metadata->{currency_code},
+                reference_no     => $txn_info->{id},
+                reject_code      => $txn_metadata->{reason_code},
+                reject_remark    => '',
+                is_priority      => 0,
+                fee_paid         => 0,
+                requested_amount => $txn_info->{amount}}
+        },
+    ];
+
+    my @events;
+    $mocked_event_emitter->mock(
+        emit => sub {
+            my ($event_name, $event_data) = @_;
+            push @events, {$event_name => $event_data};
+            return;
+        },
+    );
+
+    BOM::Event::Actions::CryptoCashier::withdrawal_rejected_handler($txn_info, $txn_metadata);
+    is_deeply \@events, $expected_events, 'Correct events';
+
+    $mocked_event_emitter->unmock_all;
+
+};
+
+subtest 'withdrawal_rejected_handler - Priority Withdrawal' => sub {
+    my $txn_info = {
+        id                 => 1,
+        address_hash       => 'address_hash',
+        address_url        => 'address_url',
+        amount             => 1,
+        is_valid_to_cancel => 0,
+        status_code        => 'REJECTED',
+        status_message     => 'message',
+        submit_date        => '162',
+        transaction_type   => 'withdrawal',
+    };
+
+    my $txn_metadata = {
+        loginid       => 'loginid',
+        currency_code => 'ETH',
+        is_priority   => 1,
+        estimated_fee => 1,
+        client_amount => 2,
+        reason_code   => 'other',
+    };
+
+    my $expected_events = [{
+            crypto_withdrawal_rejected_email_v2 => {
+                amount           => $txn_info->{amount},
+                loginid          => $txn_metadata->{loginid},
+                currency         => $txn_metadata->{currency_code},
+                reference_no     => $txn_info->{id},
+                reject_code      => $txn_metadata->{reason_code},
+                reject_remark    => '',
+                is_priority      => $txn_metadata->{is_priority},
+                fee_paid         => $txn_metadata->{estimated_fee},
+                requested_amount => $txn_metadata->{client_amount}}
+        },
+    ];
+
+    my @events;
+    $mocked_event_emitter->mock(
+        emit => sub {
+            my ($event_name, $event_data) = @_;
+            push @events, {$event_name => $event_data};
+            return;
+        },
+    );
+
+    BOM::Event::Actions::CryptoCashier::withdrawal_rejected_handler($txn_info, $txn_metadata);
+    is_deeply \@events, $expected_events, 'Correct events';
+
+    $mocked_event_emitter->unmock_all;
+};
+
 done_testing;

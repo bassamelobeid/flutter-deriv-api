@@ -4155,16 +4155,19 @@ sub crypto_withdrawal_rejected_email_v2 {
     }
     my $fiat_account_currency = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($params->{loginid}) // 'fiat';
     return BOM::Event::Services::Track::crypto_withdrawal_rejected_email_v2({
-        loginid       => $params->{loginid},
-        reject_code   => $reject_code,
-        reject_remark => $params->{reject_remark},
-        meta_data     => $meta_data,
-        amount        => $params->{amount},
-        currency      => $params->{currency},
-        title         => localize('Your [_1] withdrawal is declined', $params->{currency}),
-        live_chat_url => $brand->live_chat_url($url_params),
-        reference_no  => $params->{reference_no},
-        fiat_account  => $fiat_account_currency,
+        loginid          => $params->{loginid},
+        reject_code      => $reject_code,
+        reject_remark    => $params->{reject_remark},
+        meta_data        => $meta_data,
+        amount           => $params->{amount},
+        currency         => $params->{currency},
+        title            => localize('Your [_1] withdrawal is declined', $params->{currency}),
+        live_chat_url    => $brand->live_chat_url($url_params),
+        reference_no     => $params->{reference_no},
+        fiat_account     => $fiat_account_currency,
+        is_priority      => $params->{is_priority},
+        fee_paid         => $params->{fee_paid},
+        requested_amount => $params->{requested_amount},
     });
 }
 
