@@ -27,14 +27,13 @@ subtest 'additional kyc required' => sub {
             email_verified => 1,
         );
         $user->add_client($client);
-        $user->add_loginid("MTR1234", 'mt5', 'real', 'USD', {group => 'test/test'});
+        $user->add_loginid('MTR1234', 'mt5', 'real', 'USD', {group => 'test/test'});
 
-        my @required_fields = qw(tax_identification_number tax_residence account_opening_reason place_of_birth);
+        my @required_fields = qw(account_opening_reason place_of_birth);
 
         is($client->is_mt5_additional_kyc_required, 0, 'Additional KYC not required for id residence when all information is present');
         foreach my $field (@required_fields) {
             $client->$field('');
-
         }
         $client->save();
 

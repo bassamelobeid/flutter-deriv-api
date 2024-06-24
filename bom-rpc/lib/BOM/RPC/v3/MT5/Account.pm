@@ -911,10 +911,13 @@ async_rpc "mt5_new_account",
     }
 
     return create_error_future('AccountTypesMismatch') if ($client->is_virtual() and $account_type ne 'demo');
-    my $requirements             = LandingCompany::Registry->by_name($landing_company_short)->requirements;
-    my $signup_requirements      = $requirements->{signup};
-    my $tin_not_mandatory        = BOM::RPC::v3::Accounts::lc_country_requires_tin($landing_company_short, $residence);
+
+    my $compliance_config        = BOM::Config::Compliance->new();
+    my $tin_not_mandatory        = !$compliance_config->is_tin_required($residence, $landing_company_short);
     my $is_tin_manually_approved = $client->is_tin_manually_approved;
+
+    my $requirements        = LandingCompany::Registry->by_name($landing_company_short)->requirements;
+    my $signup_requirements = $requirements->{signup};
     my @missing_fields =
         grep { !(($tin_not_mandatory || $is_tin_manually_approved) && $_ eq 'tax_identification_number') && !$client->$_; } $signup_requirements->@*;
 
@@ -955,7 +958,7 @@ async_rpc "mt5_new_account",
 
     # restrict high risk countries from bvi, labuan and vanuatu
     # restrict high risk countries from bvi, labuan and vanuatu
-    my $jurisdiction_ratings      = BOM::Config::Compliance->new()->get_jurisdiction_risk_rating('mt5')->{$landing_company_short} // {};
+    my $jurisdiction_ratings      = $compliance_config->get_jurisdiction_risk_rating('mt5')->{$landing_company_short} // {};
     my $restricted_risk_countries = {map { $_ => 1 } @{$jurisdiction_ratings->{restricted} // []}};
 
     return create_error_future('MT5NotAllowed', {params => $company_type}) if ($restricted_risk_countries->{$residence});
@@ -1015,6 +1018,10 @@ async_rpc "mt5_new_account",
         if ($mt5_compliance_requirements{expiration_check} && $client->documents->expired(1)) {
             $client->status->upsert('allow_document_upload', 'system', $mt5_acc_reason);
             return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
+        }
+
+        if ($mt5_lc->physical_address_required && $client->is_po_box_verified({ignore_idv => $requires_poa})) {
+            return create_error_future('PoBoxAddressMT5', {params => $client->loginid});
         }
 
         if (!$client->fully_authenticated({ignore_idv => $requires_poa, landing_company => $landing_company_short})) {

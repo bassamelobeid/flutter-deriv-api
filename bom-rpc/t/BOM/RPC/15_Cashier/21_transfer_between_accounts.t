@@ -695,6 +695,10 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
         },
     };
     $test_client->user->update_trading_password($DETAILS{password}{main});
+    $test_client->tax_identification_number('123');
+    $test_client->tax_residence('id');
+    $test_client->save();
+
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for demo mt5_new_account');
 
     $params->{args}{account_type}     = 'financial';

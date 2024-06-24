@@ -39,7 +39,6 @@ use BOM::RPC::v3::EmailVerification qw(email_verification);
 use BOM::Transaction::History       qw(get_transaction_history);
 use BOM::Platform::Context          qw (localize request);
 use BOM::Platform::Client::CashierValidation;
-use BOM::Config::Runtime;
 use BOM::Platform::Email  qw(send_email);
 use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::User;
@@ -51,7 +50,6 @@ use BOM::Platform::Token::API;
 use BOM::Platform::Utility;
 use BOM::Transaction;
 use BOM::MT5::User::Async;
-use BOM::Config;
 use BOM::User::Password;
 use BOM::User::Phone;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -61,12 +59,14 @@ use BOM::Platform::Token::API;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
+use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Config::Quants qw(market_pricing_limits);
 use BOM::Config::AccountType::Registry;
+use BOM::Config::Redis;
+use BOM::Config::Compliance;
 use BOM::RPC::v3::Services;
 use BOM::RPC::v3::Services::Onramp;
-use BOM::Config::Redis;
 use BOM::User::Onfido;
 use BOM::User::IdentityVerification;
 use BOM::Rules::Engine;
@@ -347,25 +347,6 @@ rpc "landing_company_details",
     return __build_landing_company($lc, $country);
     };
 
-=head2 lc_country_requires_tin
-
-Check if the country for the provided landing company is (NPJ) Non Participating Jurisdiction 
-and TIN is mandatory or not.
-
-=cut
-
-sub lc_country_requires_tin {
-    my ($landing_company, $country) = @_;
-
-    my $npj_countries_list = $compliance_config->get_npj_countries_list;
-    my $tin_not_mandatory  = 0;
-
-    if (any { $country eq $_ } $npj_countries_list->{$landing_company}->@*) {
-        $tin_not_mandatory = 1;
-    }
-    return $tin_not_mandatory;
-}
-
 =head2 __build_landing_company
 
     $landing_company_details = __build_landing_company($lc)
@@ -428,12 +409,12 @@ sub __build_landing_company {
     my $lc = shift;
     # If no country is given, it will return the legal allowed markets of the landing company
     # else it will return the legal allowed markets for the given country
-    my $country = shift // "default";
+    my $country = shift // 'default';
 
     # Check if the country is NPJ for the landing company
     # NPJ = TIN is not required for the combination of Country + Landing Company
 
-    my $tin_not_mandatory = lc_country_requires_tin($lc->short, $country);
+    my $tin_not_mandatory = $compliance_config->is_tin_required($lc->short, $country) ? 0 : 1;
 
     # Get suspended currencies and remove them from list of legal currencies
     my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
@@ -455,7 +436,7 @@ sub __build_landing_company {
         support_professional_client       => $lc->support_professional_client
     };
 
-    if ($country ne "default") {
+    if ($country ne 'default') {
         $result->{tin_not_mandatory} = $tin_not_mandatory;
     }
 

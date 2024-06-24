@@ -179,6 +179,9 @@ subtest 'mt5' => sub {
     $mock_client->mock(get_poi_status_jurisdiction => sub { return 'verified' });
     $mock_client->mock(get_poa_status              => sub { return 'verified' });
     $has_valid_documents = 1;
+    $client_usd->tax_residence('us');
+    $client_usd->tax_identification_number('123');
+    $client_usd->save;
 
     my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig');
     $mock_fees->mock(transfer_between_accounts_fees => sub { return {ETH => {USD => 0}, USD => {ETH => 0}} });

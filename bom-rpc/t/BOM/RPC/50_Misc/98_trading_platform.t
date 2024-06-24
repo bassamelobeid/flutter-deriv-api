@@ -710,7 +710,8 @@ subtest 'trading_platform_available_accounts' => sub {
     $c->call_ok('trading_platform_available_accounts', {})
         ->has_no_system_error->has_error->error_code_is('TradingPlatformError', 'platform must be specified');
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', residence => 'id'});
+    my $client =
+        BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', residence => 'id', tax_identification_number => '123456789'});
 
     BOM::User->create(
         email    => 'testme@test.com',

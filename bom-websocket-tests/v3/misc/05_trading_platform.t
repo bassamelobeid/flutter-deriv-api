@@ -303,7 +303,7 @@ my $AVAILABLE_ACCOUNTS = {
             'sub_account_type' => 'swap_free',
             'requirements'     => {
                 'withdrawal' => ['address_city', 'address_line_1'],
-                'signup'     => []
+                'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']
             },
             'linkable_landing_companies' => ['svg'],
             'product'                    => 'swap_free',
@@ -314,7 +314,7 @@ my $AVAILABLE_ACCOUNTS = {
             'shortcode'        => 'bvi',
             'sub_account_type' => 'zero_spread',
             'requirements'     => {
-                'signup'              => ['account_opening_reason'],
+                'signup'              => ['phone', 'citizen', 'account_opening_reason', 'tax_residence', 'tax_identification_number'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information', 'trading_experience']},
                 'compliance'          => {
                     'mt5'             => ['fully_authenticated', 'expiration_check'],
@@ -330,7 +330,7 @@ my $AVAILABLE_ACCOUNTS = {
             'sub_account_type' => 'standard',
             'requirements'     => {
                 'withdrawal' => ['address_city', 'address_line_1'],
-                'signup'     => []
+                'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']
             },
             'linkable_landing_companies' => ['svg'],
             'product'                    => 'financial',
@@ -340,7 +340,7 @@ my $AVAILABLE_ACCOUNTS = {
             'market_type'  => 'financial',
             'shortcode'    => 'bvi',
             'requirements' => {
-                'signup'              => ['account_opening_reason'],
+                'signup'              => ['phone', 'citizen', 'account_opening_reason', 'tax_residence', 'tax_identification_number'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information', 'trading_experience']},
                 'compliance'          => {
                     'mt5'             => ['fully_authenticated', 'expiration_check'],
@@ -357,7 +357,7 @@ my $AVAILABLE_ACCOUNTS = {
                     'mt5'             => ['fully_authenticated', 'expiration_check'],
                     'tax_information' => ['tax_residence',       'tax_identification_number'],
                 },
-                'signup'              => ['place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
+                'signup'              => ['citizen', 'place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information']}
             },
             'shortcode'                  => 'vanuatu',
@@ -373,7 +373,7 @@ my $AVAILABLE_ACCOUNTS = {
                     'mt5'             => ['fully_authenticated', 'expiration_check'],
                     'tax_information' => ['tax_residence',       'tax_identification_number']
                 },
-                'signup'              => ['place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
+                'signup'              => ['citizen', 'place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information']}
             },
             'shortcode'                  => 'vanuatu',
@@ -389,7 +389,7 @@ my $AVAILABLE_ACCOUNTS = {
                     'tax_information' => ['tax_residence',       'tax_identification_number'],
                     'mt5'             => ['fully_authenticated', 'expiration_check']
                 },
-                'signup' => ['account_opening_reason']
+                'signup' => ['phone', 'citizen', 'account_opening_reason', 'tax_residence', 'tax_identification_number']
             },
             'sub_account_type'           => 'stp',
             'shortcode'                  => 'labuan',
@@ -401,7 +401,7 @@ my $AVAILABLE_ACCOUNTS = {
         {
             'requirements' => {
                 'withdrawal' => ['address_city', 'address_line_1'],
-                'signup'     => []
+                'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']
             },
             'sub_account_type'           => 'standard',
             'shortcode'                  => 'svg',
@@ -417,7 +417,7 @@ my $AVAILABLE_ACCOUNTS = {
                     'tax_information' => ['tax_residence',       'tax_identification_number']
                 },
                 'after_first_deposit' => {'financial_assessment' => ['financial_information', 'trading_experience']},
-                'signup'              => ['account_opening_reason']
+                'signup'              => ['phone', 'citizen', 'account_opening_reason', 'tax_residence', 'tax_identification_number']
             },
             'sub_account_type'           => 'standard',
             'shortcode'                  => 'bvi',
@@ -429,9 +429,14 @@ my $AVAILABLE_ACCOUNTS = {
         {
             'requirements' => {
                 'compliance' => {
-                    'mt5' => ['fully_authenticated', 'expiration_check'],
+                    'mt5'             => ['fully_authenticated', 'expiration_check'],
+                    'tax_information' => ['tax_residence',       'tax_identification_number']
                 },
-                'signup' => ['tax_residence', 'tax_identification_number', 'account_opening_reason']
+                'signup' => [
+                    'salutation',     'citizen',      'tax_residence', 'tax_identification_number',
+                    'first_name',     'last_name',    'date_of_birth', 'residence',
+                    'address_line_1', 'address_city', 'account_opening_reason'
+                ]
             },
             'market_type'                => 'financial',
             'shortcode'                  => 'maltainvest',
@@ -443,8 +448,14 @@ my $AVAILABLE_ACCOUNTS = {
     ],
     at => [{
             'requirements' => {
-                'signup'     => ['tax_residence', 'tax_identification_number', 'account_opening_reason'],
-                'compliance' => {'mt5' => ['fully_authenticated', 'expiration_check']}
+                'signup' => [
+                    'salutation',     'citizen',      'tax_residence', 'tax_identification_number',
+                    'first_name',     'last_name',    'date_of_birth', 'residence',
+                    'address_line_1', 'address_city', 'account_opening_reason'
+                ],
+                'compliance' => {
+                    'mt5'             => ['fully_authenticated', 'expiration_check'],
+                    'tax_information' => ['tax_residence',       'tax_identification_number']}
             },
             'market_type'                => 'financial',
             'shortcode'                  => 'maltainvest',
@@ -460,8 +471,9 @@ my $AVAILABLE_ACCOUNTS = {
 subtest 'trading_platform_available_accounts authenticated case' => sub {
     # indonesia
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'za'
+        broker_code               => 'CR',
+        residence                 => 'za',
+        tax_identification_number => '123'
     });
     my $user = BOM::User->create(
         email    => 'tradingplatform_test@binary.com',
@@ -488,11 +500,13 @@ subtest 'trading_platform_available_accounts authenticated case' => sub {
     $resp->{trading_platform_available_accounts}->@* = sort { $a->{name} cmp $b->{name} } $resp->{trading_platform_available_accounts}->@*;
     $expected_resp = [sort { $a->{name} cmp $b->{name} } $AVAILABLE_ACCOUNTS->{za}->@*];
     is Dumper($resp->{error}), "\$VAR1 = undef;\n", 'no error in response';
+
     cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for South Africa with CR and MF accounts');
 
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-        residence   => 'at'
+        broker_code               => 'MF',
+        residence                 => 'at',
+        tax_identification_number => '123'
     });
 
     $user = BOM::User->create(
@@ -532,6 +546,20 @@ subtest 'trading_platform_available_accounts authenticated case' => sub {
 };
 
 subtest 'trading_platform_available_accounts not authenticated case' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code               => 'CR',
+        residence                 => 'za',
+        tax_identification_number => '123'
+    });
+    my $user = BOM::User->create(
+        email    => $client->loginid . '@deriv.com',
+        password => 'secret_pwd'
+    );
+    $user->add_client($client);
+
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
+    $t->await::authorize({authorize => $token});
+
     my $resp;
     my $expected_resp;
 

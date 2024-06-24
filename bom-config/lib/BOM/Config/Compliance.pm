@@ -20,6 +20,7 @@ use Scalar::Util          qw(looks_like_number);
 use JSON::MaybeUTF8       qw(decode_json_utf8 encode_json_utf8);
 
 use LandingCompany::Registry;
+use Business::Config::LandingCompany::Registry;
 use BOM::Config::Runtime;
 
 use constant RISK_THRESHOLDS => ({
@@ -292,6 +293,45 @@ sub get_npj_countries_list {
     $config->{revision} = $app_config->global_revision;
 
     return $config;
+}
+
+=head2 is_tin_required
+
+Check if the country and landing company requires TIN.
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<landing_company> - landing company short code
+
+=item * C<country> - 2-letter country code. If not provided, it will use 'default' value.
+
+=back
+
+To check if TIN is required, checks if the country is a Non Participating Jurisdiction (NPJ) for the provided landing company.
+    - If the country is NPJ, TIN is not required.
+    - If the country is PJ, TIN is required.
+
+=cut
+
+sub is_tin_required {
+    my ($self, $country, $lc_short) = @_;
+
+    die 'no country'         unless $country;
+    die 'no landing_company' unless $lc_short;
+
+    my $npj_countries = $self->get_npj_countries_list;
+
+    return 0 if any { $country eq $_ } $npj_countries->{$lc_short}->@*;
+
+    my $lc = Business::Config::LandingCompany::Registry->new->by_code($lc_short);
+    return 0 unless $lc;
+    my $lc_requirements = $lc->requirements;
+
+    return 0 unless $lc_requirements->{compliance}->{tax_information};
+
+    return 1;
 }
 
 =head2 validate_npj_country_list

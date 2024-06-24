@@ -236,7 +236,11 @@ subtest 'new account' => sub {
     is $result->{error}->{code}, 'ASK_FIX_DETAILS', 'Correct error code if citizen is missing for financial_stp account';
     is $result->{error}->{message_to_client}, 'Your profile appears to be incomplete. Please update your personal details to continue.',
         'Correct error message if citizen is missing for financial_stp account';
-    cmp_bag($result->{error}{details}{missing}, ['citizen', 'account_opening_reason'], 'Missing citizen should be under details.');
+    cmp_bag(
+        $result->{error}{details}{missing},
+        ['citizen', 'account_opening_reason', 'tax_residence', 'tax_identification_number'],
+        'Missing citizen should be under details.'
+    );
 
     $params->{args}->{account_type} = 'gaming';
 
@@ -274,7 +278,8 @@ subtest 'new account' => sub {
     $test_client->aml_risk_classification('high');
     $test_client->save();
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Please complete your financial assessment.', 'Financial assessment mandatory for financial account');
+        ->has_error->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Financial assessment mandatory for financial account');
 
     # Non-CR client
     $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -397,9 +402,30 @@ subtest 'CR account types - low risk' => sub {
         'ASK_FIX_DETAILS',
         'Required fields missing for financial_stp financial account'
     );
-    cmp_bag($error->{details}{missing}, ['account_opening_reason'], 'Missing account_opening_reason should appear in details.');
+    cmp_bag(
+        $error->{details}{missing},
+        ['account_opening_reason', 'tax_residence', 'tax_identification_number'],
+        'Missing account_opening_reason should appear in details.'
+    );
     $client->account_opening_reason('Speculative');
     $client->save();
+
+    $error = create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp'
+        },
+        'ASK_FIX_DETAILS',
+        'Required fields missing for financial_stp financial account'
+    );
+
+    cmp_bag($error->{details}{missing}, ['tax_residence', 'tax_identification_number'], 'Missing tax information should appear in details.');
+    $client->tax_residence('at');
+    $client->tax_identification_number('1234');
+    $client->save();
+
+    $client->status->_clear('crs_tin_information');
 
     $error = create_mt5_account->(
         $c, $token, $client,
@@ -410,9 +436,8 @@ subtest 'CR account types - low risk' => sub {
         'TINDetailsMandatory',
         'TIN is required for financial_stp financial account'
     );
-    $client->tax_residence('at');
-    $client->tax_identification_number('1234');
-    $client->save();
+
+    $client->status->set('crs_tin_information', 'test', 'test');
 
     create_mt5_account->(
         $c, $token, $client,

@@ -128,6 +128,7 @@ my %category_message_mapping = do {
         NewAccountPOAFailed   => localize('Failed to create account due to failed Proof of Address with status: [_1]'),
         POAVerificationFailed => localize('Proof of Address verification failed. Withdrawal operation suspended.'),
         ProofRequirementError => localize('Proof of Identity or Address requirements not met. Operation rejected.'),
+        PoBoxAddressMT5       => localize('Physical address is required to create an MT5 account. Please contact our Customer Support team.'),
         AccountShouldBeReal   => localize('Only real accounts are allowed to open [_1] real accounts'),
         IncompatibleMt5ToMt5  => localize('Transfer between two MT5 accounts is not allowed.'),
         MT5TransferSuspension => localize('We are still processing your deposit. Please try again later'),

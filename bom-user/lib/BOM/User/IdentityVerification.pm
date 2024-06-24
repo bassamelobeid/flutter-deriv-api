@@ -900,6 +900,7 @@ sub supported_documents {
 }
 
 =head2 _supported_documents_for_country_config
+
 Returns the IDV supported document types given a country from the provided idv_config. 
 It is merely to reuse the idv_config, instead of fetching it for every call.
 

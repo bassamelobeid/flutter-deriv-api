@@ -178,10 +178,17 @@
                "type" : "object",
                "additionalProperties" : false,
                "required" : [
-                  "mt5"
+                  "mt5",
+                  "tax_information"
                ],
                "properties": {
                   "mt5" : {
+                     "type" : "array",
+                     "items": {
+                        "type" : "string"
+                     }
+                  },
+                  "tax_information" : {
                      "type" : "array",
                      "items": {
                         "type" : "string"

@@ -995,7 +995,7 @@ It takes a hashref of params:
 
 =over 4
 
-=item * C<ignore_idv> - strict check for ID_DOCUMENT ID_NOTARIZED ID_ONLINE, poa-less scenarios are skipped.
+=item * C<ignore_idv> - strict check for ID_DOCUMENT ID_NOTARIZED ID_ONLINE ID_PO_BOX, poa-less scenarios are skipped.
 
 =item * C<landing_company> - account jurisdiction for idv authentication check.
 
@@ -2477,7 +2477,7 @@ Returns a list of all requirements (signup, withdrawal, etc) for each landing co
 sub required_fields {
     my $self = shift;
 
-    return @{BOM::Platform::Utility::hash_to_array($self->landing_company->requirements)};
+    return uniq @{BOM::Platform::Utility::hash_to_array($self->landing_company->requirements)};
 }
 
 =pod
@@ -6801,6 +6801,37 @@ sub update_affiliate_token_for_batch_of_clients {
 
 }
 
+=head2 is_po_box_verified 
+
+If a client is POI & POA verified but their verified address is a PO box, they are PO box verified.
+
+The client might have been authenticated manually with ID_PO_BOX method, or fully authenticated 
+by another method and their address was detected as PO box.
+
+It takes a hashref of params:
+
+=over 4
+
+=item * C<ignore_idv> - strict check for ID_DOCUMENT ID_NOTARIZED ID_ONLINE ID_PO_BOX, poa-less scenarios are skipped.
+
+=back
+
+Returns C<0> or C<1>.
+
+=cut
+
+sub is_po_box_verified {
+    my ($self, $args) = @_;
+
+    my $ignore_idv = $args->{ignore_idv};
+
+    return 1 if $self->authentication_status() eq 'po_box';
+
+    return 1 if $self->fully_authenticated({ignore_idv => $ignore_idv}) && BOM::User::Utility::has_po_box_address($self);
+
+    return 0;
+}
+
 =head2 is_mt5_additional_kyc_required 
 
 Applicable to svg and non-high risk countries only Check if the client is has not filled any of the information 
@@ -6835,20 +6866,13 @@ sub is_mt5_additional_kyc_required {
 
     return 0 unless @supported_platforms;
 
-    my @signup_and_compliance_values = ();
+    my @signup_requirements = ();
 
-    foreach my $company (@supported_platforms) {
-        push @signup_and_compliance_values, $company->{requirements}{signup}->@*;
-        my $compliance_values = $company->{requirements}->{compliance};
-        if ($compliance_values && $compliance_values->{tax_information}) {
-            push @signup_and_compliance_values, $compliance_values->{tax_information}->@*;
-        }
-    }
-    my @unique_fields = uniq(@signup_and_compliance_values);
-    foreach my $field (@unique_fields) {
-        return 1 if !defined $self->{$field} || $self->{$field} eq '';
-    }
-    return 0;
+    @signup_requirements = map { $_->{requirements}{signup}->@* } @supported_platforms;
+
+    my @undefined_or_empty_fields = grep { !defined $self->{$_} || $self->{$_} eq '' } @signup_requirements;
+
+    return @undefined_or_empty_fields ? 1 : 0;
 }
 
 =head2 is_tin_manually_approved

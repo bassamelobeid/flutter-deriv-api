@@ -117,6 +117,8 @@ subtest 'new account with missing signup fields' => sub {
 
     $test_client->status->set('crs_tin_information', 'system', 'testing something');
     $test_client->phone('');
+    $test_client->tax_residence('de');
+    $test_client->tax_identification_number('123');
     $test_client->save;
 
     my $method = 'mt5_new_account';
@@ -272,7 +274,7 @@ subtest 'new account with account in highRisk groups' => sub {
 
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
         $c->call_ok($method, $params)->has_error('high risk group does not exist for corresponding group')
-            ->error_code_is('PermissionDenied', 'error code for mt5_new_account with navailable high risk group')
+            ->error_code_is('PermissionDenied', 'error code for mt5_new_account with unavailable high risk group')
             ->error_message_is('Permission denied.');
     };
 
@@ -1028,6 +1030,90 @@ subtest 'country=latam african, financial STP account' => sub {
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
 
+subtest 'po box address' => sub {
+    my $email    = 'po_box_address' . $details{email};
+    my $password = $details{password}{main};
+    my $name     = $details{name};
+
+    my $client = create_client('CR');
+    my $user   = BOM::User->create(
+        email    => $email,
+        password => 'secret_pwd',
+    );
+    $user->update_trading_password($password);
+    $user->add_client($client);
+
+    # set mt5 account creation required fields
+    $client->place_of_birth('br');
+    $client->residence('br');
+    $client->account_opening_reason('speculative');
+    $client->set_default_account('USD');
+    $client->tax_identification_number('1234');
+    $client->tax_residence('br');
+
+    $client->save;
+
+    my $method        = 'mt5_new_account';
+    my $token         = $m->create_token($client->loginid, 'test token');
+    my $client_params = {
+        token => $token,
+        args  => {
+            account_type => 'financial',
+            country      => 'br',
+            email        => $email,
+            name         => $name,
+            mainPassword => $password,
+            leverage     => 1000,
+        },
+    };
+
+    my $test_cases = [{
+            company          => 'bvi',
+            mt5_account_type => 'financial',
+        },
+        {
+            company          => 'vanuatu',
+            mt5_account_type => 'financial',
+        },
+        {
+            company          => 'labuan',
+            mt5_account_type => 'financial_stp',
+        },
+        {
+            company          => 'bvi',
+            mt5_account_type => 'financial',
+        },
+        {
+            company          => 'vanuatu',
+            mt5_account_type => 'financial',
+        },
+        {
+            company          => 'labuan',
+            mt5_account_type => 'financial_stp',
+        },
+    ];
+
+    $client->set_authentication('ID_PO_BOX', {status => 'pass'});
+    ok $client->is_po_box_verified, 'client is po box verified';
+
+    for my $test_case ($test_cases->@*) {
+        my $lc       = LandingCompany::Registry->by_name($test_case->{company});
+        my $lc_short = $lc->short;
+        ok $lc->physical_address_required, "$lc_short lc requires physical address";
+
+        $client_params->{args}->{company}          = $lc_short;
+        $client_params->{args}->{mt5_account_type} = $test_case->{mt5_account_type};
+        $c->call_ok($method, $client_params)->has_error("client with po box address is not allowed to create a mt5 $lc_short regulated account")
+            ->error_code_is('PoBoxAddressMT5', 'expected error code for po box address')
+            ->error_message_is('Physical address is required to create an MT5 account. Please contact our Customer Support team.',
+            'expected error message for po box address');
+    }
+
+    $client_params->{args}->{company}          = 'svg';
+    $client_params->{args}->{mt5_account_type} = 'financial';
+    $c->call_ok($method, $client_params)->has_no_error('client with po box address is allowed to create a mt5 svg account');
+};
+
 subtest 'allow creating bvi/vanuatu account if poi status is not verified' => sub {
 
     my $new_email  = 'br_poi_not_verified_' . $details{email};
@@ -1780,7 +1866,7 @@ subtest 'TIN not mandatory with NPJ country config' => sub {
         },
     };
 
-    $c->call_ok($method, $client_params)->has_no_error('Account created wihout TIN for residence ke in vanuatu NPJ');
+    $c->call_ok($method, $client_params)->has_no_error('Account created without TIN for residence ke in vanuatu NPJ');
 
     $npj_countries_list->{'vanuatu'} = [];
     $app_config->set({
@@ -1791,14 +1877,7 @@ subtest 'TIN not mandatory with NPJ country config' => sub {
         ->has_error->error_code_is('ASK_FIX_DETAILS', 'Account not created without TIN for residence ke in vanuatu NPJ');
 
     $client_params->{args}->{company} = 'bvi';
-    $c->call_ok($method, $client_params)->has_error->error_code_is('TINDetailsMandatory', 'TIN is still required for residence ke even without NPJ');
-
-    $client_params->{args}->{country} = 'af';
-    $test_client->tax_residence('af');
-    $test_client->residence('af');
-    $test_client->save;
-    $c->call_ok($method, $client_params)->has_no_error('BVI does not require TIN at signup even without NPJ for af residence');
-
+    $c->call_ok($method, $client_params)->has_error->error_code_is('ASK_FIX_DETAILS', 'TIN is still required for residence ke even without NPJ');
 };
 
 subtest 'Don\'t allow creating MT5 account if there are failures in mt5_accounts_lookup' => sub {

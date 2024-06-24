@@ -325,25 +325,40 @@ Returns a list of available trading accounts for a given user.
 
 sub available_accounts {
     my ($self, $args) = @_;
+    my $client       = $self->client;
+    my $country_code = $args->{country_code};
 
     die 'InvalidArgument' unless ($args->{country_code} and $args->{brand});
 
     my $accounts = $args->{brand}->countries_instance->mt_account_types_for_country($args->{country_code});
     return [] unless $accounts->%*;
 
+    my $compliance_config = BOM::Config::Compliance->new;
+
     my @trading_accounts;
     foreach my $market_type (sort keys $accounts->%*) {
         foreach my $account ($accounts->{$market_type}->@*) {
-            my $lc                        = LandingCompany::Registry->by_name($account->{company});
-            my $jurisdiction_ratings      = BOM::Config::Compliance->new()->get_jurisdiction_risk_rating('mt5')->{$lc->short} // {};
+            my $lc       = LandingCompany::Registry->by_name($account->{company});
+            my $lc_short = $lc->short;
+
+            my $jurisdiction_ratings      = $compliance_config->get_jurisdiction_risk_rating('mt5')->{$lc_short} // {};
             my $restricted_risk_countries = {map { $_ => 1 } @{$jurisdiction_ratings->{restricted} // []}};
-            next if $restricted_risk_countries->{$args->{country_code}};
+            next if $restricted_risk_countries->{$country_code};
+
+            if (defined $client) {
+                my $is_po_box_verified = $client->is_po_box_verified();
+                next if $lc->physical_address_required && $is_po_box_verified;
+
+                my $has_tin               = $client->tax_identification_number;
+                my $tin_manually_approved = $client->is_tin_manually_approved;
+                next if $compliance_config->is_tin_required($lc_short, $country_code) && !$has_tin && !$tin_manually_approved;
+            }
 
             push @trading_accounts,
                 +{
-                shortcode                  => $lc->short,
+                shortcode                  => $lc_short,
                 name                       => $lc->name,
-                requirements               => $self->_get_mt5_lc_requirements($lc),
+                requirements               => $lc->requirements,
                 sub_account_type           => $account->{sub_account_type},
                 market_type                => $account->{market_type},
                 linkable_landing_companies => $lc->mt5_require_deriv_account_at,
@@ -353,39 +368,6 @@ sub available_accounts {
     }
 
     return \@trading_accounts;
-}
-
-=head2 _get_mt5_lc_requirements
-
-Gets MT5 account requirements for specified landing company. 
-For signup, only unsatisfied requirements are returned.
-
-Takes as parameter:
-
-=over 4
-
-=item * C<landing_company> - landing company to get requirements from.
-
-=back
-
-=cut
-
-sub _get_mt5_lc_requirements {
-    my ($self, $lc) = @_;
-    my $client = $self->client;
-
-    my %lc_requirements = $lc->requirements->%*;
-
-    # We also support the use case when $client is undefined in C<available_accounts> sub,
-    # we we have to support it here. In this case all signup requirements are considered to be unsatisfied.
-    my $unsatisfied_requirements = [];
-    push @$unsatisfied_requirements, grep { !$client || !defined $client->$_ } $lc_requirements{signup}->@*;
-    push @$unsatisfied_requirements, 'physical_address'
-        if $lc->physical_address_required && (!$client || BOM::User::Utility::has_po_box_address($client));
-
-    $lc_requirements{signup} = $unsatisfied_requirements;
-
-    return \%lc_requirements;
 }
 
 =head1 Non-RPC methods

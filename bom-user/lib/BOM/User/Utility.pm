@@ -600,7 +600,7 @@ sub po_box_patterns {
 
 =head2 has_po_box_address
 
-Checks if the address is a PO BOX address.
+Check if the client's address contains a string we identify as PO BOX
 
 It takes:
 
@@ -617,9 +617,9 @@ Returns a C<boolean>.
 sub has_po_box_address {
     my ($client) = @_;
 
-    my $po_box_address_patterns = [map { qr/\b$_\b/i } @{po_box_patterns()}];
-
     my $client_address = [$client->address_1, $client->address_2];
+
+    my $po_box_address_patterns = [map { qr/\b$_\b/i } @{po_box_patterns()}];
 
     foreach my $address_line (@$client_address) {
         foreach my $pattern (@$po_box_address_patterns) {
