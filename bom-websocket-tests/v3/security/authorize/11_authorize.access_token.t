@@ -44,6 +44,12 @@ my $balance = $t->await::balance({balance => 1});
 ok($balance->{balance});
 test_schema('balance', $balance);
 
+$balance = $t->await::balance({balance => 1, loginid => $loginid});
+is $balance->{error}->{code}, 'InvalidToken', 'Loginid while only 1 token, triggers an error';
+
+$balance = $t->await::balance({balance => 1, loginid => 'TST0002'});
+is $balance->{error}->{code}, 'InvalidToken', 'Invalid loginid triggers an error';
+
 $t->finish_ok;
 
 done_testing();

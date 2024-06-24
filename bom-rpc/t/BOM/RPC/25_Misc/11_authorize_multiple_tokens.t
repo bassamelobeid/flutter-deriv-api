@@ -121,14 +121,31 @@ my $method = 'authorize';
 subtest "$method with multiple tokens" => sub {
     my $params = {
         language => 'EN',
-        token    => $token,
-        args     => {tokens => [$token, '1111']}};
+        args     => {
+            authorize => $token,
+            tokens    => ['2222', '1111']}};
+
+    $c->call_ok($method, $params)->has_error->error_message_is("When using multiple tokens, set authorize to MULTI.", 'check authorize to MULTI');
+
+    $params = {
+        language => 'EN',
+        args     => {
+            authorize => 'MULTI',
+            tokens    => [$token]}};
+
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+    ok($result->{stash}{token}, $token);
+
+    $params = {
+        language => 'EN',
+        args     => {
+            authorize => 'MULTI',
+            tokens    => [$token, '1111']}};
 
     $c->call_ok($method, $params)
         ->has_error->error_message_is("Invalid/duplicate token for a loginid provided.", 'Invalid/duplicate token for a loginid provided.');
 
     $params->{args}{tokens} = [$token_mf, $token_mf_2];
-
     $c->call_ok($method, $params)->has_error->error_message_is('Token is not valid for current user.', "check tokens don't belong to user");
 
     my $cr_login  = create_client('CR',   undef, {date_joined => '2021-06-06 23:59:59'});
@@ -146,7 +163,7 @@ subtest "$method with multiple tokens" => sub {
     my $cr2_token   = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr2_login->loginid);
     my $vr_token    = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_login->loginid);
 
-    $params->{args}{tokens} = [$cr_token, $cr2_token, $vr_token];
+    $params->{args}{tokens} = [$token, $cr_token, $cr2_token, $vr_token];
 
     subtest "use valid token of other accounts of user" => sub {
         my $result = $c->call_ok($method, $params)->has_no_error->result;
@@ -300,7 +317,7 @@ subtest "$method with multiple tokens" => sub {
 
     subtest "api and oauth token combination" => sub {
         my $cr_api_token = BOM::Platform::Token::API->new->create_token($cr_loginid, 'Test', ['read']);
-        $params->{args}{tokens} = [$cr_api_token, $vr_token];
+        $params->{args}{tokens} = [$token, $cr_api_token, $vr_token];
         $c->call_ok($method, $params)
             ->has_error->error_message_is("Invalid/duplicate token for a loginid provided.", 'Api token provided in tokens.');
     };
@@ -314,12 +331,12 @@ subtest "$method with multiple tokens" => sub {
             });
         my ($token_mf) = $oauth->store_access_token_only(1, $test_client_mf->loginid);
 
-        $params->{args}{tokens} = [$cr_token, $vr_token, $token_mf];
+        $params->{args}{tokens} = [$token, $cr_token, $vr_token, $token_mf];
         $c->call_ok($method, $params)->has_error->error_message_is('Token is not valid for current user.', 'Token is not valid for current user.');
     };
 
     subtest "invalid token added" => sub {
-        $params->{args}{tokens} = [$cr_token, $vr_token, 'xxxxxxxxxx'];
+        $params->{args}{tokens} = [$token, $cr_token, $vr_token, 'xxxxxxxxxx'];
         $c->call_ok($method, $params)->has_error->error_message_is("Invalid/duplicate token for a loginid provided.", 'Unknown token.');
     };
 
@@ -341,20 +358,19 @@ subtest "$method with multiple tokens" => sub {
     subtest "multiple api tokens" => sub {
         my $cr_api_token  = BOM::Platform::Token::API->new->create_token($cr_loginid,  'Test', ['read']);
         my $cr2_api_token = BOM::Platform::Token::API->new->create_token($cr2_loginid, 'Test', ['read']);
-        $params->{token} = $cr2_api_token;
-        $params->{args}{tokens} = [$cr_api_token];
+        $params->{args}{tokens} = [$cr2_api_token, $cr_api_token];
         $c->call_ok($method, $params)->has_error->error_message_is("None of the provided tokens are valid.", 'Api token provided in tokens.');
     };
 
     subtest "Add a non available account" => sub {
-        $params->{args}{tokens} = [$cr2_token, $token_mf];
+        $params->{args}{tokens} = [$vr_token, $cr2_token, $token_mf];
         $params->{token} = $vr_token;
         $cr2_login->status->set('duplicate_account', 1, 'test non available account');
         $c->call_ok($method, $params)->has_error->error_message_is('Token is not valid for current user.', 'Non available account.');
     };
 
     subtest "suspended token in account_tokens" => sub {
-        $params->{args}{tokens} = [$cr_token];
+        $params->{args}{tokens} = [$vr_token, $cr_token];
 
         BOM::Config::Runtime->instance->app_config->system->suspend->logins([$cr_loginid]);
 
@@ -377,7 +393,7 @@ subtest 'get account tokens' => sub {
     ok $tokens_result->{error}->{error}{code} eq 'InvalidToken', 'invalid token';
 
     $auth_token = $token_vr;
-    $params     = {args => {tokens => [$token_mf_2, $token_mf]}};
+    $params     = {args => {tokens => [$token_vr, $token_mf_2, $token_mf]}};
 
     $tokens_result = BOM::RPC::v3::Authorize::_get_account_tokens($params, $auth_token, $token_details);
     my $expected_result = {

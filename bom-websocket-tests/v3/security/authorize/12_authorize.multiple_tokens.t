@@ -47,7 +47,7 @@ my $user_id = $client_cr->binary_user_id;
 $user->add_client($client_cr);
 $user->add_client($client_mf);
 
-my $authorize = $t->await::authorize({authorize => $token_cr, tokens => [$token_mf]});
+my $authorize = $t->await::authorize({authorize => 'MULTI', tokens => [$token_cr, $token_mf]});
 
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid_cr;
@@ -55,7 +55,7 @@ is $authorize->{authorize}->{user_id}, $user_id;
 test_schema('authorize', $authorize);
 
 ## it's ok after authorize
-my $balance_cr = $t->await::balance({balance => 1});
+my $balance_cr = $t->await::balance({balance => 1, loginid => $loginid_cr});
 ok($balance_cr->{balance});
 is $balance_cr->{balance}{loginid}, $loginid_cr;
 test_schema('balance', $balance_cr);
@@ -64,6 +64,12 @@ my $balance_mf = $t->await::balance({balance => 1, loginid => $loginid_mf});
 ok($balance_mf->{balance});
 is $balance_mf->{balance}{loginid}, $loginid_mf;
 test_schema('balance', $balance_mf);
+
+$balance_mf = $t->await::balance({balance => 1, loginid => 'TEST0002'});
+is $balance_mf->{error}->{code}, 'InvalidToken', 'Invalid loginid triggers an error';
+
+$balance_mf = $t->await::balance({balance => 1});
+is $balance_mf->{error}->{code}, 'InvalidToken', 'No loginid with mutliple tokens triggers an error';
 
 $t->finish_ok;
 
