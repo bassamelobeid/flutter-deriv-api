@@ -112,7 +112,7 @@ use constant {
 use constant CACHED_FIELDS => qw(
     account _self_exclusion status documents proof_of_ownership _p2p_advertiser_cached
     _account_type_obj client_authentication_document financial_assessment payment_agent
-    _payment_agent _financial_assessment _risk_level_sr _latest_poi_by);
+    _payment_agent _financial_assessment _latest_poi_by);
 
 # Redis key prefix for counting DoughFlow payouts
 use constant {
@@ -816,7 +816,6 @@ sub is_financial_assessment_complete {
     my $is_fa_required =
            $self->status->financial_assessment_required
         || $self->risk_level_aml() eq 'high'
-        || $self->risk_level_sr() eq 'high'
         || $self->was_locked_for_high_risk;
 
     if ($lc ne 'maltainvest') {
@@ -1048,7 +1047,7 @@ sub poa_authenticated_with_idv {
 
     # idv cannot fully auth high risk cr clients
 
-    return 0 if $self->is_high_risk;
+    return 0 if ($self->risk_level_aml // '') eq 'high';
 
     # Some LC can get fully auth if their IDV submission returns an additional address
 
@@ -1077,23 +1076,6 @@ sub poa_authenticated_with_idv {
         && $idv_poa
         && $idv_poa->status eq 'pass';
 
-    return 0;
-}
-
-=head2 is_high_risk
-
-Determines if the client is high risk.
-
-We take into consideration both AML and SR, if any of them is `high` we consider the
-client as high risk.
-
-=cut
-
-sub is_high_risk {
-    my ($self) = @_;
-
-    return 1 if ($self->risk_level_sr  // '') eq 'high';
-    return 1 if ($self->risk_level_aml // '') eq 'high';
     return 0;
 }
 
@@ -2118,7 +2100,6 @@ sub is_verification_required {
     }
 
     # applicable for all landing companies
-    return 1 if ($args{risk_sr}  // '') eq 'high';
     return 1 if ($args{risk_aml} // '') eq 'high';
     my $has_deposits = $self->has_deposits();
     return 1
@@ -2156,8 +2137,6 @@ sub is_poi_expiration_check_required {
     return 1 if ($self->aml_risk_classification // '') eq 'high';
 
     return 1 if $self->get_payment_agent;
-
-    return 1 if $self->risk_level_sr() eq 'high';
 
     return 0;
 }
@@ -5646,7 +5625,7 @@ Returns,
 =cut
 
 sub needs_poa_verification {
-    my ($self, $documents, $status, $is_required_auth, $risk_aml, $risk_sr) = @_;
+    my ($self, $documents, $status, $is_required_auth, $risk_aml) = @_;
     # Note optional arguments will be resolved if not provided
     $documents //= $self->documents->uploaded();
     $status    //= $self->get_poa_status($documents);
@@ -5664,8 +5643,7 @@ sub needs_poa_verification {
         my $poa_documents = $documents->{proof_of_address}->{documents};
         $is_required_auth //= $self->is_verification_required(
             check_authentication_status => 1,
-            risk_aml                    => $risk_aml,
-            risk_sr                     => $risk_sr
+            risk_aml                    => $risk_aml
         );
         return 1 if $is_required_auth and not $poa_documents;
     }
@@ -5695,7 +5673,7 @@ Returns,
 =cut
 
 sub needs_poi_verification {
-    my ($self, $documents, $status, $is_required_auth, $risk_aml, $risk_sr) = @_;
+    my ($self, $documents, $status, $is_required_auth, $risk_aml) = @_;
     # Note optional arguments will be resolved if not provided
     $documents //= $self->documents->uploaded();
     $status    //= $self->get_poi_status($documents);
@@ -5723,8 +5701,7 @@ sub needs_poi_verification {
             # requires both poi and poa needed
             $self->is_verification_required(
             check_authentication_status => 1,
-            risk_aml                    => $risk_aml,
-            risk_sr                     => $risk_sr
+            risk_aml                    => $risk_aml
             );
 
         return 1 if $is_required_auth && $status eq 'none';
@@ -6693,7 +6670,7 @@ sub ignore_age_verification {
     return 0 unless $lc;
 
     # Check if it was validated by IDV, we ignore IDV verification for some LC and high risk clients
-    if ($self->is_high_risk || none { $_ eq 'idv' } $lc->allowed_poi_providers->@*) {
+    if (($self->risk_level_aml // '') eq 'high' || none { $_ eq 'idv' } $lc->allowed_poi_providers->@*) {
         # Disregard idv authentication under high risk
         return 1 if $self->is_idv_validated;
     }
@@ -6744,7 +6721,7 @@ sub is_face_similarity_required {
 
     return 1 if $self->landing_company->requires_face_similarity_check;
 
-    return 1 if $self->is_high_risk;
+    return 1 if ($self->risk_level_aml // '') eq 'high';
 
     return 0;
 }

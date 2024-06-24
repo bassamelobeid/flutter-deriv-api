@@ -1243,10 +1243,6 @@ subtest 'needs_poi_verification' => sub {
                 'binary_user_id' => sub {
                     return 'mocked';
                 });
-            $mocked_client->mock(
-                'is_high_risk' => sub {
-                    return 0;
-                });
 
             ok !$test_client_cr->needs_poi_verification, 'POI is not needed';
 
@@ -1275,10 +1271,6 @@ subtest 'needs_poi_verification' => sub {
             $mocked_client->mock(
                 'binary_user_id' => sub {
                     return 'mocked';
-                });
-            $mocked_client->mock(
-                'is_high_risk' => sub {
-                    return 0;
                 });
 
             ok !$test_client_cr->needs_poi_verification, 'POI is not needed';
@@ -3336,13 +3328,13 @@ subtest 'ignore age verification' => sub {
     $client->binary_user_id($user->id);
 
     my $cli_mock = Test::MockModule->new(ref($client));
-    my $high_risk;
+    my $aml_risk;
     my $idv_validated;
 
     $cli_mock->mock(
-        'is_high_risk',
+        'risk_level_aml',
         sub {
-            return $high_risk;
+            return $aml_risk;
         });
     $cli_mock->mock(
         'is_idv_validated',
@@ -3350,21 +3342,21 @@ subtest 'ignore age verification' => sub {
             return $idv_validated;
         });
 
-    $high_risk     = 0;
+    $aml_risk      = 'low';
     $idv_validated = 0;
 
     for my $lc (qw/vanuatu maltainvest bvi labuan/, undef) {
         ok !$client->ignore_age_verification({landing_company => $lc}), 'Not high risk nor IDV validated';
     }
 
-    $high_risk     = 1;
+    $aml_risk      = 'high';
     $idv_validated = 0;
 
     for my $lc (qw/vanuatu maltainvest bvi labuan/, undef) {
         ok !$client->ignore_age_verification({landing_company => $lc}), 'Not IDV validated';
     }
 
-    $high_risk     = 1;
+    $aml_risk      = 'high';
     $idv_validated = 1;
 
     for my $lc (qw/vanuatu maltainvest bvi labuan/, undef) {
@@ -3372,7 +3364,7 @@ subtest 'ignore age verification' => sub {
         ok $client->ignore_age_verification({landing_company => $lc}), "age verification is ignored on high risk lc=$str_lc";
     }
 
-    $high_risk     = 0;
+    $aml_risk      = 'low';
     $idv_validated = 1;
 
     for my $lc (qw/vanuatu maltainvest bvi labuan/, undef) {

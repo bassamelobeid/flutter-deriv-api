@@ -73,15 +73,11 @@ subtest 'get sr_risk_status' => sub {
 
     is $sr_risk, 'problem trader', 'user has sr_risk_status set to problem trader';
 
-    is $client->risk_level_sr, "high", 'social responsibility risk should be high';
-
     lives_ok { BOM::User::SocialResponsibility->update_sr_risk_status($id, 'manual override high') } 'sr_risk_status saved';
 
     lives_ok { $sr_risk = BOM::User::SocialResponsibility->get_sr_risk_status($id) } 'get sr_risk_status saved';
 
     is $sr_risk, 'manual override high', 'user has sr_risk_status set to manual override high';
-
-    is $client->risk_level_sr, "high", 'social responsibility risk should be high';
 
     lives_ok { $sr_risk = BOM::User::SocialResponsibility->get_sr_risk_status($id) } 'get sr_risk_status saved';
 

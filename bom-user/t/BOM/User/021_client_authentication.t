@@ -202,7 +202,7 @@ subtest 'set_authentication_and_status' => sub {
         my $tests = [{
                 authentication      => 'IDV_ADDRESS',
                 status              => 'pass',
-                high_risk           => 1,
+                aml_risk            => 'high',
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
                 fully_authenticated => 0,
@@ -211,7 +211,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV_ADDRESS',
                 status              => 'pass',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 ignore_idv          => 1,
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
@@ -221,7 +221,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV_ADDRESS',
                 status              => 'pending',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
                 fully_authenticated => 0,
@@ -230,7 +230,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV_ADDRESS',
                 status              => 'pass',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
                 fully_authenticated => 0,
@@ -239,7 +239,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV_ADDRESS',
                 status              => 'pass',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 lc                  => 'bvi',
                 auth_with_idv       => 1,
                 fully_authenticated => 1,
@@ -248,7 +248,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV_PHOTO',
                 status              => 'pass',
-                high_risk           => 1,
+                aml_risk            => 'high',
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
                 fully_authenticated => 0,
@@ -257,7 +257,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV_PHOTO',
                 status              => 'pass',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 ignore_idv          => 1,
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
@@ -267,7 +267,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV_PHOTO',
                 status              => 'pending',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
                 fully_authenticated => 0,
@@ -276,7 +276,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV_PHOTO',
                 status              => 'pass',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
                 fully_authenticated => 0,
@@ -285,7 +285,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV_PHOTO',
                 status              => 'pass',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 lc                  => 'bvi',
                 auth_with_idv       => 1,
                 fully_authenticated => 1,
@@ -294,7 +294,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV',
                 status              => 'pass',
-                high_risk           => 1,
+                aml_risk            => 'high',
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
                 fully_authenticated => 0,
@@ -303,7 +303,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV',
                 status              => 'pass',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 ignore_idv          => 1,
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
@@ -313,7 +313,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV',
                 status              => 'pending',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
                 fully_authenticated => 0,
@@ -322,7 +322,7 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV',
                 status              => 'pass',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 lc                  => 'maltainvest',
                 auth_with_idv       => 0,
                 fully_authenticated => 0,
@@ -331,23 +331,23 @@ subtest 'set_authentication_and_status' => sub {
             {
                 authentication      => 'IDV',
                 status              => 'pass',
-                high_risk           => 0,
+                aml_risk            => 'low',
                 lc                  => 'labuan',
                 auth_with_idv       => 1,
                 fully_authenticated => 1,
                 case                => 'idv poa pass'
             }];
         for my $test ($tests->@*) {
-            my ($authentication, $status, $high_risk, $ignore_idv, $lc, $auth_with_idv, $fully_authenticated, $case) =
-                @{$test}{qw/authentication status high_risk ignore_idv lc auth_with_idv fully_authenticated case/};
+            my ($authentication, $status, $aml_risk, $ignore_idv, $lc, $auth_with_idv, $fully_authenticated, $case) =
+                @{$test}{qw/authentication status aml_risk ignore_idv lc auth_with_idv fully_authenticated case/};
 
             $client_cr1->set_authentication($authentication, {status => $status}, 'testing script');
 
             my $client_mock = Test::MockModule->new('BOM::User::Client');
             $client_mock->mock(
-                'is_high_risk',
+                'risk_level_aml',
                 sub {
-                    return $high_risk;
+                    return $aml_risk;
                 });
 
             $client_cr1 = BOM::User::Client->new({loginid => $client_cr1->loginid});

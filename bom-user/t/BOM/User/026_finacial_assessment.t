@@ -71,7 +71,7 @@ subtest 'CR is_financial_assessment_complete' => sub {
     invalidate_object_cache($client_cr_1);
     lives_ok { $is_financial_assessment_complete = $client_cr_1->is_financial_assessment_complete(); }
     'is_financial_assessment_complete is needed';
-    is $is_financial_assessment_complete, 0, 'FI is required for high sr risk';
+    is $is_financial_assessment_complete, 1, 'FI is not required for high sr risk';
 
     lives_ok { BOM::User::SocialResponsibility->update_sr_risk_status($id, 'low'); } ' low sr_risk_status saved';
     invalidate_object_cache($client_cr_1);

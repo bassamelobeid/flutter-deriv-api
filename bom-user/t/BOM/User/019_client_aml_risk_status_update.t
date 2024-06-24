@@ -801,69 +801,6 @@ subtest 'AML risk update' => sub {
     $mock_user->unmock_all;
 };
 
-subtest 'is high risk' => sub {
-    my $tests = [{
-            sr     => 'high',
-            aml    => 'high',
-            result => 1,
-        },
-        {
-            sr     => 'high',
-            aml    => 'low',
-            result => 1,
-        },
-        {
-            sr     => 'low',
-            aml    => 'high',
-            result => 1,
-        },
-        {
-            sr     => 'low',
-            aml    => 'low',
-            result => 0,
-        },
-        {
-            sr     => 'high',
-            aml    => undef,
-            result => 1,
-        },
-        {
-            sr     => undef,
-            aml    => 'high',
-            result => 1,
-        },
-        {
-            sr     => undef,
-            aml    => undef,
-            result => 0,
-        },
-    ];
-
-    for my $test ($tests->@*) {
-        my ($sr, $aml, $result) = @{$test}{qw/sr aml result/};
-
-        my $client_mock = Test::MockModule->new('BOM::User::Client');
-
-        $client_mock->mock(
-            'risk_level_sr',
-            sub {
-                return $sr;
-            });
-
-        $client_mock->mock(
-            'risk_level_aml',
-            sub {
-                return $aml;
-            });
-
-        $aml //= 'undef';
-        $sr  //= 'undef';
-        is $client_cr->is_high_risk, $result, "Expected high risk result = $result (sr=$sr,aml=$aml)";
-
-        $client_mock->unmock_all;
-    }
-};
-
 sub update_payment_dates {
     my $client = shift;
 

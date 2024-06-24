@@ -667,12 +667,10 @@ subtest $rule_name => sub {
     my %args = (loginid => $client->loginid);
 
     my $risk_level_aml = 'low';
-    my $risk_level_sr  = 'low';
     my $authenticated  = 0;
     my $mock_client    = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(
         risk_level_aml      => sub { $risk_level_aml },
-        risk_level_sr       => sub { $risk_level_sr },
         fully_authenticated => sub { $authenticated });
 
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if risk level is low and unauthenticated';
@@ -683,15 +681,6 @@ subtest $rule_name => sub {
         rule       => $rule_name
         },
         'Error for high aml risk client';
-
-    $risk_level_aml = 'low';
-    $risk_level_sr  = 'high';
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'HighRiskNotAuthenticated',
-        rule       => $rule_name
-        },
-        'Error for high SR risk client';
 
     $authenticated = 1;
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if high risk client is authenticated';

@@ -52,7 +52,7 @@ rule 'mt5_account.account_poa_status_allowed' => {
         return 1 if $poa_status eq 'verified';
         return 1
             if $poa_status eq 'expired'
-            && !$client->is_high_risk
+            && $client->risk_level_aml ne 'high'
             && $client->fully_authenticated({landing_company => $mt5_jurisdiction});
 
         if (defined $mt5_id) {
@@ -78,7 +78,7 @@ rule 'mt5_account.account_poa_status_allowed' => {
             my $mt5_account = $loginid_details{$mt5_account_id};
             return 1 if not defined $mt5_account->{status} and $poa_status eq 'verified';
 
-            return 1 if ($mt5_account->{status} // 'active') eq 'poa_outdated' && !$client->is_high_risk;
+            return 1 if ($mt5_account->{status} // 'active') eq 'poa_outdated' && $client->risk_level_aml ne 'high';
 
             # look back for authentication updates (might have been outdated, etc)
             my $mt5_creation_datetime = Date::Utility->new($mt5_account->{creation_stamp});

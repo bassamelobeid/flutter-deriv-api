@@ -910,7 +910,6 @@ rpc
     my $client = $params->{client};
 
     my $risk_aml                   = $client->risk_level_aml;
-    my $risk_sr                    = $client->risk_level_sr;
     my $status                     = $client->status->visible;
     my $id_auth_status             = $client->authentication_status;
     my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
@@ -931,7 +930,6 @@ rpc
         push @$status, 'financial_assessment_notification' if BOM::RPC::v3::Utility::notify_financial_assessment($client);
     } elsif ($client->landing_company->is_authentication_mandatory
         or $risk_aml eq 'high'
-        or $risk_sr eq 'high'
         or ($client->status->withdrawal_locked and not $is_withdrawal_locked_for_fa)
         or $client->status->allow_document_upload
         or $client->locked_for_false_profile_info)
@@ -1051,16 +1049,14 @@ rpc
     my $is_verification_required         = $client->is_verification_required(
         check_authentication_status => 1,
         has_mt5_regulated_account   => $has_mt5_regulated_account,
-        risk_aml                    => $was_locked_for_high_risk ? 'high' : $risk_aml,
-        risk_sr                     => $risk_sr
+        risk_aml                    => $was_locked_for_high_risk ? 'high' : $risk_aml
     );
     my $authentication = _get_authentication(
         client                           => $client,
         onfido_suspended                 => $onfido_suspended,
         is_poi_expiration_check_required => $is_poi_expiration_check_required,
         is_verification_required         => $is_verification_required,
-        risk_aml                         => $was_locked_for_high_risk ? 'high' : $risk_aml,
-        risk_sr                          => $risk_sr
+        risk_aml                         => $was_locked_for_high_risk ? 'high' : $risk_aml
     );
 
     if ($is_poi_expiration_check_required) {
@@ -1123,7 +1119,7 @@ rpc
 
     return {
         status                        => [sort(uniq(@$status))],
-        risk_classification           => $risk_sr eq 'high' ? $risk_sr : $risk_aml // '',
+        risk_classification           => $risk_aml // '',
         prompt_client_to_authenticate => $is_verification_required,
         authentication                => $authentication,
         currency_config               => \%currency_config,
