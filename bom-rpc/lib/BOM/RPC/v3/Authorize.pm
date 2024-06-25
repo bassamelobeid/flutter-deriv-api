@@ -27,7 +27,6 @@ use LandingCompany::Registry;
 
 rpc authorize => sub {
     my $params = shift;
-
     my ($token, $token_details, $client_ip) = @{$params}{qw/token token_details client_ip/};
 
     return BOM::RPC::v3::Utility::suspended_login() if BOM::Config::Runtime->instance->app_config->system->suspend->all_logins;
@@ -228,7 +227,8 @@ sub _get_attributes_for_all_tokens {
 
     return _get_details_of_single_token($authorize_token, $token_details) unless @tokens;
 
-    # Get the attributes from database for each token, including the authorize token in case of single token
+    # Get the attributes from database for each token, including the authorize token
+    push @tokens, $authorize_token;
     my $token_instance = BOM::Platform::Token::API->new;
     my $attributes     = $token_instance->get_attributes_from_multiple_tokens(\@tokens);
 

@@ -162,7 +162,6 @@ sub _process_proposal_open_contract_response {
         } elsif (not exists $contract->{shortcode}) {
             my %copy_req = %$req_storage;
             delete @copy_req{qw(in_validator out_validator)};
-
             my $loginid = $args->{loginid} // $c->stash('loginid');
             $copy_req{loginid} = $loginid if $loginid;
             warn "undef shortcode. req_storage is: " . $json->encode(\%copy_req);

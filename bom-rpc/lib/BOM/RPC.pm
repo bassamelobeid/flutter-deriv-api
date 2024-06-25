@@ -118,11 +118,10 @@ sub wrap_rpc_sub {
         my $params        = $original_args[0] // {};
         my $log_context   = $original_args[1] // {};
         my $tv            = [Time::HiRes::gettimeofday];
+
         $params->{profile}->{rpc_send_rpcproc} = Time::HiRes::gettimeofday if $params->{is_profiling};
 
-        my $token_result = $params->{args}->{authorize} ? _get_token_from_authorize_call($params) : _get_authorized_token_by_loginid($params);
-        return $token_result->{error} if $token_result->{error};
-        $params->{token} = $token_result->{result}{token};
+        $params->{token} = _get_token_by_loginid($params);
 
         foreach (REQUEST_ARGUMENTS_TO_BE_IGNORED) {
             delete $params->{args}{$_};
@@ -379,67 +378,12 @@ sub _populate_client {
     # Add additional implementations here, if needed
 }
 
-=head2 _get_authorized_token_by_loginid {
+=head2 _get_token_by_loginid
 
-    $token = _get_authorized_token_by_loginid($params)
+    $token = _get_token_by_loginid($params)
 
-Websocket call is already authorized. Get the correct token by loginid when 
-multiple tokens were used during the authorize call.
-If only one token is used, return that token; loginid should not be defined in this case.
-
-=over 4
-
-=item * - C<params> - Hashref of parameters passed to the RPC method
-
-=back
-
-=cut
-
-sub _get_authorized_token_by_loginid {
-    my ($params) = @_;
-
-    my $request_loginid              = delete $params->{args}->{loginid};
-    my $stashed_token                = $params->{token};
-    my $stashed_account_tokens       = $params->{account_tokens};
-    my $stashed_account_tokens_count = $stashed_account_tokens ? keys %{$stashed_account_tokens} : 0;
-
-    # When there are multiple authorized tokens, get token by mandatory loginid.
-    if ($stashed_account_tokens_count > 1) {
-        if ($request_loginid && $stashed_account_tokens->{$request_loginid}) {
-            return {
-                status => 1,
-                result => {token => $stashed_account_tokens->{$request_loginid}{token}}};
-        }
-
-        return {
-            status => 0,
-            error  => BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidToken',
-                    message_to_client =>
-                        localize('The loginid parameter is missing or invalid. Please provide a valid loginid when multiple tokens are used.')})};
-    }
-
-    # When there's only 1 token authorized, there shouldn't be a loginid defined.
-    if ($request_loginid) {
-        return {
-            status => 0,
-            error  => BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidToken',
-                    message_to_client => localize('The loginid parameter is not required when only one token is used.')})};
-    }
-
-    return {
-        status => 1,
-        result => {token => $stashed_token}};
-}
-
-=head2 _get_token_from_authorize_call {
-
-    $token = _get_token_from_authorize_call($params)
-
-Set the default token for the RPC call when the authorize call is used (args->authorize is present).
-When multiple tokens are used, the first token will be returned.
-When only one token is used, that token will be returned.
+When account_tokens is defined, it will get the token by loginid if provided.
+When no account_tokens are provided or no loginid is present, it will return the token from the authorize argument.
 
 =over 4
 
@@ -449,31 +393,28 @@ When only one token is used, that token will be returned.
 
 =cut
 
-sub _get_token_from_authorize_call {
+sub _get_token_by_loginid {
     my ($params) = @_;
 
-    my $authorize_token = $params->{args}->{authorize};
-    my $tokens          = $params->{args}->{tokens};
+    my $loginid        = delete $params->{args}->{loginid};
+    my $token          = $params->{token};
+    my $account_tokens = $params->{account_tokens};
 
-    if ($authorize_token && $tokens) {
-        # This is a case for an authorize call, where multiple tokens are provided, MULTI for authorize is required.
-        # Return the first token within tokens. Validation will be done later on.
-        if ($authorize_token eq 'MULTI') {
-            return {
-                status => 1,
-                result => {token => $tokens->[0]}};
-        }
-
-        return {
-            status => 0,
-            error  => BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidToken',
-                    message_to_client => localize('When using multiple tokens, set authorize to MULTI.')})};
+    # After authorize call, and there's only 1 token provided.
+    if ($token && $account_tokens && keys $account_tokens->%* > 1 && !$loginid) {
+        return $token;
     }
 
-    return {
-        status => 1,
-        result => {token => $authorize_token}};
+    # After authorize call, and more than 1 token provided, use the loginid param if present.
+    if ($loginid) {
+        return $account_tokens->{$loginid}{token};
+    }
+
+    # For authorize call, set the token from the authorize argument.
+    $token = $params->{args}->{authorize} if !$token && $params->{args}->{authorize};
+
+    # Return token for authorize call or when no loginid is present.
+    return $token;
 }
 
 =head2 _handle_error

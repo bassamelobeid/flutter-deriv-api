@@ -184,14 +184,8 @@ subtest 'balance' => sub {
         'loginid'    => $bal_mf2->loginid,
     };
 
-    my $result = $c->tcall(
-        $method,
-        {
-            token => $bal_token,
-            args  => {loginid => $bal_mf2->loginid}});
-    is $result->{error}{code}, 'InvalidToken', 'loginid not accepted when using 1 token only.';
+    my $result = $c->tcall($method, {token => $bal_token});
 
-    $result = $c->tcall($method, {token => $bal_token});
     is_deeply($result, $expected_result, 'result is correct');
     my $args = {
         balance => 1,

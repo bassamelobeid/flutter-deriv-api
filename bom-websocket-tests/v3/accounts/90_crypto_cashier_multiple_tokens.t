@@ -55,7 +55,7 @@ $user->add_client($client2);
 my ($client2_token) = $oauth->store_access_token_only(1, $client2->loginid);
 
 subtest 'Crypto cashier calls with multiple tokens' => sub {
-    $t->await::authorize({authorize => 'MULTI', tokens => [$client1_token, $client2_token]});
+    $t->await::authorize({authorize => $client1_token, tokens => [$client2_token]});
 
     my $rpc_response    = {};
     my $mocked_response = Test::MockObject->new();
@@ -159,7 +159,6 @@ subtest 'Crypto cashier calls with multiple tokens' => sub {
             },
         ],
     };
-
     $ws_response = $t->await::cashier_payments({
         cashier_payments => 1,
         loginid          => $client2->loginid,

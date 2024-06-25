@@ -22,10 +22,9 @@ sub mock_c {
             }
             return $self->{stash};
         });
-    $c->mock('tx',                          sub { });
-    $c->mock('send',                        sub { shift; $c->{send_data} = shift; });
-    $c->mock('finish',                      sub { my $self = shift; $self->{stash} = {} });
-    $c->mock('is_invalid_loginid_argument', sub { });
+    $c->mock('tx',     sub { });
+    $c->mock('send',   sub { shift; $c->{send_data} = shift; });
+    $c->mock('finish', sub { my $self = shift; $self->{stash} = {} });
     return $c;
 }
 

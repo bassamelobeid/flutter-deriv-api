@@ -136,41 +136,24 @@ subtest 'balance' => sub {
         is_deeply($result, $expected_result, 'result is correct');
     };
 
-    subtest 'Call with invalid loginid argument' => sub {
-
-        $params->{args}->{loginid} = 'ABC12345';
-        my $expected_result = {
-            'error' => {
-                'code'              => 'InvalidToken',
-                'message_to_client' => 'The loginid parameter is missing or invalid. Please provide a valid loginid when multiple tokens are used.'
-            }};
-
-        my $result = $tc->tcall($method, $params);
-
-        is_deeply($result, $expected_result, 'result is correct - error when no loginid is provided');
-    };
-
     subtest 'Call with no loginid argument' => sub {
 
         delete $params->{args}->{loginid};
         my $expected_result = {
-            'error' => {
-                'code'              => 'InvalidToken',
-                'message_to_client' => 'The loginid parameter is missing or invalid. Please provide a valid loginid when multiple tokens are used.'
-            }};
+            'account_id' => $bal_cr->default_account->id,
+            'balance'    => '1005.00',
+            'currency'   => 'USD',
+            'loginid'    => $bal_cr->loginid,
+        };
 
         my $result = $tc->tcall($method, $params);
-
-        is_deeply($result, $expected_result, 'result is correct - error when no loginid is provided');
+        is_deeply($result, $expected_result, 'result is correct - use default loginid (=authorize token loginid)');
     };
 
     subtest 'Call with loginid not belonging to user.' => sub {
 
         $params->{args}->{loginid} = 'MF9876';
-        $c->call_ok($method, $params)
-            ->has_error->error_message_is(
-            'The loginid parameter is missing or invalid. Please provide a valid loginid when multiple tokens are used.',
-            'Token is not valid for current user.');
+        $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'Token is not valid for current user.');
     };
 
 };
