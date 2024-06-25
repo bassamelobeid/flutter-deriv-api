@@ -52,9 +52,33 @@ my $advertiser_nz_2 = BOM::Test::Helper::P2PWithClient::create_advertiser(
     balance        => 1000,
     client_details => {residence => 'nz'});
 
-my $methods_id = $advertiser_id->p2p_advertiser_payment_methods(create => [{method => 'method1'}, {method => 'method2'}]);
-my $methods_ng = $advertiser_ng->p2p_advertiser_payment_methods(create => [{method => 'method2'}, {method => 'method3'}]);
-my $methods_nz = $advertiser_nz->p2p_advertiser_payment_methods(create => [{method => 'method2'}, {method => 'method4'}]);
+my $methods_id = $advertiser_id->p2p_advertiser_payment_methods(
+    create => [{
+            method  => 'method1',
+            account => '123'
+        },
+        {
+            method  => 'method2',
+            account => '123'
+        }]);
+my $methods_ng = $advertiser_ng->p2p_advertiser_payment_methods(
+    create => [{
+            method  => 'method2',
+            account => '456'
+        },
+        {
+            method  => 'method3',
+            account => '456'
+        }]);
+my $methods_nz = $advertiser_nz->p2p_advertiser_payment_methods(
+    create => [{
+            method  => 'method2',
+            account => '789'
+        },
+        {
+            method  => 'method4',
+            account => '789'
+        }]);
 
 # sell ad with common pm
 my (undef, $ad_sell_id_1) = BOM::Test::Helper::P2P::create_advert(

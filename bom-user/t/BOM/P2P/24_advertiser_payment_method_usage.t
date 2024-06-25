@@ -38,16 +38,19 @@ subtest 'adverts' => sub {
 
     my %methods = $client->p2p_advertiser_payment_methods(
         create => [{
-                method => 'method1',
-                tag    => 'm1'
+                method  => 'method1',
+                account => '123',
+                tag     => 'm1'
             },
             {
-                method => 'method1',
-                tag    => 'm2'
+                method  => 'method1',
+                account => '456',
+                tag     => 'm2'
             },
             {
-                method => 'method2',
-                tag    => 'm3'
+                method  => 'method2',
+                account => '789',
+                tag     => 'm3'
             }])->%*;
 
     my %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
@@ -123,12 +126,14 @@ subtest 'adverts' => sub {
 
     %methods = $client->p2p_advertiser_payment_methods(
         create => [{
-                method => 'method1',
-                tag    => 'm4'
+                method  => 'method1',
+                account => '0120',
+                tag     => 'm4'
             },
             {
-                method => 'method1',
-                tag    => 'm5'
+                method  => 'method1',
+                account => '0121',
+                tag     => 'm5'
             }])->%*;
     %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
 
@@ -267,16 +272,19 @@ subtest 'buy ads / sell orders' => sub {
 
     my %methods = $client->p2p_advertiser_payment_methods(
         create => [{
-                method => 'method1',
-                tag    => 'm1'
+                method  => 'method1',
+                account => '0122',
+                tag     => 'm1'
             },
             {
-                method => 'method1',
-                tag    => 'm2'
+                method  => 'method1',
+                account => '0123',
+                tag     => 'm2'
             },
             {
-                method => 'method2',
-                tag    => 'm3'
+                method  => 'method2',
+                account => '0124',
+                tag     => 'm3'
             }])->%*;
     my %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
 
@@ -390,15 +398,18 @@ subtest 'sell ads / buy orders' => sub {
     my $advertiser         = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
     my %advertiser_methods = $advertiser->p2p_advertiser_payment_methods(
         create => [{
-                method => 'method1',
-                tag    => 'm1',
+                method  => 'method1',
+                account => '0125',
+                tag     => 'm1',
             },
             {
-                method => 'method1',
-                tag    => 'm2'
+                method  => 'method1',
+                account => '0126',
+                tag     => 'm2'
             },
             {
                 method     => 'method2',
+                account    => '0127',
                 tag        => 'm3',
                 is_enabled => 0,
             }])->%*;
@@ -421,8 +432,9 @@ subtest 'sell ads / buy orders' => sub {
 
     my %client_methods = $client->p2p_advertiser_payment_methods(
         create => [{
-                method => 'method1',
-                tag    => 'm1'
+                method  => 'method1',
+                account => '0128',
+                tag     => 'm1'
             }])->%*;
 
     cmp_deeply(
@@ -628,8 +640,9 @@ subtest 'legacy sell ads' => sub {
 
     my ($method) = keys $advertiser->p2p_advertiser_payment_methods(
         create => [{
-                method => 'method1',
-                tag    => 'm1'
+                method  => 'method1',
+                account => '0129',
+                tag     => 'm1'
             }])->%*;
     $ad = $advertiser->p2p_advert_update(
         id                 => $ad->{id},
@@ -661,16 +674,19 @@ subtest 'cross border ads' => sub {
 
     my %methods = $client_ng->p2p_advertiser_payment_methods(
         create => [{
-                method => 'method1',
-                tag    => 'm1',
+                method  => 'method1',
+                account => '1120',
+                tag     => 'm1',
             },
             {
-                method => 'method2',
-                tag    => 'm2',
+                method  => 'method2',
+                account => '1121',
+                tag     => 'm2',
             },
             {
-                method => 'method3',
-                tag    => 'm3',
+                method  => 'method3',
+                account => '1122',
+                tag     => 'm3',
             }])->%*;
 
     my %method_ids = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;

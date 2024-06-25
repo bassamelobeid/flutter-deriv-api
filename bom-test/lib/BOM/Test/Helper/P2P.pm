@@ -345,7 +345,13 @@ sub create_payment_methods {
                 tag => {
                     display_name => 'ID',
                     required     => 0
-                }
+                },
+                instructions => {
+                    display_name => 'instructions',
+                    required     => 0,
+                    type         => 'memo',
+                },
+                account => {display_name => 'account'}
             },
         };
     }

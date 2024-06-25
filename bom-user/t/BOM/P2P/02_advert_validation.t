@@ -1087,10 +1087,12 @@ subtest $method => sub {
     my %pms = $advertiser->p2p_advertiser_payment_methods(
         create => [{
                 method     => 'method1',
+                account    => '123',
                 is_enabled => 0,
             },
             {
                 method     => 'method2',
+                account    => '456',
                 is_enabled => 0,
             }
         ],

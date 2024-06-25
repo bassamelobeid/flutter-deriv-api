@@ -3918,7 +3918,7 @@ sub p2p_advertiser_payment_methods {
     my $advertiser = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser;
 
-    $self->set_db('write') if %param;
+    $self->set_db('write') if %param && $self->get_db ne 'write';
     my $existing = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
 
     delete $param{p2p_advertiser_payment_methods};
@@ -3995,54 +3995,64 @@ Returns $existing with updated items.
 
 sub _p2p_advertiser_payment_method_update {
     my ($self, $existing, $updates) = @_;
-
-    my $method_defs = $self->p2p_payment_methods();    # pm can be updated after being disabled in country
-
+    my $pm_defs = $self->p2p_payment_methods();    # pm can be updated after being disabled in country
     my (@disabled_ids, @updated_ids);
+    my $old_pm_details = {};
+
+    $self->set_db('replica');
     for my $id (keys %$updates) {
+        die +{error_code => 'PaymentMethodNotFound'} unless exists $existing->{$id};
 
-        die +{error_code => 'PaymentMethodNotFound'}
-            unless exists $existing->{$id};
+        my $method   = $existing->{$id}{method};
+        my $pm_def   = $pm_defs->{$method};
+        my %combined = ($existing->{$id}{fields}->%*, $updates->{$id}->%*);
+        # we need to combine fields from $existing and $updates to do proper validation for:
+        # (1) MissingPaymentMethodField: If API users omit a required field (which was previously optional) during pm update, we still need to flag it as: MISSING REQUIRED FIELD
+        # (2) DuplicatePaymentMethod: For existing duplicate pms, if user omit required fields and updates any optional field, we need to flag it as DUPLICATE PM
 
-        my $method = $existing->{$id}{method};
-
-        if (my $method_def = $method_defs->{$method}) {
-            for my $item_field (grep { $_ !~ /^(method|is_enabled)$/ } keys $updates->{$id}->%*) {
-
-                my $field_def = $method_def->{fields}{$item_field};
-
-                die +{
-                    error_code     => 'InvalidPaymentMethodField',
-                    message_params => [$item_field, $method_def->{display_name}]}
-                    unless $field_def;
-
-                die +{
-                    error_code     => 'MissingPaymentMethodField',
-                    message_params => [$field_def->{display_name}, $method_defs->{$method}{display_name}]}
-                    if $field_def->{required} and not(trim($updates->{$id}{$item_field}));
-
-                $existing->{$id}{fields}{$item_field} = $updates->{$id}{$item_field};
-            }
-        }
-
-        for my $pm_id (keys %$existing) {
-            next if $pm_id == $id;
-
-            my $other_pm = $existing->{$pm_id};
-            next unless $other_pm->{method} eq $method;
-
-            # Compare settings of PM
-            next unless all { lc $other_pm->{fields}{$_} eq lc $existing->{$id}{fields}{$_} } keys $other_pm->{fields}->%*;
+        for my $item_field (grep { $_ ne 'is_enabled' } keys %combined) {
+            my $field_def = $pm_def->{fields}{$item_field};
+            die +{
+                error_code     => 'InvalidPaymentMethodField',
+                message_params => [$item_field, $pm_def->{display_name}]}
+                unless $field_def;
 
             die +{
-                error_code     => 'DuplicatePaymentMethod',
-                message_params => [$method_defs->{$method} ? $method_defs->{$method}{display_name} : $method]};
+                error_code     => 'MissingPaymentMethodField',
+                message_params => [$field_def->{display_name}, $pm_def->{display_name}]}
+                if $field_def->{required} and not(trim($combined{$item_field}));
+
+            $old_pm_details->{$id}{fields}{$item_field} = ($existing->{$id}{fields}{$item_field} // '');
+            $existing->{$id}{fields}{$item_field}       = $combined{$item_field};
+        }
+
+        $self->_p2p_validate_other_pm($combined{name}) if $method eq 'other';
+
+        my %required = map { $pm_def->{fields}{$_}{required} ? ($_ => $combined{$_}) : () } keys $pm_def->{fields}->%*;
+
+        # If there are no required fields for a particular pm, we don't need to check for duplicates
+        # without this check, we will get a false positive for DuplicatePaymentMethod error
+        if (my @keys = keys %required) {
+            for my $pm_id (keys %$existing) {
+                next if $pm_id == $id or ($existing->{$pm_id}->{method} ne $method);
+                my $other_pm = $existing->{$pm_id};
+
+                next unless all { lc($other_pm->{fields}{$_}) eq lc($existing->{$id}{fields}{$_}) } @keys;
+                die +{
+                    error_code     => 'DuplicatePaymentMethod',
+                    message_params => [$pm_def ? $pm_def->{display_name} : $method]};
+            }
+
+            if (any { $combined{$_} ne ($old_pm_details->{$id}{fields}{$_} // '') } keys $updates->{$id}->%*) {
+                $self->_p2p_is_pm_global_duplicate($method, \%required, $pm_def->{display_name});
+            }
         }
 
         push(@disabled_ids, $id) if exists $updates->{$id}{is_enabled} and (!$updates->{$id}{is_enabled}) and $existing->{$id}{is_enabled};
         push(@updated_ids,  $id);
     }
 
+    $self->set_db('write');
     $self->_p2p_check_payment_methods_in_use(\@disabled_ids, \@updated_ids);
 
     $self->db->dbic->run(
@@ -4073,66 +4083,149 @@ Returns undef.
 
 sub _p2p_advertiser_payment_method_create {
     my ($self, $existing, $new) = @_;
+    my $pm_defs  = $self->p2p_payment_methods($self->residence);
+    my $dummy_id = 0;
 
-    my $method_defs = $self->p2p_payment_methods($self->residence);
-
+    $self->set_db('replica');
     for my $item (@$new) {
         my $method = $item->{method};
 
         die +{
             error_code     => 'InvalidPaymentMethod',
             message_params => [$method]}
-            unless exists $method_defs->{$method};
+            unless exists $pm_defs->{$method};
+
+        my $method_def = $pm_defs->{$method};
 
         for my $item_field (grep { $_ !~ /^(method|is_enabled)$/ } keys %$item) {
             die +{
                 error_code     => 'InvalidPaymentMethodField',
-                message_params => [$item_field, $method_defs->{$method}{display_name}]}
-                unless exists $method_defs->{$method}{fields}{$item_field};
+                message_params => [$item_field, $method_def->{display_name}]}
+                unless exists $method_def->{fields}{$item_field};
+        }
+        my %required = ();
+        for my $field (keys $method_def->{fields}->%*) {
+            next if $field =~ /^(method|is_enabled)$/;
+            next unless $method_def->{fields}{$field}{required};
+            if (!trim($item->{$field})) {
+                die +{
+                    error_code     => 'MissingPaymentMethodField',
+                    message_params => [$method_def->{fields}{$field}{display_name}, $method_def->{display_name}]};
+            }
+            $required{$field} = $item->{$field};
         }
 
-        for my $required_field (grep { $method_defs->{$method}{fields}{$_}{required} } $method_defs->{$method}{fields}->%*) {
-            die +{
-                error_code     => 'MissingPaymentMethodField',
-                message_params => [$method_defs->{$method}{fields}{$required_field}{display_name}, $method_defs->{$method}{display_name}]}
-                unless trim($item->{$required_field});
+        $self->_p2p_validate_other_pm($item->{name}, $pm_defs) if $method eq 'other';
+
+        if (my @keys = keys %required) {
+            for my $existing_pm (values %$existing) {
+                next if $existing_pm->{method} ne $method;
+                next unless all { lc $item->{$_} eq lc($existing_pm->{fields}{$_} // '') } @keys;
+                die +{
+                    error_code     => 'DuplicatePaymentMethod',
+                    message_params => [$method_def->{display_name}]};
+            }
+            $self->_p2p_is_pm_global_duplicate($method, \%required, $method_def->{display_name});
+
+            # try to detect duplicates within same call for existing pms
+            $existing->{--$dummy_id} = {
+                method => $method,
+                fields => {pairgrep { $required{$a} } %$item}};
         }
+    }
 
-        for my $existing_pm (values %$existing) {
-            next unless $existing_pm->{method} eq $method;
-
-            # Compare settings of PM
-            next unless all { lc $item->{$_} eq lc($existing_pm->{fields}{$_} // '') } grep { $_ !~ /^(method|is_enabled)$/ } keys %$item;
-
-            die +{
-                error_code     => 'DuplicatePaymentMethod',
-                message_params => [$method_defs->{$method}{display_name}]};
-        }
-
-        # try to detect duplicates within same call, it will be caught by db in any case
-        $existing->{rand()} = {
-            method => $method,
-            fields => {pairgrep { $a !~ /^(method|is_enabled)$/ } %$item}};
-
+    $self->set_db('write');
+    for my $item (@$new) {
         my $created_pm = $self->db->dbic->run(
             fixup => sub {
                 my $dbh = shift;
                 return $dbh->selectrow_hashref(
-                    'SELECT *  FROM p2p.advertiser_payment_method_create_v2(?, ?)',
+                    'SELECT * FROM p2p.advertiser_payment_method_create_v2(?, ?)',
                     undef,
                     $self->_p2p_advertiser_cached->{id},
                     Encode::encode_utf8(encode_json_utf8($item)));
             });
 
         if ($created_pm->{error_params}->[0]) {
-            $created_pm->{error_params}->[0] = $method_defs->{$item->{method}}{display_name};
+            $created_pm->{error_params}->[0] = $pm_defs->{$item->{method}}{display_name};
         }
 
         $self->_p2p_db_error_handler($created_pm);
-
     }
 
     return;
+}
+
+=head2 _p2p_validate_other_pm
+
+Check if name given for OTHER payment method (pm) contains any keywords/name of ewallets/bank_transfer supported in P2P.
+
+=over 4
+
+=item * $name: user input for name of OTHER pm
+
+=item * $pm_keywords: list of keywords/name (listed in p2p_payment_methods.yml) of pms available in advertiser's country
+
+=back
+
+Dies or returns undef.
+
+=cut
+
+sub _p2p_validate_other_pm {
+    my ($self, $name, $country_pm_def) = @_;
+    my $pms = $self->_p2p_payment_methods_cached;
+
+    $country_pm_def //= $self->p2p_payment_methods($self->residence);
+    $pms = +{pairgrep { $country_pm_def->{$a} } %$pms};
+    delete $pms->@{qw(other bank_transfer)};
+    # other pm is excluded from this check as the name is very generic
+    # bank is excluded as there are other ewallet pm that contains the word: 'bank'
+
+    # if advertiser's input contains keywords of PM that's disabled/unavailable in his country, this check will not apply
+    my @pm_keywords = map { $pms->{$_}{keywords} ? $pms->{$_}{keywords}->@* : ($_ =~ s/_//gr) } keys %$pms;
+    my $cleaned     = lc($name =~ s/[^a-zA-Z]//gr);
+
+    if (any { length($_) > 3 && index($cleaned, $_) != -1 } @pm_keywords) {
+
+        die +{
+            error_code     => 'InvalidOtherPaymentMethodName',
+            message_params => [$name]};
+    }
+}
+
+=head2 _p2p_is_pm_global_duplicate
+
+Check if payment method (pm) details provided are already in use by another advertiser
+
+=over 4
+
+=item * $method: name of pm for internal use (keys in p2p_payment_methods.yml)
+
+=item * $required_params: key-value pair where the keys are required fields of a particular pm
+
+=item * $display_name: name of pm we show to client (display_name in p2p_payment_methods.yml)
+
+=back
+
+Dies or returns undef.
+
+=cut
+
+sub _p2p_is_pm_global_duplicate {
+    my ($self, $method, $required_params, $display_name) = @_;
+
+    my ($duplicate_pm_exist) = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                'SELECT * FROM p2p.check_duplicate_payment_method(?,?,?)', undef,
+                $self->_p2p_advertiser_cached->{id},                       $method,
+                Encode::encode_utf8(encode_json_utf8($required_params)));
+        });
+
+    die +{
+        error_code     => 'PaymentMethodInfoAlreadyInUse',
+        message_params => [$display_name]} if $duplicate_pm_exist;
 }
 
 =head2 _p2p_check_payment_methods_in_use
@@ -4427,6 +4520,11 @@ sub email {
 sub db {
     my $self = shift;
     return $self->{client}->db;
+}
+
+sub get_db {
+    my $self = shift;
+    return $self->{client}->get_db;
 }
 
 sub set_db {

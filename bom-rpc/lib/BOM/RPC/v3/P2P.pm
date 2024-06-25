@@ -168,11 +168,15 @@ our %ERROR_MAP = do {
         InvalidFinalStateForDispute => localize('This order is complete and can no longer be disputed.'),
         TemporaryBar                =>
             localize("You've been temporarily barred from using our services due to multiple cancellation attempts. Try again after [_1] GMT."),
-        PaymentMethodNotFound       => localize('The payment method ID does not exist.'),
-        InvalidPaymentMethodField   => localize('[_1] is not a valid field for payment method [_2].'),
-        InvalidPaymentMethod        => localize('Invalid payment method provided: [_1].'),
-        MissingPaymentMethodField   => localize('[_1] is a required field for payment method [_2]. Please provide a value.'),
-        DuplicatePaymentMethod      => localize('You have a payment method with the same values for [_1].'),
+        PaymentMethodNotFound         => localize('The payment method ID does not exist.'),
+        InvalidPaymentMethodField     => localize('[_1] is not a valid field for payment method [_2].'),
+        InvalidPaymentMethod          => localize('Invalid payment method provided: [_1].'),
+        MissingPaymentMethodField     => localize('[_1] is a required field for payment method [_2]. Please provide a value.'),
+        DuplicatePaymentMethod        => localize('You have a payment method with the same values for [_1].'),
+        InvalidOtherPaymentMethodName => localize('[_1] is similar to an available P2P payment method. Try entering a different payment method.'),
+        PaymentMethodInfoAlreadyInUse => localize(
+            'The [_1] details you entered are already in use by another advertiser. Use different details or contact us via live chat for further assistance.'
+        ),
         PaymentMethodUsedByAd       => localize("You can't delete this payment method because it's in use by these sell ad(s): [_1]"),
         PaymentMethodUsedByOrder    => localize('This payment method is in use by the following order(s): [_1]. Please wait until it completes.'),
         PaymentMethodInUse          => localize('This payment method is in use by multiple ads and/or orders, and cannot be deleted or deactivated.'),

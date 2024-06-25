@@ -13,12 +13,16 @@
     account:
       display_name: 2Checkout account
   type: ewallet
+  keywords:
+    - checkout
 543konse:
   display_name: 543 Konse Konse
   fields:
     account:
       display_name: 543 Konse Konse account
   type: ewallet
+  keywords:
+    - konse
 access_money_wallet:
   display_name: Access Money Wallet
   fields:
@@ -49,6 +53,9 @@ atease:
     account:
       display_name: '@ease wallet account'
   type: ewallet
+  keywords:
+    - easewallet
+    - atease
 azimo:
   display_name: Azimo
   fields:
@@ -69,6 +76,8 @@ bank_transfer:
       display_name: Branch
       required: 0
   type: bank
+  keywords:
+    - bank
 bitpay:
   display_name: BitPay
   fields:
@@ -315,6 +324,8 @@ moov:
     account:
       display_name: Moov Money account
   type: ewallet
+  keywords:
+    - moovmoney
 mpesa_tanzania:
   display_name: M-Pesa Tanzania
   fields:
@@ -327,6 +338,9 @@ mtn_momo:
     account:
       display_name: MTN Mobile Money (MoMo) account
   type: ewallet
+  keywords:
+    - mtnmomo
+    - mtnmobilemoney
 myghpay:
   display_name: Myghpay
   fields:
@@ -380,7 +394,6 @@ other:
   fields:
     account:
       display_name: Account ID / phone number / email
-      required: 0
     name:
       display_name: Payment method name
   type: other
@@ -523,6 +536,8 @@ solidpaywave:
     account:
       display_name: Wallet ID
   type: ewallet
+  keywords:
+    - solidpyco
 speedpay_mobile:
   display_name: SpeedPay mobile
   fields:
@@ -595,12 +610,17 @@ upi:
     account :
       display_name: UPI ID 
   type: bank
+  keywords:
+    - upi
+    - unifiedpaymentsinterface
 united_bank_of_zambia_ewallet:
   display_name: United Bank of Zambia E-wallet
   fields:
     account:
       display_name: United Bank of Zambia E-wallet account
   type: ewallet
+  keywords:
+    - unitedbankofzambia
 unitylink:
   display_name: Unitylink
   fields:

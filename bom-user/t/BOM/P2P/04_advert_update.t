@@ -222,10 +222,12 @@ subtest 'updating all advert fields' => sub {
     my @pms = keys $advertiser->p2p_advertiser_payment_methods(
         create => [{
                 method     => 'method1',
+                account    => 'abc',
                 is_enabled => 0,
             },
             {
                 method     => 'method2',
+                account    => 'def',
                 is_enabled => 0,
             }
         ],
@@ -375,12 +377,14 @@ subtest 'updating advert fields that will be reflected in orders' => sub {
 
     my %advertiser_methods = $advertiser->p2p_advertiser_payment_methods(
         create => [{
-                method => 'method1',
-                tag    => 'm1'
+                method  => 'method1',
+                account => '123',
+                tag     => 'm1'
             },
             {
-                method => 'method2',
-                tag    => 'm2'
+                method  => 'method2',
+                account => '456',
+                tag     => 'm2'
             }])->%*;
 
     my %methods_by_tag = map { $advertiser_methods{$_}->{fields}{tag}{value} => $_ } keys %advertiser_methods;

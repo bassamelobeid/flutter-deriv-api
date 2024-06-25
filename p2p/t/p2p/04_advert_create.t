@@ -1090,7 +1090,15 @@ subtest 'subscriptions' => sub {
 
     cmp_deeply decode_json_utf8($redis->get($key)), {}, 'no ads, no state saved in redis';
 
-    my $pms = $p2p_client1->p2p_advertiser_payment_methods(create => [{method => 'method1'}, {method => 'method2'}]);
+    my $pms = $p2p_client1->p2p_advertiser_payment_methods(
+        create => [{
+                method  => 'method1',
+                account => '123'
+            },
+            {
+                method  => 'method2',
+                account => '456'
+            }]);
     $p2p_client1->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_approved=TRUE WHERE id = $advertiser_id");
 
     delete $p2p_client1->{_p2p_advertiser_cached};

@@ -265,7 +265,7 @@
             display_name: ''
           branch:
             display_name: ''
-            required: ''
+            required: 0
         type: ''
       bitpay: *payment_method_details
       boss_revolution: *payment_method_details
@@ -323,7 +323,6 @@
         fields:
           account:
             display_name: ''
-            required: 0
           name:
             display_name: ''
         type: ''
