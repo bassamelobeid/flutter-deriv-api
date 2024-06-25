@@ -243,7 +243,7 @@ sub handle_api_error {
     my $error_message = sprintf('ctrader call failed for %s: %s, call args: %s', $self->client->loginid, Dumper($resp), Dumper(\%args));
     $error_message =~ s/[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+/*****/g;
     $log->warnf('%s', $error_message);
-    die +{error_code => $error_code // 'CTraderGeneral'};
+    die +{error_code => $error_code // $resp->[0]->{error}->{errorCode} // 'CTraderGeneral'};
 }
 
 =head2 handle_trader_not_found_error
@@ -1023,17 +1023,6 @@ sub sync_account_contact_details {
     my $ctid_userid = $self->get_ctid_userid();
     die "ctid is not found for " . $self->client->loginid unless $ctid_userid;
 
-    my $ctid_api_userid;
-    try {
-        $ctid_api_userid = $self->call_api(
-            server  => 'real',
-            method  => 'ctid_getuserid',
-            path    => 'cid',
-            payload => {email => $self->client->email});
-    } catch ($e) {
-        push @$sync_error, {ctid_getuserid => $ctid_userid};
-    }
-
     try {
         $self->call_api(
             server  => 'real',
@@ -1042,9 +1031,9 @@ sub sync_account_contact_details {
             payload => {
                 userId   => $ctid_userid,
                 newEmail => $self->client->email,
-            }) unless $ctid_api_userid->{userId};
+            });
     } catch ($e) {
-        push @$sync_error, {ctid_changeemail => $ctid_userid};
+        push @$sync_error, {ctid_changeemail => $ctid_userid} unless ref $e eq 'HASH' and $e->{error_code} eq 'CH_EMAIL_ALREADY_EXISTS';
     }
 
     return $sync_error;

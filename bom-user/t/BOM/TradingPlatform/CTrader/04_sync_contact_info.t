@@ -84,37 +84,23 @@ subtest "cTrader Sync Contact Flow" => sub {
         );
     };
 
-    subtest 'ctid_changeemail not called if ctid_getuserid return id (correct existing email)' => sub {
+    subtest 'Sync flow have correct API calls' => sub {
         $ctrader_api_history = [];
         $ctrader->sync_account_contact_details();
 
-        is(scalar(@$ctrader_api_history),       3,                'ctid_changeemail not called');
-        is($ctrader_api_history->[0]->{method}, 'trader_get',     'trader_get called');
-        is($ctrader_api_history->[1]->{method}, 'trader_update',  'trader_update called');
-        is($ctrader_api_history->[2]->{method}, 'ctid_getuserid', 'ctid_getuserid called');
-    };
-
-    subtest 'ctid_changeemail is called if ctid_getuserid return none (incorrect existing email)' => sub {
-        $ctrader_api_history = [];
-        $mock_apidata->{ctid_getuserid} = sub { {} };
-        $ctrader->sync_account_contact_details();
-
-        is(scalar(@$ctrader_api_history),       4,                  'ctid_changeemail not called');
+        is(scalar(@$ctrader_api_history),       3,                  'correct number of api');
         is($ctrader_api_history->[0]->{method}, 'trader_get',       'trader_get called');
         is($ctrader_api_history->[1]->{method}, 'trader_update',    'trader_update called');
-        is($ctrader_api_history->[2]->{method}, 'ctid_getuserid',   'ctid_getuserid called');
-        is($ctrader_api_history->[3]->{method}, 'ctid_changeemail', 'ctid_changeemail called');
+        is($ctrader_api_history->[2]->{method}, 'ctid_changeemail', 'ctid_changeemail called');
 
         cmp_deeply(
-            $ctrader_api_history->[3]->{payload},
+            $ctrader_api_history->[2]->{payload},
             {
                 userId   => 100,
                 newEmail => $test_client->email,
             },
             'ctid_changeemail called with latest email with user id'
         );
-
-        $mock_apidata->{ctid_getuserid} = sub { {userId => 100} };
     };
 };
 
