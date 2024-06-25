@@ -23,6 +23,7 @@
                 <th scope="col">is Priority</th>
                 <th scope="col">Protocol Cost</th>
                 <th scope="col">Status</th>
+                <th scope="col">Payment ID</th>
                 <th scope="col">Status date</th>
                 <th scope="col">Blockchain date</th>
                 <th scope="col">Confirmations</th>
@@ -44,6 +45,7 @@
                 <td class="right">[% trx.is_priority %]</td>
                 <td class="right">[% trx.protocol_cost %]</td>
                 <td>[% trx.status %]</td>
+                <td>[% trx.payment_id %]</td>
                 <td sorttable_customkey="[% trx.status_date %]">[% trx.status_date && date.format(trx.status_date, '%Y-%m-%d %T') %]</td>
                 <td sorttable_customkey="[% trx.blockchain_date %]">[% trx.blockchain_date && date.format(trx.blockchain_date, '%Y-%m-%d %T') %]</td>
                 <td class="[% trx.confirmations >= 3 ? 'success' : 'text-muted' %]">[% trx.confirmations %]</td>
