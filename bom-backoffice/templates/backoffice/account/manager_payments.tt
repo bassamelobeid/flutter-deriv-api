@@ -159,7 +159,7 @@
             <option value="mt5_adjustment"      >MT5 Adjustment</option>
             <option value="dxtrade_adjustment"  >DXtrade Adjustment</option> 
             <option value="account_transfer"    >Account Transfer</option>
-            <option value="closed_account"      >Closed Account</option>
+            <option value="closed_account"      >Account Closed</option>
             <option value="recovery"            >Recovery</option>
         </select>
     </div>

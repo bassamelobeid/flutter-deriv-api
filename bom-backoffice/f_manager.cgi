@@ -154,7 +154,7 @@ if (BOM::Backoffice::Auth::has_authorisation(['Payments'])) {
         . "\" method=post>"
         . "<input type=hidden name=broker value=$encoded_broker>"
         . "<div class='row'><label>List of accounts:</label><input type=text size=60 name=listaccounts value='CBET1020,CBET1021' data-lpignore='true' /> (separate with commas)</div>"
-        . "<div class='row'><label>Message:</label><input type=text size=65 name=message value='Account closed.' data-lpignore='true' /></div>"
+        . "<div class='row'><label>Message:</label><input type=text size=65 name=message value='Account Closed' data-lpignore='true' /></div>"
         . "<div class='row'><select name=whattodo><option>Simulate<option>Do it for real !</select>"
         . " <input type=submit class='btn btn--primary' value='Rescind these accounts!'></div>"
         . "</form>";

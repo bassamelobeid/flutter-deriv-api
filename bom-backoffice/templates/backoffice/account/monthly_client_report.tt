@@ -30,7 +30,7 @@
             [ 'adjustment_purchase','Contract Purchase Adjustment' ],
             [ 'adjustment_sale'     'Contract Sale Adjustment' ],
             [ 'cancellation',       'Cancellation' ],
-            [ 'closed_account',     'Closed Account' ],
+            [ 'closed_account',     'Account Closed' ],
             [ 'dormant_fee',        'Dormant Fee' ],
             [ 'external_cashier',   'Doughflow' ],
             [ 'free_gift',          'Free Gift' ],

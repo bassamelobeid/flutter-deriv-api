@@ -21,7 +21,7 @@ BrokerPresentation("RESCIND LIST OF ACCOUNTS");
 my $clerk = BOM::Backoffice::Auth::get_staffname();
 
 my $listaccounts = request()->param('listaccounts');
-my $message      = request()->param('message') || 'Account closed.';
+my $message      = request()->param('message') || 'Account Closed';
 $listaccounts =~ s/ //g;
 
 my $grandtotal = 0;
