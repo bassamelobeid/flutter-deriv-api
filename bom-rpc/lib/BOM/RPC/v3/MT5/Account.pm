@@ -979,7 +979,12 @@ async_rpc "mt5_new_account",
     return create_error_future('permission') unless $group_config;
 
     # Suspend zero spread account creation
-    return create_error_future('permission') if BOM::Config::Runtime->instance->app_config->system->mt5->suspend->zero_spread_account_creation;
+    if ($sub_account_type eq 'zero_spread') {
+        my $app_config = BOM::Config::Runtime->instance->app_config;
+        if ($app_config->system->mt5->suspend->zero_spread_account_creation) {
+            return create_error_future('permission');
+        }
+    }
 
     my $compliance_requirements = $requirements->{compliance};
 

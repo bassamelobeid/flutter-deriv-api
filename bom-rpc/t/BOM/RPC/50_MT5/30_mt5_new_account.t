@@ -2058,4 +2058,55 @@ subtest 'account_type=demo, server=p01_ts01, country=id, mt5 zero spread account
         'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
 };
 
+subtest 'account_type=demo, server=p01_ts01, country=id, mt5 zero spread suspend account creation' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    my $new_email  = 'zero_spread_suspend_' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'id'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->citizen('id');
+    $new_client->tax_residence('id');
+    $new_client->tax_identification_number('1234');
+    $new_client->account_opening_reason('Testing');
+    $new_client->save;
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'junkfile123',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'all',
+            email        => $new_email,
+            name         => $details{name},
+            mainPassword => $details{password}{main},
+            leverage     => 100,
+            company      => 'bvi',
+            product      => 'zero_spread',
+        },
+    };
+
+    # Test for suspend zero_spread account creation
+    $app_config->system->mt5->suspend->zero_spread_account_creation(1);
+    $c->call_ok('mt5_new_account', $params)->has_error->error_code_is('PermissionDenied', 'Permission denied.');
+
+    # Remove zero_spread product and add account_type and mt5_account_type as "financial" in args
+    delete $params->{args}->{product};
+    $params->{args}->{account_type}     = 'financial';
+    $params->{args}->{mt5_account_type} = 'financial';
+
+    # Try to create other account
+    $c->call_ok($method, $params)->has_no_error('other mt5 product should not be suspended if zero_spread_account_creation got suspended');
+    is($user->loginid_details->{MTR1001019}->{attributes}->{group}, 'real\p01_ts01\financial\bvi_std-hr_usd', "created group is correct");
+
+    $app_config->system->mt5->suspend->zero_spread_account_creation(0);
+};
+
 done_testing();
