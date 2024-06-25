@@ -42,8 +42,13 @@ my $rule_engine_mf = BOM::Rules::Engine->new(client => $client_mf);
 subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
     my $rule_name = 'profile.date_of_birth_complies_minimum_age';
     my $minimum_age;
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
-    $mock_countries->redefine(minimum_age_for_country => sub { return $minimum_age });
+    my $mock_countries = Test::MockModule->new('Business::Config::Country');
+    $mock_countries->redefine(
+        signup => sub {
+            return {
+                minimum_age => $minimum_age,
+            };
+        });
 
     my $args = {residence => 'af'};
 

@@ -15,6 +15,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use LandingCompany::Registry;
 
+use Business::Config::Account::Type::Registry;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::User;
@@ -149,7 +150,7 @@ sub create_client {
     $details{account_opening_reason}    = 'Speculative';
     $details{date_of_birth}             = '1990-01-01';
 
-    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name('binary', 'real');
+    my $account_type = Business::Config::Account::Type::Registry->new()->account_type_by_name('binary');
 
     my $client = $user->create_client(
         %details,

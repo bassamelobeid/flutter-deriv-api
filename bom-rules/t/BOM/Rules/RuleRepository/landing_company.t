@@ -52,6 +52,11 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
         broker_code => 'MLT',
     });
     $user->add_client($client_mlt);
+    $client_mlt->binary_user_id($user->id);
+    $client_mlt->save;
+
+    delete $user->{landing_companies};
+
     my $engine = BOM::Rules::Engine->new(
         client => $client_mlt,
         user   => $user
@@ -65,6 +70,8 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
         description => 'New account limit reached'
         },
         'Number of MLT accounts is limited';
+
+    delete $user->{landing_companies};
 
     $args{landing_company} = 'maltainvest';
     lives_ok { $engine->apply_rules($rule_name, %args) } 'There is no maltainvest account so it is ok';
@@ -82,6 +89,8 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
         client => [$client_mf, $client_mlt, $client_vr],
         user   => $user
     );
+
+    delete $user->{landing_companies};
 
     is_deeply exception { $engine->apply_rules($rule_name, %args) },
         {
@@ -131,6 +140,9 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
 
         my $vrtc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC', account_type => 'standard'});
         $user->add_client($vrtc, $vrw->loginid);
+
+        delete $user->{landing_companies};
+
         is_deeply exception { $engine->apply_rules($rule_name, %args) },
             {
             error_code  => 'VirtualAccountExists',
@@ -151,7 +163,7 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
         last_name  => ''
     );
 
-    my $mock_lc = Test::MockModule->new('LandingCompany');
+    my $mock_lc = Test::MockModule->new('Business::Config::LandingCompany');
     $mock_lc->redefine(requirements => sub { return +{signup => [qw(first_name last_name)]}; });
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
@@ -292,8 +304,8 @@ subtest 'rule landing_company.currency_is_allowed' => sub {
     like exception { $rule_engine->apply_rules($rule_name, %args) }, qr/Client loginid is missing/, 'Landing company is required';
     $args{loginid} = $client->loginid;
 
-    my $mock_lc = Test::MockModule->new('LandingCompany');
-    $mock_lc->redefine(is_currency_legal => sub { return 0 });
+    my $mock_lc = Test::MockModule->new('Business::Config::LandingCompany');
+    $mock_lc->redefine(legal_allowed_currencies => sub { return {} });
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Succeeds with no currency - even when all currencies are illegal';
 
     $args{currency} = 'USD';
@@ -306,7 +318,15 @@ subtest 'rule landing_company.currency_is_allowed' => sub {
         },
         'Error for illegal currency';
 
-    $mock_lc->redefine(is_currency_legal => sub { return 1 });
+    $mock_lc->redefine(
+        legal_allowed_currencies => sub {
+            return {
+                USD => {
+                    name => 'U.S. Dollar',
+                    type => 'fiat',
+                },
+            };
+        });
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'The currency is legal now';
 
     $mock_lc->unmock_all;
@@ -315,7 +335,7 @@ subtest 'rule landing_company.currency_is_allowed' => sub {
 subtest 'rule landing_company.p2p_availability' => sub {
     my $rule_name = 'landing_company.p2p_availability';
 
-    my $mock_lc = Test::MockModule->new('LandingCompany');
+    my $mock_lc = Test::MockModule->new('Business::Config::LandingCompany');
     $mock_lc->redefine(p2p_available => sub { return 1 });
 
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Either landing_company or loginid is required/, 'Landing company is required';

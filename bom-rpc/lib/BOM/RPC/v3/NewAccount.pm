@@ -33,13 +33,14 @@ use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
 use BOM::User;
 use BOM::Rules::Engine;
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Services::CellxpertService;
 use BOM::RPC::v3::Services::MyAffiliates;
 use BOM::RPC::v3::VerifyEmail::Functions;
 use BOM::RPC::v3::Services::MyAffiliates;
 use BOM::RPC::v3::Annotations qw(annotate_db_calls);
+use Business::Config::Country::Registry;
 
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
@@ -242,11 +243,11 @@ rpc new_account_real => sub {
         return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount');
     }
 
-    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type})
+    my $account_type = Business::Config::Account::Type::Registry->new()->account_type_by_name($args->{account_type})
         or die "Invalid account type $args->{account_type}";
 
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
-        unless $account_type->is_supported(request()->brand, $client->residence, $company);
+        unless $account_type->is_supported($client->residence, $company);
 
     my $broker = $account_type->get_single_broker_code($company);
 
@@ -330,19 +331,23 @@ rpc new_account_maltainvest => annotate_db_calls(
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount') unless $client->is_legacy;
 
     $client->residence($args->{residence}) unless $client->residence;
-    my $countries_instance = request()->brand->countries_instance;
 
-    my $company = $countries_instance->financial_company_for_country($client->residence) // '';
+    my $country = Business::Config::Country::Registry->new()->by_code($client->residence);
+
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount') unless $country;
+
+    my $company = $country->financial_company();
 
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount') unless $company;
 
     # this call is exclusively for maltainvest
     return BOM::RPC::v3::Utility::permission_error if ($company ne 'maltainvest');
 
-    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // 'binary')
+    my $account_type = Business::Config::Account::Type::Registry->new()->account_type_by_name($args->{account_type} // 'binary')
         or die "Invalid account type $args->{account_type}";
+
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
-        unless $account_type->is_supported(request()->brand, $client->residence, $company);
+        unless $account_type->is_supported($client->residence, $company);
 
     if ($args->{employment_status} && ($args->{employment_status} eq 'Unemployed' || $args->{employment_status} eq 'Self-Employed')) {
         $args->{employment_industry} //= 'Unemployed';
@@ -380,13 +385,15 @@ rpc new_account_maltainvest => annotate_db_calls(
     }
     # In case of having more than a tax residence, client residence will replaced.
     my $selected_tax_residence    = $args->{tax_residence} =~ /\,/g ? $args->{residence} : $args->{tax_residence};
-    my $tin_format                = $countries_instance->get_tin_format($selected_tax_residence);
+    my $tin_format                = $country->common_reporting_standard->{tax}->{tin_format};
     my $tax_identification_number = $args->{tax_identification_number} // '';
     my $is_tin_manually_approved  = $client->is_tin_manually_approved;
     if ($tin_format && !$is_tin_manually_approved) {
         stats_inc('bom_rpc.v_3.new_account_maltainvest.called_with_wrong_TIN_format.count')
             unless (any { $tax_identification_number =~ m/$_/ } @$tin_format);
     }
+
+    my $currency = Business::Config::LandingCompany::Registry->new()->currencies()->{$new_client->currency} // {};
 
     return {
         client_id                 => $new_client->loginid,
@@ -396,7 +403,7 @@ rpc new_account_maltainvest => annotate_db_calls(
         $args->{currency}
         ? (
             currency      => $new_client->currency,
-            currency_type => LandingCompany::Registry::get_currency_type($new_client->currency) // ''
+            currency_type => $currency->{type} // '',
             )
         : (),
     };
@@ -416,7 +423,7 @@ rpc "new_account_virtual",
     # We need to define conditions when we stop creating legacy accounts
     # Maybe check if virtual wallet already created?
     my $account_type_name = $args->{account_type} // ($category eq 'trading' ? 'binary' : 'virtual');
-    my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name);
+    my $account_type      = Business::Config::Account::Type::Registry->new()->account_type_by_name($account_type_name);
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
         unless $account_type && $account_type->is_regulation_supported('virtual');
 
@@ -525,7 +532,7 @@ rpc new_account_wallet => sub {
             message_to_client => localize('Invalid request parameters.'),
             details           => {field => 'currency'}}) unless $currency_type;
 
-    my $account_type = $args->{account_type} && BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type});
+    my $account_type = $args->{account_type} && Business::Config::Account::Type::Registry->new()->account_type_by_name($args->{account_type});
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidRequestParams',
@@ -535,7 +542,7 @@ rpc new_account_wallet => sub {
     my $wallet_lc = LandingCompany::Registry->by_name($company_name // '');
 
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion')
-        unless $wallet_lc && $account_type->is_supported(request()->brand, $client->residence, $company_name);
+        unless $wallet_lc && $account_type->is_supported($client->residence, $company_name);
 
     my $broker = $account_type->get_single_broker_code($company_name);
 

@@ -134,11 +134,17 @@ rule 'client.forbidden_postcodes' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $client                     = $context->client($args);
-        my $forbidden_postcode_pattern = $context->get_country($client->residence)->{forbidden_postcode_pattern};
-        my $postcode                   = $args->{address_postcode} // $client->address_postcode;
+        my $client  = $context->client($args);
+        my $country = Business::Config::Country::Registry->new()->by_code($client->residence);
+        my $forbidden_postcode_pattern;
 
-        $self->fail('ForbiddenPostcode') if (defined $forbidden_postcode_pattern && $postcode =~ /$forbidden_postcode_pattern/i);
+        $forbidden_postcode_pattern = $country->common_reporting_standard->{postcode}->{invalid_pattern} if $country;
+
+        return 1 unless $forbidden_postcode_pattern;
+
+        my $postcode = $args->{address_postcode} // $client->address_postcode;
+
+        $self->fail('ForbiddenPostcode') if $postcode =~ /$forbidden_postcode_pattern/i;
 
         return 1;
     },
@@ -192,13 +198,11 @@ rule 'client.resident_self_declaration' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $client             = $context->client($args);
-        my $countries_instance = request()->brand->countries_instance;
-
-        return 1 unless $countries_instance->is_self_declaration_required($client->residence);
+        my $client  = $context->client($args);
+        my $country = Business::Config::Country::Registry->new()->by_code($client->residence);
 
         $self->fail('ResidentSelfDeclarationRequired', details => {residence => $client->residence})
-            if !$args->{resident_self_declaration} && $countries_instance->is_self_declaration_required($client->residence);
+            if !$args->{resident_self_declaration} && $country->signup->{self_declaration};
 
         return 1;
     }

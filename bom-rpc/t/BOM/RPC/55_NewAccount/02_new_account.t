@@ -1694,7 +1694,8 @@ subtest $method => sub {
         'Initial users and clients';
     };
 
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    my $mock_countries          = Test::MockModule->new('Brands::Countries');
 
     subtest 'Create new CRW wallet real' => sub {
         $emit_data = {};
@@ -1757,6 +1758,7 @@ subtest $method => sub {
             ->error_message_is('Sorry, account opening is unavailable in your region.', 'Error message about service unavailability.');
 
         $mock_countries->redefine(wallet_companies_for_country => ['svg']);
+        $mock_business_countries->redefine(wallet_companies => ['svg']);
         $params->{args}->{currency} = 'USD';
 
         $rpc_ct->call_ok($method, $params)
@@ -1793,6 +1795,7 @@ subtest $method => sub {
         $app_config->system->suspend->wallets(1);
     };
 
+    $mock_business_countries->unmock_all;
     $mock_countries->unmock_all;
 };
 
@@ -1833,7 +1836,8 @@ subtest $method => sub {
         'Initial users and clients';
     };
 
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    my $mock_countries          = Test::MockModule->new('Brands::Countries');
 
     subtest 'Create new MFW wallet real - EU country' => sub {
         $emit_data = {};
@@ -1891,6 +1895,7 @@ subtest $method => sub {
             ->error_message_is('Sorry, account opening is unavailable in your region.', 'Error message about service unavailability.');
 
         $mock_countries->redefine(wallet_companies_for_country => ['maltainvest']);
+        $mock_business_countries->redefine(wallet_companies => ['maltainvest']);
         $params->{args}->{landing_company_short} = 'maltainvest';
 
         $rpc_ct->call_ok($method, $params)
@@ -1944,6 +1949,7 @@ subtest $method => sub {
         $app_config->system->suspend->wallets(1);
     };
 
+    $mock_business_countries->unmock_all;
     $mock_countries->unmock_all;
 };
 
@@ -2024,7 +2030,8 @@ subtest $method => sub {
         'Initial users and clients';
     };
 
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    my $mock_countries          = Test::MockModule->new('Brands::Countries');
 
     subtest 'Create new MFW/CRW wallet real - Diel country' => sub {
         $emit_data = {};
@@ -2045,6 +2052,7 @@ subtest $method => sub {
         $params->{args}->{citizen}      = 'za';
         $params->{args}->{account_type} = 'doughflow';
         $mock_countries->redefine(wallet_companies_for_country => ['maltainvest', 'svg']);
+        $mock_business_countries->redefine(wallet_companies => ['maltainvest', 'svg']);
         $params->{args}->{landing_company_short} = 'maltainvest';
 
         $customer->create_client(
@@ -2097,6 +2105,7 @@ subtest $method => sub {
         $app_config->system->suspend->wallets(1);
     };
 
+    $mock_business_countries->unmock_all;
     $mock_countries->unmock_all;
 };
 
@@ -2142,7 +2151,8 @@ subtest $method => sub {
     $client     = $customer->get_client_object('VRTC');
     $auth_token = $customer->get_client_token('VRTC');
 
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    my $mock_countries          = Test::MockModule->new('Brands::Countries');
 
     subtest 'Check Create Wallet will copy the FA if it exist' => sub {
         $emit_data = {};
@@ -2152,6 +2162,7 @@ subtest $method => sub {
         $params->{args}->{currency}     = 'USD';
         $params->{args}->{account_type} = 'doughflow';
         $mock_countries->redefine(wallet_companies_for_country => ['svg']);
+        $mock_business_countries->redefine(wallet_companies => ['svg']);
 
         $vr_client       = $customer->get_client_object('VRW');
         $auth_token      = $customer->get_client_token('VRW');
@@ -2186,6 +2197,7 @@ subtest $method => sub {
     };
 
     $mock_countries->unmock_all;
+    $mock_business_countries->unmock_all;
 };
 
 $params = {

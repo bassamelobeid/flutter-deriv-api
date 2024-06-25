@@ -16,9 +16,10 @@ use warnings;
 use Syntax::Keyword::Try;
 use List::Util qw(any);
 
+use Business::Config::LandingCompany::Registry;
 use BOM::Rules::Registry qw(rule);
 use BOM::Config::CurrencyConfig;
-use BOM::Config::AccountType;
+use Business::Config::Account::Type::Registry;
 
 use Carp;
 
@@ -30,9 +31,12 @@ rule 'currency.is_currency_suspended' => {
         my ($self, $context, $args) = @_;
 
         return 1 unless $args->{currency};
+
         my $currency = $args->{currency};
 
-        my $type = LandingCompany::Registry::get_currency_type($currency);
+        my $currency_config = Business::Config::LandingCompany::Registry->new()->currencies()->{$currency} // {};
+
+        my $type = $currency_config->{type} // '';
 
         return 1 if $type eq 'fiat';
 
@@ -169,11 +173,12 @@ reactivate: indicates if the rule is checked for reactivation, in which case onl
 
 sub _currency_is_available {
     my ($self, $context, $args, $configuration) = @_;
-    my $currency         = $args->{currency};
-    my $currency_type    = LandingCompany::Registry::get_currency_type($currency);
+    my $currency         = $args->{currency}                                                            // '';
+    my $currency_config  = Business::Config::LandingCompany::Registry->new()->currencies()->{$currency} // {};
+    my $currency_type    = $currency_config->{type}                                                     // '';
     my $account_type     = $args->{account_type} // $context->client($args)->get_account_type->name;
-    my $account_category = BOM::Config::AccountType::Registry->account_type_by_name($account_type)->category->name;
-    my $landing_company  = $args->{landing_company}       // $context->client($args)->landing_company->short;
+    my $account_category = Business::Config::Account::Type::Registry->new()->account_type_by_name($account_type)->category->name;
+    my $landing_company  = $args->{landing_company}       // $context->client($args)->landing_company({business_rules => 1})->short;
     my $include_self     = $configuration->{include_self} // 0;
     my $reactivate       = $configuration->{reactivate}   // 0;
 
@@ -190,7 +195,6 @@ sub _currency_is_available {
     )->%*;
 
     for my $sibling (@siblings) {
-
         next if $account_category ne $sibling->{category};
         my $sibling_duplicate = $sibling->{duplicate} // 0;
 
@@ -201,13 +205,15 @@ sub _currency_is_available {
 
         # Only one fiat account is allowed per landing company
         if ($account_category eq 'trading' && $currency_type eq 'fiat' && !$sibling_duplicate) {
-            my $sibling_currency_type = LandingCompany::Registry::get_currency_type($sibling->{currency});
+            my $sibling_currency      = Business::Config::LandingCompany::Registry->new()->currencies()->{$sibling->{currency}} // {};
+            my $sibling_currency_type = $sibling_currency->{type}                                                               // '';
             $self->fail('CurrencyTypeNotAllowed', description => 'Currency type is not allowed')
                 if ($sibling_currency_type eq 'fiat' && $currency ne $sibling->{currency});
         }
 
         if ($account_category eq 'wallet' && $currency_type eq 'fiat' && $account_type eq 'doughflow') {
-            my $sibling_currency_type = LandingCompany::Registry::get_currency_type($sibling->{currency});
+            my $sibling_currency      = Business::Config::LandingCompany::Registry->new()->currencies()->{$sibling->{currency}} // {};
+            my $sibling_currency_type = $sibling_currency->{type}                                                               // '';
             $self->fail('CurrencyTypeNotAllowed', description => 'Currency type is not allowed')
                 if ($sibling_currency_type eq 'fiat' && $sibling->{account_type} eq 'doughflow' && $currency ne $sibling->{currency});
         }
@@ -239,7 +245,8 @@ rule 'currency.is_available_for_new_account' => {
 
         my $currency = $args->{currency};
 
-        my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // BOM::Config::AccountType::LEGACY_TYPE);
+        my $account_type =
+            Business::Config::Account::Type::Registry->new()->account_type_by_name($args->{account_type} // Business::Config::Account::Type::LEGACY);
 
         if ($account_type->name eq 'binary') {
             return _currency_is_available($self, $context, $args, {include_self => 1});
@@ -265,11 +272,17 @@ rule 'currency.is_signup_enabled' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $currency        = $args->{currency};
-        my $landing_company = $args->{landing_company} // $context->client($args)->landing_company->short;
+        my $currency = $args->{currency} // '';
+
+        my $landing_company;
+        my $registry = Business::Config::LandingCompany::Registry->new();
+
+        $landing_company = $registry->by_code($args->{landing_company}) if $args->{landing_company};
+
+        $landing_company = $context->client($args)->landing_company({business_rules => 1}) unless $landing_company;
 
         $self->fail('CurrencyNotAllowed', params => $currency)
-            unless BOM::Config::CurrencyConfig::is_currency_signup_enabled($landing_company, $currency);
+            unless $landing_company->is_currency_signup_enabled($currency);
 
         return 1;
     },
@@ -280,7 +293,7 @@ rule 'currency.is_available_for_change' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $currency = $args->{currency};
+        my $currency = $args->{currency} // '';
 
         my $client = $context->client({loginid => $args->{loginid}});
 

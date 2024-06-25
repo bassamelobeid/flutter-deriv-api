@@ -19,7 +19,6 @@ use BOM::User::AuditLog;
 use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::Config::Runtime;
-use BOM::Config::AccountType::Registry;
 use JSON::WebToken qw(encode_jwt);
 use BOM::User::WalletMigration;
 

@@ -17,7 +17,7 @@ use List::MoreUtils qw(uniq);
 
 use LandingCompany::Registry;
 use BOM::Rules::Registry qw(rule);
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 
 rule 'landing_company.accounts_limit_not_reached' => {
     description => "Only one account (enabled or disabled) is allowed on regulated landing companies. Duplicate account are ignored.",
@@ -54,7 +54,7 @@ rule 'landing_company.accounts_limit_not_reached' => {
         }
 
         if ($account_type) {
-            my $account_category = BOM::Config::AccountType::Registry->account_type_by_name($account_type)->category->name;
+            my $account_category = Business::Config::Account::Type::Registry->new()->account_type_by_name($account_type)->category->name;
             @clients = grep { $_->is_wallet } @clients if $account_category eq 'wallet';
         }
 
@@ -78,7 +78,9 @@ rule 'landing_company.required_fields_are_non_empty' => {
 
         $client = $duplicated if $duplicated;
 
-        my @required_fields = ($landing_company->requirements->{signup} // [])->@*;
+        my $requirements = $landing_company->requirements // {};
+
+        my @required_fields = ($requirements->{signup} // [])->@*;
 
         my @missing = grep { not($args->{$_} // $client->$_) } uniq @required_fields;
 
@@ -118,7 +120,7 @@ rule 'landing_company.currency_is_allowed' => {
             'CurrencyNotApplicable',
             params      => $args->{currency},
             description => "Currency $args->{currency} not allowed"
-        ) unless $landing_company_object->is_currency_legal($args->{currency});
+        ) unless $landing_company_object->legal_allowed_currencies->{$args->{currency}};
 
         return 1;
     },

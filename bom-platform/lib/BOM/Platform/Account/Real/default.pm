@@ -22,13 +22,14 @@ use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client::Sanctions;
 use BOM::User::FinancialAssessment;
 use List::Util qw(uniq);
+use Business::Config::Account::Type::Registry;
 
 sub create_account {
     my $args = shift;
     my ($user, $details) = @{$args}{'user', 'details'};
 
-    my $account_type_name = $details->{account_type} or return {error => {code => 'AccountTypeMissing'}};    # default to 'trading'
-    my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name)
+    my $account_type_name = $details->{account_type} or return {error => {code => 'AccountTypeMissing'}};                # default to 'trading'
+    my $account_type      = Business::Config::Account::Type::Registry->new()->account_type_by_name($account_type_name)
         or return {error => {code => 'InvalidAccountType'}};
 
     if ($account_type->name ne 'binary' and $account_type->category->name eq 'trading') {
@@ -104,9 +105,12 @@ sub copy_status_from_siblings {
     # We should sync age verification for allowed landing companies and other statuses to all siblings
     # Age verification sync if current client is one of existing client allowed landing companies for age verification
     for my $client (@client_list) {
+        my $lc                 = $client->landing_company({business_rules => 1});
+        my $lc_allowed_to_sync = $lc->allowed_landing_companies_for_age_verification_sync // [];
+
         @allowed_lc_to_sync = (
-            $client->landing_company->allowed_landing_companies_for_age_verification_sync->@*,
-            $client->landing_company->short,    #Always sync age verification within the same landing company
+            $lc_allowed_to_sync->@*,
+            $lc->short,    #Always sync age verification within the same landing company
         );
         my @dup_statuses = ();
 
@@ -120,13 +124,13 @@ sub copy_status_from_siblings {
             next unless BOM::User::Client::Status::can_copy($status, $client->broker_code, $cur_client->broker_code, $applied_by);
 
             if ($status eq 'age_verification') {
-                my $cur_client_lc = $cur_client->landing_company->short;
+                my $cur_client_lc = $cur_client->landing_company({business_rules => 1})->short;
                 next if none { $_ eq $cur_client_lc } @allowed_lc_to_sync;
 
                 # If clients in the same DB, it's already copied over by the db trigger
                 next if $cur_client->broker_code eq $client->broker_code;
 
-                my $poi_status = $client->get_poi_status({landing_company => $cur_client->landing_company->short});
+                my $poi_status = $client->get_poi_status({landing_company => $cur_client->landing_company({business_rules => 1})->short});
                 next unless $poi_status =~ /verified|expired/;
             }
 
@@ -139,10 +143,12 @@ sub copy_status_from_siblings {
                 $cur_client->status->upsert($status, 'system', $reason . ' - copied from ' . $client->loginid);
             }
 
-            my $config = request()->brand->countries_instance->countries_list->{$cur_client->residence};
-            if (    $config->{require_age_verified_for_synthetic}
-                and $status eq 'age_verification')
-            {
+            my $country    = Business::Config::Country::Registry->new()->by_code($cur_client->residence);
+            my $kyc_config = {};
+
+            $kyc_config = $country->know_your_customer if $country;
+
+            if ($kyc_config->{require_age_verified_for_synthetic} && $status eq 'age_verification') {
                 my $vr_acc = BOM::User::Client->new({loginid => $cur_client->user->bom_virtual_loginid});
                 $vr_acc->status->clear_unwelcome;
                 $vr_acc->status->setnx('age_verification', 'system', $reason . ' - copied from ' . $client->loginid);

@@ -377,14 +377,12 @@ subtest 'set_staff_name' => sub {
 
 subtest 'fully_authenticated with ID_PO_BOX enabled landing company' => sub {
     my $client = create_client();
-    my $mock   = Test::MockModule->new('BOM::User::Client');
+    my $mock   = Test::MockModule->new('Business::Config::LandingCompany');
 
     $mock->mock(
-        'landing_company',
+        'id_po_box_enabled',
         sub {
-            my $return_value = $mock->original('landing_company')->(@_);
-            $return_value->{id_po_box_enabled} = 0;
-            return $return_value;
+            return 0;
         });
 
     $client->set_authentication('ID_PO_BOX', {status => 'pass'}, 'test');
@@ -392,11 +390,9 @@ subtest 'fully_authenticated with ID_PO_BOX enabled landing company' => sub {
     ok !$client->fully_authenticated(), 'Client is notfully authenticated if id_po_box is not enabled for the landing company';
 
     $mock->mock(
-        'landing_company',
+        'id_po_box_enabled',
         sub {
-            my $return_value = $mock->original('landing_company')->(@_);
-            $return_value->{id_po_box_enabled} = 1;
-            return $return_value;
+            return 1;
         });
 
     ok $client->fully_authenticated(), 'Client is fully authenticated if id_po_box has been set and enabled for the landing company';

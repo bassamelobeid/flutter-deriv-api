@@ -14,6 +14,8 @@ use strict;
 use warnings;
 
 use Moo;
+use Business::Config::LandingCompany::Registry;
+use Business::Config::Country::Registry;
 use LandingCompany::Registry;
 use Brands;
 use BOM::Platform::Context qw(request);
@@ -179,7 +181,7 @@ sub client_siblings {
     return $self->siblings->{$loginid};
 }
 
-=head2 landing_company_object
+=head2 landing_company_legacy
 
 Retrieves a landing company object from cache. It accepts one argument:
 
@@ -193,11 +195,37 @@ It returns an object of the type L<LandingCompany>.
 
 =cut
 
-sub landing_company_object {
+sub landing_company_legacy {
     my ($self, $args) = @_;
     my $short_code = $self->landing_company($args);
 
     $self->_cache->{"company_$short_code"} //= LandingCompany::Registry->by_name($short_code);
+
+    my $landing_company = $self->_cache->{"company_$short_code"};
+    die "Invalid landing company name $short_code" unless $landing_company;
+
+    return $landing_company;
+}
+
+=head2 landing_company_object
+
+Retrieves a landing company object from cache. It accepts one argument:
+
+=over 4
+
+=item C<args> event args as a hashref; expected to contain a B<landing_company> or B<loginid> key.
+
+=back
+
+It returns an object of the type L<Business::Config::LandingCompany> type.
+
+=cut
+
+sub landing_company_object {
+    my ($self, $args) = @_;
+    my $short_code = $self->landing_company($args);
+
+    $self->_cache->{"company_$short_code"} //= Business::Config::LandingCompany::Registry->new()->by_code($short_code);
 
     my $landing_company = $self->_cache->{"company_$short_code"};
     die "Invalid landing company name $short_code" unless $landing_company;
@@ -226,7 +254,7 @@ sub landing_company {
     return $short_code || $self->client($args)->landing_company->short;
 }
 
-=head2 get_country
+=head2 get_country_legacy
 
 Retrieves a country object from cache by country code. It accepts one argument:
 
@@ -240,12 +268,36 @@ It returns an object of the type L<Country>.
 
 =cut
 
-sub get_country {
+sub get_country_legacy {
     my ($self, $country_code) = @_;
 
     die 'Country code is required' unless $country_code;
 
     $self->_cache->{"country_$country_code"} //= Brands->new->countries_instance->countries_list->{$country_code};
+
+    return $self->_cache->{"country_$country_code"};
+}
+
+=head2 get_country
+
+Retrieves a country object from cache by country code. It accepts one argument:
+
+=over 4
+
+=item C<country_code> a country code.
+
+=back
+
+It returns an object of the type L<Business::Config::Country>.
+
+=cut
+
+sub get_country {
+    my ($self, $country_code) = @_;
+
+    die 'Country code is required' unless $country_code;
+
+    $self->_cache->{"country_$country_code"} //= Business::Config::Country::Registry->new()->by_code($country_code);
 
     return $self->_cache->{"country_$country_code"};
 }

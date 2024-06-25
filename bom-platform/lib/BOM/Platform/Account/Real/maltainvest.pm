@@ -11,6 +11,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Email           qw(send_email);
 use BOM::Platform::Context         qw(request);
 use BOM::User::FinancialAssessment qw(should_warn update_financial_assessment);
+use Business::Config::Country::Registry;
 
 sub create_account {
     my $args = shift;
@@ -39,8 +40,12 @@ sub create_account {
 
     update_financial_assessment($client->user, $params, new_mf_client => 1);
 
-    my $countries_instance = request()->brand->countries_instance;
-    if ($params->{resident_self_declaration} && $countries_instance->is_self_declaration_required($client->residence)) {
+    my $country_config = Business::Config::Country::Registry->new()->by_code($client->residence);
+    my $signup_config  = {};
+
+    $signup_config = $country_config->signup if $country_config;
+
+    if ($params->{resident_self_declaration} && $signup_config->{self_declaration}) {
         $client->status->setnx('resident_self_declaration', 'SYSTEM', 'Client accepted residence self-declaration');
     }
 

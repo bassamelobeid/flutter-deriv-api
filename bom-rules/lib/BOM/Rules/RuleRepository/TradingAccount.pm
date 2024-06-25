@@ -17,7 +17,7 @@ use LandingCompany::Registry;
 use BOM::Rules::Registry   qw(rule);
 use BOM::Platform::Context qw(request);
 use List::Util             qw(any none);
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 
 rule 'trading_account.should_match_landing_company' => {
     description => 'Checks whether there is a valid landing company account for the given trading account creation params',
@@ -70,7 +70,7 @@ rule 'trading_account.should_be_age_verified' => {
         my $account_type = $args->{account_type} // '';
         return 1 if $account_type eq 'demo';
 
-        my $config = $context->get_country($client->residence);
+        my $config = $context->get_country_legacy($client->residence);
 
         if ($config->{trading_age_verification} and not $client->status->age_verification) {
             return ($client->is_virtual() and $client->user->clients == 1)
@@ -141,7 +141,7 @@ rule 'trading_account.client_account_type_should_be_supported' => {
         return 1 if $account_type eq 'binary';
 
         # Wallet flow
-        my $platform_account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{platform});
+        my $platform_account_type = Business::Config::Account::Type::Registry->new()->account_type_by_name($args->{platform});
         return 1 if any { $_ eq $account_type } $platform_account_type->linkable_wallet_types->@*;
 
         return die_with_params($self, 'TradingPlatformInvalidAccount', $args);
@@ -155,9 +155,9 @@ rule 'trading_account.trading_platform_supported_by_residence_and_regulation' =>
         my $client = $context->client($args);
 
         my $regulation           = $args->{account_type} eq 'demo' ? 'virtual' : $args->{regulation};
-        my $derivez_account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{platform});
+        my $derivez_account_type = Business::Config::Account::Type::Registry->new()->account_type_by_name($args->{platform});
 
-        my $is_supported = $derivez_account_type->is_supported(request()->brand, $client->residence, $regulation);
+        my $is_supported = $derivez_account_type->is_supported($client->residence, $regulation);
 
         return 1 if $is_supported;
 
@@ -209,7 +209,7 @@ rule 'trading_account.client_support_account_creation' => {
             return $self->fail('PermissionDenied');
         }
 
-        my $trading_platform_type = BOM::Config::AccountType::Registry->account_type_by_name($trading_platform);
+        my $trading_platform_type = Business::Config::Account::Type::Registry->new()->account_type_by_name($trading_platform);
         my @supported_types       = $trading_platform_type->linkable_wallet_types->@*;
 
         my $account_type = $client->get_account_type;

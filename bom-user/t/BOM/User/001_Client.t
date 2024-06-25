@@ -608,7 +608,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
     $test_user_social_signup->add_client($client_cr_social);
 
     my $changeable_fields;
-    my $mock_lc = Test::MockModule->new('LandingCompany');
+    my $mock_lc = Test::MockModule->new('Business::Config::LandingCompany');
     $mock_lc->mock(
         changeable_fields => sub {
             my $lc = shift;

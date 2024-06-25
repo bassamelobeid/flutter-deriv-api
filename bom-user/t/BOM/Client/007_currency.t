@@ -19,7 +19,7 @@ subtest 'Virtual Account' => sub {
 
     subtest 'Manipulate LC config' => sub {
         # BTC as default currency
-        my $mock_lc = Test::MockModule->new(ref($test_client_vr->landing_company));
+        my $mock_lc = Test::MockModule->new(ref($test_client_vr->landing_company({business_rules => 1})));
         $mock_lc->mock(
             'legal_default_currency',
             sub {

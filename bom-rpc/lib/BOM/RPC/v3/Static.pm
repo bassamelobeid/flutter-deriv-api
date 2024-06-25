@@ -153,14 +153,9 @@ rpc residence_list => sub {
                 },
             }};
 
-        my $landing_company = $country_config->landing_company();
-        my $signup_config   = $country_config->signup();
-        my $allowed_country = $landing_company->{default} ne 'none';
-        my $disabled        = !$allowed_country || (!$signup_config->{account} && !$signup_config->{partners});
-
-        $option->{disabled}                                  = 'DISABLED' if $disabled;
+        $option->{disabled}                                  = 'DISABLED' if $country_config->disabled();
         $option->{selected}                                  = 'selected' if request()->country_code eq $country_code && !$option->{disabled};
-        $option->{account_opening_self_declaration_required} = 1          if $signup_config->{self_declaration};
+        $option->{account_opening_self_declaration_required} = 1          if $country_config->signup->{self_declaration};
 
         push @$residence_countries_list, $option;
     }

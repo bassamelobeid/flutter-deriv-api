@@ -33,6 +33,7 @@ use LandingCompany::Registry;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use Finance::Underlying;
 
+use Business::Config::LandingCompany::Registry;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Redis;
@@ -1069,8 +1070,13 @@ Returns: Sorted arrayref of valid currencies.
 sub filter_out_signup_disabled_currencies {
     my ($landing_company_name, $payout_currencies) = @_;
 
-    my $signup_disabled_currencies = BOM::Config::CurrencyConfig::get_signup_disabled_currencies($landing_company_name);
-    my %signup_disabled_map        = map { $_ => 1 } $signup_disabled_currencies->@*;
+    my $landing_company = Business::Config::LandingCompany::Registry->new()->by_code($landing_company_name);
+
+    my $signup_disabled_currencies = [];
+
+    $signup_disabled_currencies = $landing_company->get_signup_disabled_currencies() if $landing_company;
+
+    my %signup_disabled_map = map { $_ => 1 } $signup_disabled_currencies->@*;
 
     my @valid_currencies = sort grep { !$signup_disabled_map{$_} } $payout_currencies->@*;
 

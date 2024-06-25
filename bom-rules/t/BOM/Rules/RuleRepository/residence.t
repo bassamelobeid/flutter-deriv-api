@@ -12,10 +12,10 @@ my $rule_engine = BOM::Rules::Engine->new();
 subtest 'rule residence.account_type_is_available' => sub {
     my $rule_name      = 'residence.account_type_is_available';
     my $companies      = {};
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
+    my $mock_countries = Test::MockModule->new('Business::Config::Country');
     $mock_countries->redefine(
-        gaming_company_for_country    => sub { return $companies->{synthetic} },
-        financial_company_for_country => sub { return $companies->{financial} });
+        derived_company   => sub { return $companies->{derived} },
+        financial_company => sub { return $companies->{financial} });
 
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Either residence or loginid is required/, 'loginid is required';
     my $args = {residence => 'es'};
@@ -40,7 +40,7 @@ subtest 'rule residence.account_type_is_available' => sub {
         description => 'Market type or landing company is invalid'
         },
         'correct error when there is no matching landing_company';
-    $companies->{synthetic} = 'abcd';
+    $companies->{derived} = 'abcd';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
         error_code  => 'InvalidAccount',
@@ -49,7 +49,7 @@ subtest 'rule residence.account_type_is_available' => sub {
         },
         'Fails if the landing company matching market type is different form context landing company';
 
-    $companies->{synthetic} = 'svg';
+    $companies->{derived} = 'svg';
     lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Succeeds after setting the same landing company';
 
     $companies->{financial} = 'maltainvest';
@@ -57,8 +57,8 @@ subtest 'rule residence.account_type_is_available' => sub {
 
     subtest 'affiliate type' => sub {
         $mock_countries->redefine(
-            gaming_company_for_country    => sub { return undef },
-            financial_company_for_country => sub { return undef });
+            derived_company   => sub { return undef },
+            financial_company => sub { return undef });
 
         $args->{account_type} = 'affiliate';
         $args->{category}     = 'wallet';
@@ -71,9 +71,9 @@ subtest 'rule residence.account_type_is_available' => sub {
             'correct error when there is no landing_company';
 
         $mock_countries->redefine(
-            gaming_company_for_country    => sub { return $companies->{synthetic} },
-            financial_company_for_country => sub { return $companies->{financial} },
-            wallet_companies_for_country  => sub { return ['dsl'] });
+            derived_company   => sub { return $companies->{derived} },
+            financial_company => sub { return $companies->{financial} },
+            wallet_companies  => sub { return ['dsl'] });
 
         $args->{landing_company} = 'dsl';
         lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Succeeds after setting valid lc companies';
@@ -90,8 +90,8 @@ subtest 'rule residence.not_restricted' => sub {
     my $args = {residence => 'es'};
 
     my $is_restricted  = 1;
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
-    $mock_countries->redefine(restricted_country => sub { return $is_restricted });
+    my $mock_countries = Test::MockModule->new('Business::Config::Country');
+    $mock_countries->redefine(restricted => sub { return $is_restricted });
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
@@ -115,10 +115,10 @@ subtest 'residence.account_type_is_available_for_real_account_opening' => sub {
         landing_company => 'svg'
     };
 
-    my $is_restricted = my $mock_countries = Test::MockModule->new('Brands::Countries');
+    my $is_restricted = my $mock_countries = Test::MockModule->new('Business::Config::Country');
     my $wallet_lc;
     $mock_countries->redefine(
-        wallet_companies_for_country => sub {
+        wallet_companies => sub {
             my ($self, $country, $type) = @_;
             return [$wallet_lc] if $wallet_lc;
             return [];
@@ -157,8 +157,13 @@ subtest 'rule residence.is_signup_allowed' => sub {
     my $args = {residence => 'es'};
 
     my $is_allowed     = 0;
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
-    $mock_countries->redefine(is_signup_allowed => sub { return $is_allowed });
+    my $mock_countries = Test::MockModule->new('Business::Config::Country');
+    $mock_countries->redefine(
+        signup => sub {
+            return {
+                account => $is_allowed,
+            };
+        });
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {

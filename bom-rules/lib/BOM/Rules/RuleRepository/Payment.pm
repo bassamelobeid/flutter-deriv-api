@@ -194,7 +194,7 @@ rule 'withdrawal.landing_company_limits' => {
         return 1 if $client->fully_authenticated;
         return 1 if $args->{is_internal};
 
-        my $lc                = $context->landing_company_object($args);
+        my $lc                = $context->landing_company_legacy($args);
         my $withdrawal_limits = Business::Config::LandingCompany::Registry->new()->payment_limit()->{withdrawal_limits};
         my $lc_limits         = $withdrawal_limits->{$lc->short} or $self->fail("InvalidLandingCompany", params => [$lc->short]);
         my $lc_currency       = $lc_limits->{currency};

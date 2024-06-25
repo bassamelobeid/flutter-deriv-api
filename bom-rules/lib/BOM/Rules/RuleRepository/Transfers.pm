@@ -17,7 +17,7 @@ use BOM::Rules::Registry qw(rule);
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Config::CurrencyConfig;
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 
 use Format::Util::Numbers qw(formatnumber financialrounding);
 use Scalar::Util          qw( looks_like_number );
@@ -378,11 +378,11 @@ rule 'transfers.legacy_and_wallet' => {
 
         # if from account is legacy, to account cannot be wallet
         $self->fail('TransferBlockedLegacy')
-            if $details_from->{account_type_obj}->name eq BOM::Config::AccountType::LEGACY_TYPE and $details_to->{is_wallet};
+            if $details_from->{account_type_obj}->name eq Business::Config::Account::Type::LEGACY and $details_to->{is_wallet};
 
         # if to account is legacy, from account cannot be wallet
         $self->fail('TransferBlockedLegacy')
-            if $details_to->{account_type_obj}->name eq BOM::Config::AccountType::LEGACY_TYPE and $details_from->{is_wallet};
+            if $details_to->{account_type_obj}->name eq Business::Config::Account::Type::LEGACY and $details_from->{is_wallet};
 
         return 1;
     },
@@ -463,12 +463,12 @@ sub _get_clients_info {
     $details_from->{account_type_obj} =
           $client_from
         ? $client_from->get_account_type
-        : BOM::Config::AccountType::Registry->account_type_by_name($details_from->{platform});
+        : Business::Config::Account::Type::Registry->new()->account_type_by_name($details_from->{platform});
 
     $details_to->{account_type_obj} =
           $client_to
         ? $client_to->get_account_type
-        : BOM::Config::AccountType::Registry->account_type_by_name($details_to->{platform});
+        : Business::Config::Account::Type::Registry->new()->account_type_by_name($details_to->{platform});
 
     return ($details_from, $details_to, $user, $client_from, $client_to);
 }

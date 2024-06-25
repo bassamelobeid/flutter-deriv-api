@@ -489,4 +489,29 @@ subtest 'duplicate_sibling' => sub {
     $client_mock->unmock_all;
 };
 
+subtest 'landing company' => sub {
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $broker_code;
+
+    $client_mock->mock(
+        'broker',
+        sub {
+            return $broker_code;
+        });
+
+    my $client = BOM::User::Client->rnew;
+
+    $broker_code = 'CR';
+
+    my $lc_bussiness = $client->landing_company({business_rules => 1});
+    my $lc_legacy    = $client->landing_company();
+
+    isa_ok($lc_bussiness, 'Business::Config::LandingCompany', 'business rules class');
+    isa_ok($lc_legacy,    'LandingCompany',                   'legacy class');
+
+    is $lc_bussiness->short, 'svg', 'expected short';
+    is $lc_legacy->short,    'svg', 'expected short';
+    $client_mock->unmock_all;
+};
+
 done_testing;

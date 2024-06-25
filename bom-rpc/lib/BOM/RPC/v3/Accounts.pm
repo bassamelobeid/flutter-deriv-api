@@ -62,7 +62,7 @@ use BOM::Database::Model::UserConnect;
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Config::Quants qw(market_pricing_limits);
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 use BOM::Config::Redis;
 use BOM::Config::Compliance;
 use BOM::RPC::v3::Services;
@@ -4074,7 +4074,7 @@ rpc get_account_types => sub {
         wallet  => +{},
         trading => +{});
     my $wallet_types =
-        BOM::Config::AccountType::Registry->category_by_name('wallet')->get_account_types_for_regulation($landing_company, $country, $brand);
+        Business::Config::Account::Type::Registry->new()->category_by_name('wallet')->get_account_types_for_regulation($landing_company, $country);
 
     my %supported_wallets;
     for my $type ($wallet_types->@*) {
@@ -4083,7 +4083,7 @@ rpc get_account_types => sub {
     }
 
     my $trading_types =
-        BOM::Config::AccountType::Registry->category_by_name('trading')->get_account_types_for_regulation($landing_company, $country, $brand);
+        Business::Config::Account::Type::Registry->new()->category_by_name('trading')->get_account_types_for_regulation($landing_company, $country);
     for my $type ($trading_types->@*) {
         $result{trading}->{$type->name} = $type->get_details($landing_company);
 
@@ -4187,7 +4187,8 @@ rpc available_accounts => sub {
     for my $landing_company (sort @companies) {
 
         my $wallet_types =
-            BOM::Config::AccountType::Registry->category_by_name('wallet')->get_account_types_for_regulation($landing_company, $country, $brand);
+            Business::Config::Account::Type::Registry->new()->category_by_name('wallet')
+            ->get_account_types_for_regulation($landing_company, $country);
         for my $type (sort { $a->name cmp $b->name } $wallet_types->@*) {
 
             # check if account type is enabled

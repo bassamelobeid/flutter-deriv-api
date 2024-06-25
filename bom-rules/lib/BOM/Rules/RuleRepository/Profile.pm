@@ -35,9 +35,9 @@ rule 'profile.date_of_birth_complies_minimum_age' => {
         my $dob_date = eval { Date::Utility->new($args->{date_of_birth} // $dup_dob) };
         $self->fail('InvalidDateOfBirth', description => 'Date of birth is invalid') unless $dob_date;
 
-        my $countries_instance = $context->brand($args)->countries_instance;
+        my $country = Business::Config::Country::Registry->new()->by_code($residence);
         # Get the minimum age from the client's residence
-        my $min_age = $countries_instance && $countries_instance->minimum_age_for_country($residence);
+        my $min_age = $country && $country->signup->{minimum_age};
         $self->fail('InvalidResidence', description => 'Minimum age is not configured for residence') unless $min_age;
 
         my $minimum_date = Date::Utility->new->minus_time_interval($min_age . 'y');
@@ -242,7 +242,7 @@ rule 'profile.professional_request_allowed' => {
     description => 'If professional status requested, it should be supported by landing company.',
     code        => sub {
         my ($self, $context, $args) = @_;
-        my $landing_company = $context->landing_company_object($args);
+        my $landing_company = $context->landing_company_legacy($args);
 
         return 1 unless $args->{request_professional_status};
 

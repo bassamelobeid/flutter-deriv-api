@@ -11,7 +11,7 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 use Data::Chronicle::Reader;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Email qw(send_email);
@@ -87,7 +87,7 @@ sub run {
 
     # P2P works on legacy accounts at the moment.
     # TODO: we should include `p2p` as well, when the appstore is going to launch on wallets.
-    my $p2p_account_type = BOM::Config::AccountType::Registry->account_type_by_name('binary');
+    my $p2p_account_type = Business::Config::Account::Type::Registry->new()->account_type_by_name('binary');
 
     for my $lc (grep { $_->p2p_available } LandingCompany::Registry::get_all) {
         for my $broker ($p2p_account_type->broker_codes->{$lc->short}->@*) {

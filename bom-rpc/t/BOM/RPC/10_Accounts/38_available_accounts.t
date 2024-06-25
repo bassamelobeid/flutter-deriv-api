@@ -10,8 +10,7 @@ use BOM::Test::Helper::Token;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::BOM::RPC::QueueClient;
 use BOM::Platform::Token::API;
-use BOM::Config::AccountType;
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 
 my $email    = 'get_available_accounts@nowhere.com';
 my $password = 'Aer13';
@@ -33,7 +32,7 @@ my $token_usd = BOM::Platform::Token::API->new->create_token($client_usd->logini
 my $c      = BOM::Test::RPC::QueueClient->new();
 my $method = 'available_accounts';
 
-my %categories = BOM::Config::AccountType::Registry->all_categories;
+my %categories = Business::Config::Account::Type::Registry->new()->categories->%*;
 
 use constant Fiat_Results => ({
         account_type    => "doughflow",
@@ -118,9 +117,11 @@ subtest 'validation' => sub {
 };
 
 subtest 'wallets' => sub {
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
-    my $mock_client    = Test::MockModule->new('BOM::User::Client');
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    my $mock_countries          = Test::MockModule->new('Brands::Countries');
+    my $mock_client             = Test::MockModule->new('BOM::User::Client');
     $mock_countries->redefine(wallet_companies_for_country => ['svg']);
+    $mock_business_countries->redefine(wallet_companies => ['svg']);
 
     my $params = {
         token => $token_usd,

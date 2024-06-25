@@ -38,8 +38,9 @@ use BOM::Config::Runtime;
 use BOM::Config::TradingPlatform::KycStatus;
 use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
 use BOM::Platform::Redis;
+use Business::Config::LandingCompany::Registry;
 use LandingCompany::Registry;
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 use BOM::Platform::Context qw(request);
 use Scalar::Util           qw(weaken);
 use Exporter               qw( import );
@@ -381,6 +382,28 @@ sub loginid_details {
     return $self->{loginid_details};
 }
 
+=head2 landing_companies
+
+Returns a mapping from C<loginid> to their respective valid L<Business::Config::LandingCompany> for this user.
+
+=cut
+
+sub landing_companies {
+    my ($self) = @_;
+
+    return $self->{landing_companies} if $self->{landing_companies};
+
+    my $login_details = $self->loginid_details;
+
+    my $registry = Business::Config::LandingCompany::Registry->new();
+
+    my $lcs = +{map { $_ => $registry->brokers->{$login_details->{$_}->{broker_code}} } keys $login_details->%*};
+
+    $self->{landing_companies} = +{map { $lcs->{$_} ? ($_ => $lcs->{$_}) : () } keys $lcs->%*};
+
+    return $self->{landing_companies};
+}
+
 =head2 loginids
 
 Gets loginids linked to the user, sorted.
@@ -662,10 +685,10 @@ sub clients_for_landing_company {
 
     die 'need landing_company' unless $lc_short;
 
-    my @login_ids = grep { LandingCompany::Registry->check_broker_from_loginid($_) } $self->bom_loginids;
+    my $landing_companies = $self->landing_companies();
 
     return map { $self->get_client_instance($_, $args{db_operation} // 'write') }
-        grep { LandingCompany::Registry->by_loginid($_)->short eq $lc_short } @login_ids;
+        grep { $landing_companies->{$_}->short eq $lc_short } keys $landing_companies->%*;
 }
 
 =head2 bom_loginid_details

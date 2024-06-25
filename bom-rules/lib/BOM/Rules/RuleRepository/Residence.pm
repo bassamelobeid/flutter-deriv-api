@@ -16,17 +16,19 @@ use warnings;
 use List::Util qw(any);
 
 use BOM::Rules::Registry qw(rule);
-use BOM::Config::AccountType;
+use Business::Config::Account::Type::Registry;
+use Business::Config::Country::Registry;
 
 rule 'residence.account_type_is_available' => {
     description => "The market_type in args should be allowed in the context residence",
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // BOM::Config::AccountType::LEGACY_TYPE);
+        my $account_type =
+            Business::Config::Account::Type::Registry->new()->account_type_by_name($args->{account_type} // Business::Config::Account::Type::LEGACY);
 
         $self->fail('InvalidAccount', description => 'Market type or landing company is invalid')
-            unless $account_type->is_supported($context->brand($args), $context->residence($args), $context->landing_company($args));
+            unless $account_type->is_supported($context->residence($args), $context->landing_company($args));
 
         return 1;
     },
@@ -38,10 +40,11 @@ rule 'residence.is_signup_allowed' => {
         my ($self, $context, $args) = @_;
         my $residence = $context->residence($args);
 
-        my $countries_instance = $context->brand($args)->countries_instance;
+        my $registry = Business::Config::Country::Registry->new();
+        my $country  = $registry->by_code($residence);
 
         $self->fail('InvalidAccount', description => 'Signup is not allowed for country of residence')
-            unless $countries_instance->is_signup_allowed($residence);
+            unless $country && $country->signup->{account};
 
         return 1;
     },
@@ -59,10 +62,16 @@ rule 'residence.account_type_is_available_for_real_account_opening' => {
         return 1 if $args->{account_type} eq 'affiliate';
         return 1 if $args->{account_type} eq 'standard';
 
-        my $countries_instance           = $context->brand($args)->countries_instance;
-        my $wallet_companies_for_country = $countries_instance->wallet_companies_for_country($residence, 'real') // [];
+        my $registry = Business::Config::Country::Registry->new();
+        my $country  = $registry->by_code($residence);
+
+        my $wallet_companies_for_country = [];
+
+        $wallet_companies_for_country = $country->wallet_companies('real') if $country;
+
         $self->fail('InvalidResidence', description => 'Account type is not available for country of residence')
             unless grep { $_ eq $landing_company } $wallet_companies_for_country->@*;
+
         return 1;
     },
 };
@@ -73,10 +82,11 @@ rule 'residence.not_restricted' => {
         my ($self, $context, $args) = @_;
         my $residence = $context->residence($args);
 
-        my $countries_instance = $context->brand($args)->countries_instance;
+        my $registry = Business::Config::Country::Registry->new();
+        my $country  = $registry->by_code($residence);
 
         $self->fail('InvalidResidence', description => 'Residence country is restricted')
-            if $countries_instance->restricted_country($residence);
+            unless $country && !$country->restricted();
 
         return 1;
     },

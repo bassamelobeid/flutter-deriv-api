@@ -10,8 +10,7 @@ use BOM::Test::Helper::Token;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::BOM::RPC::QueueClient;
 use BOM::Platform::Token::API;
-use BOM::Config::AccountType;
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -31,7 +30,7 @@ my @linkable_wallet_virtual = qw(virtual);
 my $c      = BOM::Test::RPC::QueueClient->new();
 my $method = 'get_account_types';
 
-my %categories = BOM::Config::AccountType::Registry->all_categories;
+my %categories = Business::Config::Account::Type::Registry->new()->categories->%*;
 
 subtest 'validation' => sub {
 
@@ -49,9 +48,9 @@ subtest 'validation' => sub {
 };
 
 subtest 'account categories' => sub {
-
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
-    my $mock_client    = Test::MockModule->new('BOM::User::Client');
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    my $mock_countries          = Test::MockModule->new('Brands::Countries');
+    my $mock_client             = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(residence => 'za');
 
     my %account_types = (
@@ -70,6 +69,7 @@ subtest 'account categories' => sub {
 
     foreach my $company (sort keys %account_types) {
         $mock_countries->redefine(wallet_companies_for_country => [$company]);
+        $mock_business_countries->redefine(wallet_companies => [$company]);
 
         my $params = {
             token => $token,
@@ -85,6 +85,10 @@ subtest 'account categories' => sub {
             # Check if number offerings matches the number expected to offer
             my $number_expected = scalar @{$account_type->{$category}};
             my $number_got      = keys %{$result->{$category}};
+
+            use Data::Dumper;
+            print Dumper($category, $account_type->{$category}, $result->{$category});
+
             is $number_got, $number_expected, "[$company] number offerings for $category correct.";
 
             for my $type ($account_type->{$category}->@*) {
@@ -98,8 +102,9 @@ subtest 'account categories' => sub {
 };
 
 subtest 'wallet currencies' => sub {
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
-    my $mock_client    = Test::MockModule->new('BOM::User::Client');
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    my $mock_countries          = Test::MockModule->new('Brands::Countries');
+    my $mock_client             = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(residence => 'za');
 
     my %wallets_currencies = (
@@ -119,6 +124,7 @@ subtest 'wallet currencies' => sub {
 
     foreach my $company (sort keys %wallets_currencies) {
         $mock_countries->redefine(wallet_companies_for_country => [$company]);
+        $mock_business_countries->redefine(wallet_companies => [$company]);
         my $params = {
             token => $token,
             args  => {
@@ -137,8 +143,9 @@ subtest 'wallet currencies' => sub {
 };
 
 subtest 'trading account attributes' => sub {
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
-    my $mock_client    = Test::MockModule->new('BOM::User::Client');
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    my $mock_countries          = Test::MockModule->new('Brands::Countries');
+    my $mock_client             = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(residence => 'za');
 
     my %trading_accounts = (
@@ -206,6 +213,7 @@ subtest 'trading account attributes' => sub {
 
     foreach my $company (keys %trading_accounts) {
         $mock_countries->redefine(wallet_companies_for_country => [$company]);
+        $mock_business_countries->redefine(wallet_companies => [$company]);
         my $params = {
             token => $token,
             args  => {

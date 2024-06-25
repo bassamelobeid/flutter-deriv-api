@@ -71,7 +71,6 @@ use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Onfido;
 use BOM::Config::P2P;
-use BOM::Config::AccountType::Registry;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::User::IdentityVerification;
@@ -79,6 +78,8 @@ use BOM::Platform::Utility qw(error_map);
 use BOM::Platform::Token::API;
 use BOM::Platform::Token;
 use BOM::User::Onfido;
+use Business::Config::Account::Type::Registry;
+use Business::Config::Account::Type;
 
 =head1 NAME
 
@@ -299,8 +300,29 @@ sub full_name {
     return $self->salutation . ' ' . $self->first_name . ' ' . $self->last_name;
 }
 
+=head2 landing_company
+
+Returns the C<landing_company> by C<broker_code> of the client.
+
+It takes a hashref of arguments:
+
+=over 4
+
+=item C<business_rules> - this flag returns the new landing company object.
+
+=back
+
+Return a L<Business::Config::LandingCompany> instance if the C<$business_rules> flag is active, a legacy L<LandingCompany> otherwise.
+
+=cut
+
 sub landing_company {
-    my $self = shift;
+    my ($self, $args) = @_;
+
+    $args //= {};
+
+    return Business::Config::LandingCompany::Registry->new()->by_broker($self->broker) if $args->{business_rules};
+
     return LandingCompany::Registry->by_broker($self->broker);
 }
 
@@ -1011,7 +1033,7 @@ sub fully_authenticated {
 
     my @methods_to_check = qw(ID_DOCUMENT ID_NOTARIZED ID_ONLINE);
 
-    push(@methods_to_check, 'ID_PO_BOX') if $self->landing_company->id_po_box_enabled;
+    push(@methods_to_check, 'ID_PO_BOX') if $self->landing_company({business_rules => 1})->id_po_box_enabled;
 
     for my $method (@methods_to_check) {
         my $auth = $self->get_authentication($method);
@@ -1043,7 +1065,10 @@ Returns C<0> or C<1>.
 sub poa_authenticated_with_idv {
     my ($self, $args) = @_;
 
-    my $lc = $args->{landing_company} ? LandingCompany::Registry->by_name($args->{landing_company}) : $self->landing_company;
+    my $lc =
+        $args->{landing_company}
+        ? Business::Config::LandingCompany::Registry->new()->by_code($args->{landing_company})
+        : $self->landing_company({business_rules => 1});
 
     # idv cannot fully auth high risk cr clients
 
@@ -1053,8 +1078,10 @@ sub poa_authenticated_with_idv {
 
     my $idv_address = $self->get_authentication('IDV_ADDRESS');
 
+    my $auth_methods = $lc->idv_auth_methods // [];
+
     return 1
-        if (any { $_ eq 'idv_address' } $lc->idv_auth_methods->@*)
+        if (any { $_ eq 'idv_address' } $auth_methods->@*)
         && $idv_address
         && $idv_address->status eq 'pass';
 
@@ -1063,7 +1090,7 @@ sub poa_authenticated_with_idv {
     my $idv_photo = $self->get_authentication('IDV_PHOTO');
 
     return 1
-        if (any { $_ eq 'idv_photo' } $lc->idv_auth_methods->@*)
+        if (any { $_ eq 'idv_photo' } $auth_methods->@*)
         && $idv_photo
         && $idv_photo->status eq 'pass';
 
@@ -1072,7 +1099,7 @@ sub poa_authenticated_with_idv {
     my $idv_poa = $self->get_authentication('IDV');
 
     return 1
-        if (any { $_ eq 'idv' } $lc->idv_auth_methods->@*)
+        if (any { $_ eq 'idv' } $auth_methods->@*)
         && $idv_poa
         && $idv_poa->status eq 'pass';
 
@@ -1395,7 +1422,7 @@ sub currency {
         return $account->currency_code();
     }
 
-    return $self->landing_company->get_default_currency($self->residence);
+    return $self->landing_company({business_rules => 1})->get_default_currency($self->residence);
 }
 
 =head2 local_currency
@@ -1801,7 +1828,7 @@ sub get_siblings_information {
     }
 
     if ($landing_company) {
-        @clients = grep { $_->landing_company->short eq $landing_company } @clients;
+        @clients = grep { $_->landing_company({business_rules => 1})->short eq $landing_company } @clients;
     }
 
     if ($exclude_disabled_no_currency) {
@@ -1816,7 +1843,7 @@ sub get_siblings_information {
 
         $siblings->{$cl->loginid} = {
             loginid              => $cl->loginid,
-            landing_company_name => $cl->landing_company->short,
+            landing_company_name => $cl->landing_company({business_rules => 1})->short,
             currency             => $acc ? $acc->currency_code() : '',
             balance              => $balance,
             account_type         => $cl->get_account_type->name,
@@ -2551,7 +2578,7 @@ sub immutable_fields {
             $financial_assessment = BOM::User::FinancialAssessment::decode_fa($financial_assessment) if $financial_assessment;
 
             push @immutable,
-                grep { $financial_assessment && $financial_assessment->{$_} && $self->landing_company->short eq 'maltainvest' }
+                grep { $financial_assessment && $financial_assessment->{$_} && $self->landing_company({business_rules => 1})->short eq 'maltainvest' }
                 FA_FIELDS_IMMUTABLE_DUPLICATED->@*;
 
             return uniq(@immutable, PROFILE_FIELDS_IMMUTABLE_DUPLICATED->@*);
@@ -2610,7 +2637,7 @@ sub immutable_fields {
             next;
         }
 
-        my $company_settings = $sibling->landing_company->changeable_fields;
+        my $company_settings = $sibling->landing_company({business_rules => 1})->changeable_fields;
 
         # if the the locked status is on, we might want to ensure the included fields are immutable
         my $immutable_if_locked = $company_settings->{personal_details_not_locked} // [];
@@ -2672,12 +2699,14 @@ sub check_duplicate_account {
             exclude_status => ['duplicate_account']};
         $dup_details->{$_} = $args->{$_} || $self->$_ for @$checks;
 
-        my $countries = request()->brand->countries_instance;
+        my $country = Business::Config::Country::Registry->new()->by_code($self->residence);
 
         # check for duplicates in current and all uprgradeable landing companies
-        my @real_companies =
-            uniq grep { $_ } ($countries->gaming_company_for_country($self->residence), $countries->financial_company_for_country($self->residence));
-        my @broker_codes = map { LandingCompany::Registry->by_name($_)->broker_codes->@* } @real_companies;
+        my @real_companies;
+        @real_companies = uniq grep { $_ } ($country->derived_company, $country->financial_company) if $country;
+
+        my $lc_reg       = Business::Config::LandingCompany::Registry->new();
+        my @broker_codes = map { $lc_reg->by_code($_)->broker_codes->@* } @real_companies;
 
         for my $broker_code (@broker_codes) {
             my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $broker_code})->get_duplicate_client($dup_details);
@@ -5238,16 +5267,21 @@ sub get_account_details {
     my $exclude_until = $self->get_self_exclusion_until_date;
     my $created_at    = $self->date_joined ? Date::Utility->new($self->date_joined)->epoch : undef;
 
-    my $acc          = $self->account;
-    my $account_type = $self->get_account_type;
+    my $acc           = $self->account;
+    my $account_type  = $self->get_account_type;
+    my $currency_type = '';
+    my $currency;
+
+    $currency      = Business::Config::LandingCompany::Registry->new()->currencies()->{$acc->currency_code} if $acc;
+    $currency_type = $currency->{type}                                                                      if $currency;
 
     return {
         account_type         => $account_type->name,
         account_category     => $account_type->category->name,
         loginid              => $self->loginid,
-        currency             => $acc ? $acc->currency_code                                              : '',
-        currency_type        => $acc ? LandingCompany::Registry::get_currency_type($acc->currency_code) : '',
-        landing_company_name => $self->landing_company->short,
+        currency             => $acc ? $acc->currency_code : '',
+        currency_type        => $acc ? $currency_type      : '',
+        landing_company_name => $self->landing_company({business_rules => 1})->short,
         is_disabled          => $self->status->disabled ? 1 : 0,
         is_virtual           => $self->is_virtual       ? 1 : 0,
         created_at           => $created_at,
@@ -5918,7 +5952,7 @@ Returns whether this client instance is binary (legacy type).
 =cut
 
 sub is_legacy {
-    return shift->get_account_type->name eq BOM::Config::AccountType::LEGACY_TYPE ? 1 : 0;
+    return shift->get_account_type->name eq Business::Config::Account::Type::LEGACY ? 1 : 0;
 }
 
 =head2 is_affiliate
@@ -5933,7 +5967,7 @@ sub is_affiliate {
 
 =head2 get_account_type
 
-Gets the account type as a BOM::Config::AccountType object.
+Gets the account type as a L<Business::Config::Account::Type> object.
 
 =cut
 
@@ -5941,7 +5975,7 @@ sub get_account_type {
     my $self = shift;
 
     $self->{_account_type_obj} //=
-        BOM::Config::AccountType::Registry->account_type_by_name($self->account_type // BOM::Config::AccountType::LEGACY_TYPE);
+        Business::Config::Account::Type::Registry->new()->account_type_by_name($self->account_type // Business::Config::Account::Type::LEGACY);
 
     return $self->{_account_type_obj};
 }
@@ -5972,14 +6006,16 @@ sub get_class_by_broker_code {
 
     die 'Broker code is missing' unless $broker_code;
 
+    my $registry = Business::Config::Account::Type::Registry->new();
+
     return 'BOM::User::Affiliate'
-        if BOM::Config::AccountType::Registry->find_broker_code(
+        if $registry->find_broker_code(
         broker       => $broker_code,
         category     => 'wallet',
         account_type => 'affiliate'
         );
 
-    return 'BOM::User::Wallet' if BOM::Config::AccountType::Registry->find_broker_code(
+    return 'BOM::User::Wallet' if $registry->find_broker_code(
         broker   => $broker_code,
         category => 'wallet'
     );
@@ -6627,7 +6663,7 @@ sub duplicate_sibling {
         ($a->date_joined ? Date::Utility->new($a->date_joined)->epoch : 0) < ($b->date_joined ? Date::Utility->new($b->date_joined)->epoch : 0);
     } grep { $_->status->duplicate_account && $_->status->reason('duplicate_account') =~ /Duplicate account - currency change/ } @clients;
 
-    my $duplicated = first { $_->landing_company->short eq 'maltainvest' } @dup_candidates;
+    my $duplicated = first { $_->landing_company({business_rules => 1})->short eq 'maltainvest' } @dup_candidates;
 
     # mf will have higer prio
 

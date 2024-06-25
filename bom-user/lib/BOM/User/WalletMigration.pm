@@ -8,7 +8,7 @@ use warnings;
 use BOM::Config::Redis;
 use BOM::Platform::Event::Emitter;
 use LandingCompany::Registry;
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 use BOM::User::FinancialAssessment;
 use BOM::Config::Runtime;
 
@@ -438,7 +438,7 @@ method create_wallet (%args) {
 
     push @fields_to_copy, 'aml_risk_classification' if ELIGIBLE_AML_RISK_COLLECTION_VALUES->{$client->aml_risk_classification};
 
-    my $type        = BOM::Config::AccountType::Registry->account_type_by_name($account_type);
+    my $type        = Business::Config::Account::Type::Registry->new()->account_type_by_name($account_type);
     my $broker_code = $type->get_single_broker_code($lc);
 
     unless ($broker_code) {

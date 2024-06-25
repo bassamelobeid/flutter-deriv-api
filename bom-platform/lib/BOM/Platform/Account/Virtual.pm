@@ -12,7 +12,7 @@ use BOM::User::Password;
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(localize request);
 
-use BOM::Config::AccountType::Registry;
+use Business::Config::Account::Type::Registry;
 
 sub create_account {
     my $args                   = shift;
@@ -24,8 +24,8 @@ sub create_account {
     my $brand_name             = $details->{brand_name} // request()->brand->name;
     my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
 
-    my $account_type_name = $details->{account_type} or return {error => {code => 'AccountTypeMissing'}};    # default to 'trading'
-    my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name)
+    my $account_type_name = $details->{account_type} or return {error => {code => 'AccountTypeMissing'}};                # default to 'trading'
+    my $account_type      = Business::Config::Account::Type::Registry->new()->account_type_by_name($account_type_name)
         or return {error => {code => 'InvalidAccountType'}};
     # TODO: move it to rule engine
     return {error => {code => 'InvalidDemoAccountType'}} unless $account_type->is_regulation_supported('virtual');

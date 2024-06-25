@@ -299,7 +299,7 @@ subtest 'rule idv.check_age_legality' => sub {
         },
         {
             result => {
-                birthdate => Date::Utility->new->_minus_years(25),
+                birthdate => Date::Utility->new->_minus_years(25)->plus_time_interval('10s'),
             },
             client => {
                 residence => 'ir',

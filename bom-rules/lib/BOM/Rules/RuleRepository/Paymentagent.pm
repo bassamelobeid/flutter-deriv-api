@@ -49,7 +49,7 @@ rule 'paymentagent.pa_allowed_in_landing_company' => {
         my ($self, $context, $args) = @_;
 
         $self->fail('PaymentAgentNotAvailable')
-            unless $context->landing_company_object($args)->allows_payment_agents;
+            unless $context->landing_company_legacy($args)->allows_payment_agents;
 
         return 1;
     },

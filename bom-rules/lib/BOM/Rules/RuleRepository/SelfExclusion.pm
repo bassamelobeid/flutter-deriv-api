@@ -60,7 +60,7 @@ rule 'self_exclusion.deposit_limits_allowed' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        return 1 if $context->landing_company_object($args)->deposit_limit_enabled;
+        return 1 if $context->landing_company_legacy($args)->deposit_limit_enabled;
 
         for my $max_deposit_field (qw/max_deposit max_7day_deposit max_30day_deposit/) {
             $self->fail('SetSelfExclusionError', details => $max_deposit_field)
