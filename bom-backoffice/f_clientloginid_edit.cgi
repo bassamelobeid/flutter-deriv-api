@@ -1179,7 +1179,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
         # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
         my @clients_to_update =
             grep { $client->broker_code ne $_->broker_code }
-            map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
+            map { $client->user->clients_for_landing_company($_) } @allowed_lc_to_sync;
         push @clients_to_update, $client;
 
         # uk clients need to be age verified to trade synthetics in vr
