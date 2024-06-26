@@ -19,8 +19,20 @@ use List::Util                 qw(uniq);
 use Path::Tiny                 qw(path);
 use DataDog::DogStatsd::Helper qw(stats_event);
 use Scalar::Util;
+use LandingCompany::Registry;
+use Date::Utility;
 
-use constant AFFILIATE_CHUNK_SIZE => 300;
+use constant AFFILIATE_CHUNK_SIZE          => 300;
+use constant AFFILIATE_BATCH_MONTHS        => 16;
+use constant AFFILIATE_DEFAULT_LOOKUP_DATE => '2000-01-01';
+use constant _ARCHIVAL_RESULT_KEY_TO_TITLE => {
+    success                          => 'MT5 Technical Accounts Archived',
+    main_account_ib_removal_success  => 'MT5 Main Account Archived - IB Comment Removed',
+    failed                           => 'MT5 Technical Accounts Archival Failed',
+    technical_account_balance_exists => 'MT5 Technical Accounts Archival Failed because of below accounts which has balance',
+    main_account_ib_removal_failed   => 'MT5 Main Account Archival - IB Comment Removal Failed',
+    account_not_found                => 'MT5 Account Not Found',
+};
 
 =head2 affiliate_sync_initiated
 
@@ -41,33 +53,110 @@ It takes the following arguments:
 
 =back
 
-Returns a L<Future> which resolvs to C<undef>
+Returns a L<Future> which resolves to C<undef>
 
 =cut
 
 async sub affiliate_sync_initiated {
-    my ($data) = @_;
-    my $affiliate_id = $data->{affiliate_id};
+    my ($data)        = @_;
+    my $affiliate_id  = $data->{affiliate_id};
+    my $deriv_loginid = $data->{deriv_loginid};
 
-    my @loginids = _get_clean_loginids($affiliate_id)->@*;
+    my $client;
+    $client = BOM::User::Client->new({loginid => $deriv_loginid}) if $deriv_loginid;
+
+    my @loginids;
+    try {
+        @loginids = _get_clean_loginids(($client ? $client->date_joined : AFFILIATE_DEFAULT_LOOKUP_DATE), $affiliate_id)->@*;
+    } catch ($e) {
+        stats_event(
+            'MyAffiliate Events - affiliate_sync_initiated',
+            sprintf("%s : IB Sync event for Affiliate failed: %s", Date::Utility->new->datetime_ddmmmyy_hhmmss, $e),
+            {alert_type => 'error'});
+
+        my $action_text = $data->{action} eq 'clear' ? 'Untagging' : 'Synchronization to MT5';
+        send_email({
+                from                  => '<no-reply@binary.com>',
+                to                    => join(',', $data->{email}, 'x-trading-ops@regentmarkets.com'),
+                subject               => "Affiliate $affiliate_id $action_text",
+                email_content_is_html => 1,
+                message               => [
+                    "<h3>$action_text for Affiliate $affiliate_id failed</h3>",
+                    "<p>There was an error while getting the clients for the affiliate. Please contact BE</p>",
+                ]});
+
+        return undef;
+    }
 
     while (my @chunk = splice(@loginids, 0, AFFILIATE_CHUNK_SIZE)) {
         my $args = {
-            loginids      => [@chunk],
-            affiliate_id  => $affiliate_id,
-            action        => $data->{action},
-            email         => $data->{email},
-            deriv_loginid => $data->{deriv_loginid},
-            untag         => $data->{untag} // 0,
+            loginids     => [@chunk],
+            affiliate_id => $affiliate_id,
+            action       => $data->{action},
+            email        => $data->{email},
+            client       => $client,
+            untag        => 0
         };
 
-        # Don't fire a new event if this is the last batch, process it right away instead
-        return await affiliate_loginids_sync($args) unless @loginids;
-
+        # Don't fire a new event if this is the last batch, process it right away instead. Untag flag is on last batch to archive the affiliate accounts
+        return await affiliate_loginids_sync({%$args, 'untag' => $data->{untag} // 0}) unless @loginids;
         BOM::Platform::Event::Emitter::emit('affiliate_loginids_sync', $args);
     }
 
+    if ($data->{untag}) {
+
+        my $archival_result = $client ? _create_html_archival_report(await _archive_technical_accounts($client)) : ['<p>IB account not found</p>'];
+
+        send_email({
+                from                  => '<no-reply@binary.com>',
+                to                    => join(',', $data->{email}, 'x-trading-ops@regentmarkets.com'),
+                subject               => "Affiliate $affiliate_id Untagging",
+                email_content_is_html => 1,
+                message               => [
+                    "<h1>Untagging for Affiliate $affiliate_id is finished</h1>",
+                    '<h2>Action: sync agent with all clients</h2>',
+                    '<p>The affiliate has no clients</p>',
+                    '<br>', @$archival_result,
+                ],
+            });
+
+        stats_event(
+            'MyAffiliate Events - affiliate_sync_initiated',
+            sprintf("%s : IB Untagging - archived with no clients", Date::Utility->new->datetime_ddmmmyy_hhmmss),
+            {alert_type => 'info'});
+    }
+
     return undef;
+
+}
+
+=head2 _create_html_archival_report
+
+Adds HTML markup to the archival results and returns it.
+Takes the following arguments:
+
+=over 4
+
+=item * C<result> - The result of the archival process
+
+=back
+
+Returns an arrayref of HTML strings
+
+=cut
+
+sub _create_html_archival_report {
+
+    my $result = shift;
+    return [
+        '<h1>MT5 Main and Technical Accounts Archival</h1><br>',
+        map {
+            ('<h2>', _ARCHIVAL_RESULT_KEY_TO_TITLE->{$_}, '</h2><br><ul>', (map { ("<li>$_</li>") } sort @{$result->{$_}}), '</ul>',)
+            }
+            grep { @{$result->{$_}} > 0 }
+            qw(success main_account_ib_removal_success failed  main_account_ib_removal_failed technical_account_balance_exists account_not_found)
+    ];
+
 }
 
 =head2 affiliate_loginids_sync
@@ -93,8 +182,8 @@ Returns a L<Future> which resolves to C<undef>
 =cut
 
 async sub affiliate_loginids_sync {
-    my ($data) = @_;
-    my ($affiliate_id, $loginids, $action) = $data->@{qw/affiliate_id loginids action/};
+    my $data = shift;
+    my ($affiliate_id, $loginids, $action, $client) = $data->@{qw/affiliate_id loginids action client/};
 
     stats_event(
         'MyAffiliate Events - affiliate_loginids_sync',
@@ -112,39 +201,22 @@ async sub affiliate_loginids_sync {
         }
     }
 
-    my $archive_result = {};
-    $archive_result = await _archive_technical_accounts($data->{deriv_loginid}) if $data->{untag};
+    my $action_text = $action eq 'clear' ? 'Untagging' : 'Synchronization to MT5';
 
-    my $section_sep = '-' x 20;
-    my @archive_report;
-    push @archive_report, ($section_sep, 'MT5 Technical Accounts Archived', '~~~', (sort @{$archive_result->{success}}), '~~~')
-        if exists $archive_result->{success} and @{$archive_result->{success}};
-    push @archive_report, ($section_sep, 'MT5 Technical Accounts Archive Failed', '~~~', (sort @{$archive_result->{failed}}), '~~~')
-        if exists $archive_result->{failed} and @{$archive_result->{failed}};
-
-    push @archive_report,
-        ($section_sep, 'MT5 Main Account - IB Comment Removed', '~~~', (sort @{$archive_result->{main_account_ib_removal_success}}), '~~~')
-        if exists $archive_result->{main_account_ib_removal_success} and @{$archive_result->{main_account_ib_removal_success}};
-    push @archive_report,
-        ($section_sep, 'MT5 Main Account - IB Comment Removal Failed', '~~~', (sort @{$archive_result->{main_account_ib_removal_failed}}), '~~~')
-        if exists $archive_result->{main_account_ib_removal_failed} and @{$archive_result->{main_account_ib_removal_failed}};
-    push @archive_report, ($section_sep, 'MT5 Account Not Found', '~~~', (sort @{$archive_result->{account_not_found}}), '~~~')
-        if exists $archive_result->{account_not_found} and @{$archive_result->{account_not_found}};
-    push @archive_report,
-        (
-        $section_sep, 'MT5 Technical Accounts Archival Failed because of below accounts which has balance',
-        '~~~', (sort @{$archive_result->{technical_account_balance_exists}}), '~~~'
-        ) if exists $archive_result->{technical_account_balance_exists} and @{$archive_result->{technical_account_balance_exists}};
+    my $archival_result = [];
+    if ($data->{untag}) {
+        $archival_result = $client ? _create_html_archival_report(await _archive_technical_accounts($client)) : ['<p>IB account not found</p>'];
+    }
 
     send_email({
-            from    => '<no-reply@binary.com>',
-            to      => join(',', $data->{email}, 'x-trading-ops@regentmarkets.com'),
-            subject => "Affiliate $affiliate_id " . ($data->{untag} ? 'untagging operation' : 'synchronization to mt5'),
-            message => [
-                ($data->{untag} ? 'Untag operation' : 'Synchronization to mt5') . " for Affiliate $affiliate_id is finished.",
-                'Action: ' . ($action eq 'clear' ? 'remove agent from all clients.' : 'sync agent with all clients.'),
-                $section_sep, (sort @results),
-                @archive_report,
+            from                  => '<no-reply@binary.com>',
+            to                    => join(',', $data->{email}, 'x-trading-ops@regentmarkets.com'),
+            subject               => "Affiliate $affiliate_id $action_text",
+            email_content_is_html => 1,
+            message               => [
+                "<h1>$action_text for Affiliate $affiliate_id is finished</h1>", '<br>',
+                @$archival_result,                                               '<br>',
+                '<h2>Action: sync agent with all clients</h2>',                  sort @results,
             ],
         });
 
@@ -306,13 +378,45 @@ async sub _set_affiliate_for_mt5 {
 }
 
 sub _get_clean_loginids {
-    my ($affiliate_id) = @_;
-    my $my_affiliate   = BOM::MyAffiliates->new(timeout => 300);
-    my $customers      = $my_affiliate->get_customers(AFFILIATE_ID => $affiliate_id);
+    my ($start_date, $affiliate_id) = @_;
+    my $date_joined = Date::Utility->new($start_date);
 
+    my $customers;
+    my $my_affiliate = BOM::MyAffiliates->new(timeout => 300);
+
+    my $months    = AFFILIATE_BATCH_MONTHS;
+    my $date_from = Date::Utility->new->minus_months($months);
+    my $date_to   = Date::Utility->new;
+
+    while ($date_to->is_after($date_joined) || $date_to->is_same_as($date_joined)) {
+        my $customers_batch = $my_affiliate->get_customers(
+            AFFILIATE_ID => $affiliate_id,
+            FROM_DATE    => $date_from->date_yyyymmdd,
+            TO_DATE      => $date_to->date_yyyymmdd
+        );
+
+        my $error_str = $my_affiliate->errstr;
+        if ($error_str) {
+            if ($error_str =~ /Gateway Time-out/) {
+                die "Myaffiliates API call failed with Gateway Time-out error" if $months <= 1;
+                $my_affiliate->reset_errstr;
+                $months /= 2;
+                $date_from = Date::Utility->new->minus_months($months);
+            } else {
+                die "Myaffiliates API call failed with error: $error_str";
+            }
+        } else {
+            push @$customers, @$customers_batch;
+            $date_to   = $date_from->minus_time_interval('1d');
+            $date_from = $date_from->minus_months($months);
+        }
+
+    }
+
+    my $real_deriv_broker_codes = join('|', LandingCompany::Registry->all_real_broker_codes);
     return [
         uniq
-            grep { !/${BOM::User->MT5_REGEX}/ }
+            grep { m/^($real_deriv_broker_codes)?(?=\d+$)/ }
             map  { s/^deriv_//r }
             map  { $_->{CLIENT_ID} || () } @$customers
     ];
@@ -355,8 +459,7 @@ sub _generate_csv {
 }
 
 async sub _archive_technical_accounts {
-    my $deriv_loginid             = shift;
-    my $client                    = BOM::User::Client->new({loginid => $deriv_loginid});
+    my $client                    = shift;
     my $affiliate_mt5_accounts_db = $client->user->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(q{SELECT * FROM mt5.list_user_accounts(?)}, {Slice => {}}, $client->user->id);
