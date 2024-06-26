@@ -20,8 +20,6 @@ use BOM::Config qw(redis_ctrader_config);
 
 use constant DEALS_HASH_RESULTS_NAME   => 'ctrader::deals::resync::results';
 use constant TRADERS_HASH_RESULTS_NAME => 'ctrader::traders::resync::results';
-use constant DEALS_SCRIPT_LOCK         => 'ctrader::deals::resync::lock';
-use constant TRADERS_SCRIPT_LOCK       => 'ctrader::traders::resync::lock';
 
 BOM::Backoffice::Sysinit::init();
 
@@ -32,9 +30,9 @@ my $redis_config = BOM::Config::redis_ctrader_config;
 my @info_for_output;
 
 my (
-    $redis_cfds,        $deals_resync_result, $traders_resync_result, $deals_script_running, $traders_script_running, $exec_start_datetime,
-    $exec_end_datetime, $nb_deals,            $nb_traders,            $last_run_deals,       $last_run_traders,       $start_date_deals,
-    $end_date_deals,    $start_date_traders,  $end_date_traders,      $staffname_deals,      $staffname_traders,
+    $redis_cfds,     $deals_resync_result, $traders_resync_result, $exec_start_datetime, $exec_end_datetime,
+    $nb_deals,       $nb_traders,          $last_run_deals,        $last_run_traders,    $start_date_deals,
+    $end_date_deals, $start_date_traders,  $end_date_traders,      $staffname_deals,     $staffname_traders,
 );
 
 try {
@@ -43,10 +41,8 @@ try {
         port     => $redis_config->{write}{port},
         password => $redis_config->{write}{password},
     );
-    $deals_resync_result    = $redis_cfds->execute('hgetall', DEALS_HASH_RESULTS_NAME);
-    $traders_resync_result  = $redis_cfds->execute('hgetall', TRADERS_HASH_RESULTS_NAME);
-    $deals_script_running   = $redis_cfds->execute('get',     DEALS_SCRIPT_LOCK);
-    $traders_script_running = $redis_cfds->execute('get',     TRADERS_SCRIPT_LOCK);
+    $deals_resync_result   = $redis_cfds->execute('hgetall', DEALS_HASH_RESULTS_NAME);
+    $traders_resync_result = $redis_cfds->execute('hgetall', TRADERS_HASH_RESULTS_NAME);
 
     extract_values($deals_resync_result,   \$nb_deals,   \$last_run_deals,   \$start_date_deals,   \$end_date_deals,   \$staffname_deals);
     extract_values($traders_resync_result, \$nb_traders, \$last_run_traders, \$start_date_traders, \$end_date_traders, \$staffname_traders);
@@ -62,26 +58,24 @@ Bar("Trigger cTrader Resync Service");
 BOM::Backoffice::Request::template()->process(
     'backoffice/ctrader_resync_service.html.tt',
     {
-        input                  => $input,
-        refresh_url            => request()->url_for('backoffice/f_ctrader_resync_service.cgi'),
-        last_run_deals         => $last_run_deals          || 'Unknown',
-        last_run_traders       => $last_run_traders        || 'Unknown',
-        start_date_deals       => $start_date_deals        || 'Unknown',
-        end_date_deals         => $end_date_deals          || 'Unknown',
-        start_date_traders     => $start_date_traders      || 'Unknown',
-        end_date_traders       => $end_date_traders        || 'Unknown',
-        staffname_deals        => $staffname_deals         || 'Unknown',
-        staffname_traders      => $staffname_traders       || 'Unknown',
-        nb_deals               => $nb_deals                || '0',
-        nb_traders             => $nb_traders              || '0',
-        exec_start_datetime    => $exec_start_datetime     || 'Unknown',
-        exec_end_datetime      => $exec_end_datetime       || 'Unknown',
-        prev_start_datetime    => $input->{start_datetime} || Date::Utility->today->minus_time_interval('1d')->db_timestamp,
-        prev_end_datetime      => $input->{end_datetime}   || Date::Utility->today->db_timestamp,
-        prev_selected_deals    => defined $input->{service_type} && $input->{service_type} eq 'deals'   ? 'selected' : '',
-        prev_selected_traders  => defined $input->{service_type} && $input->{service_type} eq 'traders' ? 'selected' : '',
-        deals_script_running   => $deals_script_running   ? 'Deals resyncing currently running'   : '',
-        traders_script_running => $traders_script_running ? 'Traders resyncing currently running' : '',
+        input                 => $input,
+        refresh_url           => request()->url_for('backoffice/f_ctrader_resync_service.cgi'),
+        last_run_deals        => $last_run_deals          || 'Unknown',
+        last_run_traders      => $last_run_traders        || 'Unknown',
+        start_date_deals      => $start_date_deals        || 'Unknown',
+        end_date_deals        => $end_date_deals          || 'Unknown',
+        start_date_traders    => $start_date_traders      || 'Unknown',
+        end_date_traders      => $end_date_traders        || 'Unknown',
+        staffname_deals       => $staffname_deals         || 'Unknown',
+        staffname_traders     => $staffname_traders       || 'Unknown',
+        nb_deals              => $nb_deals                || '0',
+        nb_traders            => $nb_traders              || '0',
+        exec_start_datetime   => $exec_start_datetime     || 'Unknown',
+        exec_end_datetime     => $exec_end_datetime       || 'Unknown',
+        prev_start_datetime   => $input->{start_datetime} || Date::Utility->today->minus_time_interval('1d')->db_timestamp,
+        prev_end_datetime     => $input->{end_datetime}   || Date::Utility->today->db_timestamp,
+        prev_selected_deals   => defined $input->{service_type} && $input->{service_type} eq 'deals'   ? 'selected' : '',
+        prev_selected_traders => defined $input->{service_type} && $input->{service_type} eq 'traders' ? 'selected' : '',
     });
 
 if ($input->{'resync-button'}) {

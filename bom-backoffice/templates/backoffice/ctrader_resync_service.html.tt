@@ -8,10 +8,6 @@
         display: inline-block;
         margin-right: 20px;
     }
-
-    .running {
-        color: green;
-    }
 </style>
 <div class="last_resync">
     <div>
@@ -21,7 +17,6 @@
         <pre>End Datetime:      [% end_date_traders %]</pre>
         <pre>Resynced [% nb_traders %] trader(s)</pre>
         <pre>Issued by [% staffname_traders %]</pre>
-        <pre class="running">[% traders_script_running %]</pre>
     </div>
     <div>
         <b><u>DEALS</u></b><br><br>
@@ -30,7 +25,6 @@
         <pre>End Datetime:      [% end_date_deals %]</pre>
         <pre>Resynced [% nb_deals %] deal(s)</pre>
         <pre>Issued by [% staffname_deals %]</pre>
-        <pre class="running">[% deals_script_running %]</pre>
     </div>
 </div>
 <br>
