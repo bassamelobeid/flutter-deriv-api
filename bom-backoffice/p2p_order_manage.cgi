@@ -118,7 +118,6 @@ if ($input{dispute}) {
 
 if (my $id = $input{order_id}) {
     try {
-        die "Invalid id - $id\n" unless $id =~ m/^[0-9]+$/ and $id > 0;
         $order = $db->run(
             fixup => sub {
                 $_->selectrow_hashref('SELECT * FROM p2p.order_list(?,NULL,NULL,NULL,NULL,NULL)', undef, $id);

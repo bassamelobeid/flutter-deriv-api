@@ -5,7 +5,7 @@
 <form action="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', {broker => broker}) %]" method="get">
 <label>Login ID:</label><input type="text" name="loginID" value="[% request.params.loginID %]" size=20 data-lpignore="true" />
 <label>Name:</label><input type="text" name="name" value="[% request.params.name %]" size=20 data-lpignore="true" />
-<label>Advertiser ID:</label><input type="number" name="id" min="1" value="[% request.params.id %]" size=10 data-lpignore="true" />
+<label>Advertiser ID:</label><input type="number" name="id" min="1" max="999999999999999999" value="[% request.params.id %]" size=10 data-lpignore="true" />
 <button type="submit" class="btn btn--primary">Search</button>
 </form>
 

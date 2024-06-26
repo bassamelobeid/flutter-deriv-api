@@ -1,7 +1,7 @@
 <p><a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi') %]">&laquo; Back to orders list</a></p>
 
 <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker}) %]" method="get">
-<label>Order ID:</label><input type="number" min="1" name="order_id" value="[% order.id %]" size=20 data-lpignore="true" />
+<label>Order ID:</label><input type="number" min="1" max = "999999999999999999" name="order_id" value="[% order.id %]" size=20 data-lpignore="true" />
 <button class="btn btn--primary" type="submit">Get order</button>
 </form>
 
