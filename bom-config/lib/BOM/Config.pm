@@ -723,18 +723,6 @@ sub services_config {
     return $config;
 }
 
-=head2 account_types
-
-Loads and caches configuration for account types
-
-=cut
-
-sub account_types {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/account_types.yml');
-
-    return $config;
-}
-
 =head2 broker_databases
 
 Loads and caches configuration for broker code databases.

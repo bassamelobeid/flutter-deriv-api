@@ -773,26 +773,6 @@ sub get_signup_disabled_currencies {
     return \@disabled_currencies;
 }
 
-=head2 is_currency_signup_enabled
-
-Accepts: Landing company name, currency for which we want to check if signup is enabled
-Returns: Returns 1 if the currency is currently enabled for signup, otherwise 0.
-
-=cut
-
-sub is_currency_signup_enabled {
-    my ($landing_company_name, $currency) = @_;
-
-    return 1 unless $currency;
-    my $signup_disabled_currencies = get_signup_disabled_currencies($landing_company_name);
-
-    return 1 unless $signup_disabled_currencies->@*;
-
-    my $signup_disabled = any { $_ eq $currency } $signup_disabled_currencies->@*;
-
-    return $signup_disabled ? 0 : 1;
-}
-
 =head2 is_experimental_currency
 
 To check if the currency is experimental.

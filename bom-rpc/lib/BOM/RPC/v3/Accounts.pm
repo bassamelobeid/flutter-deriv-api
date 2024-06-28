@@ -31,6 +31,7 @@ use Format::Util::Numbers            qw/formatnumber financialrounding/;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 use Business::Config::Account;
 use Business::Config::Country::Registry;
+use Business::Config::LandingCompany::Registry;
 use BOM::RPC::Registry '-dsl';
 
 use BOM::RPC::v3::Utility qw(longcode log_exception get_verification_uri);
@@ -4143,13 +4144,16 @@ rpc "unsubscribe_email",
 
 rpc available_accounts => sub {
     my ($args, $client) = shift->@{qw(args client)};
-    my $country            = $client->residence;
-    my $landing_company    = $args->{company} // $client->landing_company->short;
-    my $brand              = request()->brand;
-    my $countries_instance = $brand->countries_instance;
+    my $residence       = $client->residence;
+    my $landing_company = $args->{company} // $client->landing_company->short;
+    my $brand           = request()->brand;
+    my $country;
+    $country = Business::Config::Country::Registry->new()->by_code($residence);
+
+    my $lc_registry = Business::Config::LandingCompany::Registry->new();
 
     # check if residence is allowed
-    if ($countries_instance->restricted_country($country)) {
+    if (!$country || $country->restricted()) {
         return {error => {code => 'RestrictedCountry'}};
     }
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -4169,26 +4173,28 @@ rpc available_accounts => sub {
     @user_clients = grep { $_->default_account } @user_clients;
 
     for my $c (@user_clients) {
-        my $currency = $c->currency;
+        my $currency_config = $lc_registry->currencies()->{$c->currency} // {};
+        my $currency_type   = $currency_config->{type}                   // '';
 
         # Only one wallet with fiat currency is allowed
-        $currency = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? 'fiat' : $currency;
-        my $landing_company_name = $c->landing_company->short;
+        my $currency             = $currency_type eq 'fiat' ? 'fiat' : $c->currency;
+        my $landing_company_name = $c->landing_company({business_rules => 1})->short;
         my $account_type         = $c->get_account_type->name;
         $client_hash->{$account_type}->{$landing_company_name}->{$currency} = 1;
     }
 
-    my $syntehtic_company = $countries_instance->gaming_company_for_country($country);
-    my $financial_company = $countries_instance->financial_company_for_country($country);
-    my @companies         = uniq grep { defined $_ } ($syntehtic_company, $financial_company);
+    my $derived_company   = $country->derived_company();
+    my $financial_company = $country->financial_company();
 
-    my %result = (wallets => []);
+    my $companies = +{map { $_ ? ($_ => $lc_registry->by_code($_)) : () } ($derived_company, $financial_company)};
+    my %result    = (wallets => []);
 
-    for my $landing_company (sort @companies) {
+    for my $lc_short (keys $companies->%*) {
+        my $landing_company = $companies->{$lc_short};
 
         my $wallet_types =
-            Business::Config::Account::Type::Registry->new()->category_by_name('wallet')
-            ->get_account_types_for_regulation($landing_company, $country);
+            Business::Config::Account::Type::Registry->new()->category_by_name('wallet')->get_account_types_for_regulation($lc_short, $residence);
+
         for my $type (sort { $a->name cmp $b->name } $wallet_types->@*) {
 
             # check if account type is enabled
@@ -4197,21 +4203,27 @@ rpc available_accounts => sub {
             my $account_type = $type->name;
 
             # get available currencies for landing company
-            my $curencies = $type->get_details($landing_company)->{currencies};
-            for my $cur (sort $curencies->@*) {
+            my $currencies = $type->get_details($lc_short)->{currencies};
+            for my $cur (sort $currencies->@*) {
+                my $currency_config = Business::Config::LandingCompany::Registry->new()->currencies()->{$cur} // {};
+                my $currency_type   = $currency_config->{type}                                                // '';
 
-                my $currency_to_check = LandingCompany::Registry::get_currency_type($cur) eq 'fiat' ? 'fiat' : $cur;
+                my $currency_to_check = $currency_type eq 'fiat' ? 'fiat' : $cur;
+
+                next unless $landing_company->is_currency_signup_enabled($cur);
+
+                next if $currency_type ne 'fiat' && BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency_to_check);
 
                 # not used yet due to accounty_type restriction but preperation for later stage
                 next if ($account_type eq 'p2p' && grep { $_ ne lc($cur) } $app_config->payments->p2p->available_for_currencies->@*);
 
                 # check if client already has this account
                 # we compare this to the hash we created client_hash
-                next if $client_hash->{$account_type}->{$landing_company}->{$currency_to_check};
+                next if $client_hash->{$account_type}->{$lc_short}->{$currency_to_check};
 
                 push $result{wallets}->@*,
                     {
-                    landing_company => $landing_company,
+                    landing_company => $lc_short,
                     account_type    => $account_type,
                     currency        => $cur
                     };

@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::BOM::RPC::QueueClient;
 use BOM::Platform::Token::API;
 use Business::Config::Account::Type::Registry;
+use BOM::Test::Customer;
 
 my $email    = 'get_available_accounts@nowhere.com';
 my $password = 'Aer13';
@@ -35,11 +36,6 @@ my $method = 'available_accounts';
 my %categories = Business::Config::Account::Type::Registry->new()->categories->%*;
 
 use constant Fiat_Results => ({
-        account_type    => "doughflow",
-        currency        => "AUD",
-        landing_company => "svg",
-    },
-    {
         account_type    => "doughflow",
         currency        => "EUR",
         landing_company => "svg",
@@ -118,9 +114,7 @@ subtest 'validation' => sub {
 
 subtest 'wallets' => sub {
     my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
-    my $mock_countries          = Test::MockModule->new('Brands::Countries');
     my $mock_client             = Test::MockModule->new('BOM::User::Client');
-    $mock_countries->redefine(wallet_companies_for_country => ['svg']);
     $mock_business_countries->redefine(wallet_companies => ['svg']);
 
     my $params = {
@@ -191,7 +185,178 @@ subtest 'wallets' => sub {
 
     @expected_result = (Crypto_Results);
     cmp_deeply $result->{wallets}, bag(@expected_result), "only crypto wallets will be available";
+    $mock_business_countries->unmock_all;
+};
 
+subtest 'disabled currencies for signup' => sub {
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => 'testing',
+            email_verified => 0,
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+
+    my $client = $customer->get_client_object('CR');
+
+    my $mock_lc = Test::MockModule->new('Business::Config::LandingCompany');
+
+    my $disabled_currencies = +{};
+
+    $mock_lc->mock(
+        'is_currency_signup_enabled',
+        sub {
+            my ($self, $curr) = @_;
+
+            return $disabled_currencies->{$curr} // $mock_lc->original('is_currency_signup_enabled')->(@_);
+        });
+
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    $mock_business_countries->redefine(wallet_companies => ['svg']);
+
+    my $params = {
+        token => $customer->get_client_token('CR'),
+        args  => {
+            $method => 1,
+            types   => ["wallet"]}};
+
+    my $result = $c->call_ok($method, $params)->result;
+
+    my @expected_result = (Fiat_Results, Crypto_Results);
+    cmp_deeply $result->{wallets}, bag(@expected_result), "expected wallets";
+
+    $disabled_currencies->{BTC} = 0;
+    $disabled_currencies->{GBP} = 0;
+
+    $result = $c->call_ok($method, $params)->result;
+
+    my @filtered = grep { !defined $disabled_currencies->{$_->{currency}} } @expected_result;
+
+    cmp_deeply $result->{wallets}, bag(@filtered), "expected result contains all possible values";
+
+    $mock_lc->unmock_all;
+    $mock_business_countries->unmock_all;
+};
+
+subtest 'suspended crypto currencies' => sub {
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => 'testing',
+            email_verified => 0,
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+
+    my $client = $customer->get_client_object('CR');
+
+    my $mock_curr_config = Test::MockModule->new('BOM::Config::CurrencyConfig');
+
+    my $disabled_currencies = +{};
+
+    $mock_curr_config->mock(
+        'is_crypto_currency_suspended',
+        sub {
+            my ($curr) = @_;
+
+            return $disabled_currencies->{$curr} // $mock_curr_config->original('is_crypto_currency_suspended')->(@_);
+        });
+
+    my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+    $mock_business_countries->redefine(wallet_companies => ['svg']);
+
+    my $params = {
+        token => $customer->get_client_token('CR'),
+        args  => {
+            $method => 1,
+            types   => ["wallet"]}};
+
+    my $result = $c->call_ok($method, $params)->result;
+
+    my @expected_result = (Fiat_Results, Crypto_Results);
+    cmp_deeply $result->{wallets}, bag(@expected_result), "expected wallets";
+
+    $disabled_currencies->{XRP} = 1;
+    $disabled_currencies->{GBP} = 1;    # not crypto
+
+    $result = $c->call_ok($method, $params)->result;
+
+    my @filtered = grep { $_->{currency} ne 'XRP' } @expected_result;
+
+    cmp_deeply $result->{wallets}, bag(@filtered), "expected result contains all possible values";
+
+    $mock_curr_config->unmock_all;
+    $mock_business_countries->unmock_all;
+};
+
+# PLEASE DONT MOCK BUSINESS RULES HERE
+subtest 'Supported Countries' => sub {
+    my $countries = [qw/aq sz/];
+
+    for my $country ($countries->@*) {
+        subtest $country => sub {
+            my $customer = BOM::Test::Customer->create({
+                    email          => BOM::Test::Customer->get_random_email_address(),
+                    password       => 'testing',
+                    email_verified => 0,
+                },
+                [{
+                        name            => 'CR',
+                        broker_code     => 'CR',
+                        default_account => 'USD',
+                        residence       => $country,
+                    },
+                ]);
+
+            my $params = {
+                token => $customer->get_client_token('CR'),
+                args  => {
+                    $method => 1,
+                    types   => ["wallet"]}};
+
+            my $result = $c->call_ok($method, $params)->result;
+
+            my @expected_result = (Fiat_Results, Crypto_Results);
+            cmp_deeply $result->{wallets}, bag(@expected_result), "expected wallets";
+        };
+    }
+
+    # just a tiny sample as we need to prove the supported countries above are actually different from the unsupported ones
+    my $unsupported = [qw/ar br cl co/];
+
+    for my $country ($unsupported->@*) {
+        subtest $country => sub {
+            my $customer = BOM::Test::Customer->create({
+                    email          => BOM::Test::Customer->get_random_email_address(),
+                    password       => 'testing',
+                    email_verified => 0,
+                },
+                [{
+                        name            => 'CR',
+                        broker_code     => 'CR',
+                        default_account => 'USD',
+                        residence       => $country,
+                    },
+                ]);
+
+            my $params = {
+                token => $customer->get_client_token('CR'),
+                args  => {
+                    $method => 1,
+                    types   => ["wallet"]}};
+
+            my $result = $c->call_ok($method, $params)->result;
+
+            cmp_deeply $result->{wallets}, [], "expected wallets";
+        };
+    }
 };
 
 done_testing();

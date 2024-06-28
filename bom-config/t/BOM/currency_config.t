@@ -716,24 +716,6 @@ subtest 'local currencies' => sub {
     is $local_currencies->{'CCC'}, undef,          'no localized name';
 };
 
-subtest 'Check Signup disabled currencies' => sub {
-    subtest 'Only when Currency is Signup disabled' => sub {
-        is BOM::Config::CurrencyConfig::is_currency_signup_enabled('malta', 'GBP'), 0, 'Currency GBP is disabled for signup for malta';
-    };
-
-    subtest 'When Currency is not disabled for signup' => sub {
-        ok BOM::Config::CurrencyConfig::is_currency_signup_enabled('svg', 'GBP'), 'Currency GBP is enabled for signup for SVG';
-    };
-
-    subtest 'Lists signup disabled currencies' => sub {
-        is_deeply BOM::Config::CurrencyConfig::get_signup_disabled_currencies('malta'), ['GBP'], 'Currency GBP is disabled for signup for malta';
-    };
-
-    subtest 'Returns AUD for signup disabled currencies' => sub {
-        is_deeply BOM::Config::CurrencyConfig::get_signup_disabled_currencies('svg'), ['AUD'], 'Currency AUD disabled for signup on SVG';
-    };
-};
-
 $mock_app_config->unmock_all();
 
 done_testing();
