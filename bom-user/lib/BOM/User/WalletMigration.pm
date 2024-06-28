@@ -734,10 +734,14 @@ For now, join date is based on SVG USD real account, 0 will be returned if user 
 =cut
 
 method _check_invalid_join_date {
+    # skipping joining date check for internal staff with following domain's email
+    if ($user->email =~ /\@(deriv|regentmarkets)\.com$/) {
+        return 0;
+    }
 
     for my $loginid ($user->bom_real_loginids) {
         my $client = $self->get_client_instance($loginid);
-
+        return 0 if $client->status->internal_client;
         if ($client->landing_company->short eq 'svg' && $client->default_account && $client->default_account->currency_code eq 'USD') {
             my $days_since_signup = (time - Date::Utility->new($client->date_joined)->epoch) / (24 * 60 * 60);
             return $days_since_signup < ELIGIBILITY_THRESHOLD_IN_DAYS ? 1 : 0;

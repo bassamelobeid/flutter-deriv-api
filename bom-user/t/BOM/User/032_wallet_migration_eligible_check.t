@@ -15,7 +15,7 @@ use BOM::Config::Runtime;
 use BOM::Test::Helper::P2PWithClient;
 use BOM::User::WalletMigration;
 
-plan tests => 11;
+plan tests => 13;
 
 BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
@@ -375,6 +375,32 @@ subtest 'join date' => sub {
     ok $migration->is_eligible(no_cache => 1), 'Eligibile with 90 day join date';
 };
 
+subtest 'skip joining date check of internal staff who are using company email' => sub {
+    my @emails = ('newbie@deriv.com', 'newbie@regentmarkets.com');
+
+    for my $email (@emails) {
+        my ($user, $vr_client) = create_user('aq', $email);
+
+        my $migration = BOM::User::WalletMigration->new(
+            user   => $user,
+            app_id => 1,
+        );
+
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            residence   => 'aq',
+        });
+
+        $client->set_default_account('USD');
+        $user->add_client($client);
+
+        $client->date_joined(Date::Utility->new->minus_time_interval('89d')->db_timestamp);
+        $client->save;
+
+        ok $migration->is_eligible(no_cache => 1), "It should be eligible with recent join date for $email";
+    }
+};
+
 subtest 'payment agent transactions' => sub {
     my ($user) = create_user();
 
@@ -471,13 +497,37 @@ subtest 'disabled or duplicate account not eligible' => sub {
     cmp_deeply [$migration3->eligibility_checks(no_cache => 1)], ['no_duplicate_or_disabled_account'], 'Failed checks is no_dup_or_disabled_account';
 };
 
+subtest 'skip joining date check for internal client' => sub {
+    my ($user, $vr_client) = create_user();
+
+    my $migration = BOM::User::WalletMigration->new(
+        user   => $user,
+        app_id => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'aq',
+    });
+
+    $client->set_default_account('USD');
+    $user->add_client($client);
+
+    $client->date_joined(Date::Utility->new->minus_time_interval('89d')->db_timestamp);
+    $client->save;
+    $client->status->set('internal_client', 'system', 'for testing');
+
+    ok $migration->is_eligible(no_cache => 1), 'Will be eligibile with recent join date because of internal client status';
+};
+
 my $user_counter = 1;
 
 sub create_user {
     my $residence = shift;
+    my $email     = shift;
 
     my $user = BOM::User->create(
-        email    => 'testuser' . $user_counter++ . '@example.com',
+        email    => $email // 'testuser' . $user_counter++ . '@example.com',
         password => '123',
     );
 
