@@ -28,7 +28,7 @@ Retrives the ticks with C<ticks_in_between_start_end> function from feed db
 
 =item Redis Replicated
 
-It will read the ticks in C<DECIMATE_$symbol_31m_FULL> to compare with the ticks in the database
+It will read the ticks in C<DECIMATE_$symbol_32m_FULL> to compare with the ticks in the database
 
 =back
 
@@ -87,7 +87,7 @@ sub tick_miss_history { shift->{tick_miss_history} }
 sub new {
     my ($class, %args) = @_;
     $args{markets}  //= ['forex', 'synthetic_index'];
-    $args{interval} //= "31m";
+    $args{interval} //= "32m";
     $args{tick_miss_history} = {};
     my $self = bless \%args, $class;
     return $self;
@@ -188,7 +188,7 @@ async sub check_decimate_sync {
                 @{await $self->redis->zrevrangebyscore("DECIMATE_" . $symbol . "_" . $interval . "_FULL", $end, $start)}];
         my $feed_api = Postgres::FeedDB::Spot::DatabaseAPI->new({
             underlying => $symbol,
-            dbic       => Postgres::FeedDB::read_dbic,
+            dbic       => Postgres::FeedDB::write_dbic,
         });
         my $db_ticks = $feed_api->ticks_start_end({
             start_time => $start,
@@ -213,7 +213,7 @@ async sub check_decimate_sync {
 
         # Since we count for replication and network Redis delays
         # Threshold set to be more than 1 tick delayed from current time selection.
-        next unless $count_diff > 1;
+        next unless abs($count_diff) > 1;
 
         $log->warnf('Missing ticks detected in Redis for %s (%s): From: %s | To: %s | Ticks: %s', $symbol, $interval, $start, $end, $diff);
 

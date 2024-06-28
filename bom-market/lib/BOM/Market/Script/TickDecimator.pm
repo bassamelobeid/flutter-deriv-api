@@ -7,9 +7,9 @@ BOM::Market::Script::TickDecimator
 =head1 DESCRIPTION
 
 This script is responsible for decimating tick data in the database.
-Do not be confused with L<BOM::FeedPlugin::Plugin::DataDecimate>.
+Do not be confused with TickEngine's decimate.
 
-L<BOM::FeedPlugin::Plugin::DataDecimate> will insert raw data (every tick) into a Redis ZSET in form of DECIMATE_<symbol>_<interval>_FULL in BOM::Config::Redi::redis_feed_replica.
+TickEngine's decimate will insert raw data (every tick) into a Redis ZSET in form of DECIMATE_<symbol>_<interval>_FULL in BOM::Config::Redi::redis_feed_replica.
 
 L<BOM::Market::Script::TickDecimator> will read from the raw Redis ZSET, decimates/resampling it (see L<Data::Decimate>) and save it in the form of DECIMATE_<symbol>_<interval>_DEC_SPOT and insert the decimated zset in BOM::Config::Redi::redis_replicated_read. This information will then be used to calculate options pricing volatility.
 
