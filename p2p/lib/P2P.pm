@@ -878,10 +878,16 @@ sub p2p_order_create {
         error_code     => 'OrderMaximumTempExceeded',
         message_params => [$limit_remaining, $self->currency]} if $amount > $limit_remaining;
 
-    die +{error_code => 'OrderCreateFailRateRequired'} if $advert->{rate_type} eq 'float' and not defined($param{rate});
+    if ($advert->{rate_type} eq 'float') {
+        die +{error_code => 'OrderCreateFailRateRequired'} unless defined $param{rate};
 
-    die +{error_code => 'OrderCreateFailRateChanged'}
-        if defined $param{rate} and p2p_rate_rounding($param{rate}) != p2p_rate_rounding($advert->{effective_rate});
+        my $allowed_slippage = $p2p_config->float_rate_order_slippage / 2;
+        my $diff             = ($param{rate} - $advert->{effective_rate}) / $advert->{effective_rate};
+        die +{error_code => 'OrderCreateFailRateSlippage'} if abs($diff * 100) > $allowed_slippage;
+    } else {
+        die +{error_code => 'OrderCreateFailRateChanged'}
+            if defined $param{rate} and p2p_rate_rounding($param{rate}) != p2p_rate_rounding($advert->{rate});
+    }
 
     my $advertiser = $self->client->get_client_instance($advertiser_info->{client_loginid}, 'replica', $self->{context});
     my ($order_type, $amount_advertiser, $amount_client);

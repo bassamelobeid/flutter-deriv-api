@@ -419,6 +419,9 @@ subtest 'rate fields' => sub {
 subtest 'orders' => sub {
 
     my $advertiser = BOM::Test::Helper::P2PWithClient::create_advertiser(balance => 100);
+
+    $config->float_rate_order_slippage(1);
+
     $config->country_advert_config(
         encode_json_utf8({
                 $advertiser->residence => {
@@ -430,7 +433,7 @@ subtest 'orders' => sub {
 
     my $ad = P2P->new(client => $advertiser)->p2p_advert_create(
         %params,
-        rate      => 0.1,
+        rate      => 0.1,       # effective rate will be 100.1
         rate_type => 'float',
     );
 
@@ -455,14 +458,29 @@ subtest 'orders' => sub {
             $client->p2p_order_create(
                 advert_id   => $ad->{id},
                 amount      => 1,
-                rate        => 100.11,
+                rate        => 100.61,
                 rule_engine => $rule_engine,
             );
         },
         {
-            error_code => 'OrderCreateFailRateChanged',
+            error_code => 'OrderCreateFailRateSlippage',
         },
-        'Different rate not allowed'
+        'Rate exceeds allowed postive slippage'
+    );
+
+    cmp_deeply(
+        exception {
+            $client->p2p_order_create(
+                advert_id   => $ad->{id},
+                amount      => 1,
+                rate        => 99.59,
+                rule_engine => $rule_engine,
+            );
+        },
+        {
+            error_code => 'OrderCreateFailRateSlippage',
+        },
+        'Rate exceeds allowed negative slippage'
     );
 
     my $order;
@@ -471,15 +489,32 @@ subtest 'orders' => sub {
             $order = $client->p2p_order_create(
                 advert_id   => $ad->{id},
                 amount      => 1,
-                rate        => 100.1,
+                rate        => 100.6,
                 rule_engine => $rule_engine,
             );
         },
         undef,
-        'Order ok with matching rate'
+        'Order ok when at slippage limit'
     );
 
-    cmp_ok $order->{rate}, '==', 100.1, 'order rate';
+    cmp_ok $order->{rate}, '==', 100.6, 'order rate';
+
+    $client->p2p_order_cancel(id => $order->{id});
+    $config->float_rate_order_slippage(10);
+
+    is(
+        exception {
+            $order = $client->p2p_order_create(
+                advert_id   => $ad->{id},
+                amount      => 1,
+                rate        => 105.104,
+                rule_engine => $rule_engine,
+            );
+        },
+        undef,
+        'Bigger slippage limit is ok'
+    );
+
 };
 
 subtest 'ad list filtering' => sub {
