@@ -289,9 +289,15 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
             text => 'Compliance Dashboard'
         }];
 
+    my $cfds_tools_list = [{
+            link => 'cfds/cfds_tool_main_page',
+            text => 'CFDS Tool Menu'
+        }];
+
     # check access of each memory tab before adding to list
     @$main_sections_list = grep { BOM::Backoffice::Sysinit::authorise(sprintf("/%s.cgi", $_->{link})) } @$main_sections_list;
     @$misc_tools_list    = grep { BOM::Backoffice::Sysinit::authorise(sprintf("/%s.cgi", $_->{link})) } @$misc_tools_list;
+    @$cfds_tools_list    = grep { BOM::Backoffice::Sysinit::authorise(sprintf("/%s.cgi", $_->{link})) } @$cfds_tools_list;
     my @menu_items = ({
             text => 'Main Sections',
             list => $main_sections_list
@@ -305,6 +311,13 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
             {
             text => 'Misc. Tools',
             list => $misc_tools_list
+            };
+    }
+    if (scalar @$cfds_tools_list != 0) {
+        push @menu_items,
+            {
+            text => 'CFDS Tools',
+            list => $cfds_tools_list
             };
     }
     push @menu_items,

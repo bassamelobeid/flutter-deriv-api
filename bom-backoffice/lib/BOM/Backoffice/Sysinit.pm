@@ -191,7 +191,13 @@ my $permissions = {
     'payment_agent_tier_manage.cgi'                                                          => ['Compliance'],
     'wallet_migration.cgi'                                                                   => ['CS'],
     'mt5_bulk_deposit.cgi'                                                                   => ['Quants'],
-    'sanction_screening_report.cgi'                                                          => ['Compliance'],
+
+    'cfds/cfds_tool_main_page.cgi'                                     => ['QuantsWrite'],
+    'cfds/cfds_platform_config/cfds_platform_config.cgi'               => ['QuantsWrite'],
+    'cfds/cfds_platform_config/configs/config_action_confirmation.cgi' => ['QuantsWrite'],
+    'cfds/cfds_platform_config/configs/config_action_execution.cgi'    => ['QuantsWrite'],
+
+    'sanction_screening_report.cgi' => ['Compliance'],
 };
 
 sub init {

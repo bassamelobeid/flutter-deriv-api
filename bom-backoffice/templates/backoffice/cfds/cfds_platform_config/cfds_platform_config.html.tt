@@ -1,0 +1,37 @@
+<form action="[% request.url_for('backoffice/cfds/cfds_platform_config/cfds_platform_config.cgi') | url %]" method="post">
+    <div style="display: flex; align-items: center; margin-bottom: -17px;">
+        <h1 style="margin-right: 6px;">Config Type:</h1>
+        <select id="configType" name="config_type" style="padding: 10px;">
+            <option value="spread">Spread Config</option>
+        </select>
+    </div>
+</form>
+
+<div>
+    <h1>MT5 Config</h1>
+    [% html.internal_data.table_searchbox.search_html | none %]
+    [% html.internal_data.table.table_html | none %]
+    [% html.internal_data.table_editbutton.button_html | none %]
+</div>
+<div>
+    <h1>Inconsistency Alert</h1>
+    [% html.consistency_alert_data.table_searchbox.search_html | none %]
+    [% html.consistency_alert_data.table.table_html | none %]
+    [% html.consistency_alert_data.table_confirmbutton.button_html | none %]
+</div>
+
+<script>
+    \$(document).ready(function() {
+        \$('#configType').change(function() {
+            \$(this).closest('form').submit();
+        });
+
+        \$('#configType').val('[% config_type %]');
+    });
+</script>
+
+[% html.internal_data.table_searchbox.script | none %]
+[% html.internal_data.table_editbutton.script | none %]
+
+[% html.consistency_alert_data.table_searchbox.script | none %]
+[% html.consistency_alert_data.table_confirmbutton.script | none %]

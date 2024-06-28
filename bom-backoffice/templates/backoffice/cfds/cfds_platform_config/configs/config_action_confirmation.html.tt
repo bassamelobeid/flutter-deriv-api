@@ -1,0 +1,129 @@
+<div>
+    [% html.internal_data.table_searchbox.search_html | none %]
+    [% html.internal_data.table.table_html | none %]
+</div>
+
+<form id="config_action_confirmation_form" action="[% return_url %]" method="post">
+    <input type="hidden" name="resume_modified_data" value="[% modified_table_data %]">
+    <input type="hidden" name="action_identifier" value="[% action_identifier %]">
+    <input type="hidden" name="config_type" value="[% config_type %]">
+    <button id="backToEditBtn" type="button" onclick="document.getElementById('config_action_confirmation_form').submit();">Back to Edit</button>
+    <button id="confirmProcessingBtn" type="button" onclick="startProcessing()">Confirm</button>
+    <button id="confirmationCancelBtn" type="button" onclick="cancelAndSubmit()">Cancel</button>
+    <button id="retryFailedBtn" style='display: none;' type="button" onclick="retryProcessing()">Retry Failed</button>
+</form>
+
+<div id='errorLogs' style='display: none; margin-top: 7px;'>
+    <h1>Error Logs</h1>
+    <textarea id='log' style='height: 200px; width: 100%; background-color: black; color:white;' autofocus></textarea>
+</div>
+
+[% html.internal_data.table_searchbox.script | none %]
+
+<script>
+    const rowIdentifierKey = '[% table_row_identifier_key | none %]';
+    const table_id = "[% html.internal_data.table_id %]";
+    let retryableDataRows = [];
+
+    function startProcessing() {
+        if (!\$(`#\${table_id} tr:first:has(th.progress)`).length) {
+            \$(`#\${table_id} tr:first`).append('<th class="progress">Progress</th>');
+        }
+
+        \$(`#\${table_id} tbody tr`).each(function() {
+            let progressCell = \$(this).find('td.progress');
+            if (!progressCell.length) {
+                \$(this).append('<td class="progress"><progress/></td>');
+            } else {
+                progressCell.empty().html('<progress/>').css('background-color', 'white');
+            }
+        });
+
+        \$('#confirmProcessingBtn').prop('disabled', true);
+
+        let modifiedTableMergedData = JSON.parse(String.raw`[% modified_table_merged_data | none %]`);
+        let dataToProcess = JSON.parse(String.raw`[% modified_table_data | none %]`);
+
+        executeDataProcessing(modifiedTableMergedData);
+    }
+
+    function retryProcessing() {
+        \$('#retryFailedBtn').hide();
+        for (let failedRows of retryableDataRows) {
+            \$(`#\${table_id} tbody tr[data-row-uid="\${failedRows[rowIdentifierKey]}"]`).find('td.progress').empty().css('background-color', 'white').html('<progress/>');
+        }
+
+        executeDataProcessing(retryableDataRows);
+    }
+
+    function executeDataProcessing(dataToProcess) {
+        let processedDataCount = 0;
+        let dataToProcessCount = dataToProcess.length;
+        let localFailedRows = [];
+
+        for (let data of dataToProcess) {
+            \$.ajax({
+                url: "[% confirm_url %]",
+                type: 'POST',
+                data: {
+                    action_identifier: '[% action_identifier %]',
+                    data_identifier_key: rowIdentifierKey,
+                    payload: JSON.stringify(data)
+                },
+                success: function(res) {
+                    let res_decoded = JSON.parse(res);
+                    if (res_decoded.error) {
+                        \$(`#\${table_id} tbody tr[data-row-uid="\${data[rowIdentifierKey]}"]`).find('td.progress').empty().css('background-color', 'red');
+
+                        \$('#errorLogs').show();
+                        \$('#log').val(function(i, text) {
+                            let errorObj = {
+                                data: data,
+                                error_code: res_decoded.error.error_code,
+                                error_message: res_decoded.error.error_message
+                            };
+                            return text + '\n> Processing Failed: ' + JSON.stringify(errorObj) + '\n';
+                        }).scrollTop(\$('#log')[0].scrollHeight);
+
+                        localFailedRows.push(data);
+                        processedDataCount++;
+                        if (processedDataCount === dataToProcessCount) {
+                            processFinished(localFailedRows);
+                        }
+                    } else {
+                        \$(`#\${table_id} tbody tr[data-row-uid="\${data[rowIdentifierKey]}"]`).find('td.progress').empty().css('background-color', 'green');
+
+                        processedDataCount++;
+                        if (processedDataCount === dataToProcessCount) {
+                            processFinished(localFailedRows);
+                        }
+                    }
+                },
+                error: function(error) {
+                    // Handle error
+                    console.log('error');
+                    console.log(error);
+                }
+            });
+        }
+    }
+
+    function processFinished(localFailedRows) {
+        retryableDataRows = localFailedRows;
+        if (retryableDataRows.length !== 0) {
+            \$('#retryFailedBtn').show()
+        } else {
+            \$('#backToEditBtn, #confirmProcessingBtn, #retryFailedBtn').hide();
+            \$('#confirmationCancelBtn').text('Done');
+        }
+    }
+
+    function cancelAndSubmit() {
+        let form = document.getElementById('config_action_confirmation_form');
+        let inputs = form.getElementsByTagName('input');
+        Array.from(inputs).forEach(input => input.parentNode.removeChild(input));
+        form.submit();
+    }
+
+</script>
+
