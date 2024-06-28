@@ -409,7 +409,35 @@ subtest $rule_name => sub {
             tax_residence             => 'tax_res'
         };
         $client_mf->tax_identification_number($tin);
-        lives_ok { $rule_engine_mf->apply_rules($rule_name, %$args) } "Rule applies with valid TIN: $tin";
+        lives_ok { $rule_engine_mf->apply_rules($rule_name, %$args) } "Rule applies with valid TIN: $tin and no formats available for tax residence";
+    }
+
+    my @invalid_tins =
+        ('0123456789', '0987654321', '12345', '98765', '000', '111', '222', '333', '444', '555', '666', '777', '888', '999', '1836538');
+    for my $tin (@invalid_tins) {
+        my $args = {
+            loginid                   => $client_mf->loginid,
+            tax_identification_number => $tin,
+            tax_residence             => 'id'                   # tax format is ^\d{15,16}$
+        };
+        $client_mf->tax_identification_number($tin);
+        is_deeply exception { $rule_engine_mf->apply_rules($rule_name, %$args) },
+            {
+            error_code => 'TINDetailInvalid',
+            rule       => $rule_name
+            },
+            "Rule fails with TINDetailInvalid error for invalid TIN: $tin and tax residence: id";
+    }
+
+    @valid_tins = ('172639475802748', '1725394718263859');
+    for my $tin (@valid_tins) {
+        my $args = {
+            loginid                   => $client_mf->loginid,
+            tax_identification_number => $tin,
+            tax_residence             => 'id'                   # tax format is ^\d{15,16}$
+        };
+        $client_mf->tax_identification_number($tin);
+        lives_ok { $rule_engine_mf->apply_rules($rule_name, %$args) } "Rule applies with valid TIN: $tin and valid formats for tax residence";
     }
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');

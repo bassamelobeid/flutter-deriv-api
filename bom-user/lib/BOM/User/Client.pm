@@ -6784,6 +6784,108 @@ sub requires_selfie_recheck {
     return 0;
 }
 
+=head2 is_tin_valid 
+
+Check to see if the client tin is a valid one, we take into account:
+- that it was not manually approved from BO
+- the input is not a random number
+- the client's employment status is a valid one, i.e not bypassed
+- the format is valid, as per the country's regulations.
+
+This applies for all regulated accounts.
+
+Returns 1 if valid else 0.
+
+=cut
+
+sub is_tin_valid {
+    my ($self, $tax_identification_number, $selected_tax_residence) = @_;
+
+    return 1 if $self->is_tin_manually_approved;
+
+    $tax_identification_number //= $self->tax_identification_number;
+
+    return 0 if !$tax_identification_number;
+
+    my @required_fields = ($self->landing_company->requirements->{signup} // [])->@*;
+
+    return 1 if none { 'tax_identification_number' eq $_ } @required_fields;
+
+    return 1 if $self->employment_status_bypass;
+
+    return 0 if $self->invalid_tin_format($tax_identification_number);
+
+    $selected_tax_residence //= $self->tax_residence // $self->residence;
+    my $tin_format = request()->brand->countries_instance->get_tin_format($selected_tax_residence);
+
+    return 1 if !$tin_format;
+
+    return 1 if any { $tax_identification_number =~ $_ } @$tin_format;
+
+    return 0;
+}
+
+=head2 is_tin_manually_approved
+
+Returns 1 if the client's TIN was manually approved in BO, for this we take into account:
+- client has tin_approved_time 
+- approval time has not been expired 
+- client does not have a proper input for TIN
+
+Returns 0 otherwise.
+
+=cut
+
+sub is_tin_manually_approved {
+    my ($self) = @_;
+
+    return 0 if defined $self->tax_identification_number && $self->tax_identification_number ne '';
+
+    return 1 if defined $self->tin_approved_time;
+
+    return 0;
+
+}
+
+=head2 employment_status_bypass 
+
+We check if the client should be marked for bypassing the tin validation, according to their employment status:
+- students / pensioners / unemployed individuals.
+
+Returns 1 if applies else 0.
+
+=cut
+
+sub employment_status_bypass {
+    my $self = shift;
+
+    my $tin_config = BOM::Config::tin_validations();
+    my @bypass_tin = ($tin_config->{tin_validations}->{bypass_for_employment_status} // [])->@*;
+
+    my $employment_status = $self->get_financial_assessment('employment_status') // '';
+
+    return 1 if any { $employment_status eq $_ } @bypass_tin;
+
+    return 0;
+}
+
+=head2 invalid_tin_format 
+
+Check to see if the client tin is not a random number input or otherwise not a valid one.
+
+Returns 1 if invalid else 0.
+
+=cut
+
+sub invalid_tin_format {
+    my ($self, $tax_identification_number) = @_;
+
+    my $tin_config             = BOM::Config::tin_validations();
+    my @invalid_regex_patterns = ($tin_config->{tin_validations}->{invalid_tin_formats} // [])->@*;
+
+    return any { $tax_identification_number =~ $_ } @invalid_regex_patterns;
+}
+
 =head2 update_affiliate_token_for_batch_of_clients
 
 Update myaffiliate token for list of clients
@@ -6888,23 +6990,6 @@ sub is_mt5_additional_kyc_required {
     my @undefined_or_empty_fields = grep { !defined $self->{$_} || $self->{$_} eq '' } @signup_requirements;
 
     return @undefined_or_empty_fields ? 1 : 0;
-}
-
-=head2 is_tin_manually_approved
-
-Returns whether the TIN is manually approved i.e the client has tin_approved_time and it has not been expired and it does not have a proper TIN
-
-=cut
-
-sub is_tin_manually_approved {
-    my ($self) = @_;
-
-    return 0 if defined $self->tax_identification_number && $self->tax_identification_number ne '';
-
-    return 1 if defined $self->tin_approved_time;
-
-    return 0;
-
 }
 
 =head2 partner_id

@@ -205,6 +205,19 @@ sub identity_verification {
     return $config;
 }
 
+=head2 tin_validations
+
+    BOM::Config::tin_validations()
+
+Gets all the general TIN validations.
+
+=cut
+
+sub tin_validations {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/tin_validations.yml');
+    return $config;
+}
+
 =head2 crypto_api
 
 Config for connecting to the Crypto API.

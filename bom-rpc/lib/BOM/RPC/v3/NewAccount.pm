@@ -580,7 +580,7 @@ rpc new_account_wallet => sub {
         my $client_tin             = $countries_instance->clean_tin_format($args->{tax_identification_number}, $selected_tax_residence);
         if ($tin_format) {
             stats_inc('bom_rpc.v_3.new_account_maltainvest.called_with_wrong_TIN_format.count')
-                unless (any { $client_tin =~ m/$_/ } @$tin_format);
+                unless ($client->is_tin_valid($client_tin));
         }
     }
 

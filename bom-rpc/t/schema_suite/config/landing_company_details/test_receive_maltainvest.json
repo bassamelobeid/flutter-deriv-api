@@ -188,7 +188,7 @@
                         "type" : "string"
                      }
                   },
-                  "tax_information" : {
+                  "tax_information": {
                      "type" : "array",
                      "items": {
                         "type" : "string"

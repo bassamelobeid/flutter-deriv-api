@@ -724,7 +724,7 @@ subtest 'set settings' => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Please provide complete details for your account.', 'Correct tax error message');
 
     $full_args{tax_residence}             = 'de';
-    $full_args{tax_identification_number} = '111-222-333';
+    $full_args{tax_identification_number} = '17628349405';
 
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
@@ -845,14 +845,21 @@ subtest 'set settings' => sub {
         cmp_deeply($res, {status => 1}, 'restricted country ' . $restricted_country . ' for tax residence is allowed') or note explain $res;
     }
 
+    my @tin_id = ('172639475802748', '1725394718263859');    # tin formats: ^\d{15,16}$
+    my @tin_ru = ('172639475802');                           # tin formats: ^\d{12}$
+    my @valid_tins;
+
     for my $unrestricted_country (qw(id ru)) {
-        local $params->{args} = {
-            tax_residence             => $unrestricted_country,
-            tax_identification_number => '111-222-543',
-        };
-        my $res = $c->tcall($method, $params);
-        cmp_deeply($res, {status => 1}, 'unrestricted country ' . $unrestricted_country . ' for tax residence is allowed')
-            or note explain $res;
+        @valid_tins = $unrestricted_country eq 'id' ? @tin_id : @tin_ru;
+        for my $tin (@valid_tins) {
+            local $params->{args} = {
+                tax_residence             => $unrestricted_country,
+                tax_identification_number => $tin,
+            };
+            my $res = $c->tcall($method, $params);
+            cmp_deeply($res, {status => 1}, 'unrestricted country ' . $unrestricted_country . ' for tax residence is allowed')
+                or note explain $res;
+        }
     }
 
     {
@@ -898,7 +905,7 @@ subtest 'set settings' => sub {
 
     $poi_status = 'verified';
     $test_client_X_mf->status->set('age_verification', 'test', 'test');
-    $params->{args}->{tax_identification_number} = '111-222-333';
+    $params->{args}->{tax_identification_number} = '17628349405';
     $params->{args}->{tax_residence}             = 'es';
 
     delete $params->{args}->{account_opening_reason};
@@ -920,7 +927,7 @@ subtest 'set settings' => sub {
     $test_client_X_mf->status->_clear_all;
 
     $mocked_client->redefine('fully_authenticated' => sub { return 1 });
-    $params->{args}{tax_identification_number} = '111-222-333';
+    $params->{args}{tax_identification_number} = '17628349405';
     $params->{args}{tax_residence}             = 'de';
 
     cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
@@ -1593,7 +1600,7 @@ subtest 'set_settings check salutation not removed' => sub {
         citizen                   => "za",
         phone                     => "+27123123123",
         tax_residence             => "al",
-        tax_identification_number => "5645645645",
+        tax_identification_number => "A14582764A",
         address_line_1            => "werwerwer",
         address_line_2            => "rwerwerwe",
         address_city              => "werwerwerw",

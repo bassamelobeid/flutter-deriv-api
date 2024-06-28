@@ -91,12 +91,22 @@ subtest 'It should allow to create 2 trading accounts of the same type connected
 
 subtest 'It should be able to create trading account for maltainvest' => sub {
     my $params = +{};
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    $client_mock->mock(
+        'is_tin_valid',
+        sub {
+            return 1;
+        });
+
     my ($user, $wallet_generator) = BOM::Test::Helper::Client::create_wallet_factory('za', 'Gauteng');
 
     (undef, $params->{token}) = $wallet_generator->(qw(MFW doughflow USD));
 
     my $result = $rpc_ct->call_ok(new_account_real => $params)->has_no_system_error->has_no_error->result;
     like $result->{client_id}, qr{^MF\d+}, "It should create trading account attached to DF wallet";
+
+    $client_mock->unmock_all;
 };
 
 done_testing;

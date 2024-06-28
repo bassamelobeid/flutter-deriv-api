@@ -224,7 +224,7 @@ rule 'profile.tax_information_is_not_cleared' => {
 };
 
 rule 'profile.tax_information_is_mandatory' => {
-    description => 'Tax information is mandatory for some landing companies (maltainvest)',
+    description => 'Tax information is mandatory for some landing companies',
     code        => sub {
         my ($self, $context, $args) = @_;
         my $client = $context->client($args);
@@ -232,9 +232,12 @@ rule 'profile.tax_information_is_mandatory' => {
         my $tax_residence             = $args->{'tax_residence'}             // $client->tax_residence             // '';
         my $tax_identification_number = $args->{'tax_identification_number'} // $client->tax_identification_number // '';
         my $is_tin_manually_approved  = $args->{'is_tin_manually_approved'}  // $client->is_tin_manually_approved;
-        return 1 if $tax_residence && ($tax_identification_number || $client->is_tin_manually_approved);
 
-        $self->fail('TINDetailsMandatory');
+        $self->fail('TINDetailsMandatory') unless $tax_residence && ($tax_identification_number || $client->is_tin_manually_approved);
+
+        $self->fail('TINDetailInvalid') unless $client->is_tin_valid($tax_identification_number, $tax_residence);
+
+        return 1;
     },
 };
 

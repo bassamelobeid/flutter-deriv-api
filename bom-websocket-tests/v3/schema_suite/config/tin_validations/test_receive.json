@@ -1,0 +1,47 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": null,
+    "description": null,
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "tin_validations": {
+            "type": "object",
+            "properties": {
+                "invalid_patterns": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "is_tin_mandatory": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "tin_employment_status_bypass": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tin_format": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "echo_req": {},
+        "msg_type": {
+            "type": "string",
+            "pattern" : "^tin_validations$"
+        }
+    }
+}

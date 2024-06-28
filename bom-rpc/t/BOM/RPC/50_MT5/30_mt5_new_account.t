@@ -118,7 +118,7 @@ subtest 'new account with missing signup fields' => sub {
     $test_client->status->set('crs_tin_information', 'system', 'testing something');
     $test_client->phone('');
     $test_client->tax_residence('de');
-    $test_client->tax_identification_number('123');
+    $test_client->tax_identification_number('17628349405');
     $test_client->save;
 
     my $method = 'mt5_new_account';
@@ -1878,6 +1878,13 @@ subtest 'TIN not mandatory with NPJ country config' => sub {
 
     $client_params->{args}->{company} = 'bvi';
     $c->call_ok($method, $client_params)->has_error->error_code_is('ASK_FIX_DETAILS', 'TIN is still required for residence ke even without NPJ');
+
+    $client_params->{args}->{country} = 'af';
+    $test_client->tax_residence('af');
+    $test_client->residence('af');
+    $test_client->save;
+    $c->call_ok($method, $client_params)
+        ->has_error->error_code_is('ASK_FIX_DETAILS', 'BVI does require TIN at signup even without NPJ for af residence');
 };
 
 subtest 'Don\'t allow creating MT5 account if there are failures in mt5_accounts_lookup' => sub {

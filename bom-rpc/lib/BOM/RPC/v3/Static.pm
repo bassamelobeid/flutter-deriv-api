@@ -548,4 +548,50 @@ rpc trading_platforms => auth => [],
     return $config->{trading_platforms}->{types};
     };
 
+=head2 tin_validations
+
+Returns the TIN validations for the given tax residence.
+
+=cut
+
+rpc tin_validations => auth => [],
+    sub {
+    my $params                 = shift;
+    my $selected_tax_residence = $params->{args}->{tax_residence} // '';
+
+    my $country_config         = Business::Config::Country::Registry->new()->by_code($selected_tax_residence);
+    my $is_valid_tax_residence = $country_config ? 1 : 0;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InputValidationFailed',
+            message_to_client => localize("Invalid tax residence selected. Please select a valid tax residence.")}) unless ($is_valid_tax_residence);
+
+    my $tin_config             = BOM::Config::tin_validations();
+    my $invalid_regex_patterns = $tin_config->{tin_validations}->{invalid_tin_formats}          // [];
+    my $bypass_tin             = $tin_config->{tin_validations}->{bypass_for_employment_status} // [];
+
+    my $default_lc      = $country_config->derived_company;
+    my $lc_requirements = {};
+    if (defined $default_lc) {
+        my $lc = Business::Config::LandingCompany::Registry->new->by_code($default_lc);
+        if (defined $lc) {
+            $lc_requirements = $lc->requirements // [];
+        }
+
+    }
+
+    my @required_fields  = ($lc_requirements->{signup} // [])->@*;
+    my $is_tin_mandatory = (any { 'tax_identification_number' eq $_ } @required_fields) ? 1 : 0;
+
+    my $countries_instance = request()->brand->countries_instance();
+    my $tin_formats        = $countries_instance->get_tin_format($selected_tax_residence) // [];
+
+    return {
+        invalid_patterns             => $invalid_regex_patterns,
+        is_tin_mandatory             => $is_tin_mandatory,
+        tin_employment_status_bypass => $bypass_tin,
+        tin_format                   => $tin_formats,
+    };
+    };
+
 1;

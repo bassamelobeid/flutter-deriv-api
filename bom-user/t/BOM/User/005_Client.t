@@ -13,6 +13,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw(invalidate_object_cache);
 use Test::MockModule;
 use Date::Utility;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use BOM::User;
 use BOM::User::Password;
@@ -751,6 +752,92 @@ subtest 'latest poi by' => sub {
             }
         };
     }
+};
+
+subtest 'is tin validated' => sub {
+    my $CR_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $manual_mock = Test::MockModule->new('BOM::User::Client');
+    $manual_mock->mock(
+        'is_tin_manually_approved',
+        sub {
+            return 1;
+        });
+
+    ok $CR_client->is_tin_valid, 'TIN was manually approved by CS';
+
+    $manual_mock->unmock_all();
+
+    ok !$CR_client->is_tin_valid, 'TIN is undef';
+
+    $CR_client->tax_identification_number('123');
+    $CR_client->save();
+
+    ok $CR_client->is_tin_valid, 'TIN passes for unregulated accounts';
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code               => 'MF',
+        residence                 => 'id',
+        tax_residence             => 'id',
+        place_of_birth            => 'id',
+        tax_identification_number => '123'
+    });
+
+    my $financial_information = {
+        "employment_industry" => "Finance",                # +15
+        "education_level"     => "Secondary",              # +1
+        "income_source"       => "Self-Employed",          # +0
+        "net_income"          => '$25,000 - $50,000',      # +1
+        "estimated_worth"     => '$100,000 - $250,000',    # +1
+        "occupation"          => 'Managers',               # +0
+        "employment_status"   => "Unemployed",             # +0
+        "source_of_wealth"    => "Company Ownership",      # +0
+        "account_turnover"    => 'Less than $25,000'
+    };
+    $client->financial_assessment({
+        data => encode_json_utf8($financial_information),
+    });
+    $client->save();
+
+    ok $client->is_tin_valid, 'TIN passes for specific employment statuses';
+
+    $financial_information->{'employment_status'} = 'Self-Employed';
+    $client->financial_assessment({
+        data => encode_json_utf8($financial_information),
+    });
+    $client->save();
+
+    $client->tax_identification_number('0000000000');
+    $client->save();
+
+    ok !$client->is_tin_valid, 'TIN invalid - random same number';
+
+    $client->tax_identification_number('9999999999');
+    $client->save();
+    ok !$client->is_tin_valid, 'TIN invalid - random same number';
+
+    $client->tax_identification_number('0123456789');
+    $client->save();
+    ok !$client->is_tin_valid, 'TIN invalid - number secuence asc order with 0';
+
+    $client->tax_identification_number('9876543210');
+    $client->save();
+    ok !$client->is_tin_valid, 'TIN invalid - number secuence desc order with 0';
+
+    $client->tax_identification_number('1234567');
+    $client->save();
+    ok !$client->is_tin_valid, 'TIN invalid - number secuence asc order';
+
+    $client->tax_identification_number('98765');
+    $client->save();
+    ok !$client->is_tin_valid, 'TIN invalid - number secuence desc order';
+
+    $client->tax_identification_number('167523958027836');
+    $client->save();
+    ok $client->is_tin_valid, 'TIN validated';
+
 };
 
 done_testing();

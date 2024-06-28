@@ -244,7 +244,7 @@ subtest 'new account' => sub {
 
     $params->{args}->{account_type} = 'gaming';
 
-    $test_client->account_opening_reason('speculatove');
+    $test_client->account_opening_reason('speculative');
     $test_client->citizen($citizen);
     $test_client->save;
 
@@ -275,11 +275,12 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)->has_error->error_code_is('InvalidSubAccountType', 'Sub account mandatory for financial');
 
     $params->{args}->{mt5_account_type} = 'financial_stp';
+    $test_client->tax_residence('at');
+    $test_client->tax_identification_number('682635192');
     $test_client->aml_risk_classification('high');
     $test_client->save();
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
-        'Financial assessment mandatory for financial account');
+        ->has_error->error_message_is('Please complete your financial assessment.', 'Financial assessment mandatory for financial account');
 
     # Non-CR client
     $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -417,7 +418,7 @@ subtest 'CR account types - low risk' => sub {
             mt5_account_type => 'financial_stp'
         },
         'ASK_FIX_DETAILS',
-        'Required fields missing for financial_stp financial account'
+        'TIN is required for financial_stp financial account'
     );
 
     cmp_bag($error->{details}{missing}, ['tax_residence', 'tax_identification_number'], 'Missing tax information should appear in details.');

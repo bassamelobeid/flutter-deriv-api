@@ -1566,9 +1566,9 @@ subtest 'MT5' => sub {
         remark   => 'free gift',
     );
     $test_client->status->set('crs_tin_information', 'system', 'testing something');
-    $test_client->tax_identification_number('123');
-    $test_client->tax_residence('id');
-    $test_client->save();
+    $test_client->tax_residence('de');
+    $test_client->tax_identification_number('17628349405');
+    $test_client->save;
 
     my $test_client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',

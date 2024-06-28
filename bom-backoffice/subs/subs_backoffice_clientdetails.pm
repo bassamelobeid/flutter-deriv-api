@@ -628,12 +628,12 @@ SQL
     my $tax_identification_number = $client->tax_identification_number // '';
     $tax_identification_number =~ s/^\s+|\s+$//g if $tax_identification_number;
     if ($client->tax_residence) {
-        # In case of having more than a tax residence, client residence will replaced.
+        # In case of having more than a tax residence, client residence will be replaced.
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
         my $tin_format             = $country->get_tin_format($selected_tax_residence);
         if ($tin_format) {
             $tin_format_description  = $country->get_tin_format_description($selected_tax_residence) // 'Please check TIN documents';
-            $is_valid_tin            = $tax_identification_number eq 'Approved000' || any { $tax_identification_number =~ m/$_/ } @$tin_format;
+            $is_valid_tin            = $tax_identification_number eq 'Approved000' || $client->is_tin_valid($tax_identification_number);
             $tin_validation_required = 1;
         }
     }

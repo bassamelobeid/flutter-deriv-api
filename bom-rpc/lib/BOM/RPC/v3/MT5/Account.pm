@@ -649,7 +649,10 @@ sub _select_server {
     my @selected_servers;
 
     foreach my $server_key (keys %$servers) {
-        my $group  = lc $servers->{$server_key}{geolocation}{group};
+        my $group = lc($servers->{$server_key}{geolocation}{group} // '');
+
+        next unless $group;
+
         my $weight = $mt5_app_config->load_balance->$account_type->$group->$server_key;
         unless (defined $weight) {
             $log->warnf("load balance weight is not defined for %s for account type %s", $server_key, $account_type);
@@ -1066,9 +1069,9 @@ async_rpc "mt5_new_account",
             and $client->tax_identification_number
             and $tin_format)
         {
-            # Some countries has multiple tax format and we should check all of them
+            # Some countries have multiple tax formats and we should check all of them
             my $client_tin = $countries_instance->clean_tin_format($client->tax_identification_number);
-            stats_inc('bom_rpc.v_3.new_mt5_account.called_with_wrong_TIN_format.count') unless (any { $client_tin =~ m/$_/ } @$tin_format);
+            stats_inc('bom_rpc.v_3.new_mt5_account.called_with_wrong_TIN_format.count') unless $client->is_tin_valid($client_tin);
         }
     }
 

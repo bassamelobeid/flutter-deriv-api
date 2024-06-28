@@ -248,6 +248,7 @@ sub actions_config {
                 category => 'mt5_hybrid',
             }
         ],
+        ['tin_validations'],
         ['landing_company'],
         ['landing_company_details'],
         ['link_wallet'],

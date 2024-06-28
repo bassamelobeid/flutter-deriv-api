@@ -92,6 +92,9 @@ $client_usd->payment_free_gift(
     remark   => 'free gift',
 );
 $client_usd->status->set('crs_tin_information', 'system', 'testing');
+$client_usd->tax_residence('de');
+$client_usd->tax_identification_number('17628349405');
+$client_usd->save;
 
 my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',

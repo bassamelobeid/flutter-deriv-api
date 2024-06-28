@@ -328,8 +328,8 @@ subtest 'mt5 svg migration: idv based jurisdiction selection' => sub {
         $client->citizen('de');
         $client->status->set('crs_tin_information', 'test', 'test');
         $client->account_opening_reason('test');
-        $client->tax_residence('at');
-        $client->tax_identification_number('1234');
+        $client->tax_residence('de');
+        $client->tax_identification_number('17628349405');
         my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
         $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
         $client->save;
