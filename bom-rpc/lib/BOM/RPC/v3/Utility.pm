@@ -785,6 +785,8 @@ sub error_map {
         IssuingCountryMissing     => localize("The field issuing country is required."),
         DocumentTypeMissing       => localize("The field document type is required."),
         DocumentNumberMissing     => localize("The field document number is required."),
+        PhoneNumberTaken          => localize("The phone number is not available."),
+        VirtualNotAllowed         => localize("This feature is not available to virtual accounts."),
     };
 }
 

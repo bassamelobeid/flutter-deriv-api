@@ -2268,7 +2268,7 @@ rpc set_settings => sub {
         $rule_engine->verify_action(
             'set_settings',
             loginid => $current_client->loginid,
-            %required_values, %$args
+            %required_values, %$args,
         );
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error);

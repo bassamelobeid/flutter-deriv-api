@@ -1917,4 +1917,117 @@ subtest 'get_settings returns correct address_state' => sub {
     $func_mock->unmock_all;
 };
 
+subtest 'Phone number verified' => sub {
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'br',
+            phone          => '+55990000001',
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+
+    my $client = $customer->get_client_object('CR');
+
+    my $token = $customer->get_client_token('CR', ['admin']);
+
+    my $params = {
+        language  => 'EN',
+        token     => $token,
+        client_ip => '127.0.0.1',
+        args      => {
+
+        }};
+
+    my $customer2 = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'br',
+            phone          => '+55990000001',
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+
+    my $client2 = $customer2->get_client_object('CR');
+
+    my $token2 = $customer2->get_client_token('CR', ['admin']);
+
+    my $params2 = {
+        language  => 'EN',
+        token     => $token2,
+        client_ip => '127.0.0.1',
+        args      => {
+
+        }};
+
+    $params->{args}{phone} = '+55990000001';
+
+    my $result = $c->tcall($method, $params);
+
+    cmp_deeply $result,
+        +{
+        status => 1,
+        };
+
+    $params2->{args}{phone} = '+55990000002';
+
+    $result = $c->tcall($method, $params2);
+
+    cmp_deeply $result,
+        +{
+        status => 1,
+        },
+        'No error for free phone number';
+
+    my $pnv = BOM::User::PhoneNumberVerification->new($customer->get_user_id(), $customer->get_user_service_context());
+    $pnv->verify($params->{args}{phone});
+
+    $params2->{args}{phone} = '+55990000001';
+
+    $result = $c->tcall($method, $params2);
+
+    cmp_deeply $result,
+        +{
+        error => {
+            message_to_client => 'The phone number is not available.',
+            code              => 'PhoneNumberTaken',
+        }
+        },
+        'Expected error when number is taken';
+
+    delete $params2->{args}{phone};
+    $params2->{args}{address_city} = 'Sao Paulo';
+
+    $result = $c->tcall($method, $params2);
+
+    cmp_deeply $result,
+        +{
+        status => 1,
+        },
+        'No error if no phone number is given';
+
+    $pnv->release();
+    $params2->{args}{phone} = '+55990000001';
+
+    $result = $c->tcall($method, $params2);
+
+    cmp_deeply $result,
+        +{
+        status => 1,
+        },
+        'No error for free phone number';
+};
+
 done_testing();

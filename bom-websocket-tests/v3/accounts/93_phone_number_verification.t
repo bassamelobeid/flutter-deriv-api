@@ -42,6 +42,16 @@ my $pnv = BOM::User::PhoneNumberVerification->new($customer->get_user_id(), $cus
 my ($token_cr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $customer->get_client_loginid('CR'));
 $t->await::authorize({authorize => $token_cr});
 
+my $config_mock = Test::MockModule->new('BOM::Config::Services');
+$config_mock->mock(
+    'config',
+    sub {
+        return +{
+            host => '127.0.0.1',
+            port => '9500',
+        };
+    });
+
 subtest 'generate an email' => sub {
     my $email_code = get_email_code();
 
@@ -71,36 +81,6 @@ subtest 'attempted too many times' => sub {
         'Expected error message';
 
     $pnv->clear_attempts;
-};
-
-subtest 'generate an otp' => sub {
-    my $email_code = get_email_code({
-        reset_block => 1,
-    });
-
-    my $res = $t->await::phone_number_challenge({phone_number_challenge => 1, carrier => 'whatsapp', 'email_code' => $email_code});
-    test_schema('phone_number_challenge', $res);
-
-    cmp_deeply $res->{phone_number_challenge}, 1, 'Expected response object';
-};
-
-subtest 'submit invalid otp' => sub {
-    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => 'BADOTP'});
-    test_schema('phone_number_verify', $res);
-
-    cmp_deeply $res->{error},
-        {
-        code    => 'InvalidOTP',
-        message => 'The OTP is not valid'
-        },
-        'Expected error message';
-};
-
-subtest 'submit a valid otp' => sub {
-    my $res = $t->await::phone_number_verify({phone_number_verify => 1, otp => $customer->get_user_id() . ''});
-    test_schema('phone_number_verify', $res);
-
-    cmp_deeply $res->{phone_number_verify}, 1, 'Expected response object';
 };
 
 subtest 'already verified accounts should not verify again' => sub {

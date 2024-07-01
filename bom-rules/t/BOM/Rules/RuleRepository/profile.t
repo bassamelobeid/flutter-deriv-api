@@ -37,6 +37,9 @@ my $user_mf = BOM::User->create(
 );
 $user_mf->add_client($client_mf);
 
+$client_cr->binary_user_id($user->id);
+$client_cr->save;
+
 my $rule_engine_mf = BOM::Rules::Engine->new(client => $client_mf);
 
 subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
@@ -536,6 +539,43 @@ subtest $rule_name => sub {
         'Fails if client is professional';
 
     $client_cr->status->clear_professional;
+};
+
+$rule_name = 'profile.verified_phone_number';
+subtest $rule_name => sub {
+    my $pnv_mock = Test::MockModule->new('BOM::User::PhoneNumberVerification');
+    my $taken;
+
+    $pnv_mock->mock(
+        'is_phone_taken',
+        sub {
+            return $taken;
+        });
+
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'loginid is required';
+    my $args = {loginid => $client_cr->loginid};
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'No phone number is passed';
+
+    $taken = 1;
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'No phone number is passed';
+
+    $taken = 1;
+    $args->{phone} = '+44900';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+        {
+        error_code => 'PhoneNumberTaken',
+        rule       => $rule_name
+        },
+        'Fails if number is taken';
+
+    $taken = 0;
+    $args->{phone} = '+44900';
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Does not fail if number is not taken';
+
 };
 
 done_testing;

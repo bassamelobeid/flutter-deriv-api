@@ -26,6 +26,7 @@ use BOM::RPC::v3::EmailVerification qw(email_verification);
 use List::Util                      qw/any/;
 use DataDog::DogStatsd::Helper      qw(stats_inc);
 use constant {REQUEST_EMAIL_TOKEN_TTL => 3600};
+use BOM::User::PhoneNumberVerification;
 
 =head2 new
 
@@ -78,8 +79,9 @@ sub create_token {
     my $type = $self->{args}->{type} // '';
 
     if ($type eq 'phone_number_verification') {
-        $params->{alphabet} = [0 .. 9];
-        $params->{length}   = 6;
+        $params->{alphabet}   = +BOM::User::PhoneNumberVerification::EMAIL_OTP_ALPHABET;
+        $params->{length}     = +BOM::User::PhoneNumberVerification::EMAIL_OTP_LENGTH;
+        $params->{expires_in} = +BOM::User::PhoneNumberVerification::EMAIL_OTP_EXPIRES_IN;
     }
 
     $self->{code} = BOM::Platform::Token->new($params)->token;
@@ -770,32 +772,34 @@ Returns C<undef>.
 sub phone_number_verification {
     my ($self) = @_;
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'Permission Denied',
-            message_to_client => localize('You can not perform the phone number verification while impersonating an account')}
-    ) if BOM::RPC::v3::Utility::is_impersonating_client($self->{token});
+    if ($self->{client}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'Permission Denied',
+                message_to_client => localize('You can not perform the phone number verification while impersonating an account')}
+        ) if BOM::RPC::v3::Utility::is_impersonating_client($self->{token});
 
-    my $pnv = BOM::User::PhoneNumberVerification->new($self->{email}, $self->{user_service_context});
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'AlreadyVerified',
-            message_to_client => localize('This account is already phone number verified')}) if $pnv->verified;
+        my $pnv = BOM::User::PhoneNumberVerification->new($self->{email}, $self->{user_service_context});
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'AlreadyVerified',
+                message_to_client => localize('This account is already phone number verified')}) if $pnv->verified;
 
-    my $data = $self->{email_verification}->{phone_number_verification}->();
+        my $data = $self->{email_verification}->{phone_number_verification}->();
 
-    BOM::Platform::Event::Emitter::emit(
-        'phone_number_verification',
-        {
-            loginid    => $self->{client}->loginid,
-            properties => {
-                verification_url => $data->{verification_url} // '',
-                live_chat_url    => $data->{live_chat_url}    // '',
-                first_name       => $self->{client}->first_name,
-                code             => $data->{code} // '',
-                email            => $self->{email},
-                language         => $self->{language},
-                broker_code      => $self->{client}->broker_code,
-            },
-        });
+        BOM::Platform::Event::Emitter::emit(
+            'phone_number_verification',
+            {
+                loginid    => $self->{client}->loginid,
+                properties => {
+                    verification_url => $data->{verification_url} // '',
+                    live_chat_url    => $data->{live_chat_url}    // '',
+                    first_name       => $self->{client}->first_name,
+                    code             => $data->{code} // '',
+                    email            => $self->{email},
+                    language         => $self->{language},
+                    broker_code      => $self->{client}->broker_code,
+                },
+            });
+    }
 
     return undef;
 }

@@ -913,6 +913,18 @@ subtest 'Phone Number Verification' => sub {
     my $increase_email_attempts;
     my $no_attempts_left;
     my $verified;
+    my $expires_in = {};
+
+    my $redis_mock = Test::MockModule->new('RedisDB');
+    $redis_mock->mock(
+        'expire',
+        sub {
+            my (undef, $key, $ttl) = @_;
+
+            $expires_in->{$key} = $ttl;
+
+            return $redis_mock->original('expire')->(@_);
+        });
 
     my $pnv_mock = Test::MockModule->new('BOM::User::PhoneNumberVerification');
     $pnv_mock->mock(
@@ -977,7 +989,8 @@ subtest 'Phone Number Verification' => sub {
 
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     $params[1]->{token} = $token;
-    @emitted = ();
+    @emitted            = ();
+    $expires_in         = {};
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
@@ -987,6 +1000,8 @@ subtest 'Phone Number Verification' => sub {
         "https://www.binary.com/en/redirect.html?action=phone_number_verification&lang=$expected_language&code=$expected_code";
     $expected_live_chat_url = 'https://www.binary.com/en/contact.html?is_livechat_open=true';
     ok $expected_code =~ /\d{6}/, '6 digit code';
+
+    is $expires_in->{"VERIFICATION_TOKEN::$expected_code"}, 600, 'TTL of 10 minutes has been set';
 
     cmp_deeply [@emitted],
         [

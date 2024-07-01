@@ -15,6 +15,7 @@ use warnings;
 
 use Locale::Country;
 use Text::Trim qw(trim);
+use UUID::Tiny;
 
 use BOM::Platform::Context qw(localize request);
 use BOM::Rules::Registry   qw(rule);
@@ -290,6 +291,28 @@ rule 'profile.fields_allowed_to_change' => {
                 details => {field => $_},
             ) if !/$allowed_fields_for_virtual/;
         }
+
+        return 1;
+    },
+};
+
+rule 'profile.verified_phone_number' => {
+    description => 'Cannot verify a phone number taken (and verified) by another user.',
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        return 1 unless defined $args->{phone};
+
+        my $pnv = BOM::User::PhoneNumberVerification->new(
+            $client->binary_user_id,
+            +{
+                correlation_id => UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4),
+                auth_token     => "Unused but required to be present",
+                environment    => "bom-rules",
+            });
+
+        $self->fail('PhoneNumberTaken') if $pnv->is_phone_taken($args->{phone});
 
         return 1;
     },

@@ -9,7 +9,13 @@ This packages provides the logic and storage access for the Phone Number Verific
 use strict;
 use warnings;
 use Moo;
+use Syntax::Keyword::Try;
+use HTTP::Tiny;
+use Log::Any        qw($log);
+use JSON::MaybeUTF8 qw(decode_json_utf8);
+use BOM::Config::Services;
 use BOM::Service;
+use BOM::User;
 
 use constant PNV_VERIFY_PREFIX     => 'PHONE::NUMBER::VERIFICATION::VERIFY::';
 use constant PNV_NEXT_PREFIX       => 'PHONE::NUMBER::VERIFICATION::NEXT::';
@@ -18,7 +24,34 @@ use constant PNV_OTP_PREFIX        => 'PHONE::NUMBER::VERIFICATION::OTP::';
 use constant TEN_MINUTES           => 600;                                           # 10 minutes in seconds
 use constant ONE_MINUTE            => 60;                                            # 1 minute in seconds
 use constant ONE_HOUR              => 3600;                                          # 1 hour in seconds
-use constant SPAM_TOO_MUCH         => 3;
+use constant SPAM_TOO_MUCH         => 3;                                             # back to back failures before locking down
+use constant HTTP_TIMEOUT          => 20;                                            # 20 seconds
+
+# Constants used at the RPC verify email endpoint
+use constant EMAIL_OTP_ALPHABET   => [0 .. 9];
+use constant EMAIL_OTP_LENGTH     => 6;
+use constant EMAIL_OTP_EXPIRES_IN => TEN_MINUTES;
+
+=head2 http
+
+Returns the current L<HTTP::Tiny> instance or creates a new one if neeeded.
+
+=cut
+
+has http => (
+    is      => 'lazy',
+    clearer => '_clear_http',
+);
+
+=head2 _build_http
+
+Create the C<HTTP::Tiny> instance.
+
+=cut
+
+sub _build_http {
+    return HTTP::Tiny->new(timeout => HTTP_TIMEOUT);
+}
 
 =head2 binary_user_id
 
@@ -66,9 +99,20 @@ has phone => (
     required => 1,
 );
 
+=head2 preferred_language
+
+The L<String>, user preferred language
+
+=cut
+
+has preferred_language => (
+    is       => 'ro',
+    required => 1,
+);
+
 =head2 email
 
-The L<String>, user phone number
+The L<String>, user email
 
 =cut
 
@@ -93,8 +137,9 @@ around BUILDARGS => sub {
         context    => $user_service_context,
         command    => 'get_attributes',
         user_id    => $user_id,
-        attributes => [qw(binary_user_id email phone phone_number_verified)],
+        attributes => [qw(binary_user_id email phone phone_number_verified preferred_language)],
     );
+
     return undef unless ($user_data->{status} eq 'ok');
 
     return $class->$orig(
@@ -102,7 +147,9 @@ around BUILDARGS => sub {
         user_service_context => $user_service_context,
         phone                => $user_data->{attributes}{phone},
         email                => $user_data->{attributes}{email},
-        verified             => $user_data->{attributes}{phone_number_verified});
+        verified             => $user_data->{attributes}{phone_number_verified},
+        preferred_language   => $user_data->{attributes}{preferred_language},
+    );
 };
 
 =head2 clear_verify_attempts
@@ -269,24 +316,42 @@ sub update {
 
 =head2 generate_otp
 
-Generates a new OTP and updates the redis state of the client verification.
+Hits the PNV golang service /pnv/challenge/{carrier}/{phone}/{lang}
 
-Returns the new OTP as C<string>.
+It takes:
+
+=over 4
+
+=item C<$carrier> - the carrier used to transport the OTP
+
+=item C<$phone> - the phone number to send the OTP
+
+=item C<$lang> - preferred language of the OTP message
+
+=back
+
+Returns a C<1> on a successful request, C<0> otherwise.
 
 =cut
 
 sub generate_otp {
-    my ($self) = @_;
+    my ($self, $carrier, $phone, $lang) = @_;
 
-    # yes, the mocked OTP is just the user id
-    my $otp = $self->binary_user_id;
+    my $config = BOM::Config::Services->config('phone_number_verification');
+    my $url    = sprintf("http://%s:%d/pnv/challenge/%s/%s/%s", $config->{host}, $config->{port}, $carrier, $phone, $lang);
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    # Hit the PNV golang service
+    try {
+        my $resp = $self->http->get($url);
 
-    # this OTP will be valid for ten minutes
-    $redis->set(PNV_OTP_PREFIX . $self->binary_user_id, $otp, 'EX', TEN_MINUTES);
+        $resp->{content} = decode_json_utf8($resp->{content} || '{}');
 
-    return $otp;
+        return 1 if $resp->{content}->{success};
+    } catch ($e) {
+        $log->errorf("Unable to generate phone number for user %d: %s", $self->binary_user_id, $e);
+    }
+
+    return 0;
 }
 
 =head2 increase_verify_attempts
@@ -333,6 +398,103 @@ sub increase_attempts {
     return $attempts;
 }
 
+=head2 is_phone_taken
+
+Takes the following:
+
+=over 4
+
+=item * C<$phone> - the phone number to check
+
+=back
+
+This function returns a boolean that indicates:
+
+=over 4
+
+=item * B<truthy> - the phone number has been taken by another user, not allowed to verify
+
+=item * B<falsey> - can be taken by this user/the user is the actual owner
+
+=back
+
+=cut
+
+sub is_phone_taken {
+    my ($self, $phone) = @_;
+
+    my $clear_phone = $self->clear_phone($phone);
+
+    my ($result) = BOM::User->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM users.is_phone_number_taken(?::BIGINT, ?::TEXT)', undef, $self->binary_user_id, $clear_phone);
+        });
+
+    return $result;
+}
+
+=head2 verify
+
+Set the verification status to TRUE and also locks the phone number so nobody else can claim it.
+
+Takes the following:
+
+=over 4
+
+=item * C<$phone> - the phone number to check
+
+=back
+
+Returns C<truthy> when the operation is successful.
+
+=cut
+
+sub verify {
+    my ($self, $phone) = @_;
+
+    my $clear_phone = $self->clear_phone($phone);
+
+    try {
+        BOM::User->dbic(operation => 'write')->run(
+            fixup => sub {
+                $_->do('SELECT * FROM users.phone_number_verify(?::BIGINT, ?::TEXT)', undef, $self->binary_user_id, $clear_phone);
+            });
+    } catch ($e) {
+        my $error = split('|', $e // '');    # avoid leaking the phone number
+
+        $log->errorf("Unable to verify phone number for user %d: %s", $self->binary_user_id, $error);
+
+        return undef;
+    }
+
+    return 1;
+}
+
+=head2 release
+
+Set the verification status to FALSE and also unlocks the phone number so other users can claim it.
+
+Returns C<truthy> when the operation is successful.
+
+=cut
+
+sub release {
+    my ($self) = @_;
+
+    try {
+        BOM::User->dbic(operation => 'write')->run(
+            fixup => sub {
+                $_->do('SELECT * FROM users.phone_number_release(?::BIGINT)', undef, $self->binary_user_id);
+            });
+    } catch ($e) {
+        my $error = split('|', $e // '');    # avoid leaking the phone number
+
+        $log->errorf("Unable to release phone number for user %d: %s", $self->binary_user_id, $error);
+
+        return undef;
+    }
+}
+
 =head2 increase_email_attempts
 
 Increases the number of email attempts made by the current user.
@@ -360,28 +522,66 @@ sub increase_email_attempts {
 
 =head2 verify_otp
 
-Attemps to verify the OTP for this user.
+Hits the PNV golang service /pnv/verify/{phone}/{otp}
 
-Returns a B<truthy> on success.
+It takes:
+
+=over 4
+
+=item C<$phone> - the phone number to check
+
+=item C<$otp> - the OTP to match
+
+=back
+
+Returns a C<1> on a successful request, C<0> otherwise.
 
 =cut
 
 sub verify_otp {
-    my ($self, $otp) = @_;
+    my ($self, $phone, $otp) = @_;
 
-    return undef unless defined $otp;
+    my $config = BOM::Config::Services->config('phone_number_verification');
+    my $url    = sprintf("http://%s:%d/pnv/verify/%s/%s", $config->{host}, $config->{port}, $phone, $otp);
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    # Hit the PNV golang service
+    try {
+        my $resp = $self->http->get($url);
 
-    my $stored_otp = $redis->get(PNV_OTP_PREFIX . $self->binary_user_id);
+        $resp->{content} = decode_json_utf8($resp->{content} || '{}');
 
-    return undef unless defined $stored_otp;
+        return 1 if $resp->{content}->{success};
+    } catch ($e) {
+        $log->errorf("Unable to verify phone number for user %d: %s", $self->binary_user_id, $e);
+    }
 
-    return undef unless $otp eq $stored_otp;
+    return 0;
+}
 
-    $redis->del(PNV_OTP_PREFIX . $self->binary_user_id);
+=head2 clear_phone
 
-    return 1;
+Removes all non digits from the incoming phone.
+
+Takes the following argument:
+
+=over 4
+
+=item * C<$phone> - the phone to be cleared
+
+=back
+
+Returns the only digits version of the phone number
+
+=cut
+
+sub clear_phone {
+    my (undef, $phone) = @_;
+
+    my $dirty_phone = $phone;
+
+    $dirty_phone =~ s/\D//g;
+
+    return $dirty_phone;    # no longer dirty hehe
 }
 
 1

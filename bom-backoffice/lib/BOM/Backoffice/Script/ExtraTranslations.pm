@@ -84,6 +84,7 @@ sub script_run {
     $self->add_idv_document_types;
     $self->add_onfido_document_types;
     $self->add_customerio_emails;
+    $self->add_pnv;
 
     return 0;
 }
@@ -395,6 +396,28 @@ sub add_customerio_emails {
                 }
             }
         }
+    }
+}
+
+=head2 add_pnv
+
+Add the PNV sms content here.
+
+=cut
+
+sub add_pnv {
+    my $self = shift;
+    my $fh   = $self->pot_append_fh;
+
+    # from service-kyc/packages/phone_number_verification/internal/translator/translator.go
+    my $sms   = 'Your verification code is: %1. This code is valid for 10 minutes.';
+    my $msgid = $self->msg_id($sms);
+
+    if ($self->is_id_unique($msgid)) {
+        print $fh "\n";
+        print $fh "msgctxt \"Phone Number Verification SMS content \"\n";
+        print $fh $msgid . "\n";
+        print $fh "msgstr \"\"\n";
     }
 }
 

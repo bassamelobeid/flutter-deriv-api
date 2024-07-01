@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Deep;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -209,6 +210,104 @@ subtest 'feature flag test' => sub {
     foreach my $flag (keys $feature_flag->%*) {
         is $feature_flag->{$flag}, $feature_flag_res->{$flag}, "flag $flag has been set correctly";
     }
+};
+
+subtest 'Phone Number verified' => sub {
+    my $customer = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'br',
+            phone          => '+55990000001',
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+
+    my $client = $customer->get_client_object('CR');
+
+    my $token = $customer->get_client_token('CR', ['admin']);
+    $t->await::authorize({authorize => $token});
+
+    my $params = {
+        set_settings => 1,
+    };
+
+    my $customer2 = BOM::Test::Customer->create({
+            email          => BOM::Test::Customer->get_random_email_address(),
+            password       => BOM::User::Password::hashpw('abc123'),
+            email_verified => 1,
+            account_type   => 'binary',
+            residence      => 'br',
+            phone          => $client->phone,
+        },
+        [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+
+    my $client2 = $customer2->get_client_object('CR');
+    my $token2  = $customer2->get_client_token('CR', ['admin']);
+
+    my $params2 = {
+        set_settings => 1,
+    };
+
+    $params->{phone} = $client->phone;
+
+    my $result = $t->await::set_settings($params);
+    test_schema('set_settings', $result);
+
+    ok $result->{set_settings}, 'No error on set_settings call';
+
+    $params2->{phone} = $params->{phone};
+
+    $t->await::authorize({authorize => $token2});
+    $result = $t->await::set_settings($params2);
+    test_schema('set_settings', $result);
+
+    $params2->{phone} = '+55990000002';
+
+    $result = $t->await::set_settings($params2);
+    test_schema('set_settings', $result);
+
+    ok $result->{set_settings}, 'No error on set_settings call';
+
+    my $pnv = BOM::User::PhoneNumberVerification->new($customer->get_user_id(), $customer->get_user_service_context());
+    $pnv->verify($params->{phone});
+    $params2->{phone} = $params->{phone};
+
+    $result = $t->await::set_settings($params2);
+    test_schema('set_settings', $result);
+
+    cmp_deeply $result->{error},
+        +{
+        message => 'The phone number is not available.',
+        code    => 'PhoneNumberTaken',
+        },
+        'Expected error when number is taken';
+
+    delete $params2->{phone};
+    $params2->{address_city} = 'Sao Paulo';
+
+    $result = $t->await::set_settings($params2);
+    test_schema('set_settings', $result);
+
+    ok $result->{set_settings}, 'No error on set_settings call (no phone updated)';
+
+    $pnv->release();
+    $params2->{phone} = $params->{phone};
+
+    $result = $t->await::set_settings($params2);
+    test_schema('set_settings', $result);
+
+    ok $result->{set_settings}, 'No error on set_settings call';
 };
 
 $t->finish_ok;
