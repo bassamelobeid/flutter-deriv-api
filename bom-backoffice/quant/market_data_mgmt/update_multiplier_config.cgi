@@ -269,8 +269,9 @@ if ($r->param('delete_multiplier_market_or_underlying_limit')) {
     my $market_limits        = $custom_volume_limits->{markets} // {};
     my $symbol_limits        = $custom_volume_limits->{symbols} // {};
     my $output;
+
     try {
-        my $market = lc $r->param('market');
+        my $market = defined $r->param('market') ? lc $r->param('market') : undef;
         my $symbol = $r->param('symbol');
 
         my $limit;
@@ -283,8 +284,9 @@ if ($r->param('delete_multiplier_market_or_underlying_limit')) {
 
         $app_config->set({'quants.custom_volume_limits' => encode_json_utf8($custom_volume_limits)});
 
-        send_trading_ops_email("Multiplier risk management tool: deleted custom volume limit",
-            {$limit->%*, $market ? 'market' : 'symbol' => $market || $symbol});
+        my %email_data = (%$limit, ($market ? ('market' => $market) : ('symbol' => $symbol)));
+        send_trading_ops_email("Multiplier risk management tool: deleted custom volume limit", \%email_data);
+
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
     } catch ($e) {

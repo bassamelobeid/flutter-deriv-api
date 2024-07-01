@@ -182,6 +182,7 @@ sub _get_existing_client_volume_limits {
 sub _get_existing_market_and_symbol_volume_limits {
     my $app_config           = BOM::Config::Runtime->instance->app_config;
     my $custom_volume_limits = decode_json_utf8($app_config->get('quants.custom_volume_limits'));
+    my @market_names         = Finance::Underlying::Market::Registry->instance->all_market_names;
     my $markets              = $custom_volume_limits->{markets};
     my $symbols              = $custom_volume_limits->{symbols};
 
@@ -191,7 +192,12 @@ sub _get_existing_market_and_symbol_volume_limits {
     for my $market (sort keys %{$markets}) {
         my $market_obj = Finance::Underlying::Market::Registry->instance->get($market);
         next unless $market_obj;
-        push @market_limits, {%{$markets->{$market}}, market => $market_obj->display_name};
+        push @market_limits,
+            {
+            %{$markets->{$market}},
+            market_display => $market_obj->display_name,
+            market_name    => $market
+            };
     }
     for my $symbol (sort keys %{$symbols}) {
         push @symbol_limits, {%{$symbols->{$symbol}}, symbol => $symbol};
@@ -213,7 +219,8 @@ sub _get_existing_market_and_symbol_volume_limits {
     return {
         market_limits_default => \@market_limits_default,
         market_limits         => \@market_limits,
-        symbol_limits         => \@symbol_limits
+        symbol_limits         => \@symbol_limits,
+        market_names          => \@market_names
     };
 }
 

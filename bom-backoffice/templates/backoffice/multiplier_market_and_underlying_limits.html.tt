@@ -33,7 +33,14 @@ If there is no risk profile defined for a given underlying (or it's correspondin
     </tr>
     <tr>
         <td>★ Market: </td>
-        <td><input type="text" name="market" data-lpignore="true" /></td>
+        <td>
+            <select name="market" data-lpignore="true">
+                <option></option>
+                [% FOREACH data IN market_names %]
+                <option value="[% data %]">[% data %]</option>
+                [% END %]
+            </select>
+        </td>
         <td>
             (optional) e.g. forex.
         </td>
@@ -92,12 +99,12 @@ If there is no risk profile defined for a given underlying (or it's correspondin
     </thead>
     <tbody>
     [% FOREACH data IN market_limits %]
-    <tr id='multiplier-limit-[% data.market %]'>
-        <td>[% data.market %]</td>
+    <tr id='multiplier-limit-[% data.market_name %]'>
+        <td>[% data.market_display %]</td>
         <td>[% data.risk_profile %]</td>
         <td>[% data.max_volume_positions %]</td>
         <td><button
-            onClick="DeleteMarketOrUnderlyingLimit({ market: '[% data.market %]' })"
+            onClick="DeleteMarketOrUnderlyingLimit({ market: '[% data.market_name %]' })"
             type="button" class="btn btn--secondary">Delete</button>
         </td>
         <td class='delete_market_or_underlying_limit_result'></td>
@@ -140,7 +147,7 @@ function SaveMultiplierOrUnderlyingLimit(){
     var result = el.find('.save_market_and_underlying_limit_result');
 
     var risk_profile = el.find('input[name="risk_profile"]').val();
-    var market = el.find('input[name="market"]').val();
+    var market = el.find('select[name="market"]').val();
     var symbol = el.find('input[name="underlying_symbol"]').val();
     var max_volume_positions = el.find('input[name="max_volume_positions"]').val();
 
@@ -190,4 +197,3 @@ function DeleteMarketOrUnderlyingLimit(data) {
 }
 
 </script>
-
