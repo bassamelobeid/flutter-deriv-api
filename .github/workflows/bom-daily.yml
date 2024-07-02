@@ -3,16 +3,18 @@ run-name: Daily workflow (bom)
 env:
   PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
+  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:
     - cron: '23 11 * * *'
 jobs:
   syntax_unit:
-    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom
+      need_core: false
   core:
     uses: ./.github/workflows/bom-base.yml
     secrets: inherit

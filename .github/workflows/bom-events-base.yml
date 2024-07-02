@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   core_unit_syntax_diff:
-    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@master
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@gh_actions/combine_duplicated_workflows
     secrets: inherit
     with:
       debianci_image: ${{ inputs.debianci_image }}
