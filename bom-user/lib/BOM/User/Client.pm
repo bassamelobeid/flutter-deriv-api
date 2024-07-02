@@ -4083,7 +4083,7 @@ sub deposit_virtual_funds {
     my ($self, $source) = @_;
     $self->is_virtual || die "not a virtual client\n";
 
-    my $landing_company                 = $self->landing_company;
+    my $landing_company                 = $self->landing_company({business_rules => 1});
     my $currency                        = $self->currency                                   // 'USD';
     my $virtual_account_default_balance = $landing_company->virtual_account_default_balance // 10000;
 

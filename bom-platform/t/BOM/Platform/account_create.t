@@ -1228,6 +1228,7 @@ subtest 'email verification for virtual accounts' => sub {
 };
 
 subtest 'create partner in restrited countries' => sub {
+    my $mock_business_countries   = Test::MockModule->new('Business::Config::Country');
     my $mock_countries            = Test::MockModule->new('Brands::Countries');
     my $is_restricted             = 1;
     my $is_partner_signup_allowed = 0;
@@ -1235,6 +1236,15 @@ subtest 'create partner in restrited countries' => sub {
     $mock_countries->redefine(restricted_country        => sub { return $is_restricted });
     $mock_countries->redefine(is_signup_allowed         => sub { return $is_signup_allowed });
     $mock_countries->redefine(is_partner_signup_allowed => sub { return $is_partner_signup_allowed });
+
+    $mock_business_countries->redefine(restricted => sub { return $is_restricted });
+    $mock_business_countries->redefine(
+        signup => sub {
+            return +{
+                account  => $is_signup_allowed,
+                partners => $is_partner_signup_allowed,
+            };
+        });
 
     my $res = create_vr_acc({
         email     => 'partner_00_1@binary.com',
@@ -1293,6 +1303,7 @@ subtest 'create partner in restrited countries' => sub {
 
     ok $res, 'sign up allowed for partner registration even if it is restricted country';
 
+    $mock_business_countries->unmock_all();
     $mock_countries->unmock_all();
 };
 

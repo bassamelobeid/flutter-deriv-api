@@ -2242,6 +2242,104 @@ subtest 'Empty phone number' => sub {
     is $client->phone, '', 'No phone set';
 };
 
+subtest 'Affiliate link' => sub {
+    subtest 'Spain' => sub {
+        my $email = 'afflink+sp@asdf.com';
+        $params->{country}                   = 'es';
+        $params->{args}->{residence}         = 'es';
+        $params->{args}->{address_state}     = 'SP';
+        $params->{args}->{client_password}   = '123Abas!';
+        $params->{args}->{first_name}        = 'i came from';
+        $params->{args}->{last_name}         = 'some es affiliate';
+        $params->{args}->{date_of_birth}     = '1999-01-01';
+        $params->{args}->{email}             = $email;
+        $params->{args}->{affiliate_token}   = 'thetoken';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+
+        delete $params->{token};
+
+        $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('vr account created successfully');
+        my $vr_loginid = $rpc_ct->result->{client_id};
+
+        my $client = BOM::User::Client->new({loginid => $vr_loginid});
+        is $client->myaffiliates_token, '', 'No token set for es account';
+    };
+
+    subtest 'Portugal' => sub {
+        my $email = 'afflink+pt@asdf.com';
+        $params->{country}                   = 'pt';
+        $params->{args}->{residence}         = 'pt';
+        $params->{args}->{address_state}     = 'SP';
+        $params->{args}->{client_password}   = '123Abas!';
+        $params->{args}->{first_name}        = 'i came from';
+        $params->{args}->{last_name}         = 'some pt affiliate';
+        $params->{args}->{date_of_birth}     = '1999-01-01';
+        $params->{args}->{email}             = $email;
+        $params->{args}->{affiliate_token}   = 'thetoken';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+
+        delete $params->{token};
+
+        $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('vr account created successfully');
+        my $vr_loginid = $rpc_ct->result->{client_id};
+
+        my $client = BOM::User::Client->new({loginid => $vr_loginid});
+        is $client->myaffiliates_token, '', 'No token set for pt account';
+    };
+
+    subtest 'Argentina' => sub {
+        my $email = 'afflink+ar@asdf.com';
+        $params->{country}                   = 'ar';
+        $params->{args}->{residence}         = 'ar';
+        $params->{args}->{address_state}     = 'SP';
+        $params->{args}->{client_password}   = '123Abas!';
+        $params->{args}->{first_name}        = 'i came from';
+        $params->{args}->{last_name}         = 'some ar affiliate';
+        $params->{args}->{date_of_birth}     = '1999-01-01';
+        $params->{args}->{email}             = $email;
+        $params->{args}->{affiliate_token}   = 'thetoken';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+
+        delete $params->{token};
+
+        $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('vr account created successfully');
+        my $vr_loginid = $rpc_ct->result->{client_id};
+
+        my $client = BOM::User::Client->new({loginid => $vr_loginid});
+        is $client->myaffiliates_token, 'thetoken', 'Token set for ar account';
+    };
+};
+
+subtest 'Unknown country' => sub {
+    my $email = 'country+xx@asdf.com';
+    $params->{country}                   = 'xx';
+    $params->{args}->{residence}         = 'xx';
+    $params->{args}->{address_state}     = 'SP';
+    $params->{args}->{client_password}   = '123Abas!';
+    $params->{args}->{first_name}        = 'i came from';
+    $params->{args}->{last_name}         = 'some xx country';
+    $params->{args}->{date_of_birth}     = '1999-01-01';
+    $params->{args}->{email}             = $email;
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
+        email       => $email,
+        created_for => 'account_opening'
+    )->token;
+
+    delete $params->{token};
+
+    $rpc_ct->call_ok('new_account_virtual', $params)
+        ->has_no_system_error->has_error->error_code_is('invalid residence', 'xx is not a well known country');
+};
+
 subtest 'Missing phone number' => sub {
     my $email = 'missing+phone1241241@asdf.com';
     $params->{country}                 = 'br';

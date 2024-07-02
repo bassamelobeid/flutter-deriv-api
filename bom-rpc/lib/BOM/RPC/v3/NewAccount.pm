@@ -474,11 +474,13 @@ rpc "new_account_virtual",
             $refresh_token = $oauth_model->generate_refresh_token($client->binary_user_id, $params->{source});
         }
 
+        my $currency = Business::Config::LandingCompany::Registry->new()->currencies()->{$account->currency_code()} // {};
+
         return {
             client_id     => $client->loginid,
             email         => $client->email,
             currency      => $account->currency_code(),
-            currency_type => LandingCompany::Registry::get_currency_type($account->currency_code()) // '',
+            currency_type => $currency->{type} // '',
             balance       => formatnumber('amount', $account->currency_code(), $account->balance),
             oauth_token   => _create_oauth_token($params->{source}, $client->loginid),
             type          => $category,
@@ -674,13 +676,20 @@ sub create_virtual_account {
                 message_to_client => localize('You cannot use your email address as your password.')}
         ) if lc $args->{client_password} eq lc $args->{email};
     }
+
+    my $country = Business::Config::Country::Registry->new()->by_code($args->{residence});
+
+    die BOM::RPC::v3::Utility::create_error_by_code('invalid residence') unless $country;
+
     if ($args->{category} eq 'wallet') {
-        my $countries_instance = request()->brand->countries_instance;
-        my $allowed_companies  = $countries_instance->wallet_companies_for_country($args->{residence}, 'virtual') // [];
+        my $allowed_companies = [];
+
+        $allowed_companies = $country->wallet_companies('virtual') if $country;
 
         die BOM::RPC::v3::Utility::create_error_by_code('invalid residence')
             unless any { $_ eq "virtual" } $allowed_companies->@*;
     }
+
     # Create account
     my $account_args = {
         ip      => $args->{id},
@@ -698,10 +707,12 @@ sub create_virtual_account {
         account_opening_reason => $args->{account_opening_reason} // '',
     };
 
-    # Clients from Spain and portugal are not allowed to signup via affiliate links hence we are removing their token.
-    if ($args->{affiliate_token} && (lc($args->{residence}) eq 'pt' || lc($args->{residence}) eq 'es')) {
-        $args->{affiliate_token} = "";
-    }
+    # remove affiliate token if the country does not allow it
+    my $signup = {};
+
+    $signup = $country->signup;
+
+    $args->{affiliate_token} = '' unless $signup->{affiliate_link};
 
     $account_args->{details}->{myaffiliates_token} = $args->{affiliate_token} if $args->{affiliate_token};
 
