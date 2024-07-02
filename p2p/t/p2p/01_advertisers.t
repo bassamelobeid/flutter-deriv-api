@@ -214,8 +214,8 @@ subtest 'Updating advertiser fields' => sub {
     is $advertiser->p2p_advertiser_update(name => 'test')->{name}, 'test', 'Changing name';
     cmp_deeply(
         \@emitted_events,
-        [['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}], ['p2p_adverts_updated', {advertiser_id => $advertiser_info->{id}}],],
-        'p2p_advertiser_updated and p2p_adverts_updated events emitted'
+        [['p2p_adverts_updated', {advertiser_id => $advertiser_info->{id}}], ['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}]],
+        'p2p_adverts_updated and p2p_advertiser_updated events emitted'
     );
 
     ok !($advertiser->p2p_advertiser_update(is_listed => 0)->{is_listed}), 'Switch flag is_listed to false';
@@ -439,8 +439,7 @@ subtest 'advertiser band update' => sub {
     cmp_deeply(
         \@emitted_events,
         [
-            ['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}],
-            ['p2p_adverts_updated',    {advertiser_id  => $update->{id}}],
+            ['p2p_adverts_updated', {advertiser_id => $update->{id}}],
             [
                 'p2p_limit_changed',
                 {
@@ -454,8 +453,9 @@ subtest 'advertiser band update' => sub {
                     block_trade       => 0,
                 }
             ],
+            ['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}],
         ],
-        'p2p_advertiser_updated, p2p_adverts_updated and p2p_limit_changed events emitted'
+        'p2p_adverts_updated, p2p_limit_changed and p2p_advertiser_updated events emitted'
     );
 
     my $upgrade_done = decode_json_utf8($redis->hget('P2P::ADVERTISER_BAND_UPGRADE_COMPLETED', $info->{id}));

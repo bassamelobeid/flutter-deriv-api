@@ -478,6 +478,11 @@ payments:
           isa: ArrayRef
           global: 1
           default: []
+        limit_upgrade_restricted_countries:
+          description: 'List of countries for which limit upgrade is not allowed, 2 letter lower case country codes.'
+          isa: ArrayRef
+          global: 1
+          default: []
         limits:
           description: 'Peer-to-peer payment system and client limits'
           isa: section

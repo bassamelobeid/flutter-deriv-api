@@ -658,6 +658,7 @@ sub get_settings_by_group {
                 payments.p2p.advert_counterparty_terms.rating_steps
                 payments.p2p.dispute_response_time
                 payments.p2p.order_expiry_options
+                payments.p2p.limit_upgrade_restricted_countries
             )]};
 
     my $settings;
@@ -762,6 +763,7 @@ sub get_extra_validations {
         'payments.p2p.cross_border_ads_restricted_countries'         => \&_validate_countries,
         'payments.p2p.transaction_verification_countries'            => \&_validate_countries,
         'payments.p2p.fiat_deposit_restricted_countries'             => \&_validate_countries,
+        'payments.p2p.limit_upgrade_restricted_countries'            => \&_validate_countries,
         'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.dxtrade'          => \&_validate_positive_number,
