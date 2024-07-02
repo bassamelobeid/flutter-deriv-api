@@ -6,18 +6,13 @@ on:
   schedule:
     - cron: '24 11 * * *'
 jobs:
-  syntax_unit:
-    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
-    secrets: inherit
-    with:
-      repository: regentmarkets/bom-core/bom-pricing
-  core:
-    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
+  core_unit_syntax:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-pricing
   publish_test_results:
-    needs: [ core , syntax_unit ]
+    needs: [core_unit_syntax]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:

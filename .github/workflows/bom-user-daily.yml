@@ -7,10 +7,11 @@ on:
     - cron: '25 11 * * *'
 jobs:
   syntax_unit:
-    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-user
+      need_core: false
   core:
     uses: ./.github/workflows/bom-user-base.yml
     secrets: inherit

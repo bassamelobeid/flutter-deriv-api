@@ -14,29 +14,11 @@ concurrency:
   cancel-in-progress: true
 jobs:
   core_unit_syntax:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ inputs.debianci_image }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/regentmarkets/bom-core/bom-postgres
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: regentmarkets/bom-core/bom-postgres
-      - name: unit tests
-        run: make unit
-      - name: Core tests
-        run: |
-          sudo tee -a /etc/hosts < hosts.db
-          cat /etc/hosts
-          make test
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
+    secrets: inherit
+    with:
+      debianci_image: ${{ inputs.debianci_image }}
+      repository: regentmarkets/bom-core/bom-postgres
+      dependent_test: true
+      need_syntax: false
+
