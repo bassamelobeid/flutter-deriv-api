@@ -22,6 +22,7 @@ use Scalar::Util                                qw(blessed);
 use BOM::TradingPlatform::Helper::HelperDerivEZ qw(is_derivez get_derivez_prefix set_deriv_prefix_to_mt5);
 
 use BOM::MT5::Utility::CircuitBreaker;
+use BOM::MT5::User::Cached;
 use BOM::Config::Runtime;
 use BOM::Config;
 use HTTP::Tiny;
@@ -984,6 +985,7 @@ sub deposit {
         type        => '2'                 # enum DEAL_BALANCE = 2
     };
 
+    BOM::MT5::User::Cached::invalidate_mt5_api_cache($args->{login});
     return _invoke_mt5('UserDepositChange', $param)->then(
         sub {
 
@@ -1003,6 +1005,7 @@ sub withdrawal {
         type        => '2'                 # enum DEAL_BALANCE = 2
     };
 
+    BOM::MT5::User::Cached::invalidate_mt5_api_cache($args->{login});
     return _invoke_mt5('UserDepositChange', $param)->then(
         sub {
 
@@ -1019,6 +1022,7 @@ sub user_balance_change {
         comment => $args->{comment},
         type    => $args->{type}};
 
+    BOM::MT5::User::Cached::invalidate_mt5_api_cache($args->{login});
     return _invoke_mt5('UserBalanceChange', $param)->then(
         sub {
 

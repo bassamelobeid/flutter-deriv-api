@@ -2039,6 +2039,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        mt5_cache_expiry:
+          description: "MT5 cache expiry time in seconds"
+          isa: Num
+          default: 300
+          global: 1
         load_balance:
           description: "Load balancer for MT5 trader servers for regions."
           isa: section
