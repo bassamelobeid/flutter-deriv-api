@@ -17,4 +17,4 @@ jobs:
     with:
       debianci_image: ${{ inputs.debianci_image }}
       repository: regentmarkets/bom-core/bom-events
-      dependent_test: 'true'
+      dependent_test: true
