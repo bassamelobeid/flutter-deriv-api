@@ -1044,7 +1044,9 @@ if ($input{whattodo} eq 'save_edd_status') {
                 }
 
             } elsif (any { $_ eq $edd_status } qw(in_progress pending)) {
-                $client_to_update->status->setnx('unwelcome', BOM::Backoffice::Auth::get_staffname(), $unwelcome_reason);
+                unless (any { $_ eq $input{edd_reason} } qw(hish_risk_regulated social_responsibility)) {
+                    $client_to_update->status->setnx('unwelcome', BOM::Backoffice::Auth::get_staffname(), $unwelcome_reason);
+                }
                 if ($client_to_update->status->reason('disabled') eq $disabled_reason) {
                     $client_to_update->status->clear_disabled();
                 }
