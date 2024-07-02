@@ -28,35 +28,12 @@ Remove query string parameters carried with the callback.
 
 sub redirect_to_auth_page {
     my ($c, $error_code, @args) = @_;
-
     if ($error_code) {
         $c->session(social_error => localize(get_message_mapping()->{$error_code}, @args));
         $log->warn($c->_to_error_message("processing failed with error code $error_code"));
     }
-    my $redirect = $c->req->url->path('/oauth2/authorize')->to_abs->scheme('https');
-    $c->_populate_redirect_query_params($redirect);
-    return $c->redirect_to($redirect);
-}
 
-=head2 _populate_redirect_query_params
-
-Populate /authorize redirect query string parameters with the original ones found when flow intiated /authorize.
-Remove code, state query strings if presents.
-The parameters will be extracted from the stash, which has been extracted from sls_cookie in first place.
-
-=cut 
-
-sub _populate_redirect_query_params {
-    my ($c, $redirect) = @_;
-
-    #clear current query_string params.
-    for my $key (keys $redirect->query->to_hash->%*) {
-        $redirect->query->remove($key);
-    }
-    #append only required original query parameters.
-    for my $key (qw /app_id brand l date_first_contact signup_device/) {
-        $redirect->query->append($key => $c->stash('query_params')->{$key});
-    }
+    return $c->redirect_to(BOM::OAuth::Helper::get_initial_auth_request_url($c));
 }
 
 =head2 _extract_request_parametrs
@@ -73,7 +50,6 @@ sub _extract_request_parametrs {
     my $cookie = {};
     try {
         $cookie = BOM::OAuth::Helper::get_social_login_cookie($c);
-        $cookie->{query_params}->{brand} //= Brands->new(app_id => $cookie->{query_params}->{app_id})->name;    #try using app_id
     } catch ($e) {
         $log->error($c->_to_error_message($e));
     }
@@ -81,7 +57,6 @@ sub _extract_request_parametrs {
     my $provider = $c->stash('sls_provider');    #from callback path /callback/sls_provider.
     return {
         provider        => $provider,
-        query_params    => $cookie->{query_params}  // {},
         provider_params => $cookie->{$provider}     // {},
         callback_params => $c->req->params->to_hash // {}};
 }
@@ -93,8 +68,9 @@ Get user additional info from session, statch needed to create user.
 =cut
 
 sub _extract_user_details {
-    my ($c) = @_;
-    my $user_details = {
+    my ($c)            = @_;
+    my $initial_params = BOM::OAuth::Helper::query_params_cookie($c);
+    my $user_details   = {
         residence          => $c->stash('request')->country_code,    # Get client's residence automatically from cloudflare headers
         date_first_contact => $c->session('date_first_contact'),
         signup_device      => $c->session('signup_device'),
@@ -103,8 +79,8 @@ sub _extract_user_details {
         utm_medium         => $c->session('utm_medium'),
         utm_source         => $c->session('utm_source'),
         utm_campaign       => $c->session('utm_campaign'),
-        source             => $c->stash('query_params')->{app_id},
-        brand              => $c->stash('query_params')->{brand}};
+        source             => $initial_params->param('app_id'),
+        brand              => $initial_params->param('brand')};
     return $user_details;
 }
 
@@ -183,7 +159,7 @@ Helper function to get the datadog brand tag name
 
 sub _dd_brand_tag {
     my $c     = shift;
-    my $brand = $c->stash('query_params')->{brand};
+    my $brand = BOM::OAuth::Helper::query_params_cookie($c)->param('brand');
     return "brand:$brand";
 }
 
@@ -259,7 +235,6 @@ sub _track_new_user {
 sub callback {
     my $c                 = shift;
     my $provider_response = $c->_extract_request_parametrs;
-    $c->stash('query_params' => delete $provider_response->{query_params});
     my $user_data;
 
     try {
@@ -272,7 +247,7 @@ sub callback {
     try {
         #invalid brand, will never be hit per current implementation.
         return $c->redirect_to_auth_page('INVALID_BRAND')
-            unless $c->stash('query_params')->{brand};
+            unless BOM::OAuth::Helper::query_params_cookie($c)->param('brand');
         ## Somthing worng with the service?
         unless (ref $user_data) {
             return $c->redirect_to_auth_page('NO_USER_IDENTITY');

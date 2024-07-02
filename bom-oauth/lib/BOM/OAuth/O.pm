@@ -55,6 +55,8 @@ sub authorize {
     return $c->_bad_request('the request was missing app_id') unless $app_id;
     return $c->_bad_request('the request was missing valid app_id') if ($app_id !~ /^[0-9]+$/);
 
+    BOM::OAuth::Helper::set_query_params_cookie($c);
+
     my $social_login_bypass = 0;
     if ($app_id == CTRADER_APPID) {
         $c->app->sessions->secure(1);
