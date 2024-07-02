@@ -14,7 +14,9 @@ jobs:
   core_unit_syntax_diff:
     uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax_diff.yml@gh_actions/combine_duplicated_workflows
     secrets: inherit
+    # Set 'need_syntax_diff' to false to skip syntax tests during DT.
     with:
       debianci_image: ${{ inputs.debianci_image }}
       repository: regentmarkets/bom-core/bom-transaction
       dependent_test: true
+      need_syntax_diff: false

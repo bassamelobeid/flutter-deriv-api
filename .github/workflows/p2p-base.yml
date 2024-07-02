@@ -14,7 +14,9 @@ jobs:
   core_syntax_diff:
     uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@master
     secrets: inherit
+    # Set 'need_syntax_diff' to false to skip syntax tests during DT.
     with:
       debianci_image: ${{ inputs.debianci_image }}
       repository: regentmarkets/bom-core/p2p
-      dependent_test: 'true'
+      dependent_test: true
+      need_syntax_diff: false
