@@ -1,7 +1,6 @@
 name: Daily workflow (bom-config)
 run-name: Daily workflow (bom-config)
 on:
-  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:

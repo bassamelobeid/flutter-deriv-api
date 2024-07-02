@@ -43,10 +43,12 @@ jobs:
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   core:
-    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-market
+      need_unit: false
+      need_syntax: false
   publish_test_results:
     needs: [core, syntax_unit]
     if: ${{ !cancelled() }}

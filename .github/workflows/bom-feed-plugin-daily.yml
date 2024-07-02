@@ -4,13 +4,9 @@ on:
   schedule:
     - cron: '47 20 * * *'
 jobs:
-  syntax:
-    uses: regentmarkets/github-actions/.github/workflows/syntax.yml@master
+  core_syntax:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-feed-plugin
-  core:
-    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
-    secrets: inherit
-    with:
-      repository: regentmarkets/bom-core/bom-feed-plugin
+      need_unit: false
