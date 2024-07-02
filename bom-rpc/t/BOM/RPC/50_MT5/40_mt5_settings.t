@@ -173,7 +173,7 @@ subtest 'login list with MT5 connection problem on HTTP Proxy ' => sub {
     my $mt5_async_mock = Test::MockModule->new('BOM::MT5::User::Async');
     $mt5_async_mock->redefine(
         get_user => sub {
-            return Future->fail('Timed out');
+            return Future->fail({error => 'Timed out', code => 'ConnectionTimeout'});
         });
 
     my $method = 'mt5_login_list';

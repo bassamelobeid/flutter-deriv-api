@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Syntax::Keyword::Try;
-use LandingCompany::Registry;
 use List::Util qw(any first);
 
 use BOM::User;
@@ -13,16 +12,17 @@ use BOM::Config::Runtime;
 use BOM::Platform::Context qw(localize request);
 
 use Business::Config::Account::Type::Registry;
+use Business::Config::LandingCompany::Registry;
 
 sub create_account {
-    my $args                   = shift;
-    my $details                = $args->{details};
-    my $email                  = lc $details->{email};
-    my $password               = $details->{client_password} ? BOM::User::Password::hashpw($details->{client_password}) : '';
-    my $residence              = $details->{residence};
-    my $date_first_contact     = $details->{date_first_contact};
-    my $brand_name             = $details->{brand_name} // request()->brand->name;
-    my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
+    my $args               = shift;
+    my $details            = $args->{details};
+    my $email              = lc $details->{email};
+    my $password           = $details->{client_password} ? BOM::User::Password::hashpw($details->{client_password}) : '';
+    my $residence          = $details->{residence};
+    my $date_first_contact = $details->{date_first_contact};
+    my $brand_name         = $details->{brand_name} // request()->brand->name;
+    my $country            = Business::Config::Country::Registry->new()->by_code($residence // '');
 
     my $account_type_name = $details->{account_type} or return {error => {code => 'AccountTypeMissing'}};                # default to 'trading'
     my $account_type      = Business::Config::Account::Type::Registry->new()->account_type_by_name($account_type_name)
@@ -46,13 +46,15 @@ sub create_account {
 
     # we should check for restricted_country
     # we will also check for `is_signup_allowed` && `is_partner_signup_allowed`
-    return {error => {code => 'invalid residence'}} unless $residence;
+    return {error => {code => 'invalid residence'}} unless $country;
 
-    if ($brand_country_instance->restricted_country($residence)) {
+    if ($country->restricted()) {
         return {error => {code => 'invalid residence'}};
     }
 
-    if (!$brand_country_instance->is_partner_signup_allowed($residence) && !$brand_country_instance->is_signup_allowed($residence)) {
+    my $signup_config = $country->signup();
+
+    if (!$signup_config->{account} && !$signup_config->{partners}) {
         return {error => {code => 'invalid residence'}};
     }
 
@@ -91,8 +93,12 @@ sub create_account {
 
     # If not defined take it from the LC
     if (not defined $email_consent) {
-        my $country_company = $brand_country_instance->real_company_for_country($residence);
-        $email_consent = $country_company ? LandingCompany::Registry->by_name($country_company)->marketing_email_consent->{default} : 0;
+        my $country_company = $country->derived_company() // $country->financial_company();
+        my $landing_company;
+
+        $landing_company = Business::Config::LandingCompany::Registry->new()->by_code($country_company) if $country_company;
+
+        $email_consent = $landing_company ? $landing_company->marketing_email_consent->{default} : 0;
     }
 
     try {
@@ -112,7 +118,7 @@ sub create_account {
             $args->{utm_data}   ? (utm_data           => $args->{utm_data})   : (),
         ) unless ($user);
 
-        my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $virtual_company_for_brand->short;
+        my $landing_company = $country->virtual_company() // $virtual_company_for_brand;
         my $broker_code     = $account_type->get_single_broker_code($landing_company);
 
         my %args = (
@@ -164,14 +170,14 @@ Returns the virtual landing company object that is allowed for the given brand, 
 sub _virtual_company_for_brand {
     my ($brand_name) = @_;
 
+    my $list = Business::Config::LandingCompany::Registry->new()->list;
+
     my @lc = grep {
         $_->is_virtual && any { /^$brand_name$/ }
             $_->allowed_for_brands->@*
-    } LandingCompany::Registry->get_all();
+    } values $list->%*;
 
-    # virtual landing company for Wallet will be the same as Trading
-    # here we filter out the samoa-virtual landing company
-    return first { $_->short ne 'samoa-virtual' } @lc;
+    return first { !$_->skip_virtual_creation } @lc;
 }
 
 1;

@@ -38,12 +38,15 @@ my $redis  = BOM::Config::Redis->redis_p2p_write();
 
 $config->block_trade->enabled(1);
 $config->block_trade->maximum_advert(20000);
+$config->restricted_countries([]);
+$config->limit_upgrade_restricted_countries([]);
 
 subtest 'automatic upgrade for medium band' => sub {
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
         type => 'sell',
     );
+
     my $advertiser_id = $advertiser->p2p_advertiser_info->{id};
 
     # create 3 orders which are completed normally
@@ -71,8 +74,18 @@ subtest 'automatic upgrade for medium band' => sub {
         ["100.00", "100.00"],
         'by default daily buy and sell limit belong to low band'
     );
+    $config->restricted_countries([$advertiser->residence]);
     BOM::User::Script::P2PDailyMaintenance->new->run;
 
+    is scalar(@emitted_events), 0, "advertiser not eligible for band upgrade because his country is restricted from P2P";
+
+    cmp_deeply(
+        [$advertiser->p2p_advertiser_info->@{qw(daily_buy_limit daily_sell_limit)}],
+        ["100.00", "100.00"],
+        'daily buy and sell limit unchanged'
+    );
+    $config->restricted_countries([]);
+    BOM::User::Script::P2PDailyMaintenance->new->run;
     cmp_deeply(
         \@emitted_events,
         [[
@@ -96,7 +109,7 @@ subtest 'automatic upgrade for medium band' => sub {
                 }
             ],
         ],
-        'p2p_advertiser_updated and p2p_limit_changed events emitted'
+        'p2p_limit_changed and p2p_advertiser_updated events emitted'
     );
 
     my $email = mailbox_search(subject => qr/P2P Band Upgrade list/);
@@ -136,7 +149,15 @@ subtest 'manual upgrade for high band' => sub {
 
     @emitted_events = ();
     mailbox_clear();
+    $config->limit_upgrade_restricted_countries([$advertiser->residence]);
     BOM::User::Script::P2PDailyMaintenance->new->run;
+
+    is scalar(@emitted_events), 0, "advertiser not eligible for band upgrade because his country is blocked from band upgrade";
+    is $redis->hget(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $advertiser_id), undef, "redis key not populated";
+
+    $config->limit_upgrade_restricted_countries([]);
+    BOM::User::Script::P2PDailyMaintenance->new->run;
+
     cmp_deeply(
         \@emitted_events,
         [[
@@ -225,8 +246,8 @@ subtest 'manual upgrade for high band' => sub {
     cmp_deeply(
         \@emitted_events,
         [
-            ['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}],
-            ['p2p_adverts_updated',    {advertiser_id  => $update->{id}}],
+
+            ['p2p_adverts_updated', {advertiser_id => $update->{id}}],
             [
                 'p2p_limit_changed',
                 {
@@ -240,8 +261,9 @@ subtest 'manual upgrade for high band' => sub {
                     block_trade       => 0,
                 }
             ],
+            ['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}],
         ],
-        'p2p_advertiser_updated, p2p_adverts_updated and p2p_limit_changed events emitted'
+        'p2p_adverts_updated, p2p_limit_changed and p2p_advertiser_updated events emitted'
     );
 
     mailbox_clear();

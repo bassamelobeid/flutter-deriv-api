@@ -15,6 +15,8 @@ use Data::Dumper;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static     qw(get_message_mapping);
 use Locale::Codes::Country qw( code2country );
+use Mojo::Parameters;
+
 use BOM::OAuth::SocialLoginController;
 
 ## init
@@ -157,10 +159,9 @@ subtest 'social login sign up' => sub {
 
 subtest 'setting up social login' => sub {
     $use_oneall = 0;
-    $t->get_ok("/authorize?app_id=$app_id");
+    $t->get_ok("/authorize?app_id=$app_id&brand=deriv&l=en");
     is_deeply($stash->{social_login_links}, {google => 'dummy.com'}, 'providers urls stashed');
     ok defined $signed_cookies->{sls}, 'social login cookie exists';
-
     is_deeply(
         $signed_cookies->{sls}->{settings},
         {
@@ -170,22 +171,25 @@ subtest 'setting up social login' => sub {
         },
         'social login cookie settings are correct'
     );
-
+    is_deeply(
+        $signed_cookies->{qp}->{settings},
+        {
+            httponly => 1,
+            secure   => 1,
+        },
+        'query params cookie settings are correct'
+    );
     is_deeply(
         decode_json_utf8(decode_base64($signed_cookies->{sls}->{data})),
         {
-            'query_params' => {
-                'app_id' => $app_id,
-                'brand'  => 'deriv'
-            },
             'google' => {
-                'nonce'          => 'nonce',
-                'code_challenge' => 'code_challenge',
-                'code_verifier'  => 'code_verifier'
+                'nonce'         => 'nonce',
+                'code_verifier' => 'code_verifier'
             }
         },
         'social login cookie data are correct'
     );
+    is_deeply(decode_base64($signed_cookies->{qp}->{data}), "app_id=$app_id&brand=deriv&l=en", 'query params cookie data is correct');
 
     $mock_sls->unmock_all;
     my $error = "Social Login Service unavailable";
@@ -206,9 +210,14 @@ subtest 'redirect scenaions' => sub {
     $use_oneall = 0;
     my $mock_helper = Test::MockModule->new('BOM::OAuth::Helper');
     my $sls_cookie;
+    my $query_params_cookie;
     $mock_helper->mock(
         'get_social_login_cookie' => sub {
             return $sls_cookie;
+        });
+    $mock_helper->mock(
+        'query_params_cookie' => sub {
+            return Mojo::Parameters->new($query_params_cookie);
         });
     my $test_data;
     $mock_sls->mock(
@@ -220,8 +229,9 @@ subtest 'redirect scenaions' => sub {
         });
 
     subtest 'signup social login service' => sub {
-        $test_data  = get_test_data(app_id => $app_id);
-        $sls_cookie = $test_data->{sls_cookie};
+        $test_data           = get_test_data(app_id => $app_id);
+        $sls_cookie          = $test_data->{sls_cookie};
+        $query_params_cookie = $test_data->{query_params_cookie};
         set_residence($t, 'au');
         my $res = $t->get_ok("/social-login/callback/$test_data->{provider}?code=$test_data->{code}&state=$test_data->{state}");
         $res->status_is(302)->header_like('location' => qr{\/oauth2\/authorize\?app_id\=$app_id\&brand\=$test_data->{brand}});
@@ -261,8 +271,9 @@ subtest 'redirect scenaions' => sub {
     };
 
     subtest 'signup/signin social login service multiple providers' => sub {
-        $test_data  = get_test_data(app_id => $app_id);
-        $sls_cookie = $test_data->{sls_cookie};
+        $test_data           = get_test_data(app_id => $app_id);
+        $sls_cookie          = $test_data->{sls_cookie};
+        $query_params_cookie = $test_data->{query_params_cookie};
 
         #sign up.
         set_residence($t, 'au');
@@ -303,8 +314,9 @@ subtest 'redirect scenaions' => sub {
 
         #invalid residence
         set_residence($t, 'my');
-        $test_data  = get_test_data(app_id => $app_id);
-        $sls_cookie = $test_data->{sls_cookie};
+        $test_data           = get_test_data(app_id => $app_id);
+        $sls_cookie          = $test_data->{sls_cookie};
+        $query_params_cookie = $test_data->{query_params_cookie};
         my $res = $t->get_ok("/social-login/callback/$test_data->{provider}?code=$test_data->{code}&state=$test_data->{state}");
         $res->status_is(302)->header_like('location' => qr{\/oauth2\/authorize\?app_id\=$app_id\&brand\=$test_data->{brand}});
         is $sessions_hash->{social_error}, localize(get_message_mapping()->{INVALID_RESIDENCE}, code2country('my')),
@@ -386,6 +398,10 @@ subtest 'invalid response from social login service' => sub {
         'get_social_login_cookie' => sub {
             return $test_data->{sls_cookie};
         });
+    $mock_helper->mock(
+        'query_params_cookie' => sub {
+            return Mojo::Parameters->new($test_data->{query_params_cookie});
+        });
     my $mock_http = Test::MockModule->new('HTTP::Tiny');
     my $response;
     my $code;
@@ -456,6 +472,12 @@ subtest 'multi domain support' => sub {
         'retrieve_user_info' => sub {
             @sls_user_info_params = @_;
         });
+
+    my $mock_helper = Test::MockModule->new('BOM::OAuth::Helper');
+    $mock_helper->mock(
+        'query_params_cookie' => sub {
+            return Mojo::Parameters->new;
+        });
     $t->get_ok("/authorize?app_id=$app_id");
     like $sls_providers_params[1], qr{127.0.0.1}, 'base url is correct in providers request';
 
@@ -472,25 +494,21 @@ sub get_test_data {
     my %args = @_;
 
     my $samples = {};
-    $samples->{state}          = 'random_state';
-    $samples->{code}           = 'random_code';
-    $samples->{nonce}          = 'random_nonce';
-    $samples->{code_verifier}  = 'random_code_verifier';
-    $samples->{code_challenge} = 'random_code_challenge';
-    $samples->{provider}       = $args{provider} // 'google';
-    $samples->{brand}          = $args{brand}    // 'deriv';
-    $samples->{email}          = $args{email}    // 'test' . rand(999) . '@deriv.com';
-    $samples->{sls_cookie}     = {
-        query_params => {
-            brand  => $samples->{brand},
-            app_id => $args{app_id}
-        },
+    $samples->{state}               = 'random_state';
+    $samples->{code}                = 'random_code';
+    $samples->{nonce}               = 'random_nonce';
+    $samples->{code_verifier}       = 'random_code_verifier';
+    $samples->{code_challenge}      = 'random_code_challenge';
+    $samples->{provider}            = $args{provider} // 'google';
+    $samples->{brand}               = $args{brand}    // 'deriv';
+    $samples->{email}               = $args{email}    // 'test' . rand(999) . '@deriv.com';
+    $samples->{query_params_cookie} = "app_id=1000001&brand=deriv";
+    $samples->{sls_cookie}          = {
         $samples->{provider} => {
-            state          => $samples->{state},
-            code           => $samples->{code},
-            nonce          => $samples->{nonce},
-            code_verifier  => $samples->{code_verifier},
-            code_challenge => $samples->{code_challenge},
+            state         => $samples->{state},
+            code          => $samples->{code},
+            nonce         => $samples->{nonce},
+            code_verifier => $samples->{code_verifier},
         }};
     $samples->{request_params} = {
         provider        => $samples->{provider},

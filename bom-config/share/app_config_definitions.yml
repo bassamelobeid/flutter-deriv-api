@@ -478,6 +478,11 @@ payments:
           isa: ArrayRef
           global: 1
           default: []
+        limit_upgrade_restricted_countries:
+          description: 'List of countries for which limit upgrade is not allowed, 2 letter lower case country codes.'
+          isa: ArrayRef
+          global: 1
+          default: []
         limits:
           description: 'Peer-to-peer payment system and client limits'
           isa: section
@@ -2033,6 +2038,11 @@ system:
           description: "Enable parallel running of MT5 Proxy (read only calls) with PHP script"
           isa: Bool
           default: 0
+          global: 1
+        mt5_cache_expiry:
+          description: "MT5 cache expiry time in seconds"
+          isa: Num
+          default: 300
           global: 1
         load_balance:
           description: "Load balancer for MT5 trader servers for regions."

@@ -73,6 +73,7 @@ my %setting_keys = (
     "payments.p2p.advert_counterparty_terms.rating_steps"          => 1,
     "payments.p2p.dispute_response_time"                           => 0,
     "payments.p2p.order_expiry_options"                            => 1,
+    "payments.p2p.limit_upgrade_restricted_countries"              => 0,
 );
 
 my $app_config     = BOM::Config::Runtime->instance->app_config;

@@ -389,12 +389,6 @@ sub p2p_advertiser_update {
         });
 
     BOM::Platform::Event::Emitter::emit(
-        p2p_advertiser_updated => {
-            client_loginid => $self->loginid,
-        },
-    );
-
-    BOM::Platform::Event::Emitter::emit(
         p2p_adverts_updated => {
             advertiser_id => $advertiser_info->{id},
         });
@@ -423,6 +417,12 @@ sub p2p_advertiser_update {
                 automatic_approve => 0,
             });
     }
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_advertiser_updated => {
+            client_loginid => $self->loginid,
+        },
+    );
 
     $self->_p2p_convert_advertiser_limits($update);
     my $response = $self->_advertiser_details($update);

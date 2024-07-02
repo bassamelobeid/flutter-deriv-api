@@ -314,11 +314,17 @@ sub run {
 
         # 7. check if active P2P advertisers eligible for limit increase
         try {
-            my $start_time  = Time::HiRes::time;
+            my $start_time = Time::HiRes::time;
+            my @resticted_countries =
+                uniq($app_config->payments->p2p->restricted_countries->@*, $app_config->payments->p2p->limit_upgrade_restricted_countries->@*);
             my $db_upgrades = $db_replica->run(
                 fixup => sub {
-                    $_->selectall_arrayref('SELECT * FROM p2p.advertisers_for_band_upgrade_v2(?,NULL)', {Slice => {}},
-                        P2P_ADVERTISER_MIN_JOINED_DAYS);
+                    $_->selectall_arrayref(
+                        'SELECT * FROM p2p.advertisers_for_band_upgrade_v2(?,NULL,?)',
+                        {Slice => {}},
+                        P2P_ADVERTISER_MIN_JOINED_DAYS,
+                        \@resticted_countries
+                    );
                 });
             stats_timing('p2p.advertisers_for_band_upgrade.timing', (Time::HiRes::time - $start_time) * 1000);
 

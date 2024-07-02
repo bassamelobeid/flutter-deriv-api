@@ -37,6 +37,7 @@ use BOM::User;
 use BOM::User::Utility qw(parse_mt5_group);
 use BOM::User::Client;
 use BOM::MT5::User::Async;
+use BOM::MT5::User::Cached;
 use BOM::Database::ClientDB;
 use BOM::Config::Runtime;
 use BOM::Platform::Email;
@@ -167,7 +168,7 @@ async_rpc "mt5_login_list",
                     $_,
                     qw(account_type balance country currency display_balance email group landing_company landing_company_short),
                     qw(leverage login name market_type sub_account_type sub_account_category server server_info),
-                    qw(status webtrader_url rights product),
+                    qw(status webtrader_url request_timestamp rights product),
                 )
             } @logins;
 
@@ -1662,7 +1663,7 @@ sub set_mt5_account_settings {
 sub _get_user_with_group {
     my ($loginid) = shift;
 
-    return BOM::MT5::User::Async::get_user($loginid)->then(
+    return BOM::MT5::User::Cached::get_user_cached($loginid)->then(
         sub {
             my ($settings) = @_;
             return create_error_future('MT5GetUserError', {message => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});

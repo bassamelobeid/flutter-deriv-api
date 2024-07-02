@@ -5,7 +5,14 @@ use warnings;
 use MIME::Base64 qw(encode_base64 decode_base64);
 use JSON::MaybeXS;    #Using `JSON::MaybeXS` to maintain order of the result string.
 use Exporter qw(import);
-our @EXPORT_OK = qw(request_details_string exception_string social_login_callback_base strip_array_values build_signup_url);
+our @EXPORT_OK = qw(
+    request_details_string
+    exception_string
+    social_login_callback_base
+    strip_array_values
+    query_params_cookie
+    set_query_params_cookie
+    build_signup_url);
 
 =head2 extract_brand_from_params
 
@@ -60,13 +67,12 @@ sub setup_social_login {
     my $links;
     my $session = {};
     for my $provider ($providers->@*) {
+        delete $provider->{code_challenge};
         my $url           = delete $provider->{auth_url};
         my $provider_name = delete $provider->{name};
         $links->{$provider_name}   = $url;
         $session->{$provider_name} = $provider;
     }
-
-    $session->{"query_params"} = strip_array_values($c->req->params->to_hash);
 
     set_social_login_cookie($c, $session);
     $c->stash('social_login_links' => $links);
@@ -279,6 +285,52 @@ sub build_signup_url {
     }
 
     return $signup_url;
+}
+
+=head2 set_query_params_cookie
+
+Capture the initial `/authorize` required request query params and store them in a cookie.
+
+=cut
+
+sub set_query_params_cookie {
+    my $c            = shift;
+    my $params       = Mojo::Parameters->new;
+    my $query_params = strip_array_values($c->req->url->query->to_hash);
+    for my $key (qw /app_id brand l date_first_contact signup_device device_id h_state route state _sso_nonce platform/) {
+        $params->append($key, $query_params->{$key}) if $query_params->{$key};
+    }
+    $c->signed_cookie(
+        "qp" => encode_base64($params->to_string, ''),
+        {
+            secure   => 1,
+            httponly => 1
+        });
+}
+
+=head2 query_params_cookie
+
+Retrieve initial `/authorize` request query params from the cookie.
+
+=cut
+
+sub query_params_cookie {
+    my $c = shift;
+    return Mojo::Parameters->new(decode_base64($c->signed_cookie("qp")));
+}
+
+=head2 get_initial_auth_request_url
+
+Return the initial `/authorize` request URL. with the initial query params fetched from the cookie.
+
+=cut
+
+sub get_initial_auth_request_url {
+    my $c      = shift;
+    my $params = query_params_cookie($c);
+    my $url    = Mojo::URL->new('/oauth2/authorize');
+    $url->query($params);
+    return $url;
 }
 
 1;

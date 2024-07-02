@@ -90,6 +90,16 @@ subtest 'virtual account' => sub {
                 return [];
             });
 
+        my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+        $mock_business_countries->redefine(
+            wallet_companies => sub {
+                my ($self, $type) = @_;
+                $type //= '';
+                return [$type] if ($type =~ qr/svg|virtual/);
+
+                return [];
+            });
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully after the country settings was changed');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^VRW\d+/, 'new VRW loginid';
@@ -123,6 +133,16 @@ subtest 'virtual account' => sub {
         $mock_countries->redefine(
             wallet_companies_for_country => sub {
                 my ($self, $country, $type) = @_;
+                $type //= '';
+                return [$type] if ($type =~ qr/svg|virtual/);
+
+                return [];
+            });
+
+        my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+        $mock_business_countries->redefine(
+            wallet_companies => sub {
+                my ($self, $type) = @_;
                 $type //= '';
                 return [$type] if ($type =~ qr/svg|virtual/);
 
@@ -193,6 +213,17 @@ subtest 'virtual account' => sub {
 
                 return [];
             });
+
+        my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
+        $mock_business_countries->redefine(
+            wallet_companies => sub {
+                my ($self, $type) = @_;
+                $type //= '';
+                return [$type] if ($type =~ qr/svg|virtual/);
+
+                return [];
+            });
+
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $email,
             created_for => 'account_opening'
