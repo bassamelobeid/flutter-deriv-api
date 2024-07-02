@@ -6,27 +6,19 @@ on:
   schedule:
     - cron: '05 11 * * *'
 jobs:
-  syntax_unit:
-    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
+  core_unit_syntax:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
     secrets: inherit
     with:
+      repository: regentmarkets/bom-core/bom-oauth
       env_vars: |
         OAUTH_CONFIG=/home/git/regentmarkets/bom-core/bom-oauth/oauth.conf.example
-      repository: regentmarkets/bom-core/bom-oauth
-  core:
-    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
-    secrets: inherit
-    with:
-      env_vars: |
-        OAUTH_CONFIG=/home/git/regentmarkets/bom-core/bom-oauth/oauth.conf.example
-      repository: regentmarkets/bom-core/bom-oauth
   publish_test_results:
-    needs: [ syntax_unit , core ]
-    if: success() || failure()
+    needs: [core_unit_syntax]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Upload results to DataDog
+      - name: Upload results to DataDog
         uses: regentmarkets/github-actions/datadog-publish@master
         with:
           datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}

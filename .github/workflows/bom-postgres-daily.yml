@@ -8,12 +8,7 @@ on:
   schedule:
     - cron: '26 11 * * *'
 jobs:
-  syntax_unit:
-    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
-    secrets: inherit
-    with:
-      repository: regentmarkets/bom-core/bom-postgres
-  core:
+  core_unit_syntax:
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -33,11 +28,14 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: regentmarkets/bom-core/bom-postgres
+      - name: Code structure and syntax
+        run: make syntax
+      - name: unit tests
+        run: make unit
+      - name: Start services
+        run: start_services
       - name: Core tests
-        run: |
-          sudo tee -a /etc/hosts < hosts.db
-          cat /etc/hosts
-          make test
+        run: make test
       - name: Update UID for nobody user
         uses: regentmarkets/github-actions/update-uid@master
         if: ${{ !cancelled() }}

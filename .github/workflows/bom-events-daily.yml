@@ -1,7 +1,6 @@
 name: Daily workflow (bom-events)
 run-name: Daily workflow (bom-events)
 on:
-  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:
@@ -13,7 +12,7 @@ jobs:
     with:
       repository: regentmarkets/bom-core/bom-events
   publish_test_results:
-    needs: [ syntax_unit , core ]
+    needs: [core_unit_syntax]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
