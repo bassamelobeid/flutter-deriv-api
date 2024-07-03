@@ -3,7 +3,6 @@ run-name: Daily workflow (bom-backoffice)
 env:
   PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
-  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:
@@ -57,27 +56,27 @@ jobs:
         with:
           datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
           service-name: bom-backoffice
-  # translations:
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: ${{ vars.DEBIAN_CI }}
-  #     credentials:
-  #       username: circle4regentmarkets
-  #       password: ${{ secrets.DOCKER_PASSWORD }}
-  #     options: --user nobody:nogroup
-  #   defaults:
-  #     run:
-  #       shell: bash -le {0}
-  #       working-directory: /home/git/regentmarkets/bom-core/bom-backoffice
-  #   env:
-  #     LOG_LEVEL: debug
-  #     CUSTOMERIO_TOKENS_I18N: ${{ secrets.CUSTOMERIO_TOKENS_I18N }}
-  #     WEBLATE_TOKEN: ${{ secrets.WEBLATE_TOKEN }}
-  #   steps:
-  #     - name: setup CI step
-  #       uses: regentmarkets/github-actions/ci-setup@master
-  #       with:
-  #         read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-  #         repository: regentmarkets/bom-core/bom-backoffice
-  #     - name: Automated translations
-  #       run: bin/translation-build.sh
+  translations:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ vars.DEBIAN_CI }}
+      credentials:
+        username: circle4regentmarkets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      options: --user nobody:nogroup
+    defaults:
+      run:
+        shell: bash -le {0}
+        working-directory: /home/git/regentmarkets/bom-core/bom-backoffice
+    env:
+      LOG_LEVEL: debug
+      CUSTOMERIO_TOKENS_I18N: ${{ secrets.CUSTOMERIO_TOKENS_I18N }}
+      WEBLATE_TOKEN: ${{ secrets.WEBLATE_TOKEN }}
+    steps:
+      - name: setup CI step
+        uses: regentmarkets/github-actions/ci-setup@master
+        with:
+          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
+          repository: regentmarkets/bom-core/bom-backoffice
+      - name: Automated translations
+        run: bin/translation-build.sh

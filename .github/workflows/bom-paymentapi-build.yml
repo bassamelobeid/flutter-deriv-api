@@ -8,10 +8,10 @@ on:
     paths: 
       - 'bom-paymentapi/**'
       - '.github/workflows/bom-paymentapi-build.yml'
-  # pull_request:
-  #   paths: 
-  #     - 'bom-paymentapi/**'
-  #     - '.github/workflows/bom-paymentapi-build.yml'
+  pull_request:
+    paths: 
+      - 'bom-paymentapi/**'
+      - '.github/workflows/bom-paymentapi-build.yml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true

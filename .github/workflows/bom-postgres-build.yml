@@ -10,10 +10,10 @@ on:
     paths: 
       - 'bom-postgres/**'
       - '.github/workflows/bom-postgres-build.yml'
-  # pull_request:
-  #   paths:
-  #     - 'bom-postgres/**'
-  #     - '.github/workflows/bom-postgres-build.yml'
+  pull_request:
+    paths:
+      - 'bom-postgres/**'
+      - '.github/workflows/bom-postgres-build.yml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true

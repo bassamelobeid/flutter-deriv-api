@@ -8,10 +8,10 @@ on:
     paths:
       - 'bom-config/**'
       - '.github/workflows/bom-config-build.yml'
-  # pull_request:
-  #   paths:
-  #     - 'bom-config/**'
-  #     - '.github/workflows/bom-config-build.yml'
+  pull_request:
+    paths:
+      - 'bom-config/**'
+      - '.github/workflows/bom-config-build.yml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true

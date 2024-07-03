@@ -1,14 +1,13 @@
 name: Daily workflow (bom-paymentapi)
 run-name: Daily workflow (bom-paymentapi)
 on:
-  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:
     - cron: '10 11 * * *'
 jobs:
   core_unit_syntax:
-    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@master
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-paymentapi

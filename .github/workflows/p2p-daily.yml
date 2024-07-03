@@ -1,14 +1,13 @@
 name: Daily workflow (p2p)
 run-name: Daily workflow (p2p)
 on:
-  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:
     - cron: '35 11 * * *'
 jobs:
   core_syntax:
-    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@master
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/p2p
