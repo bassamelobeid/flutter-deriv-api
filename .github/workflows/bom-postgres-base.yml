@@ -21,4 +21,3 @@ jobs:
       repository: regentmarkets/bom-core/bom-postgres
       dependent_test: true
       need_syntax: false
-

@@ -18,7 +18,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 jobs:
-  core_unit_syntax_diff:
+  core_unit_syntax:
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
