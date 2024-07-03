@@ -419,14 +419,16 @@ sub _get_authorized_token_by_loginid {
                         localize('The loginid parameter is missing or invalid. Please provide a valid loginid when multiple tokens are used.')})};
     }
 
+    # Disable this check as it's causing problems with balance that is using loginid incorrect
+    # re-enable this once FE has fixed this.
     # When there's only 1 token authorized, there shouldn't be a loginid defined.
-    if ($request_loginid) {
-        return {
-            status => 0,
-            error  => BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidToken',
-                    message_to_client => localize('The loginid parameter is not required when only one token is used.')})};
-    }
+    #if ($request_loginid) {
+    #    return {
+    #        status => 0,
+    #        error  => BOM::RPC::v3::Utility::create_error({
+    #                code              => 'InvalidToken',
+    #                message_to_client => localize('The loginid parameter is not required when only one token is used.')})};
+    #}
 
     return {
         status => 1,
