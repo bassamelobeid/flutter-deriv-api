@@ -4153,11 +4153,15 @@ sub crypto_withdrawal_rejected_email_v2 {
         $reject_code = $reject_code_info[0];
         $meta_data   = $reject_code_info[1];
     }
+    my $reject_reason = $params->{reject_remark};
+    if ($reject_reason =~ /--/) {
+        $reject_reason = (split(/--/, $params->{reject_remark}))[1];    #Get the reject reason of the str as the reject_remark is (Remarks--Reason)
+    }
     my $fiat_account_currency = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($params->{loginid}) // 'fiat';
     return BOM::Event::Services::Track::crypto_withdrawal_rejected_email_v2({
         loginid          => $params->{loginid},
         reject_code      => $reject_code,
-        reject_remark    => $params->{reject_remark},
+        reject_remark    => $reject_reason,
         meta_data        => $meta_data,
         amount           => $params->{amount},
         currency         => $params->{currency},

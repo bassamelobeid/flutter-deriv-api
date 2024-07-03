@@ -364,7 +364,7 @@
                             [% IF trx.app_id %]
                                 <input type="hidden" name="app_id" value="[% trx.app_id %]"/>
                             [% END %]
-                            <label>Set Remark:</label>
+                            <label>Private Comment:</label>
                             <div class="row">
                                 <textarea style="width:100%;" name="remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" oninput="bulkUpdateRemark(this)"></textarea>
                             </div>
