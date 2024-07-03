@@ -28,15 +28,12 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: regentmarkets/bom-core/bom-backoffice
-          need_service: false
       - name: Code structure and syntax
         run: |
           sudo mkdir -p /home/website/www/temp
           make syntax
       - name: unit tests
         run: make unit
-      - name: Start services
-        run: start_services
       - name: Core tests
         run: make test
       - name: Update UID for nobody user
@@ -54,10 +51,9 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      -
-       name: Upload results to DataDog
-       uses: regentmarkets/github-actions/datadog-publish@master
-       with:
+      - name: Upload results to DataDog
+        uses: regentmarkets/github-actions/datadog-publish@master
+        with:
           datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
           service-name: bom-backoffice
   translations:
