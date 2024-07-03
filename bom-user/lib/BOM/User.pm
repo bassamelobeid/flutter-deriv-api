@@ -2438,4 +2438,121 @@ sub check_poa_valid_period {
     return $has_eu ? '6' : $curr_client->landing_company->poa_dated_within_months;
 }
 
+=head2 set_affiliated_client_details
+
+Sets the affiliated client details for the current object in users.affilaited_clients table.
+
+=head2 ARGUMENTS
+
+=over 4
+
+=item * C<$args> - A hashref containing the following keys:
+
+=over 4
+
+=item * C<partner_token> -The new partner token.
+
+=item * C<provider> - The affiliate management provider (MyAffiliates or DynamicWorks). 
+
+=back
+
+=back
+
+=head2 RETURNS
+
+Returns 1 on success, undef on failure.
+
+=cut
+
+sub set_affiliated_client_details {
+    my ($self, $args) = @_;
+
+    my $partner_token = $args->{partner_token};
+    my $provider      = $args->{provider};
+
+    try {
+        $self->dbic->run(
+            fixup => sub {
+                $_->do('SELECT users.set_affiliated_client_details(?, ?, ?)', undef, $self->{id}, $partner_token, $provider);
+            });
+    } catch ($e) {
+        $log->errorf('Failed to set partner: %s', $e);
+        die "Failed to set partner : $e";
+    }
+
+    return 1;
+}
+
+=head2 get_affiliated_client_details
+
+Gets the affiliated client details for the current object.
+
+=head2 RETURNS
+
+Returns a hashref containing the affiliated client details.
+
+=cut
+
+sub get_affiliated_client_details {
+    my ($self, $args) = @_;
+
+    my $client_id = $args->{client_id} // undef;
+    my $provider  = $args->{provider}  // undef;
+
+    my $partner_details = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM users.get_affiliated_client_details(?, ?, ?)', {Slice => {}}, $self->{id}, $client_id, $provider);
+        });
+
+    return $partner_details;
+}
+
+=head2 update_affiliated_client_details
+
+Updates the affiliated client details for the current object.
+
+=head2 ARGUMENTS
+
+=over 4
+
+=item * C<$args> - A hashref containing the following keys:
+
+=over 4
+
+=item * C<partner_token> -The new partner token.
+
+=item * C<provider> - The affiliate management provider (MyAffiliates or DynamicWorks). 
+
+=item * C<client_id> - The client ID provided by affiliate management system.
+
+=back
+
+=back
+
+=head2 RETURNS
+
+Returns 1 on success, undef on failure.
+
+=cut
+
+sub update_affiliated_client_details {
+    my ($self, $args) = @_;
+
+    my $partner_token = $args->{partner_token} // undef;
+    my $provider      = $args->{provider}      // undef;
+    my $client_dw_id  = $args->{client_id}     // undef;
+
+    try {
+        $self->dbic->run(
+            fixup => sub {
+                $_->do('SELECT users.update_affiliated_client_details(?, ?, ?, ?)', undef, $self->{id}, $client_dw_id, $partner_token, $provider);
+            });
+    } catch ($e) {
+        $log->errorf('Failed to update partner: %s', $e);
+        return undef;
+    }
+
+    return 1;
+}
+
 1;

@@ -1,40 +1,21 @@
 <a href=[% client_details_link %]>&laquo; Return to client details</a><p>
 <table class='collapsed hover'>
     <tr><td>Partner ID:</td><td>[% partner.ID %]</td></tr>
-    <tr><td>Status:</td><td>[% partner.STATUS %]</td></tr>
     <tr>
         <td>IB Status:</td><td>
             [% IF partner.mt5_account %] YES [% ELSE %] NO [% END %]
         </td>
     <tr>
     <tr><td>MT5 account:</td><td>[% partner.mt5_account %]</td></tr>
-    <tr><td>User Name:</td><td>[% partner.USERNAME %]</td></tr>
-    <tr><td>Email:</td><td>[% partner.EMAIL %]</td></tr>
-    <tr><td>Join Date:</td><td>[% partner.JOIN_DATE %]</td></tr>
-    <tr><td>Country:</td><td>[% partner.COUNTRY %]</td></tr>
-    <tr><td>Language:</td><td>[% partner.LANGUAGE %]</td></tr>
-    <tr><td>Currency:</td><td>[% partner.CURRENCY %]</td></tr>
-    <tr><td>Balance:</td><td>[% partner.BALANCE %]</td></tr>
-    <tr><td>Payment Type:</td><td>[% partner.PAYMENT_TYPE %]</td></tr>
-     <tr><td>Minimum Payment:</td><td>[% partner.MINIMUM_PAYMENT %]</td></tr>
-    <tr><td>Parent ID:</td><td>[% partner.PARENT_ID %]</td></tr>
-    <tr><td>Parent Username:</td><td>[% partner.PARENT_USERNAME %]</td></tr>
-    <tr><td>Admin ID:</td><td>[% partner.ADMIN_ID %]</td></tr>
-    <tr><td>Admin Username:</td><td>[% partner.ADMIN_USERNAME %]</td></tr>
-    <tr><td colspan="2"><strong>Partner User Profile</strong></td><tr>
-    [% FOREACH detail IN partner.user_details %]
-        <tr><td>[% detail.NAME %]:</td><td style='word-break: break-word;'>[% detail.VALUE %]</td></tr>
-    [% END %]
-    <tr><td colspan="2"><strong>User comments</strong></td><tr>
-    [% FOREACH comment IN partner.USER_COMMENTS.COMMENT %]
-        <tr><td>[% comment.DATE %]:</td><td style='word-break: break-word;'>[% comment.COMMENT %]</td></tr>
-    [% END %]
-    <tr><td colspan="2"><strong>Subscriptions</strong></td><tr>
-    [% FOREACH subscription IN partner.SUBSCRIPTIONS.SUBSCRIPTION %]
-        <tr><td>[% subscription.PLAN_NAME %]:</td>
+    <tr><td>Email:</td><td>[% partner.email %]</td></tr>
+    <tr><td>Join Date:</td><td>[% partner.joining_date %]</td></tr>
+    <tr><td>Country:</td><td>[% partner.country %]</td></tr>
+    <tr><td>Currency:</td><td>[% partner.currency %]</td></tr>
+    <tr><td colspan="2"><strong>Plans</strong></td><tr>
+    [% FOREACH plan IN partner.plans %]
+        <tr><td>[% plan.title %]:</td>
             <td style='word-break: break-word;'>
-                PLAN ID=[% subscription.PLAN_ID %], CUSTOMER GROUP=[% subscription.CUSTOMER_GROUP %],
-                START DATE=[% subscription.START_DATE %], DESCRIPTION=[% subscription.DESCRIPTION %],
+                SIDC =[% plan.sidc %]
             </td>
         </tr>
     [% END %]

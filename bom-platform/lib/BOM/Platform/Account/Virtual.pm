@@ -23,6 +23,8 @@ sub create_account {
     my $date_first_contact = $details->{date_first_contact};
     my $brand_name         = $details->{brand_name} // request()->brand->name;
     my $country            = Business::Config::Country::Registry->new()->by_code($residence // '');
+    my $app_config         = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update;
 
     my $account_type_name = $details->{account_type} or return {error => {code => 'AccountTypeMissing'}};                # default to 'trading'
     my $account_type      = Business::Config::Account::Type::Registry->new()->account_type_by_name($account_type_name)
@@ -32,7 +34,7 @@ sub create_account {
 
     my $category = $account_type->category->name;
 
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
+    if ($app_config->system->suspend->new_accounts) {
         return {error => {code => 'invalid'}};
     }
 
@@ -120,6 +122,16 @@ sub create_account {
 
         my $landing_company = $country->virtual_company() // $virtual_company_for_brand;
         my $broker_code     = $account_type->get_single_broker_code($landing_company);
+
+        if (($utm_campaign // '') eq $app_config->partners->campaign->dynamicworks) {
+
+            my $result = $user->set_affiliated_client_details({
+                partner_token => $details->{myaffiliates_token},
+                provider      => $app_config->partners->campaign->dynamicworks,
+            });
+            delete $details->{myaffiliates_token};
+            return {error => {code => 'invalid'}} unless $result;
+        }
 
         my %args = (
             account_type       => $account_type->name,

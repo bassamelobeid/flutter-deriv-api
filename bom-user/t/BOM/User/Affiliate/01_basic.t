@@ -65,4 +65,39 @@ subtest 'create from user' => sub {
     isa_ok $aff, 'BOM::User::Affiliate', 'Got the expected instance';
 };
 
+subtest 'user create with dynamic works SIDC' => sub {
+    my $user;
+    lives_ok {
+        $user = BOM::User->create(
+            email    => 'test@tst.com',
+            password => '123456',
+        )
+    }
+    'User created';
+
+    my $affiliate_details = {
+        partner_token => 'ExampleSIDCDW',
+        provider      => 'dynamicworks'
+    };
+
+    my $result = $user->set_affiliated_client_details($affiliate_details);
+
+    ok $result, 'set_affiliated_client_details() returns true, details stored successfully';
+
+    $result = $user->get_affiliated_client_details();
+
+    is($result->{partner_token},    'ExampleSIDCDW', 'get_affiliated_client_details() returns correct details');
+    is($result->{provider},         'dynamicworks',  'Provider is correct and stored  level');
+    is($result->{user_external_id}, undef,           'Client DW ID is undef');
+
+    $result = $user->update_affiliated_client_details({partner_token => 'New token', client_id => 'example client id'});
+
+    ok $result, 'update_affiliated_client_details() returns true, details updated successfully';
+
+    $result = $user->get_affiliated_client_details();
+
+    is($result->{partner_token},    'New token',         'get_affiliated_client_details() returns correct details');
+    is($result->{user_external_id}, 'example client id', 'get_affiliated_client_details() returns correct updated details');
+};
+
 done_testing;

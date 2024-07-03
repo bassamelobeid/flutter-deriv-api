@@ -5,14 +5,16 @@
 <tr>
     <td class="label">Partner ID</td>
     <td>:
-    [% IF client.partner_id %]
-        [% client.partner_id %] (This is the ID <strong>currently registered</strong> with DynamicWorks.)
+    [% IF partner_details.partner_token %]
+        [% partner_details.partner_token %] (This is the Token/SIDC <strong>currently registered</strong> with [% partner_details.provider %].)
     [% ELSE %]
         <strong>None</strong>
     [% END %]
     <a class="btn btn--primary" href="[% request.url_for('backoffice/partners/client_partner_details.cgi', {loginid => client.loginid , broker = client.broker }) %]">View partner details</a>
     <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/partners/change_partner_id.cgi', {loginid => client.loginid , partner_id = client.partner_id }) %]">Edit partner ID</a>
+    <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/partners/link_partner.cgi', {loginid => client.loginid , partner_id = client.partner_id }) %]">Link partner</a>
     <a  class="btn btn--primary" href="[% request.url_for('backoffice/f_ib_affiliate.cgi', {loginid => client.loginid}) | url %]">IB Affiliate status</a>
+    <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/partners/create_partner_mt5tech_account.cgi', {loginid => client.loginid}) %]">Create partner MT5 tech account</a>
     </td>
 </tr>
 [% IF is_staff_compliance %]

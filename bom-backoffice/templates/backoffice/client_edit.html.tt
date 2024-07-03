@@ -193,7 +193,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     [% IF dynamic_works_enabled %]
-        [% INCLUDE 'backoffice/partners/partner_info.html.tt' client=client %]
+        [% INCLUDE 'backoffice/partners/partner_info.html.tt' client=client, partner_details=partner_details %]
     [% END %]
     
     <tr>

@@ -2946,6 +2946,21 @@ partners:
       isa: Bool
       default: 0
       global: 1
+    campaign:
+      description: "Partner Campaigns"
+      isa: section
+      contains:
+        dynamicworks:
+          description: "Dynamic Works Campaigns"
+          isa: Str
+          default: "dynamicworks"
+          global: 1
+        myaffiliates:
+          description: "MyAffiliates Campaigns"
+          isa: Str
+          default: "myaffiliates"
+          global: 1
+
 email_verification:
   description: "Settings for email verification configuration"
   isa: section

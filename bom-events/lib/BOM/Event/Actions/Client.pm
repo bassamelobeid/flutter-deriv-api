@@ -76,6 +76,8 @@ use BOM::Platform::Client::AntiFraud;
 use BOM::Platform::Utility;
 use BOM::Event::Actions::Client::IdentityVerification;
 use BOM::User::Script::AMLClientsUpdate;
+use BOM::Event::Actions::DynamicWorks;
+
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
 use Business::Config;
@@ -3838,6 +3840,10 @@ async sub signup {
 
     await check_email_for_fraud($client);
     await check_duplicate_dob_phone($client);
+
+    await BOM::Event::Actions::DynamicWorks::link_user_to_dw_affiliate({
+        binary_user_id => $client->user->id,
+    });
     return 1;
 }
 

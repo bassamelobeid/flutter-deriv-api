@@ -17,6 +17,11 @@ use List::Util qw(first);
 
 use BOM::User::Client;
 use BOM::Config::Runtime;
+use BOM::DynamicWorks::DataBase::CommissionDBModel;
+use BOM::MyAffiliates::DynamicWorks::Integration;
+
+my $commission_db = BOM::DynamicWorks::DataBase::CommissionDBModel->new;
+my $integration   = BOM::MyAffiliates::DynamicWorks::Integration->new;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -36,51 +41,31 @@ my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid, db_o
 
 code_exit_BO(qq[ERROR : Wrong loginID $encoded_loginid]) unless $client;
 
-# TODO - instantiate partner hub module
-my $partner_hub = undef;
-
-# for testing purposesA
-package PartnerHub {
-
-    sub new {
-        my $class = shift;
-        my $self  = {};
-        bless $self, $class;
-        return $self;
-    }
-
-    sub get_users {
-        my ($self, %args) = @_;
-        my $loginid = $args{VARIABLE_VALUE};
-        return {
-            USER => {
-                loginid   => $loginid,
-                USERNAME  => 'TEST_user',
-                EMAIL     => 'testemail@email.com',
-                ID        => '123456',
-                STATUS    => 'test status',
-                JOIN_DATE => '2020-01-01',
-                LANGUAGE  => 'English',
-                COUNTRY   => 'AE',
-                BALANCE   => '1000',
-                CURRENCY  => 'USD',
-            }};
-    }
-};
-
-$partner_hub = PartnerHub->new;
-
 my @partners;
-for my $sibling ($client->user->clients) {
-    my $res = $partner_hub->get_users(
-        VARIABLE_NAME  => 'affiliates_client_loginid',
-        VARIABLE_VALUE => $sibling->loginid
-    );
-    my @result =
-          ref $res->{USER} eq 'ARRAY' ? @{$res->{USER}}
-        : $res->{USER}                ? ($res->{USER})
-        :                               ();
-    push @partners, @result;
+my $binary_user = $client->user;
+$log->errorf($binary_user->id);
+
+my $affiliate_users_hashref = $commission_db->get_affiliates({binary_user_id => $binary_user->id, provider => 'dynamicworks'});
+
+code_exit_BO(qq[Could not load affiliate details]) unless $affiliate_users_hashref->{success};
+
+code_exit_BO(qq[Client is not an affiliate]) unless scalar @{$affiliate_users_hashref->{affiliates}};
+
+my $affiliate_users = $affiliate_users_hashref->{affiliates};
+
+for my $affiliate_user (@$affiliate_users) {
+    my $client = BOM::User::Client::get_instance({loginid => $affiliate_user->{payment_loginid}, db_operation => 'backoffice_replica'});
+    my $sidcs  = $integration->get_sidcs($affiliate_user->{external_affiliate_id});
+    push @partners, {
+        loginid      => $client->{loginid},
+        email        => $binary_user->{email} // $client->{email},
+        partner_id   => $affiliate_user->{external_affiliate_id},
+        joining_date => $affiliate_user->{created_at},
+        country      => Locale::Country::Extra->new()->country_from_code($client->residence),
+        currency     => $client->currency,
+        plans        => $sidcs,
+
+    };
 }
 
 code_exit_BO(qq[Client isn\'t a partner]) unless @partners;

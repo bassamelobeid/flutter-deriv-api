@@ -22,6 +22,7 @@ use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
 use BOM::Event::Actions::P2P;
 use BOM::Event::Actions::MyAffiliate;
+use BOM::Event::Actions::DynamicWorks;
 use BOM::Event::Actions::User;
 use BOM::Event::Actions::Wallets;
 use BOM::Platform::Context qw(request);
@@ -138,6 +139,7 @@ my $action_mapping = {
         idv_configuration_disable_provider          => \&BOM::Event::Actions::External::idv_configuration_disable_provider,
         idv_configuration_enable_provider           => \&BOM::Event::Actions::External::idv_configuration_enable_provider,
         recheck_onfido_face_similarity              => \&BOM::Event::Actions::Client::recheck_onfido_face_similarity,
+        link_user_to_dw_affiliate                   => \&BOM::Event::Actions::DynamicWorks::link_user_to_dw_affiliate,
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,
@@ -171,6 +173,7 @@ my $action_mapping = {
         trading_platform_password_change_failed          => \&BOM::Event::Actions::Client::trading_platform_password_change_failed,
         trading_platform_investor_password_changed       => \&BOM::Event::Actions::Client::trading_platform_investor_password_changed,
         trading_platform_investor_password_change_failed => \&BOM::Event::Actions::Client::trading_platform_investor_password_change_failed,
+        trigger_IB_mt5_technical_account                 => \&BOM::Event::Actions::MT5::trigger_IB_mt5_technical_account,
         verify_change_email                              => \&BOM::Event::Actions::Client::verify_change_email,
         derivx_account_deactivated                       => \&BOM::Event::Actions::Client::derivx_account_deactivated,
         professional_status_requested                    => \&BOM::Event::Actions::Client::professional_status_requested,

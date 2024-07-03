@@ -2,6 +2,7 @@
 - postgres-chronicle
 - postgres-client
 - postgres-feed
+- postgres-commission
 - postgres-user
 - redis
 - redis-replicated

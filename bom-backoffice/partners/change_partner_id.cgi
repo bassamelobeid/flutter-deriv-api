@@ -17,6 +17,10 @@ use f_brokerincludeall;
 
 use BOM::User;
 use BOM::Config::Runtime;
+use BOM::Platform::Event::Emitter;
+use BOM::MyAffiliates::DynamicWorks::Integration;
+
+my $dw_integration = BOM::MyAffiliates::DynamicWorks::Integration->new();
 
 use Syntax::Keyword::Try;
 use Log::Any qw($log);
@@ -54,7 +58,7 @@ BOM::Backoffice::Request::template()->process(
         loginid       => $loginid,
         ClientLoginid => $ClientLoginid,
         partner_id    => $partner_id,
-        prev_dcc      => $prev_dcc
+        prev_dcc      => $prev_dcc,
     });
 
 if ($input->{EditPartnerID}) {
@@ -63,7 +67,7 @@ if ($input->{EditPartnerID}) {
     code_exit_BO(_get_display_error_message("ERROR: Please provide client loginid"))       unless $input->{ClientLoginid};
     code_exit_BO(_get_display_error_message("ERROR: Please provide a dual control code"))  unless $input->{DCcode};
     code_exit_BO(_get_display_error_message("ERROR: You must check the verification box")) unless $input->{verification};
-    code_exit_BO(_get_display_error_message("ERROR: Invalid operation"))                   unless $input->{EditPartnerID} eq 'Edit partner ID';
+    code_exit_BO(_get_display_error_message("ERROR: Invalid operation"))                   unless $input->{EditPartnerID} eq 'Edit affiliates token';
     code_exit_BO(_get_display_error_message("ERROR: Invalid partner_id provided!"))
         if $partner_id and $partner_id !~ m/^[a-zA-Z0-9-_]+$/;
 
@@ -92,38 +96,8 @@ if ($input->{EditPartnerID}) {
     my $dcc_error = BOM::DualControl->new({
             staff           => $clerk,
             transactiontype => $input->{EditPartnerID}})->validate_client_control_code($input->{DCcode}, $client->email, $client->binary_user_id);
-    code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
+    code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg())) if !$dcc_error;
 
-    # Get User clients to update them
-    my @clients_to_update;
-    my $user         = $client->user;
-    my @user_clients = $user->clients(include_disabled => 1);
-    push @clients_to_update, @user_clients;
-
-    # Updates that apply to both active client and its corresponding clients
-    foreach my $cli (@clients_to_update) {
-
-        $cli->partner_id($partner_id);
-
-        if (not $cli->save) {
-            code_exit_BO("<p class=\"error\">ERROR : Could not update client details for client $ClientLoginid</p></p>");
-        }
-
-        print "<p class=\"success\">Client " . $cli->loginid . " saved</p>";
-    }
-
-    my $msg =
-          Date::Utility->new->datetime . " "
-        . " Edit partner token for "
-        . $ClientLoginid
-        . " by clerk=$clerk (DCcode="
-        . ($input->{DCcode} // 'No DCode provided')
-        . ") $ENV{REMOTE_ADDR}";
-
-    BOM::User::AuditLog::log($msg, '', $clerk);
-
-    $msg = 'Edit Partner ID completed successfully.';
-    code_exit_BO(_get_display_message($msg));
 }
 
 code_exit_BO();
