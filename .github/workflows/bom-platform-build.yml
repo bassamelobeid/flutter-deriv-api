@@ -21,6 +21,7 @@ jobs:
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-platform
+      run_syntax_unit_with_service: true
   dependent:
     if: ${{ github.event_name == 'pull_request' }}
     uses: ./.github/workflows/bom-platform-dependent.yml
