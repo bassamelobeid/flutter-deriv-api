@@ -8,10 +8,10 @@ on:
     paths: 
       - 'bom-quant-benchmark/**'
       - '.github/workflows/bom-quant-benchmark-build.yml'
-  pull_request:
-    paths: 
-      - 'bom-quant-benchmark/**'
-      - '.github/workflows/bom-quant-benchmark-build.yml'
+  # pull_request:
+  #   paths: 
+  #     - 'bom-quant-benchmark/**'
+  #     - '.github/workflows/bom-quant-benchmark-build.yml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -36,6 +36,7 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: regentmarkets/bom-core/bom-quant-benchmark
+          need_service: false
       - name: Code structure and syntax
         run: make syntax
   merlin:

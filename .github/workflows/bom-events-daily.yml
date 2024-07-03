@@ -1,6 +1,7 @@
 name: Daily workflow (bom-events)
 run-name: Daily workflow (bom-events)
 on:
+  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:

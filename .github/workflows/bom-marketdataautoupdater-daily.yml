@@ -1,6 +1,7 @@
 name: Daily workflow (bom-marketdataautoupdater)
 run-name: Daily workflow (bom-marketdataautoupdater)
 on:
+  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:

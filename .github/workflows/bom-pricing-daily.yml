@@ -1,6 +1,7 @@
 name: Daily workflow (bom-pricing)
 run-name: Daily workflow (bom-pricing)
 on:
+  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:

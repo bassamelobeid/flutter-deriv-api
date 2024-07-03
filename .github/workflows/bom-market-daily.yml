@@ -3,6 +3,7 @@ run-name: Daily workflow (bom-market)
 env:
   PERL_TEST_HARNESS_DUMP_TAP: /tmp/test-output
 on:
+  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:

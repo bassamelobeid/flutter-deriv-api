@@ -1,6 +1,7 @@
 name: Daily workflow (bom-feed-plugin)
 run-name: Daily workflow (bom-feed-plugin)
 on:
+  pull_request:
   schedule:
     - cron: '47 20 * * *'
 jobs:

@@ -8,10 +8,10 @@ on:
     paths: 
       - 'bom-feed-plugin/**'
       - '.github/workflows/bom-feed-plugin-build.yml'
-  pull_request:
-    paths: 
-      - 'bom-feed-plugin/**'
-      - '.github/workflows/bom-feed-plugin-build.yml'
+  # pull_request:
+  #   paths: 
+  #     - 'bom-feed-plugin/**'
+  #     - '.github/workflows/bom-feed-plugin-build.yml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true

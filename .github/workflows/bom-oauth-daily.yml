@@ -1,6 +1,7 @@
 name: Daily workflow (bom-oauth)
 run-name: Daily workflow (bom-oauth)
 on:
+  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:

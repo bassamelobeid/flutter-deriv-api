@@ -1,6 +1,7 @@
 name: Daily workflow (p2p)
 run-name: Daily workflow (p2p)
 on:
+  pull_request:
   workflow_dispatch:
   workflow_call:
   schedule:
