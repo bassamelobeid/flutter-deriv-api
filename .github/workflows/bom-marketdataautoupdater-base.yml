@@ -18,3 +18,4 @@ jobs:
       debianci_image: ${{ inputs.debianci_image }}
       repository: regentmarkets/bom-core/bom-marketdataautoupdater
       dependent_test: true
+      run_syntax_unit_with_service: true

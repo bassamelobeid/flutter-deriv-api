@@ -12,6 +12,7 @@ jobs:
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-platform
+      run_syntax_unit_with_service: true
   publish_test_results:
     needs: [core_unit_syntax]
     if: ${{ !cancelled() }}
@@ -22,4 +23,3 @@ jobs:
         with:
           datadog-api-key: ${{ secrets.DD_PROD_CI_API_KEY }}
           service-name: bom-platform
-          run_syntax_unit_with_service: true

@@ -12,3 +12,4 @@ jobs:
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-marketdataautoupdater
+      run_syntax_unit_with_service: true
