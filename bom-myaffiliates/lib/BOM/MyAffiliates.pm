@@ -86,6 +86,35 @@ sub get_myaffiliates_id_for_promo_code {
     return $self->_find_affiliate_by_variable('betonmarkets_promo_code' => "%;$promocode;%");
 }
 
+=item check_myaffiliates_user_by_email
+Call their Search API to find a user with a particular variable set.
+Returns affiliate ids if user found based on particular email.
+Used for extracting myaffiliates users who have same email as set in 
+deriv account for verification purposes. 
+
+ eg.:
+    check_myaffiliates_user_by_email('test@test.com');
+
+=cut
+
+sub check_myaffiliates_user_by_email {
+    my ($self, $value) = @_;
+
+    my $user = $self->get_users(
+        VARIABLE_NAME  => "EMAIL",
+        VARIABLE_VALUE => $value,
+    ) or croak $self->errstr;
+    return 0 unless $user->{USER};    # no match
+
+    if (ref($user->{USER}) eq "ARRAY") {
+        return 1 if first { defined $_->{ID} } @{$user->{USER}};    # multiple matches
+    }
+
+    return 1 if $user->{USER}->{ID};
+
+    return 0;
+}
+
 =item _find_affiliate_by_variable
 
  Call their Search API to find a user with a particular variable set.

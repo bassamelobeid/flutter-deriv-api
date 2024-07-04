@@ -928,6 +928,7 @@ SQL
         is_npj                             => $is_npj,
         onfido_pdf_url                     => $onfido_pdf_url,
         is_tin_manually_approved           => $client->is_tin_manually_approved,
+        partner_details                    => $client->user->get_affiliated_client_details,
         auto_tin_approval_enabled          => $app_config->feature_flags->auto_tin_approval,
         onfido_suspended                   => BOM::Config::Runtime->instance->app_config->system->suspend->onfido,
         is_idv_validated                   => $client->is_idv_validated,

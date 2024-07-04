@@ -25,7 +25,7 @@ my $title = 'Make dual control code';
 my $now   = Date::Utility->new;
 my $input = request()->params;
 
-unless ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token|BULKTAGGING/) {
+unless ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token|BULKTAGGING|Edit partner ID/) {
     code_exit_BO('please select a valid transaction type to update client details', $title);
 }
 

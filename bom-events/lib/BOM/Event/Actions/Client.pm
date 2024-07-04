@@ -76,6 +76,8 @@ use BOM::Platform::Client::AntiFraud;
 use BOM::Platform::Utility;
 use BOM::Event::Actions::Client::IdentityVerification;
 use BOM::User::Script::AMLClientsUpdate;
+use BOM::Event::Actions::DynamicWorks;
+
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
 use Business::Config;
@@ -3838,6 +3840,10 @@ async sub signup {
 
     await check_email_for_fraud($client);
     await check_duplicate_dob_phone($client);
+
+    await BOM::Event::Actions::DynamicWorks::link_user_to_dw_affiliate({
+        binary_user_id => $client->user->id,
+    });
     return 1;
 }
 
@@ -4153,11 +4159,15 @@ sub crypto_withdrawal_rejected_email_v2 {
         $reject_code = $reject_code_info[0];
         $meta_data   = $reject_code_info[1];
     }
+    my $reject_reason = $params->{reject_remark};
+    if ($reject_reason =~ /--/) {
+        $reject_reason = (split(/--/, $params->{reject_remark}))[1];    #Get the reject reason of the str as the reject_remark is (Remarks--Reason)
+    }
     my $fiat_account_currency = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($params->{loginid}) // 'fiat';
     return BOM::Event::Services::Track::crypto_withdrawal_rejected_email_v2({
         loginid          => $params->{loginid},
         reject_code      => $reject_code,
-        reject_remark    => $params->{reject_remark},
+        reject_remark    => $reject_reason,
         meta_data        => $meta_data,
         amount           => $params->{amount},
         currency         => $params->{currency},

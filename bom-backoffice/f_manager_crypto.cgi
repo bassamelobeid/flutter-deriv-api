@@ -664,10 +664,12 @@ sub validation_error_reject {
     return 'Unexpected rejection reason'
         unless defined REJECTION_REASONS->{$rejection_reason};
 
-    $transaction_info->{remark} .=
+    $transaction_info->{remark} .= '--'
+        . (
           $rejection_reason eq 'other'
         ? $transaction_info->{other_reason}
-        : "[@{[ REJECTION_REASONS->{$rejection_reason}->{remark} ]}]";
+        : "@{[ REJECTION_REASONS->{$rejection_reason}->{remark} ]}"
+        );
 
     return undef;
 }

@@ -1,0 +1,48 @@
+
+[% IF sidcs.size > 0 %]
+[% sidcs %]
+[% END %]
+
+[% IF sidcs.size > 0 %]
+    [% WRAPPER layout title="SELECT CAMPAIGN SIDC" %]
+        <table border="0" width="100%" id="client_edit" onload="init_text_validations()">
+            <thead>
+                <tr>
+                    <th>SIDC</th>
+                    <th>Campaign&sol;Plan</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                [% FOREACH sidc IN sidcs %]
+                <tr>
+                    <td class="tokencell">[% sidc.sidc %]</td>
+                    <td class="tokencell">[% sidc.title %]</td>
+                    <td class="tokencell">
+                        <form id='EditPartnerIDWithSIDC' action="[% request.url_for('backoffice/partners/select_partner_sidc.cgi') | none %]" method="POST">
+                            <input type="hidden" name="PartnerSIDC" value="[% sidc.sidc %]">
+                            <input type="hidden" name="ClientLoginid" value="[% ClientLoginid %]">
+                            <input type="hidden" name="partner_id" value="[% partner_id %]">
+                            <input type="hidden" name="DCcode" value="[% prev_dcc %]">
+                            <input type='submit' name='EditPartnerIDWithSIDC' class="btn btn--primary" value='Select SIDC'/>
+                        </form>
+                    </td>
+                </tr>
+                [% END %]
+            </tbody>
+        </table>
+    [% END %]
+[% ELSE %]
+    [% WRAPPER layout title="SELECT CAMPAIGN SIDC" %]
+        <div class="alert alert--warning">No SIDC found for this partner</div>
+    [% END %]
+[% END %]
+
+[% BLOCK layout %]
+    <div class="card">
+        <div class="card__label toggle">[% title %]</div>
+        <div class="card__content">
+            [% content | none %]
+        </div>
+    </div>
+[% END %]

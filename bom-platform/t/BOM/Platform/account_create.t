@@ -6,7 +6,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use Array::Utils;
 
-use Test::More (tests => 12);
+use Test::More (tests => 13);
 use Test::Exception;
 use Test::Fatal;
 use Test::Warn;
@@ -884,6 +884,41 @@ subtest 'create affiliate' => sub {
     isa_ok $aff->{client}, 'BOM::User::Affiliate', 'Expected package for CRA';
 };
 
+subtest 'create affiliate virtual account with dynamic works SIDC' => sub {
+    my ($vr_client, $aff, $user);
+    lives_ok {
+        my $vr_acc = create_vr_acc({
+            email              => 'afftest1@binary.com',
+            password           => 'okcomputer',
+            residence          => 'br',
+            myaffiliates_token => 'ExampleDWSIDC',
+            utm_campaign       => 'dynamicworks',
+        });
+        ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+    }
+    'create VR acc with dyanmic works SIDC';
+
+    my $result = $user->get_affiliated_client_details();
+
+    is($result->{provider},       'dynamicworks',  "Provider stored successfully");
+    is($result->{binary_user_id}, $user->id,       "Binary user ID stored successfully");
+    is($result->{partner_token},  "ExampleDWSIDC", "Partner token stored successfully");
+
+    lives_ok {
+        $vr_acc = create_vr_acc({
+            email     => 'afftest2@binary.com',
+            password  => 'okcomputer',
+            residence => 'br',
+        });
+        ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+    }
+    'create VR acc without dynamicwork SIDC';
+
+    $result = $user->get_affiliated_client_details();
+
+    ok(!$result, "No partner details stored in users.partner for user without dynamic works SIDC");
+};
+
 subtest 'create real account with resident self declaration' => sub {
     my $broker = 'MF';
     my ($vr_client, $user, $real_client, $real_user);
@@ -1319,6 +1354,7 @@ sub create_vr_acc {
                 myaffiliates_token => $args->{myaffiliates_token},
                 email_consent      => $args->{email_consent},
                 email_verified     => $args->{email_verified},
+                utm_campaign       => $args->{utm_campaign} // '',
             }});
 }
 

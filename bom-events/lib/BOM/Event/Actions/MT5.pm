@@ -25,6 +25,7 @@ use BOM::Config::MT5;
 use BOM::Rules::Engine;
 use BOM::Platform::Context::Request;
 use Future::AsyncAwait;
+use BOM::Event::Actions::DynamicWorks;
 
 use Email::Stuffer;
 use YAML::XS;
@@ -244,6 +245,8 @@ sub new_mt5_signup {
     } catch ($e) {
         $log->errorf('Unable to send email to client for new mt5 account open due to error: %s', $e);
     }
+
+    BOM::Event::Actions::DynamicWorks::link_user_to_dw_affiliate({binary_user_id => $client->binary_user_id});
 
     # Add email params to track signup event
     $data->{client_first_name} = $client->first_name;
