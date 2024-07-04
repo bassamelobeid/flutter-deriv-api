@@ -1374,11 +1374,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
         # Check if residence is valid or not
         my $valid_change = _residence_change_validation({
-            old_residence   => $client->residence,
-            new_residence   => $new_residence,
-            all_clients     => $user_clients,
-            is_virtual_only => $is_virtual_only,
-            has_mt5_logins  => $mt_logins->@* ? 1 : 0
+            old_residence  => $client->residence,
+            new_residence  => $new_residence,
+            is_legacy      => $client->is_legacy,
+            all_clients    => $user_clients,
+            has_mt5_logins => $mt_logins->@* ? 1 : 0
         });
 
         unless ($valid_change) {
@@ -2763,26 +2763,25 @@ sub _residence_change_validation {
     my $data = shift;
 
     my $new_residence = $data->{new_residence};
-    my @all_clients   = @{$data->{all_clients}};
+    my @all_clients   = $data->{all_clients}->@*;
 
     my $countries_instance = request()->brand->countries_instance;
 
-    # Get the list of landing companies, as per residence
+    # Get the list of landing companies for a country
     my $get_lc = sub {
-        my ($residence) = @_;
+        my $country = shift;
 
-        my @broker_list;
+        my @landing_companies;
 
-        my $gc = $countries_instance->gaming_company_for_country($residence);
-        my $fc = $countries_instance->financial_company_for_country($residence);
+        if ($data->{is_legacy}) {
+            my $gc = $countries_instance->gaming_company_for_country($country);
+            my $fc = $countries_instance->financial_company_for_country($country);
+            @landing_companies = grep { $_ } $gc, $fc;
+        } else {
+            @landing_companies = $countries_instance->wallet_companies_for_country($country, 'real')->@*;
+        }
 
-        return () unless ($gc || $fc);
-
-        # Either gc or fc is none, so that's why the check is needed
-        push @broker_list, $gc if $gc;
-        push @broker_list, $fc if $fc;
-
-        return uniq @broker_list;
+        return uniq @landing_companies;
     };
 
     # Check if the new residence is allowed to trade on MT5 or not
@@ -2806,17 +2805,17 @@ sub _residence_change_validation {
     my @current_lc;
     push @current_lc, $_->landing_company->short for grep { !$_->is_virtual } @all_clients;
 
-# Since we exclude VR clients, so if they don't have a real account but have a MT5
-# account, we need to get the landing companies in a different way
+    # Since we exclude VR clients, so if they don't have a real account but have a MT5
+    # account, we need to get the landing companies in a different way
     @current_lc = $get_lc->($data->{old_residence}) unless @current_lc;
 
     # There is no need for repeated checks
-    foreach my $broker (uniq @current_lc) {
-        return undef unless any { $_ eq $broker } @new_lc;
+    foreach my $lc (uniq @current_lc) {
+        return undef unless any { $_ eq $lc } @new_lc;
     }
 
-# If the client has MT5 accounts but the new residence does not allow mt5 trading
-# The change should not happen (Regulations)
+    # If the client has MT5 accounts but the new residence does not allow mt5 trading
+    # The change should not happen (Regulations)
     if ($data->{has_mt5_logins}) {
         return undef
             unless ($allowed_to_trade_mt5->('standard')
