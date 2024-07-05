@@ -20,3 +20,4 @@ jobs:
       repository: regentmarkets/bom-core/bom-myaffiliates
       dependent_test: true
       need_syntax: false
+      run_syntax_unit_with_service: true

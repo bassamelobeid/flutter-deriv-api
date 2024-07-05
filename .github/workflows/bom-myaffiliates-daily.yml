@@ -13,6 +13,7 @@ jobs:
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-myaffiliates
+      run_syntax_unit_with_service: true
   publish_test_results:
     needs: [core_unit_syntax]
     if: ${{ !cancelled() }}
