@@ -43,7 +43,7 @@ sub BrokerPresentation {
         . request()->url_for('css/' . $_)
         . '"/>'
         for (
-        'style_new.css?v=2022-09-07', 'sell_popup.css', 'external/grid.css?v=2021-03-31',
+        'style_new.css?v=2024-06-28', 'sell_popup.css', 'external/grid.css?v=2021-03-31',
         'external/jquery-ui.custom.css?v=2021-05-06', 'jquery-ui.multidatespicker.css'
         );
 

@@ -282,6 +282,56 @@ $(document).ready(function() {
         var $financial_assessment_score = $('#financial_assessment_score');
         $financial_assessment_score.after('<textarea cols=150 rows=20>' + JSON.stringify(JSON.parse($financial_assessment_score.text()), null, 4) + '</textarea>')
     });
+
+    const $status_table = $('#status_table');
+    if ($status_table.length > 0) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const loginID = urlParams.get('loginID');
+        const status_loader = $('#status_loader');
+        status_loader.show();
+
+        $.ajax({
+            type: 'POST',
+            url: window.location.href.split('f_client')[0] + 'compute_virtual_status.cgi',
+            data: `loginID=${loginID}`,
+            success: function(response) {
+                // If response doesn't have any HTML, it returns '1' and we don't want to append it to the table
+                if (response != '1') $status_table.append(response);
+                status_loader.hide();
+            },
+            error: function(jqXHR, textStatus) {
+                // Not removing loader in case of failure, and logging error to console
+                console.error('Failed computing statuses: ' + textStatus);
+            }
+        });
+    }
+
+    const $poo_access = $('#poo_section');
+    if ($poo_access.length > 0) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const loginID = urlParams.get('loginID');
+        const poo_loader = $('#poo_loader');
+        poo_loader.show();
+
+        $.ajax({
+            type: 'POST',
+            url: window.location.href.split('f_client')[0] + 'client_poo_details.cgi',
+            data: `loginID=${loginID}`,
+            success: function(poo_response) {
+                $('#poo_placeholder').replaceWith(poo_response);
+
+                // Re-add listeners for checkboxes
+                $(document).on('change', 'input.check2[type="checkbox"]', function() {
+                    $(this).toggleClass('data-changed', $(this).prop('checked'));
+                });
+                poo_loader.hide();
+            },
+            error: function(jqXHR, textStatus) {
+                // Not removing loader in case of failure, and logging error to console
+                console.error('Failed populating POO section: ' + textStatus);
+            }
+        });
+    }
 });
 
 function trigger_quant_graph() {

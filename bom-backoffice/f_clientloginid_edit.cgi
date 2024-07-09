@@ -56,7 +56,6 @@ use BOM::Backoffice::UserService;
 use BOM::Service;
 
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
-use BOM::Backoffice::VirtualStatus;
 use feature 'switch';
 
 BOM::Backoffice::Sysinit::init();
@@ -1803,9 +1802,9 @@ $log->infof("%s: Loading statuses", request()->id);
 my %client_statuses =
     map { $_ => $client->status->$_ } @{$client->status->all};
 for my $type (get_untrusted_types()->@*) {
-    my $code             = $type->{code};
-    my $siblings_summary = siblings_status_summary($client, $code) =~ s/(<span>|<\/span>)//gr;
+    my $code = $type->{code};
     if (my $status = $client->status->$code) {
+        my $siblings_summary = siblings_status_summary($client, $code) =~ s/(<span>|<\/span>)//gr;
         delete $client_statuses{$type->{code}};
         push(
             @statuses,
@@ -1820,9 +1819,6 @@ for my $type (get_untrusted_types()->@*) {
             });
     }
 }
-
-# Combine the computed list of virtual statuses
-%client_statuses = (%client_statuses, BOM::Backoffice::VirtualStatus::get($client));
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
