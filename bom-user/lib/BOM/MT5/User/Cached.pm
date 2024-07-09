@@ -11,7 +11,7 @@ use BOM::MT5::User::Async;
 use Future::AsyncAwait;
 use RedisDB;
 use Syntax::Keyword::Try;
-use Log::Any qw($log);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 use constant {
     CACHE_EXPIRATION_SECONDS => 300,
 };
@@ -30,8 +30,6 @@ sub _initiate_new_redis_instance {
 sub _get_redis_instance {
     state $redis_instance;
     return $redis_instance if ($redis_instance and $redis_instance->ping);
-
-    $log->info("Creating new Redis instance for MT5 API cache");
     $redis_instance = _initiate_new_redis_instance();
     return $redis_instance;
 }
@@ -41,7 +39,7 @@ sub _set_cache {
     try {
         _get_redis_instance->set($key, encode_json($value), 'EX', $expiration // CACHE_EXPIRATION_SECONDS);
     } catch {
-        $log->warn("Failed to set MT5 API cache");
+        stats_inc('mt5.api.redis.cache.failed', {tags => ['failed_on:set']});
     };
 }
 
@@ -57,7 +55,7 @@ sub invalidate_mt5_api_cache {
     try {
         _get_redis_instance->del("get_user:$mt5_loginid");
     } catch {
-        $log->warn("Failed to delete MT5 API cache");
+        stats_inc('mt5.api.redis.cache.failed', {tags => ['failed_on:delete']});
     };
 }
 
@@ -69,7 +67,7 @@ async sub get_user_cached {
         my $cached_user = _get_cache($cache_key);
         return $cached_user if $cached_user;
     } catch {
-        $log->warn("Failed to get MT5 API cache");
+        stats_inc('mt5.api.redis.cache.failed', {tags => ['failed_on:get']});
     }
 
     my $user = await BOM::MT5::User::Async::get_user($mt5_loginid);
