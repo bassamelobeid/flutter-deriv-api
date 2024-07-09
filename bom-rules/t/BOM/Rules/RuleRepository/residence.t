@@ -150,18 +150,18 @@ subtest 'residence.account_type_is_available_for_real_account_opening' => sub {
     $mock_countries->unmock_all;
 };
 
-subtest 'rule residence.is_signup_allowed' => sub {
-    my $rule_name = 'residence.is_signup_allowed';
+subtest 'rule residence.is_country_enabled' => sub {
+    my $rule_name = 'residence.is_country_enabled';
 
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Either residence or loginid is required/, 'loginid is required';
     my $args = {residence => 'es'};
 
-    my $is_allowed     = 0;
+    my $is_enabled     = 0;
     my $mock_countries = Test::MockModule->new('Business::Config::Country');
     $mock_countries->redefine(
         signup => sub {
             return {
-                account => $is_allowed,
+                country_enabled => $is_enabled,
             };
         });
 
@@ -171,9 +171,9 @@ subtest 'rule residence.is_signup_allowed' => sub {
         rule        => $rule_name,
         description => 'Signup is not allowed for country of residence'
         },
-        'correct error when signup is not allowed';
-    $is_allowed = 1;
-    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'rule apples if signup is allowed';
+        'correct error when country is disabled';
+    $is_enabled = 1;
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'rule passes if country is enabled';
 
     $mock_countries->unmock_all;
 };

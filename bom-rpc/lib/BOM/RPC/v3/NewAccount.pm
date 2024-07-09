@@ -688,6 +688,9 @@ sub create_virtual_account {
 
         die BOM::RPC::v3::Utility::create_error_by_code('invalid residence')
             unless any { $_ eq "virtual" } $allowed_companies->@*;
+
+        die BOM::RPC::v3::Utility::create_error_by_code('WalletSignupUnavailable')
+            unless $country->signup->{wallet};
     }
 
     # Create account

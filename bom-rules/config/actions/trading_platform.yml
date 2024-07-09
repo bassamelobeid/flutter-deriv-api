@@ -3,7 +3,7 @@ new_trading_account:
   ruleset:
     - client.not_disabled
     - client.has_currency_set
-    - residence.is_signup_allowed
+    - residence.is_country_enabled
     - trading_account.should_match_landing_company
     - trading_account.should_be_age_verified
     - trading_account.allowed_currency

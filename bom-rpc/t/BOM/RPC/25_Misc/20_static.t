@@ -19,6 +19,7 @@ use BOM::User::Password;
 use BOM::RPC::v3::Static;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use JSON::MaybeXS                              qw(decode_json encode_json);
+use List::Util;
 
 populate_exchange_rates();
 
@@ -816,6 +817,22 @@ subtest 'disabled countries' => sub {
 
     cmp_bag [@disabled], [qw/ae an as be by ca cu gb gg gu hk im ir je jo kp ky mm mp mt my pr py rw sg sn sy um us vi vu/],
         'Expected disabled countries';
+};
+
+subtest 'wallet_signup_allowed' => sub {
+
+    my $mock_countries = Test::MockModule->new('Business::Config::Country');
+    $mock_countries->redefine(
+        signup => sub {
+            return {
+                wallet => 1,
+            };
+        });
+
+    BOM::Config::Redis::redis_rpc_write()->del('RESIDENCE_LIST::en');
+    my $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
+
+    ok((List::Util::all { $_->{wallet_signup} } $result->@*), 'all countries have is_wallet_signup_allowed');
 };
 
 done_testing();

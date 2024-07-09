@@ -4,7 +4,7 @@ new_account:
     - user.email_is_verified
     - client.residence_is_not_empty
     - profile.residence_cannot_be_changed
-    - residence.is_signup_allowed
+    - residence.is_country_enabled
     - residence.account_type_is_available
     - residence.not_restricted
     - residence.account_type_is_available_for_real_account_opening
@@ -56,7 +56,7 @@ activate_account:
           - user.email_is_verified
           - client.residence_is_not_empty
           - profile.residence_cannot_be_changed
-          - residence.is_signup_allowed
+          - residence.is_country_enabled
           - residence.account_type_is_available
           - residence.not_restricted
           - residence.account_type_is_available_for_real_account_opening

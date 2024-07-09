@@ -176,6 +176,9 @@ my %financial_data = (
 );
 
 subtest 'create account' => sub {
+
+    my $mock_countries = Test::MockModule->new('Brands::Countries');
+
     foreach my $broker (keys %$vr_details) {
         subtest $broker => sub {
             foreach my $acc_details ($vr_details->{$broker}->@*) {
@@ -371,7 +374,6 @@ subtest 'create account' => sub {
                     account_type => 'virtual',
                     residence    => 'id'
                 }});
-
         ($vr_wallet_client, $user_wallet) = @{$vr_wallet_acc}{'client', 'user'};
 
     }
@@ -1267,17 +1269,17 @@ subtest 'create partner in restrited countries' => sub {
     my $mock_countries            = Test::MockModule->new('Brands::Countries');
     my $is_restricted             = 1;
     my $is_partner_signup_allowed = 0;
-    my $is_signup_allowed         = 1;
+    my $is_country_enabled        = 1;
     $mock_countries->redefine(restricted_country        => sub { return $is_restricted });
-    $mock_countries->redefine(is_signup_allowed         => sub { return $is_signup_allowed });
+    $mock_countries->redefine(is_country_enabled        => sub { return $is_country_enabled });
     $mock_countries->redefine(is_partner_signup_allowed => sub { return $is_partner_signup_allowed });
 
     $mock_business_countries->redefine(restricted => sub { return $is_restricted });
     $mock_business_countries->redefine(
         signup => sub {
             return +{
-                account  => $is_signup_allowed,
-                partners => $is_partner_signup_allowed,
+                country_enabled => $is_country_enabled,
+                partners        => $is_partner_signup_allowed,
             };
         });
 
@@ -1292,7 +1294,7 @@ subtest 'create partner in restrited countries' => sub {
 
     $is_restricted             = 0;
     $is_partner_signup_allowed = 0;
-    $is_signup_allowed         = 0;
+    $is_country_enabled        = 0;
 
     $res = create_vr_acc({
         email     => 'partner_00_1@binary.com',
@@ -1304,7 +1306,7 @@ subtest 'create partner in restrited countries' => sub {
 
     $is_restricted             = 1;
     $is_partner_signup_allowed = 0;
-    $is_signup_allowed         = 0;
+    $is_country_enabled        = 0;
 
     $res = create_vr_acc({
         email     => 'partner_00_1@binary.com',
@@ -1316,7 +1318,7 @@ subtest 'create partner in restrited countries' => sub {
 
     $is_restricted             = 0;
     $is_partner_signup_allowed = 1;
-    $is_signup_allowed         = 0;
+    $is_country_enabled        = 0;
 
     $res = create_vr_acc({
         email     => 'partner_00_1@binary.com',
@@ -1328,7 +1330,7 @@ subtest 'create partner in restrited countries' => sub {
 
     $is_restricted             = 1;
     $is_partner_signup_allowed = 1;
-    $is_signup_allowed         = 1;
+    $is_country_enabled        = 1;
 
     $res = create_vr_acc({
         email     => 'partner_00_2@binary.com',

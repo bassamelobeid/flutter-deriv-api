@@ -156,6 +156,7 @@ rpc residence_list => sub {
         $option->{disabled}                                  = 'DISABLED' if $country_config->disabled();
         $option->{selected}                                  = 'selected' if request()->country_code eq $country_code && !$option->{disabled};
         $option->{account_opening_self_declaration_required} = 1          if $country_config->signup->{self_declaration};
+        $option->{wallet_signup}                             = 1          if $country_config->signup->{wallet};
 
         push @$residence_countries_list, $option;
     }

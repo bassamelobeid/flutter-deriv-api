@@ -151,7 +151,7 @@ sub validate_user {
     my $brand              = request()->brand;
     my $countries_instance = $brand->countries_instance;
     my $countries_list     = $countries_instance->countries_list;
-    die +{code => 'InvalidAccountRegion'} unless $countries_list->{$residence} && $countries_instance->is_signup_allowed($residence);
+    die +{code => 'InvalidAccountRegion'} unless $countries_list->{$residence} && $countries_instance->is_country_enabled($residence);
 
     # Check is account is mismacth with account_type
     die +{code => 'AccountTypesMismatch'} if ($client->is_virtual() and $new_account_params->{account_type} ne 'demo');
