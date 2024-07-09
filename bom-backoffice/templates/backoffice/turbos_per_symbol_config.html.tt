@@ -7,6 +7,9 @@
         <th>Symbol</th>
         <th>number of barriers</th>
         <th>min distance from spot</th>
+        <th>min expected spot movement (t)</th>
+        <th>max expected spot movement (t)</th>
+        <th>increment_percentage</th>
         <th>ticks commission up tick</th>
         <th>ticks commission up intraday</th>
         <th>ticks commission up daily</th>
@@ -26,6 +29,9 @@
         <td>[% data.symbol %]</td>
         <td><input type="text" name="num_of_barriers" value="[% data.num_of_barriers %]" data-lpignore="true"/></td>
         <td><input type="text" name="min_distance_from_spot" value="[% data.min_distance_from_spot %]" data-lpignore="true"/></td>
+        <td><input type="text" name="min_expected_spot_movement_t" value="[% data.min_expected_spot_movement_t %]" data-lpignore="true"/></td>
+        <td><input type="text" name="max_expected_spot_movement_t" value="[% data.max_expected_spot_movement_t %]" data-lpignore="true"/></td>
+        <td><input type="text" name="increment_percentage" value="[% data.increment_percentage %]" data-lpignore="true"/></td>
         <td><input type="text" name="ticks_commission_up_tick" value="[% data.ticks_commission_up_tick %]" data-lpignore="true"/></td>
         <td><input type="text" name="ticks_commission_up_intraday" value="[% data.ticks_commission_up_intraday %]" data-lpignore="true"/></td>
         <td><input type="text" name="ticks_commission_up_daily" value="[% data.ticks_commission_up_daily %]" data-lpignore="true"/></td>
@@ -59,6 +65,9 @@ function SaveTurbosConfig(symbol) {
             symbol: symbol,
             num_of_barriers: el.find('input[name="num_of_barriers"]').val(),
             min_distance_from_spot: el.find('input[name="min_distance_from_spot"]').val(),
+            min_expected_spot_movement_t: el.find('input[name="min_expected_spot_movement_t"]').val(),
+            max_expected_spot_movement_t: el.find('input[name="max_expected_spot_movement_t"]').val(),
+            increment_percentage: el.find('input[name="increment_percentage"]').val(),
             ticks_commission_up_tick: el.find('input[name="ticks_commission_up_tick"]').val(),
             ticks_commission_up_intraday: el.find('input[name="ticks_commission_up_intraday"]').val(),
             ticks_commission_up_daily: el.find('input[name="ticks_commission_up_daily"]').val(),
@@ -67,7 +76,7 @@ function SaveTurbosConfig(symbol) {
             ticks_commission_down_daily: el.find('input[name="ticks_commission_down_daily"]').val(),
             max_multiplier: el.find('input[name="max_multiplier"]').val(),  
             max_multiplier_stake: el.find('input[name="max_multiplier_stake"]').val(),
-            min_multiplier: el.find('input[name="min_multiplier"]').val(),
+             min_multiplier: el.find('input[name="min_multiplier"]').val(),
             min_multiplier_stake: el.find('input[name="min_multiplier_stake"]').val(),
             max_open_position: el.find('input[name="max_open_position"]').val(),
         },

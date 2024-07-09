@@ -5,8 +5,9 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Turbos';
 
 use BOM::Product::Exception;
-use BOM::Product::Utils   qw(rounddown);
-use Format::Util::Numbers qw(financialrounding);
+use Format::Util::Numbers      qw/financialrounding formatnumber/;
+use BOM::Product::Utils        qw(rounddown);
+use BOM::Product::Role::Turbos qw(SECONDS_IN_A_YEAR);
 
 =head1 DESCRIPTION
 
@@ -34,6 +35,8 @@ Adds markup to theoretical blackscholes option price
 sub _build_ask_probability {
     my ($self, $tick) = @_;
 
+    $tick //= $self->current_tick;
+
     my $prob = Math::Util::CalculatedValue::Validatable->new({
         name        => 'ask_probability',
         description => 'The ask value',
@@ -52,14 +55,16 @@ Adds markup to theoretical blackscholes option price
 =cut
 
 sub _build_bid_probability {
-    my $self = shift;
+    my ($self, $tick, $barrier) = @_;
+    $tick    //= $self->entry_tick;
+    $barrier //= $self->barrier->as_absolute;
 
     my $prob = Math::Util::CalculatedValue::Validatable->new({
         name        => 'bid_probability',
         description => 'The bid value',
         set_by      => 'BOM::Product::Role::Turbos',
         minimum     => 0,
-        base_amount => $self->barrier->as_absolute - $self->theo_bid_probability($self->entry_tick),
+        base_amount => $barrier - $self->theo_bid_probability($tick),
     });
 
     return $prob;
@@ -93,6 +98,79 @@ sub check_expiry_conditions {
         $self->value($value);
     }
     return;
+}
+
+=head2 calculate_bs_ask_barrier
+
+Calculates the barrier based on the expected spot movement from the current spot, adjusted for volatility. 
+This function can compute both the closest and furthest barriers depending on the value passed.
+
+=over 4
+
+=item C<$expected_spot_movement_step>
+
+Specifies the expected spot movement in steps. 
+
+Pass C<$min_expected_spot_movement_step> to calculate the closest barrier relative to the current spot.
+
+Pass C<$max_expected_spot_movement_step> to calculate the furthest barrier relative to the current spot.
+
+=back
+
+=cut
+
+sub calculate_bs_ask_barrier {
+    my ($self, $expected_spot_movement_step) = @_;
+
+    my $tick_at_min_start = $self->_tick_at_min_start;
+    my $volatility        = $self->pricing_vol;
+
+    my $expected_spot_movement_sqrt   = sqrt($expected_spot_movement_step / SECONDS_IN_A_YEAR);
+    my $vol_exp_spot_movement_product = $volatility * $expected_spot_movement_sqrt;
+    my $barrier                       = $tick_at_min_start->quote * (1 + $vol_exp_spot_movement_product);
+    my $bs_ask_barrier                = $self->_build_bid_probability($tick_at_min_start, $barrier)->amount;
+
+    return $bs_ask_barrier;
+}
+
+=head2 calculate_max_stake
+
+Calculate max stake for commission down.
+
+=over 4
+
+=item * volatility - volatility of an underlying symbol. 
+
+=item * min_expected_spot_movement_step - minimum expected spot movement from BO. 
+
+=back
+
+=cut
+
+sub calculate_max_stake {
+    my ($self, $min_expected_spot_movement_step) = @_;
+    my $volatility                      = $self->pricing_vol;
+    my $min_expected_spot_sqrt          = sqrt($min_expected_spot_movement_step / SECONDS_IN_A_YEAR);
+    my $volatility_min_exp_spot_product = $volatility * $min_expected_spot_sqrt;
+    return ($self->bid_spread + $volatility_min_exp_spot_product);
+}
+
+=head2 calculate_barrier
+ 
+calculating the barrier after selecting payout per point
+
+=cut
+
+sub calculate_barrier {
+    my $self = shift;
+
+    my $current_spot     = $self->_tick_at_min_start->quote;
+    my $commission       = $self->bid_spread;
+    my $payout_per_point = $self->number_of_contracts;
+    my $stake            = $self->_user_input_stake;
+    my $barrier          = rounddown(($stake / $payout_per_point) - ($current_spot * $commission), $self->underlying->pip_size);
+
+    return "+" . $barrier;
 }
 
 =head2 calculate_payout

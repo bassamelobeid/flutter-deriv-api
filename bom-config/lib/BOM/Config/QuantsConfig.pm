@@ -364,7 +364,13 @@ sub get_per_symbol_config {
     my $cached_redis_key = join('::', CONFIG_NAMESPACE, $self->contract_category, 'cached_per_symbol_conifg', $landing_company, $underlying_symbol);
 
     if (my $last_cache = $self->chronicle_reader->get(CONFIG_NAMESPACE, $redis_key)) {
-        return $last_cache if $args->{need_latest_cache};
+
+        if ($args->{need_latest_cache}) {
+            # There could be new keys in the default config that are not present in the last_cache.
+            my $defauly_config = $self->get_default_config('per_symbol')->{$landing_company}->{$underlying_symbol};
+            $last_cache = update_with_missing_keys($last_cache, $defauly_config);
+            return $last_cache;
+        }
 
         #look into a Redis sorted set to see if the required config is cached inside it.
         my $cached_configs = $self->redis_read->execute('zrange', $cached_redis_key, '0', $self->for_date->epoch, 'byscore');
@@ -382,6 +388,54 @@ sub get_per_symbol_config {
     }
     return;
 
+}
+
+=head2 update_with_missing_keys
+
+Updates a given 'last_cache' hash reference with missing keys from a 'default_config' hash reference.
+
+This function ensures that all keys present in 'default_config' but missing in 'last_cache' are added.
+For nested hash structures, it checks and adds missing sub-keys at one level deep only. It does not replace existing values, unless they are missing.
+
+=over 4
+
+=item Parameters:
+
+=item C<$last_cache>: (HashRef) The last_cache hash reference that may be missing some keys.
+
+=item C<$default_config>: (HashRef) The hash reference containing default keys and values that should be present in C<$last_cache>.
+
+=back
+
+=over 4
+
+=item Returns:
+
+=item C<$last_cache>: (HashRef) The updated hash reference with missing keys added from C<$default_config>.
+
+=back
+
+=cut
+
+sub update_with_missing_keys {
+    my ($last_cache, $default_config) = @_;
+
+    foreach my $key (keys %$default_config) {
+        # Only add the key from default_config if it doesn't exist in last_cache
+        if (!exists $last_cache->{$key}) {
+            $last_cache->{$key} = $default_config->{$key};
+        }
+        # If it's a hash and the key exists in both, and still want to ensure nested keys are updated
+        elsif (ref $last_cache->{$key} eq 'HASH' && ref $default_config->{$key} eq 'HASH') {
+            foreach my $sub_key (keys %{$default_config->{$key}}) {
+                if (!exists $last_cache->{$key}{$sub_key}) {
+                    $last_cache->{$key}{$sub_key} = $default_config->{$key}{$sub_key};
+                }
+            }
+        }
+    }
+
+    return $last_cache;
 }
 
 =head2 get_default_config

@@ -444,21 +444,15 @@
     name: asia_oceania_OTC
 - data:
   - symbol:
-    - display_name: France 40
-      name: OTC_FCHI
-    - display_name: UK 100
-      name: OTC_FTSE
-    - display_name: Germany 40
-      name: OTC_GDAXI
-    - display_name: Spanish Index
-      name: OTC_IBEX35
-    - display_name: Swiss 20
-      name: OTC_SSMI
+    - display_name: Netherlands 25
+      name: OTC_AEX
+    - display_name: Euro 50
+      name: OTC_SX5E
     trade_durations:
     - durations:
       - display_name: Minutes
         max: 60
-        min: 15
+        min: 30
         name: m
       - display_name: Hours
         max: 1
@@ -474,7 +468,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 15
+        min: 30
         name: m
       - display_name: Hours
         max: 24
@@ -516,15 +510,21 @@
         display_name: Stays Between/Goes Outside
         name: staysinout
   - symbol:
-    - display_name: Netherlands 25
-      name: OTC_AEX
-    - display_name: Euro 50
-      name: OTC_SX5E
+    - display_name: France 40
+      name: OTC_FCHI
+    - display_name: UK 100
+      name: OTC_FTSE
+    - display_name: Germany 40
+      name: OTC_GDAXI
+    - display_name: Spanish Index
+      name: OTC_IBEX35
+    - display_name: Swiss 20
+      name: OTC_SSMI
     trade_durations:
     - durations:
       - display_name: Minutes
         max: 60
-        min: 30
+        min: 15
         name: m
       - display_name: Hours
         max: 1
@@ -540,7 +540,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 30
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -664,70 +664,6 @@
     name: americas_OTC
 - data:
   - symbol:
-    - display_name: Silver/USD
-      name: frxXAGUSD
-    trade_durations:
-    - durations:
-      - display_name: Minutes
-        max: 1440
-        min: 5
-        name: m
-      - display_name: Hours
-        max: 24
-        min: 1
-        name: h
-      - display_name: Days
-        max: 365
-        min: 1
-        name: days
-      trade_type:
-        display_name: Rise/Fall
-        name: rise_fall
-    - durations:
-      - display_name: Minutes
-        max: 1440
-        min: 5
-        name: m
-      - display_name: Hours
-        max: 24
-        min: 1
-        name: h
-      trade_type:
-        display_name: Rise/Fall (Forward Start)
-        name: rise_fall_forward
-    - durations:
-      - display_name: Days
-        max: 365
-        min: 1
-        name: days
-      trade_type:
-        display_name: Higher/Lower
-        name: higher_lower
-    - durations:
-      - display_name: Days
-        max: 365
-        min: 1
-        name: days
-      trade_type:
-        display_name: Touch/No Touch
-        name: touchnotouch
-    - durations:
-      - display_name: Days
-        max: 365
-        min: 7
-        name: days
-      trade_type:
-        display_name: Ends Between/Ends Outside
-        name: endsinout
-    - durations:
-      - display_name: Days
-        max: 365
-        min: 7
-        name: days
-      trade_type:
-        display_name: Stays Between/Goes Outside
-        name: staysinout
-  - symbol:
     - display_name: Gold/USD
       name: frxXAUUSD
     trade_durations:
@@ -803,6 +739,70 @@
       trade_type:
         display_name: Call Spread/Put Spread
         name: callputspread
+  - symbol:
+    - display_name: Silver/USD
+      name: frxXAGUSD
+    trade_durations:
+    - durations:
+      - display_name: Minutes
+        max: 1440
+        min: 5
+        name: m
+      - display_name: Hours
+        max: 24
+        min: 1
+        name: h
+      - display_name: Days
+        max: 365
+        min: 1
+        name: days
+      trade_type:
+        display_name: Rise/Fall
+        name: rise_fall
+    - durations:
+      - display_name: Minutes
+        max: 1440
+        min: 5
+        name: m
+      - display_name: Hours
+        max: 24
+        min: 1
+        name: h
+      trade_type:
+        display_name: Rise/Fall (Forward Start)
+        name: rise_fall_forward
+    - durations:
+      - display_name: Days
+        max: 365
+        min: 1
+        name: days
+      trade_type:
+        display_name: Higher/Lower
+        name: higher_lower
+    - durations:
+      - display_name: Days
+        max: 365
+        min: 1
+        name: days
+      trade_type:
+        display_name: Touch/No Touch
+        name: touchnotouch
+    - durations:
+      - display_name: Days
+        max: 365
+        min: 7
+        name: days
+      trade_type:
+        display_name: Ends Between/Ends Outside
+        name: endsinout
+    - durations:
+      - display_name: Days
+        max: 365
+        min: 7
+        name: days
+      trade_type:
+        display_name: Stays Between/Goes Outside
+        name: staysinout
   - symbol:
     - display_name: Palladium/USD
       name: frxXPDUSD

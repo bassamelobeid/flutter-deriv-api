@@ -1,20 +1,27 @@
 package BOM::Product::Role::Turbos;
 
 use Moose::Role;
-with 'BOM::Product::Role::AmericanExpiry' => {-excludes => ['_build_hit_tick', '_build_close_tick']};
-with 'BOM::Product::Role::SingleBarrier'  => {-excludes => '_validate_barrier'};
+use Time::Duration::Concise;
+use Format::Util::Numbers qw/financialrounding roundcommon/;
+use Scalar::Util::Numeric qw(isint);
+use List::Util            qw/min max/;
+use YAML::XS              qw(LoadFile);
+use Exporter              qw(import);
+use Machine::Epsilon;
+use Math::BigFloat;
 
-use BOM::Config::Quants qw(minimum_stake_limit);
+use LandingCompany::Registry;
 use BOM::Config::Redis;
 use BOM::Product::Contract::Strike::Turbos;
 use BOM::Product::Exception;
 use BOM::Product::Static;
-use BOM::Product::Utils   qw(rounddown);
-use Format::Util::Numbers qw(financialrounding roundcommon);
-use List::Util            qw(min max);
-use Machine::Epsilon;
-use Scalar::Util::Numeric qw(isint);
-use YAML::XS              qw(LoadFile);
+use BOM::Product::Contract::Strike::Turbos;
+use BOM::Product::Utils qw(rounddown roundup rounddown_to_sig_fig roundup_stake rounddown_stake);
+use BOM::Config::Quants qw(minimum_stake_limit);
+with 'BOM::Product::Role::AmericanExpiry' => {-excludes => ['_build_hit_tick',   '_build_close_tick']};
+with 'BOM::Product::Role::SingleBarrier'  => {-excludes => ['_validate_barrier', '_build_supplied_barrier']};
+
+our @EXPORT_OK = qw(SECONDS_IN_A_YEAR);
 
 =head2 ADDED_CURRENCY_PRECISION
 
@@ -22,7 +29,23 @@ Added currency precision used in rounding number_of_contracts
 
 =cut
 
-use constant ADDED_CURRENCY_PRECISION => 4;
+=head2 SECONDS_IN_A_YEAR
+
+SECONDS in 1 year used for calculating payout_choices and strike_price_choices
+
+=cut
+
+=head2 SIG_FIG
+
+Significant figure used in rounding payout_choices
+
+=cut
+
+use constant {
+    ADDED_CURRENCY_PRECISION => 4,
+    SECONDS_IN_A_YEAR        => 31536000,
+    SIG_FIG                  => 1
+};
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -170,6 +193,19 @@ has take_profit => (
     lazy_build => 1,
 );
 
+=head2 _build_supplied_barrier
+
+calculates the barrier after selecting payout per point
+
+=cut
+
+sub _build_supplied_barrier {
+    my $self = shift;
+
+    my $barrier = $self->calculate_barrier;
+    return $barrier;
+}
+
 =head2 _build_take_profit
 
 Take profit amount. Contract will be closed automatically when the value of open position is at or greater than take profit amount.
@@ -229,7 +265,6 @@ sub _build_n_max {
 
     return $max_multiplier_stake * $max_multiplier / $self->current_spot if $self->pricing_new;
     return $max_multiplier_stake * $max_multiplier / $self->entry_tick->quote;
-
 }
 
 =head2 theo_ask_probability
@@ -372,6 +407,136 @@ sub base_commission {
     # No need for slippage validation on buy
     return 0 if $self->pricing_new;
     return $self->sell_commission;
+}
+
+=head2 n_closest
+
+Calculating n_closest based on the closest barrier
+n_closest = stake / BSask(b_closest)
+
+=cut
+
+sub n_closest {
+    my $self = shift;
+
+    my $min_expected_spot_movement_step = $self->per_symbol_config->{min_expected_spot_movement_t};
+    my $bs_closest                      = $self->calculate_bs_ask_barrier($min_expected_spot_movement_step);
+
+    return $self->_user_input_stake / $bs_closest;
+}
+
+=head2 n_furthest
+
+Calculating n_furthest based on the furthest barrier
+n_furthest = stake / BSask(b_furthest)
+
+=cut
+
+sub n_furthest {
+    my $self = shift;
+
+    my $max_expected_spot_movement_step = $self->per_symbol_config->{max_expected_spot_movement_t};
+    my $bs_furthest                     = $self->calculate_bs_ask_barrier($max_expected_spot_movement_step);
+
+    return $self->_user_input_stake / $bs_furthest;
+}
+
+=head2 calc_payout_choices
+
+Calculates payout choices based on the difference between closest and furthest barrier
+
+=cut
+
+sub calc_payout_choices {
+    my $args = shift;
+
+    my $n_closest            = $args->{n_closest};
+    my $n_furthest           = $args->{n_furthest};
+    my $increment_percentage = $args->{increment_percentage};
+
+    my $increment = rounddown_to_sig_fig(($n_closest - $n_furthest) * $increment_percentage, SIG_FIG);
+
+    my $T0 = rounddown(($n_closest / $increment), 0);
+    my $Tn = roundup(($n_furthest / $increment), 0);
+
+    my @payout_choices = ();
+    for (my $i = 0; $i <= $T0 - $Tn; $i++) {
+        push @payout_choices, ($T0 - $i) * $increment;
+    }
+
+    return \@payout_choices;
+}
+
+=head2 payout_choices
+
+Number of choices for payout per points
+
+=cut
+
+sub payout_choices {
+    my $self = shift;
+
+    # setting up arguments for calc_payout_choices
+    my $n_closest            = $self->n_closest;
+    my $n_furthest           = $self->n_furthest;
+    my $increment_percentage = $self->per_symbol_config->{increment_percentage};
+
+    my $args = {
+        n_closest            => $n_closest,
+        n_furthest           => $n_furthest,
+        increment_percentage => $increment_percentage,
+    };
+
+    return calc_payout_choices($args);
+}
+
+=head2 _validate_payout
+
+Validate provided payout per point. Payout per point should be one of the available payout choices.
+
+=cut
+
+sub _validate_payout {
+    my $self = shift;
+
+    my $payout_choices      = $self->payout_choices;
+    my $number_of_contracts = Math::BigFloat->new($self->number_of_contracts);
+
+    foreach my $payout (@{$payout_choices}) {
+        my $big_payout = Math::BigFloat->new($payout);
+        return 1 if $number_of_contracts->bcmp($big_payout) == 0;
+    }
+
+    return 0;
+}
+
+=head2 _validate_payout_choices
+
+Validate payout choices. Payout per point available are calculated based on the difference between closest and furthest barrier.
+
+=cut
+
+sub _validate_payout_choices {
+    my $self = shift;
+
+    # validate payout_per_point
+    my $is_valid = $self->_validate_payout;
+
+    if (!$is_valid) {
+        my $payout_choices = $self->payout_choices;
+        my $message        = "Available payout per points are " . join(", ", @{$payout_choices});
+
+        return {
+            message           => 'Invalid Payout',
+            message_to_client => [$message],
+            details           => {
+                field                    => 'payout_per_point',
+                payout_per_point_choices => $payout_choices
+            },
+        };
+    }
+
+    return;
 }
 
 =head2 _build_number_of_contracts
@@ -562,14 +727,10 @@ get current min stake
 sub _build_min_stake {
     my $self = shift;
 
-    my $min_default_stake = minimum_stake_limit(($self->currency, $self->landing_company, $self->underlying->market->name, 'turbos'));
-    my $distance          = abs($self->entry_tick->quote - $self->barrier->as_absolute);
-    my $min_stake         = max($min_default_stake, $self->_contracts_limit->{min} * $distance);
-
-    # if min_stake > max_stake happens we lessen the min_stake to max_stake
-    $min_stake = min($min_stake, $self->max_stake);
-
-    return financialrounding('price', $self->currency, $min_stake);
+    # For Backward API compatibility, we are accepting either barrier and payout_per_point in params
+    # min stake calculation is different for barrier and payout_per_point
+    my $min_stake = $self->{has_user_defined_barrier} ? $self->calc_min_stake_for_barrier : $self->calc_min_stake_for_ppp;
+    return $min_stake;
 }
 
 =head2 _build_max_stake
@@ -581,11 +742,10 @@ get current max stake
 sub _build_max_stake {
     my $self = shift;
 
-    my $distance                   = abs($self->entry_tick->quote - $self->barrier->as_absolute);
-    my $max_stake                  = $self->_contracts_limit->{max} * $distance;
-    my $max_stake_per_risk_profile = $self->quants_config->get_max_stake_per_risk_profile($self->risk_level);
-
-    return min(financialrounding('price', $self->currency, $max_stake), $max_stake_per_risk_profile->{$self->currency});
+    # For Backward API compatibility, we are accepting either barrier and payout_per_point in params
+    # max stake calculation is different for barrier and payout_per_point
+    my $max_stake = $self->{has_user_defined_barrier} ? $self->calc_max_stake_for_barrier : $self->calc_max_stake_for_ppp;
+    return $max_stake;
 }
 
 =head2 risk_level
@@ -794,8 +954,11 @@ sub _validation_methods {
     push @validation_methods, '_validate_price_non_binary' unless $self->skips_price_validation;
     push @validation_methods, '_validate_volsurface'       unless $self->underlying->volatility_surface_type eq 'flat';
 
-    # add turbos specific validations
-    push @validation_methods, qw(_validate_barrier_choice _validate_stake validate_take_profit) unless $self->for_sale;
+    unless ($self->for_sale) {
+        # for barrier and payout_per_point validations
+        push @validation_methods, $self->has_user_defined_barrier ? '_validate_barrier_choice' : '_validate_payout_choices';
+        push @validation_methods, qw(_validate_stake validate_take_profit);
+    }
 
     return \@validation_methods;
 }
@@ -829,7 +992,7 @@ sub strike_price_choices {
     if (scalar @$barrier_choices) {
         my $last_spot = shift @$barrier_choices;
 
-        my $threshold_coefficient = $sigma * sqrt(7200 / BOM::Product::Contract::Strike::Turbos::SECONDS_IN_A_YEAR);
+        my $threshold_coefficient = $sigma * sqrt(7200 / SECONDS_IN_A_YEAR);
         if (
             not(   $self->current_spot > (1 + $threshold_coefficient) * $last_spot
                 || $self->current_spot < (1 - $threshold_coefficient) * $last_spot))
@@ -980,15 +1143,19 @@ validate stake based on financial underlying risk profile defined in backoffice
 sub _validate_stake {
     my $self = shift;
 
+    # This section will be refactored when properly remove barrier choices from turbos
+    my $user_choice   = $self->{has_user_defined_barrier} ? 'barrier_choices'      : 'payout_choices';
+    my $choice_method = $self->{has_user_defined_barrier} ? 'strike_price_choices' : 'payout_choices';
+
     if ($self->_user_input_stake > $self->max_stake) {
         return {
             message           => 'maximum stake limit',
             message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $self->max_stake)],
             details           => {
-                field           => 'amount',
-                min_stake       => $self->min_stake,
-                max_stake       => $self->max_stake,
-                barrier_choices => $self->strike_price_choices
+                field        => 'amount',
+                min_stake    => $self->min_stake,
+                max_stake    => $self->max_stake,
+                $user_choice => $self->$choice_method
             },
         };
     }
@@ -998,10 +1165,10 @@ sub _validate_stake {
             message           => 'minimum stake limit exceeded',
             message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
             details           => {
-                field           => 'amount',
-                min_stake       => $self->min_stake,
-                max_stake       => $self->max_stake,
-                barrier_choices => $self->strike_price_choices
+                field        => 'amount',
+                min_stake    => $self->min_stake,
+                max_stake    => $self->max_stake,
+                $user_choice => $self->$choice_method
             },
         };
     }
@@ -1017,6 +1184,24 @@ sub pnl {
     my $self = shift;
 
     return financialrounding('price', $self->currency, $self->bid_price - $self->_user_input_stake);
+}
+
+=head2 _max_take_profit_ppp
+
+Max take profit calculation if user select payout_per_point
+T (Duration) = duration (in seconds) / 1 year (in seconds)
+max_take_profit = 2*n*S0*vol*sqrt(T)
+
+=cut
+
+sub _max_take_profit_ppp {
+    my $self = shift;
+
+    my $S0               = $self->pricing_new ? $self->current_spot : $self->entry_tick;
+    my $payout_per_point = $self->number_of_contracts;
+    my $duration         = ($self->date_expiry->epoch - $self->date_start->epoch) / SECONDS_IN_A_YEAR;
+    my $max_profit       = 2 * $payout_per_point * $S0 * $self->pricing_vol * sqrt($duration);
+    return $max_profit;
 }
 
 =head2 _get_symbol_volatility
@@ -1042,7 +1227,116 @@ Calculates maximum allowable take profit value.
 sub _max_allowable_take_profit {
     my $self = shift;
 
-    return _get_symbol_volatility($self->underlying->symbol) * $self->n_max * $self->_user_input_stake;
+    if ($self->{has_user_defined_barrier}) {
+        # return this if user selected barrier
+        return _get_symbol_volatility($self->underlying->symbol) * $self->n_max * $self->_user_input_stake;
+    } else {
+        # return this if user selected payout_per_point
+        return $self->_max_take_profit_ppp;
+    }
+
+}
+
+=head2 calc_min_stake_for_barrier
+
+Calculate min stake if user has selected barrier option
+
+=cut
+
+sub calc_min_stake_for_barrier {
+    my $self = shift;
+
+    my $min_default_stake = minimum_stake_limit(($self->currency, $self->landing_company, $self->underlying->market->name, 'turbos'));
+    my $distance          = abs($self->entry_tick->quote - $self->barrier->as_absolute);
+    my $min_stake         = max($min_default_stake, $self->_contracts_limit->{min} * $distance);
+
+    # if min_stake > max_stake happens we lessen the min_stake to max_stake
+    $min_stake = min($min_stake, $self->max_stake);
+
+    return financialrounding('price', $self->currency, $min_stake);
+}
+
+=head2 calc_max_stake_for_barrier
+
+Calculate max stake if user has selected barrier option
+
+=cut
+
+sub calc_max_stake_for_barrier {
+    my $self = shift;
+
+    my $distance                   = abs($self->entry_tick->quote - $self->barrier->as_absolute);
+    my $max_stake                  = $self->_contracts_limit->{max} * $distance;
+    my $max_stake_per_risk_profile = $self->quants_config->get_max_stake_per_risk_profile($self->risk_level);
+
+    return min(financialrounding('price', $self->currency, $max_stake), $max_stake_per_risk_profile->{$self->currency});
+
+}
+
+=head2 calc_min_stake_for_ppp
+
+Calculates min stake if user has selected payout per point option
+
+=cut
+
+sub calc_min_stake_for_ppp {
+    my $self = shift;
+
+    # Turbos Configs
+    my $min_expected_spot_movement_step = $self->per_symbol_config->{min_expected_spot_movement_t};
+    my $max_expected_spot_movement_step = $self->per_symbol_config->{max_expected_spot_movement_t};
+    my $increment_percentage            = $self->per_symbol_config->{increment_percentage};
+
+    # calculation for furthest and closest barrier with Black-Scholes markup
+    my $bs_closest  = $self->calculate_bs_ask_barrier($min_expected_spot_movement_step);
+    my $bs_furthest = $self->calculate_bs_ask_barrier($max_expected_spot_movement_step);
+
+    my $currency_decimal   = Format::Util::Numbers::get_precision_config()->{price}->{$self->currency};
+    my $rounding_precision = 10**($currency_decimal * -1);
+
+    # min stake calculation
+    my $bs_closest_inverse  = 1 / $bs_closest;
+    my $bs_furthest_inverse = 1 / $bs_furthest;
+
+    my $inc_bs_calculation = ($increment_percentage * ($bs_closest_inverse - $bs_furthest_inverse));
+    my $min_stake          = roundup_stake($rounding_precision / $inc_bs_calculation, $currency_decimal);
+
+    return min($min_stake, $self->max_stake);
+}
+
+=head2 calc_max_stake_for_ppp
+
+Calculates max stake if user has selected payout per point option
+
+=cut
+
+sub calc_max_stake_for_ppp {
+    my $self = shift;
+
+    my $max_multiplier_stake            = $self->per_symbol_config->{max_multiplier_stake}{$self->currency};
+    my $max_multiplier                  = $self->per_symbol_config->{max_multiplier};
+    my $min_expected_spot_movement_step = $self->per_symbol_config->{min_expected_spot_movement_t};
+    my $currency_decimal                = Format::Util::Numbers::get_precision_config()->{price}->{$self->currency};
+
+    my $commission_volatility = $self->calculate_max_stake($min_expected_spot_movement_step);
+    my $max_stake             = $max_multiplier * $max_multiplier_stake * $commission_volatility;
+
+    return rounddown_stake($max_stake, $currency_decimal);
+}
+
+=head2 _tick_at_min_start
+
+Returns the tick at the start of the minute
+
+=cut
+
+sub _tick_at_min_start {
+    my $self = shift;
+
+    my $current_time    = time();
+    my $start_of_minute = int($current_time / 60) * 60;
+
+    return $self->_tick_accessor->tick_at($start_of_minute);
 }
 
 1;

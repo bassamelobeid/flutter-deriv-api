@@ -14,6 +14,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory                qw(produce_contract);
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 
 initialize_realtime_ticks_db();
 my $now    = Date::Utility->new('10-Mar-2015');
@@ -595,6 +596,89 @@ subtest 'sell_commission' => sub {
         is $c->barrier->as_absolute, '1690.00',     'barrier is 1690.00';
         is $c->sell_commission,      0,             'bid_spread is not charged on expiry even if it hits take profit';
     }
+};
+
+# Test Cases for Turboslong Contract providing payout_per_point
+my $symbol_1HZ100V = '1HZ100V';
+my $date           = Date::Utility->new('10-Mar-2020');
+my $entry_tick     = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $date->epoch,
+    quote      => 1763.00,
+    underlying => $symbol_1HZ100V,
+});
+
+my $mocked = Test::MockModule->new('Quant::Framework::Underlying');
+$mocked->mock('tick_at' => sub { return Postgres::FeedDB::Spot::Tick->new(quote => 1763.00, epoch => $date->epoch) });
+
+my $params = {
+    bet_type         => 'TURBOSLONG',
+    underlying       => $symbol_1HZ100V,
+    date_start       => $date,
+    date_pricing     => $date,
+    duration         => '6d',
+    currency         => 'USD',
+    amount_type      => 'stake',
+    amount           => 100,
+    payout_per_point => '1.40',
+};
+
+my $config = {
+    'min_expected_spot_movement_t'   => 300,
+    'max_expected_spot_movement_t'   => 10000000,
+    'increment_percentage'           => 0.01,
+    'ticks_commission_up_tick'       => 0.99,
+    'ticks_commission_up_intraday'   => 0.99,
+    'ticks_commission_up_daily'      => 0.99,
+    'ticks_commission_down_tick'     => 0.99,
+    'ticks_commission_down_intraday' => 0.99,
+    'ticks_commission_down_daily'    => 0.99,
+    'max_multiplier'                 => 100,
+    'max_multiplier_stake'           => {'USD' => 2000},
+    'max_open_position'              => 5,
+};
+
+sub floats_are_equal {
+    my ($got, $expected, $tolerance, $message) = @_;
+    if (abs($got - $expected) <= $tolerance) {
+        pass($message);
+    } else {
+        fail($message);
+    }
+}
+
+my $redis = BOM::Config::Redis::redis_replicated_write();
+my $key   = "quants_config::turbos::per_symbol::common::1HZ100V";
+$config = JSON::MaybeXS::encode_json($config);
+$redis->set($key, $config);
+
+subtest 'config - payout_per_point' => sub {
+    my $c = eval { produce_contract($params); };
+
+    isa_ok $c, 'BOM::Product::Contract::Turboslong';
+    is $c->code,          'TURBOSLONG', 'code TURBOSLONG';
+    is $c->pricing_code,  'TURBOSLONG', 'pricing code TURBOSLONG';
+    is $c->category_code, 'turbos',     'category turbos';
+    ok $c->is_path_dependent,       'is path dependent';
+    ok !defined $c->pricing_engine, 'price engine is udefined';
+
+    cmp_ok $c->min_stake, '==', 5.79,   'min stake is correct';
+    cmp_ok $c->max_stake, '==', 652.11, 'max stake is correct';
+    is $c->_build_supplied_barrier, -71.11, 'barrier is correct';
+    is $c->ask_price,               100,    'ask_price is correct';
+    ok $c->pricing_new, 'this is a new contract';
+
+    # using tolerance to compare floating point numbers
+    my $tolerance = 0.0000001;
+    floats_are_equal($c->n_closest,   17.3960479470089,  $tolerance, 'n_closest is correct');
+    floats_are_equal($c->n_furthest,, 0.100696656318299, $tolerance, 'n_furthest is correct');
+
+    my $payout_choices = $c->payout_choices;
+    is $payout_choices->[0],                         '17.3',     'correct first payout';
+    is $payout_choices->[1],                         '17.2',     'correct second payout';
+    is $payout_choices->[-2],                        '0.3',      'correct second last payout';
+    is $payout_choices->[-1],                        '0.2',      'correct last payout';
+    is sprintf("%.5f", $c->bid_probability->amount), '70.79920', 'correct bid probability';
+    is sprintf("%.5f", $c->ask_probability->amount), '71.42080', 'correct ask probability';
 };
 
 done_testing();

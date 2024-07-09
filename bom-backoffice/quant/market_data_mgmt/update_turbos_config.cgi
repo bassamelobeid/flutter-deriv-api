@@ -205,6 +205,9 @@ if ($r->param('save_turbos_per_symbol_config')) {
         my $symbol                         = $r->param('symbol') // die 'symbol is undef';
         my $num_of_barriers                = $r->param('num_of_barriers');
         my $min_distance_from_spot         = $r->param('min_distance_from_spot');
+        my $min_expected_spot_movement_t   = $r->param('min_expected_spot_movement_t');
+        my $max_expected_spot_movement_t   = $r->param('max_expected_spot_movement_t');
+        my $increment_percentage           = $r->param('increment_percentage');
         my $ticks_commission_up_tick       = $r->param('ticks_commission_up_tick');
         my $ticks_commission_up_intraday   = $r->param('ticks_commission_up_intraday');
         my $ticks_commission_up_daily      = $r->param('ticks_commission_up_daily');
@@ -221,6 +224,9 @@ if ($r->param('save_turbos_per_symbol_config')) {
         die "Symbol is not defined" if $symbol eq '';
         die "Number of barriers must be a number"             unless looks_like_number($num_of_barriers);
         die "min distance from spot must be a number"         unless looks_like_number($min_distance_from_spot);
+        die "Min expected spot movement must be a number"     unless looks_like_number($min_expected_spot_movement_t);
+        die "Max expected spot movement must be a number"     unless looks_like_number($max_expected_spot_movement_t);
+        die "Increment percentage must be a number"           unless looks_like_number($increment_percentage);
         die "ticks commission up tick must be a number"       unless looks_like_number($ticks_commission_up_tick);
         die "ticks commission up intraday must be a number"   unless looks_like_number($ticks_commission_up_intraday);
         die "ticks commission up daily must be a number"      unless looks_like_number($ticks_commission_up_daily);
@@ -231,15 +237,20 @@ if ($r->param('save_turbos_per_symbol_config')) {
         die "min multiplier must be a number"                 unless looks_like_number($min_multiplier);
         die "max open position must be a number"              unless looks_like_number($max_open_position);
 
+        # This block of code will be removed once we remove barrier options from turbos as it will no longer needed
         for my $currency (keys %$min_multiplier_stake) {
             my $min_multiplier_stake_for_currency = $min_multiplier_stake->{$currency};
             my $max_multiplier_stake_for_currency = $max_multiplier_stake->{$currency};
             die "min_multiplier * min_multiplier_stake($currency) can't be greater than max_multiplier * max_multiplier_stake($currency)"
                 if $min_multiplier * $min_multiplier_stake_for_currency > $max_multiplier * $max_multiplier_stake_for_currency;
         }
+
         my $per_symbol_config = {
             num_of_barriers                => $num_of_barriers,
             min_distance_from_spot         => $min_distance_from_spot,
+            min_expected_spot_movement_t   => $min_expected_spot_movement_t,
+            max_expected_spot_movement_t   => $max_expected_spot_movement_t,
+            increment_percentage           => $increment_percentage,
             ticks_commission_up_tick       => $ticks_commission_up_tick,
             ticks_commission_up_intraday   => $ticks_commission_up_intraday,
             ticks_commission_up_daily      => $ticks_commission_up_daily,
