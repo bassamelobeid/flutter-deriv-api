@@ -2454,6 +2454,21 @@ system:
                   isa: Str
                   default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivBVI-Demo,DerivBVI-Server,DerivBVI-Server-02,DerivBVI-Server-03"
                   global: 1
+                huawei:
+                  description: "White label mobile Huawei download link (svg)"
+                  isa: Str
+                  default: "https://appgallery.huawei.com/#/app/C102015329"
+                  global: 1
+                linux:
+                  description: "White label linux terminal download link (svg)"
+                  isa: Str
+                  default: "https://www.metatrader5.com/en/terminal/help/start_advanced/install_linux"
+                  global: 1
+                mac:
+                  description: "White label mac terminal download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.dmg"
+                  global: 1
                 webtrader_url:
                   description: "White label webtrader URLs (bvi)"
                   isa: section
@@ -2486,6 +2501,21 @@ system:
                   description: "White label mobile Android download link (labuan)"
                   isa: Str
                   default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivFX-Demo,DerivFX-Server,DerivFX-Server-02,DerivFX-Server-03"
+                  global: 1
+                huawei:
+                  description: "White label mobile Huawei download link (svg)"
+                  isa: Str
+                  default: "https://appgallery.huawei.com/#/app/C102015329"
+                  global: 1
+                linux:
+                  description: "White label linux terminal download link (svg)"
+                  isa: Str
+                  default: "https://www.metatrader5.com/en/terminal/help/start_advanced/install_linux"
+                  global: 1
+                mac:
+                  description: "White label mac terminal download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.dmg"
                   global: 1
                 webtrader_url:
                   description: "White label webtrader URLs (labuan)"
@@ -2520,6 +2550,21 @@ system:
                   isa: Str
                   default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivMT-Demo,DerivMT-Server,DerivMT-Server-02,DerivMT-Server-03"
                   global: 1
+                huawei:
+                  description: "White label mobile Huawei download link (svg)"
+                  isa: Str
+                  default: "https://appgallery.huawei.com/#/app/C102015329"
+                  global: 1
+                linux:
+                  description: "White label linux terminal download link (svg)"
+                  isa: Str
+                  default: "https://www.metatrader5.com/en/terminal/help/start_advanced/install_linux"
+                  global: 1
+                mac:
+                  description: "White label mac terminal download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.dmg"
+                  global: 1
                 webtrader_url:
                   description: "White label webtrader URLs (maltainvest)"
                   isa: section
@@ -2552,6 +2597,21 @@ system:
                   description: "White label mobile Android download link (svg)"
                   isa: Str
                   default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03"
+                  global: 1
+                huawei:
+                  description: "White label mobile Huawei download link (svg)"
+                  isa: Str
+                  default: "https://appgallery.huawei.com/#/app/C102015329"
+                  global: 1
+                linux:
+                  description: "White label linux terminal download link (svg)"
+                  isa: Str
+                  default: "https://www.metatrader5.com/en/terminal/help/start_advanced/install_linux"
+                  global: 1
+                mac:
+                  description: "White label mac terminal download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.dmg"
                   global: 1
                 webtrader_url:
                   description: "White label webtrader URLs (svg)"
@@ -2586,6 +2646,21 @@ system:
                   isa: Str
                   default: "https://download.mql5.com/cdn/mobile/mt5/android?server=DerivVU-Demo,DerivVU-Server,DerivVU-Server-02,DerivVU-Server-03"
                   global: 1
+                huawei:
+                  description: "White label mobile Huawei download link (svg)"
+                  isa: Str
+                  default: "https://appgallery.huawei.com/#/app/C102015329"
+                  global: 1
+                linux:
+                  description: "White label linux terminal download link (svg)"
+                  isa: Str
+                  default: "https://www.metatrader5.com/en/terminal/help/start_advanced/install_linux"
+                  global: 1
+                mac:
+                  description: "White label mac terminal download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.dmg"
+                  global: 1
                 webtrader_url:
                   description: "White label webtrader URLs (vanuatu)"
                   isa: section
@@ -2618,6 +2693,21 @@ system:
                   description: "White label mobile Android download link (default)"
                   isa: Str
                   default: "https://download.mql5.com/cdn/mobile/mt5/android?server=Deriv-Demo,Deriv-Server,Deriv-Server-02,Deriv-Server-03"
+                  global: 1
+                huawei:
+                  description: "White label mobile Huawei download link (svg)"
+                  isa: Str
+                  default: "https://appgallery.huawei.com/#/app/C102015329"
+                  global: 1
+                linux:
+                  description: "White label linux terminal download link (svg)"
+                  isa: Str
+                  default: "https://www.metatrader5.com/en/terminal/help/start_advanced/install_linux"
+                  global: 1
+                mac:
+                  description: "White label mac terminal download link (svg)"
+                  isa: Str
+                  default: "https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.dmg"
                   global: 1
                 webtrader_url:
                   description: "White label webtrader URLs (Deriv com Ltd)"
@@ -2689,6 +2779,39 @@ system:
               isa: ArrayRef
               global: 1
               default: []
+        white_label_links:
+          description: "Configuration for DerivX white label links"
+          isa: section
+          contains:
+            svg:
+              description: "White label links for Deriv (SVG) LLC"
+              isa: section
+              contains:
+                android:
+                  description: "White label mobile Android download link (svg)"
+                  isa: Str
+                  default: "https://play.google.com/store/apps/details?id=com.deriv.dx"
+                  global: 1
+                huawei:
+                  description: "White label mobile Huawei download link (svg)"
+                  isa: Str
+                  default: "https://appgallery.huawei.com/app/C104633219"
+                  global: 1
+                ios:
+                  description: "White label mobile iOS download link (svg)"
+                  isa: Str
+                  default: "https://apps.apple.com/us/app/deriv-x/id1563337503"
+                  global: 1
+                demo:
+                  description: "White label demo account creation link (svg)"
+                  isa: Str
+                  default: "https://dx-demo.deriv.com"
+                  global: 1
+                live:
+                  description: "White label live account creation link (svg)"
+                  isa: Str
+                  default: "https://dx.deriv.com"
+                  global: 1
     ctrader:
         description: "Configuration for cTrader"
         isa: section
@@ -2727,6 +2850,44 @@ system:
                 isa: ArrayRef
                 global: 1
                 default: []
+          white_label_links:
+            description: "Configuration for cTrader white label links"
+            isa: section
+            contains:
+              svg:
+                description: "White label links for Deriv (SVG) LLC"
+                isa: section
+                contains:
+                  android:
+                    description: "White label mobile Android download link (svg)"
+                    isa: Str
+                    default: "https://play.google.com/store/apps/details?id=com.deriv.ct"
+                    global: 1
+                  huawei:
+                    description: "White label mobile Huawei download link (svg)"
+                    isa: Str
+                    default: "https://apps.apple.com/us/app/deriv-ctrader/id6466996509"
+                    global: 1
+                  windows:
+                    description: "White label windows terminal download link (svg)"
+                    isa: Str
+                    default: "https://getctrader.com/deriv/ctrader-deriv-setup.exe"
+                    global: 1
+                  mac:
+                    description: "White label mac terminal download link (svg)"
+                    isa: Str
+                    default: "https://getctradermac.com/deriv/ctrader-deriv-setup.dmg"
+                    global: 1
+                  live:
+                    description: "White label live account creation link (svg)"
+                    isa: Str
+                    default: "https://ct.deriv.com"
+                    global: 1
+                  staging:
+                    description: "White label staging account creation link (svg)"
+                    isa: Str
+                    default: "https://ct-uat.deriv.com"
+                    global: 1
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section
