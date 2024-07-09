@@ -109,12 +109,12 @@ subtest 'login list' => sub {
 
     my @accounts = map { $_->{login} } @{$c->result};
     note explain $c->result;
-    is($c->result->[0]->{landing_company},       'Deriv (SVG) LLC',                           "broker_name result");
-    is($c->result->[0]->{landing_company_short}, 'svg',                                       "landing_company_short result");
-    is($c->result->[0]->{market_type},           'synthetic',                                 "market_type result");
-    is($c->result->[0]->{sub_account_type},      'financial',                                 "sub_account_type result");
-    is($c->result->[0]->{account_type},          'real',                                      "account_type result");
-    is($c->result->[0]->{webtrader_url},         'https://mt5-real01-web.deriv.com/terminal', "webtrader_url result");
+    is($c->result->[0]->{landing_company},                    'Deriv (SVG) LLC',                               "broker_name result");
+    is($c->result->[0]->{landing_company_short},              'svg',                                           "landing_company_short result");
+    is($c->result->[0]->{market_type},                        'synthetic',                                     "market_type result");
+    is($c->result->[0]->{sub_account_type},                   'financial',                                     "sub_account_type result");
+    is($c->result->[0]->{account_type},                       'real',                                          "account_type result");
+    is($c->result->[0]->{white_label_links}->{webtrader_url}, 'https://mt5-real01-web-svg.deriv.com/terminal', "webtrader_url result");
     cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'}], "mt5_login_list result");
 };
 

@@ -155,9 +155,6 @@ async_rpc "mt5_login_list",
             my $is_mt5_restricted_group = request()->brand->countries_instance->is_mt5_restricted_group($residence);
             my $is_mt5_ib               = _is_mt5_ib(\@logins);
 
-            #to be removed after migration to new white label object
-            my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->white_label;
-
             my $mt5_webapi_config = BOM::Config::mt5_webapi_config();
             my $stage             = $mt5_webapi_config->{stage};
             my $mt5_app_config    = BOM::Config::Runtime->instance->app_config->system->mt5;
@@ -168,7 +165,7 @@ async_rpc "mt5_login_list",
                     $_,
                     qw(account_type balance country currency display_balance email group landing_company landing_company_short),
                     qw(leverage login name market_type sub_account_type sub_account_category server server_info),
-                    qw(status webtrader_url request_timestamp rights product),
+                    qw(status request_timestamp rights product),
                 )
             } @logins;
 
@@ -197,16 +194,6 @@ async_rpc "mt5_login_list",
                     'ios'           => $white_label_links->ios,
                     'android'       => $white_label_links->android,
                     'webtrader_url' => $white_label_links->webtrader_url,
-                };
-
-                #to be removed after migration to new white label object
-                $mt5_account->{white_label} = {
-                    'download_links' => {
-                        'windows' => $white_label_links->windows,
-                        'ios'     => $white_label_links->ios,
-                        'android' => $white_label_links->android,
-                    },
-                    'notification' => $app_config->notification,
                 };
             }
             return Future->done(\@logins);
@@ -1642,7 +1629,6 @@ sub set_mt5_account_settings {
     if ($config->{server}) {
         my $mt5webapi_config   = BOM::Config::MT5->new(group => $group_name);
         my $server_config      = $mt5webapi_config->server_by_id();
-        my $webtrader_url      = $mt5webapi_config->get_webtrader_url();
         my $server_environment = $server_config->{$config->{server}}{environment};
 
         if ($config->{account_type} eq 'real') {
@@ -1655,8 +1641,6 @@ sub set_mt5_account_settings {
             geolocation => $server_config->{$config->{server}}{geolocation},
             environment => $server_environment,
         };
-
-        $settings->{webtrader_url} = $webtrader_url;
     }
 }
 
