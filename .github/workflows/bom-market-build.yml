@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   core_unit_syntax:
-    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@gh_actions/combine_duplicated_workflows
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@master
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-market
