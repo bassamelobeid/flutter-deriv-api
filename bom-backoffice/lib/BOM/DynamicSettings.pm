@@ -379,25 +379,6 @@ sub get_settings_by_group {
                 system.mt5.white_label_links.none.android
                 system.mt5.white_label_links.none.webtrader_url.dev
                 system.mt5.white_label_links.none.webtrader_url.prod
-                system.mt5.white_label.notification
-                system.mt5.white_label.download_links.bvi.windows
-                system.mt5.white_label.download_links.bvi.ios
-                system.mt5.white_label.download_links.bvi.android
-                system.mt5.white_label.download_links.labuan.windows
-                system.mt5.white_label.download_links.labuan.ios
-                system.mt5.white_label.download_links.labuan.android
-                system.mt5.white_label.download_links.maltainvest.windows
-                system.mt5.white_label.download_links.maltainvest.ios
-                system.mt5.white_label.download_links.maltainvest.android
-                system.mt5.white_label.download_links.svg.windows
-                system.mt5.white_label.download_links.svg.ios
-                system.mt5.white_label.download_links.svg.android
-                system.mt5.white_label.download_links.vanuatu.windows
-                system.mt5.white_label.download_links.vanuatu.ios
-                system.mt5.white_label.download_links.vanuatu.android
-                system.mt5.white_label.download_links.none.windows
-                system.mt5.white_label.download_links.none.ios
-                system.mt5.white_label.download_links.none.android
                 system.suspend.payout_freezing_funds
                 system.suspend.universal_password
                 system.dxtrade.suspend.all

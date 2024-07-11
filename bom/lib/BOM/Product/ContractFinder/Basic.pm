@@ -11,6 +11,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Strike;
 use BOM::Product::Contract::Strike::Turbos;
 use BOM::Product::Contract::Strike::Vanilla;
+use BOM::Product::Role::Turbos;
 use Cache::LRU;
 use Date::Utility;
 use Exporter              qw(import);
@@ -252,7 +253,8 @@ sub decorate {
 
         if ($contract_category eq 'turbos' and my $config = _get_turbos_config($underlying->symbol)) {
             # latest available spot should be sufficient.
-            my $current_tick    = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
+            my $current_tick = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
+
             my $barrier_choices = _default_barrier_for_turbos({
                 underlying        => $underlying,
                 duration          => $o->{min_contract_duration},
@@ -261,12 +263,28 @@ sub decorate {
                 current_tick      => $current_tick,
                 per_symbol_config => $config
             });
-
-            my $barrier_choices_length = scalar @{$barrier_choices};
-            my $mid_barrier_choices    = $barrier_choices->[floor($barrier_choices_length / 2)];
-
+            my $mid_barrier_choices = $barrier_choices->[floor(@$barrier_choices / 2)];
             $o->{barrier_choices} = $barrier_choices;
             $o->{barrier}         = $mid_barrier_choices;
+
+            # using current_tick as tick_at_min_start for payout calculation
+            my $current_time      = time();
+            my $start_of_minute   = int($current_time / 60) * 60;
+            my $tick_at_min_start = $underlying->tick_at($start_of_minute, {allow_inconsistent => 1});
+
+            my $payout_choices = _default_payout_choices_for_turbos({
+                underlying        => $underlying,
+                expiry            => $o->{expiry_type},
+                sentiment         => $sentiment,
+                default_stake     => $o->{default_stake},
+                tick_at_min_start => $tick_at_min_start,
+                per_symbol_config => $config
+            });
+
+            my $mid_payout_choices = $payout_choices->[floor(@$payout_choices / 2)];
+            $o->{payout_choices}              = $payout_choices;
+            $o->{display_number_of_contracts} = $mid_payout_choices;
+
             my $max      = $config->{max_multiplier} * $config->{max_multiplier_stake}{USD} / $current_tick->quote;
             my $min      = $config->{min_multiplier} * $config->{min_multiplier_stake}{USD} / $current_tick->quote;
             my $distance = abs($mid_barrier_choices);
@@ -416,6 +434,55 @@ sub _default_barrier_for_turbos {
     return BOM::Product::Contract::Strike::Turbos::strike_price_choices($args);
 }
 
+=head2 _default_payout_choices_for_turbos
+
+calculates and return default barrier range for turbos options
+
+=cut
+
+sub _default_payout_choices_for_turbos {
+    my $args = shift;
+
+    my ($underlying, $expiry, $sentiment, $default_stake, $tick_at_min_start, $per_symbol_config) =
+        @{$args}{'underlying', 'expiry', 'sentiment', 'default_stake', 'tick_at_min_start', 'per_symbol_config'};
+
+    return unless $tick_at_min_start;
+
+    my $fixed_config                 = LoadFile('/home/git/regentmarkets/bom-config/share/fixed_turbos_config.yml');
+    my $sigma                        = $fixed_config->{$underlying->symbol}->{sigma}      || undef;
+    my $min_expected_spot_movement_t = $per_symbol_config->{min_expected_spot_movement_t} || undef;
+    my $max_expected_spot_movement_t = $per_symbol_config->{max_expected_spot_movement_t} || undef;
+    my $increment_percentage         = $per_symbol_config->{increment_percentage}         || undef;
+
+    my $sqrt_min_t_per_year = sqrt($min_expected_spot_movement_t / BOM::Product::Role::Turbos::SECONDS_IN_A_YEAR);
+    my $sqrt_max_t_per_year = sqrt($max_expected_spot_movement_t / BOM::Product::Role::Turbos::SECONDS_IN_A_YEAR);
+
+    unless (defined $min_expected_spot_movement_t && defined $max_expected_spot_movement_t && defined $increment_percentage) {
+        BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
+    }
+
+    # we have different commission for turboslong and turbosshort
+    my $commission =
+        $sentiment eq 'up'
+        ? _calc_commission_up($expiry, $underlying, $fixed_config, $per_symbol_config)
+        : _calc_commission_down($expiry, $underlying, $fixed_config, $per_symbol_config);
+
+    # Using this formula to calculate n_closest and n_furthest
+    # n_closest = stake / (spot * commission + spot* sigma * sqrt(min_expected_spot_movement_t / SECONDS_IN_A_YEAR))
+    # n_furthest = stake / (spot * commission + spot * sigma * sqrt(max_expected_spot_movement_t / SECONDS_IN_A_YEAR))
+    # where spot = tick_at_min_start
+    my $n_closest  = $default_stake / (($tick_at_min_start->quote * $commission) + ($tick_at_min_start->quote * $sigma * $sqrt_min_t_per_year));
+    my $n_furthest = $default_stake / (($tick_at_min_start->quote * $commission) + ($tick_at_min_start->quote * $sigma * $sqrt_max_t_per_year));
+
+    $args = {
+        n_closest            => $n_closest,
+        n_furthest           => $n_furthest,
+        increment_percentage => $increment_percentage,
+    };
+
+    return BOM::Product::Role::Turbos::calc_payout_choices($args);
+}
+
 =head2 _turbos_per_symbol_config
 
 get turbos per symbol config
@@ -435,6 +502,46 @@ sub _turbos_per_symbol_config {
         # throw error because configuration is unsupported for the symbol and landing company pair.
         BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
     }
+}
+
+=head2 _calc_commission_up
+
+calculates and return commission for up sentiment
+commssion_up = average_tick_size_up * ticks_commission_up_{expiry}
+
+=cut
+
+sub _calc_commission_up {
+    my ($expiry, $underlying, $fixed_config, $per_symbol_config) = @_;
+
+    my $avg_tick_size_up   = $fixed_config->{$underlying->symbol}->{average_tick_size_up} || undef;
+    my $tick_commission_up = $per_symbol_config->{"ticks_commission_up_${expiry}"}        || undef;
+
+    unless (defined $avg_tick_size_up && defined $tick_commission_up) {
+        BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
+    }
+
+    return $avg_tick_size_up * $tick_commission_up;
+}
+
+=head2 _calc_commission_down
+
+calculates and return commission for up sentiment
+commssion_down = average_tick_size_down * ticks_commission_down_{expiry}
+
+=cut
+
+sub _calc_commission_down {
+    my ($expiry, $underlying, $fixed_config, $per_symbol_config) = @_;
+
+    my $avg_tick_size_down   = $fixed_config->{$underlying->symbol}->{average_tick_size_down} || undef;
+    my $tick_commission_down = $per_symbol_config->{"ticks_commission_down_${expiry}"}        || undef;
+
+    unless (defined $avg_tick_size_down && defined $tick_commission_down) {
+        BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
+    }
+
+    return $avg_tick_size_down * $tick_commission_down;
 }
 
 sub _default_barrier {

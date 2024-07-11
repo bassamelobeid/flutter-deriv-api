@@ -507,4 +507,84 @@ subtest 'sell_commission' => sub {
     }
 };
 
+# sending payout_per_point in params
+my $symbol_1HZ50V = '1HZ50V';
+my $date          = Date::Utility->new('10-Mar-2015');
+my $entry_tick    = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $date->epoch,
+    quote      => 10010.87,
+    underlying => $symbol_1HZ50V,
+});
+
+my $mocked = Test::MockModule->new('Quant::Framework::Underlying');
+$mocked->mock('tick_at' => sub { return Postgres::FeedDB::Spot::Tick->new(quote => 10010.87, epoch => $date->epoch) });
+
+my $params = {
+    bet_type         => 'TURBOSSHORT',
+    underlying       => $symbol_1HZ50V,
+    date_start       => $date,
+    date_pricing     => $date,
+    duration         => '188d',
+    currency         => 'USD',
+    amount_type      => 'stake',
+    amount           => 200,
+    payout_per_point => '11',
+};
+
+my $config = {
+    'min_expected_spot_movement_t'   => 300,
+    'max_expected_spot_movement_t'   => 10000000,
+    'increment_percentage'           => 0.1,
+    'ticks_commission_up_tick'       => 0.99,
+    'ticks_commission_up_intraday'   => 0.99,
+    'ticks_commission_up_daily'      => 0.99,
+    'ticks_commission_down_tick'     => 0.99,
+    'ticks_commission_down_intraday' => 0.99,
+    'ticks_commission_down_daily'    => 0.99,
+    'max_multiplier'                 => 100,
+    'max_multiplier_stake'           => {'USD' => 2000},
+    'max_open_position'              => 5,
+};
+
+sub floats_are_equal {
+    my ($got, $expected, $tolerance, $message) = @_;
+    if (abs($got - $expected) <= $tolerance) {
+        pass($message);
+    } else {
+        fail($message);
+    }
+}
+my $redis = BOM::Config::Redis::redis_replicated_write();
+my $key   = "quants_config::turbos::per_symbol::common::1HZ50V";
+$config = JSON::MaybeXS::encode_json($config);
+$redis->set($key, $config);
+
+subtest 'config - payout_per_point' => sub {
+    my $c = eval { produce_contract($params); };
+
+    isa_ok $c, 'BOM::Product::Contract::Turbosshort';
+    is $c->code,          'TURBOSSHORT', 'code TURBOSSHORT';
+    is $c->pricing_code,  'TURBOSSHORT', 'pricing code TURBOSSHORT';
+    is $c->category_code, 'turbos',      'category turbos';
+    ok $c->is_path_dependent,       'is path dependent';
+    ok !defined $c->pricing_engine, 'price engine is udefined';
+
+    cmp_ok $c->min_stake, '==', 1.65,   'min stake is correct';
+    cmp_ok $c->max_stake, '==', 326.05, 'max stake is correct';
+    is $c->_build_supplied_barrier, "+17.29", 'barrier is correct';
+    is $c->ask_price,               200,      'ask_price is correct';
+    ok $c->pricing_new, 'this is a new contract';
+
+    # using tolerance to compare floating point numbers
+    my $tolerance = 0.00000001;
+    floats_are_equal($c->n_closest,   12.254372509313162,  $tolerance, 'n_closest is correct');
+    floats_are_equal($c->n_furthest,, 0.07093417658571599, $tolerance, 'n_furthest is correct');
+
+    my $payout_choices = $c->payout_choices;
+    is $payout_choices->[0],  '12', 'correct first payout';
+    is $payout_choices->[1],  '11', 'correct second payout';
+    is $payout_choices->[-2], '2',  'correct second last payout';
+    is $payout_choices->[-1], '1',  'correct last payout';
+};
+
 done_testing();

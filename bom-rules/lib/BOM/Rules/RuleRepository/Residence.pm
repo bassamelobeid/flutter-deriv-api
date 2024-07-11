@@ -34,8 +34,8 @@ rule 'residence.account_type_is_available' => {
     },
 };
 
-rule 'residence.is_signup_allowed' => {
-    description => "Checks if signup is allowed in the country of residence",
+rule 'residence.is_country_enabled' => {
+    description => "Checks if country of residence is enabled",
     code        => sub {
         my ($self, $context, $args) = @_;
         my $residence = $context->residence($args);
@@ -44,7 +44,7 @@ rule 'residence.is_signup_allowed' => {
         my $country  = $registry->by_code($residence);
 
         $self->fail('InvalidAccount', description => 'Signup is not allowed for country of residence')
-            unless $country && $country->signup->{account};
+            unless $country && $country->signup->{country_enabled};
 
         return 1;
     },

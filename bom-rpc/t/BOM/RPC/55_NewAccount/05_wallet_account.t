@@ -31,7 +31,6 @@ subtest 'Initialization' => sub {
 };
 
 my $method = 'new_account_virtual';
-BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
 
 subtest 'virtual account' => sub {
 
@@ -53,15 +52,17 @@ subtest 'virtual account' => sub {
         $params->{args}->{type} = 'wallet';
         delete $params->{args}->{verification_code};
 
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied')
-            ->error_message_is("Wallet account creation is currently suspended.", 'Wallets are disabled in countries.yml as of now');
+        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Suspended wallets error code')
+            ->error_message_is("Wallet account creation is currently suspended.", 'Suspended wallets error message');
 
         BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
 
         # bad token
         $params->{token} = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token', ['read']);
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('InvalidToken')
-            ->error_message_is("The token is invalid, requires 'admin' scope.", 'correct error for invalid token scope');
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token scope error code')
+            ->error_message_is("The token is invalid, requires 'admin' scope.", 'invalid token scope error message');
 
         $params->{token} = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token', ['admin']);
 
@@ -80,16 +81,6 @@ subtest 'virtual account' => sub {
             ->error_message_is("Sorry, our service is not available for your country of residence.",
             'Wallets are disabled in countries.yml as of now');
 
-        my $mock_countries = Test::MockModule->new('Brands::Countries');
-        $mock_countries->redefine(
-            wallet_companies_for_country => sub {
-                my ($self, $country, $type) = @_;
-                $type //= '';
-                return [$type] if ($type =~ qr/svg|virtual/);
-
-                return [];
-            });
-
         my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
         $mock_business_countries->redefine(
             wallet_companies => sub {
@@ -99,12 +90,25 @@ subtest 'virtual account' => sub {
 
                 return [];
             });
+        $mock_business_countries->redefine(
+            signup => {
+                wallet          => 0,
+                country_enabled => 1
+            });
 
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully after the country settings was changed');
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('WalletSignupUnavailable', 'wallet signup unavailable error code')
+            ->error_message_is("New wallet accounts are not available in your country.", 'wallet signup unavailable error message');
+
+        $mock_business_countries->redefine(
+            signup => {
+                wallet          => 1,
+                country_enabled => 1
+            });
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully when country settings allow');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^VRW\d+/, 'new VRW loginid';
-
-        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
     };
 
     subtest 'create VRW, then add VRTC' => sub {
@@ -116,10 +120,6 @@ subtest 'virtual account' => sub {
         $params->{args}->{residence}       = 'id';
         $params->{args}->{client_password} = 'pWd12345';
 
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied')
-            ->error_message_is("Wallet account creation is currently suspended.", 'Wallet servie is suspended');
-
-        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $email,
             created_for => 'account_opening'
@@ -129,16 +129,6 @@ subtest 'virtual account' => sub {
             ->error_message_is("Sorry, our service is not available for your country of residence.",
             'Wallets are disabled in countries.yml as of now');
 
-        my $mock_countries = Test::MockModule->new('Brands::Countries');
-        $mock_countries->redefine(
-            wallet_companies_for_country => sub {
-                my ($self, $country, $type) = @_;
-                $type //= '';
-                return [$type] if ($type =~ qr/svg|virtual/);
-
-                return [];
-            });
-
         my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
         $mock_business_countries->redefine(
             wallet_companies => sub {
@@ -147,6 +137,11 @@ subtest 'virtual account' => sub {
                 return [$type] if ($type =~ qr/svg|virtual/);
 
                 return [];
+            });
+        $mock_business_countries->redefine(
+            signup => {
+                wallet          => 1,
+                country_enabled => 1
             });
 
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
@@ -177,8 +172,6 @@ subtest 'virtual account' => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^VRTC\d+/, 'new VRTC loginid';
-
-        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
     };
 
     subtest 'suspend wallet' => sub {
@@ -204,16 +197,6 @@ subtest 'virtual account' => sub {
             ->error_message_is("Sorry, our service is not available for your country of residence.",
             'Wallets are disabled in countries.yml as of now');
 
-        my $mock_countries = Test::MockModule->new('Brands::Countries');
-        $mock_countries->redefine(
-            wallet_companies_for_country => sub {
-                my ($self, $country, $type) = @_;
-                $type //= '';
-                return [$type] if ($type =~ qr/svg|virtual/);
-
-                return [];
-            });
-
         my $mock_business_countries = Test::MockModule->new('Business::Config::Country');
         $mock_business_countries->redefine(
             wallet_companies => sub {
@@ -222,6 +205,11 @@ subtest 'virtual account' => sub {
                 return [$type] if ($type =~ qr/svg|virtual/);
 
                 return [];
+            });
+        $mock_business_countries->redefine(
+            signup => {
+                wallet          => 1,
+                country_enabled => 1
             });
 
         $params->{args}->{verification_code} = BOM::Platform::Token->new(

@@ -787,6 +787,7 @@ sub error_map {
         DocumentNumberMissing     => localize("The field document number is required."),
         PhoneNumberTaken          => localize("The phone number is not available."),
         VirtualNotAllowed         => localize("This feature is not available to virtual accounts."),
+        WalletSignupUnavailable   => localize('New wallet accounts are not available in your country.'),
     };
 }
 

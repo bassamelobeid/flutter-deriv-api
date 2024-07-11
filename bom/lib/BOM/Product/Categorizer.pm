@@ -80,6 +80,7 @@ sub BUILD {
         $self->_initialize_parameters();
 
         unless ($skip_contract_input_validation) {
+            $self->_validate_turbos;
             $self->_validate_barrier;
             $self->_validate_stake_min_max;
             $self->_validate_multiplier;
@@ -607,6 +608,59 @@ sub _validate_multiplier {
     }
 
     return;
+}
+
+=head2 _validate_turbos
+
+Validation for turbos barriers or payout per point option
+
+=cut
+
+sub _validate_turbos {
+    my $self   = shift;
+    my $params = $self->_parameters;
+
+    return unless $params->{category}->code eq 'turbos';
+
+    # handle turbos validation and params
+    $self->_validate_turbos_params($params);
+
+    # This is for API Backward compatibility.
+    # This block of code will be removed / changed after moving completely to payout_per_point
+    if ($params->{barrier}) {
+        $params->{has_user_defined_barrier} = 1;
+    } else {
+        $params->{has_user_defined_barrier} = 0;
+        $params->{number_of_contracts}      = delete $params->{payout_per_point};
+    }
+}
+
+=head2 _validate_turbos_params
+
+Validation check for barrier and payout_per_points for turbos
+
+=cut
+
+sub _validate_turbos_params {
+    my ($self, $params) = @_;
+
+    unless (exists $params->{barrier} or exists $params->{payout_per_point}) {
+        BOM::Product::Exception->throw(
+            error_code => 'MissingRequiredContractParams',
+            error_args => ['barrier or payout_per_point'],
+            details    => {field => 'select barrier or payout_per_point'},
+        );
+    }
+
+    if (defined $params->{barrier} and defined $params->{payout_per_point}) {
+        BOM::Product::Exception->throw(
+            # we can possibily add a new error_code in Static.pm but as this block of code is going to be removed soon enough
+            # so we are using MissingRequiredContractParams for now
+            error_code => 'MissingRequiredContractParams',
+            error_args => ['barrier or payout_per_point'],
+            details    => {field => 'select either barrier or payout_per_point'},
+        );
+    }
 }
 
 =head2 _validate_limit_order

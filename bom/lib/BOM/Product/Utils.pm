@@ -11,7 +11,7 @@ use Format::Util::Numbers qw(roundcommon);
 use POSIX                 qw(ceil floor);
 use Quant::Framework;
 
-our @EXPORT_OK = qw( business_days_between weeks_between beautify_stake roundup rounddown );
+our @EXPORT_OK = qw( business_days_between weeks_between beautify_stake roundup rounddown rounddown_to_sig_fig roundup_stake rounddown_stake);
 
 =head1 NAME
 
@@ -157,6 +157,85 @@ sub weeks_between {
     my $weeks_between = int($days_between / 7);          #hard coding 7 days a week as this will hardly change
 
     return $weeks_between;
+}
+
+=head2 rounddown_to_sig_fig
+
+=over 4
+
+=item <num> : number to convert to one significant figure
+
+Takes a numerical value and rounds it down to the nearest number with one significant figure. 
+For example, rounddown_to_sig_fig(567, 1) will return 500.
+
+=back
+
+=cut
+
+sub rounddown_to_sig_fig {
+    my ($num, $sig_fig) = @_;
+
+    if ($num == 0 || $sig_fig == 0) {
+        die "invalid input: $num, $sig_fig";
+    }
+
+    my $order   = floor(log(abs($num)) / log(10) + 1) - $sig_fig;
+    my $factor  = 10**$order;
+    my $rounded = int($num / $factor) * $factor;
+    return $rounded;
+
+}
+
+=head2 roundup_stake
+
+=over 4
+
+=item <value_to_round> : number to round up
+
+=item <decimal_places> : round to specific decimal places
+
+Takes a numerical value and round up it upto its decimal places. 
+For example, roundup_stake(5.78190048408128, 2) = 5.79.
+
+=back
+
+=cut
+
+sub roundup_stake {
+    my ($value_to_round, $decimal_places) = @_;
+    $decimal_places //= 1;
+
+    # Calculate the adjustment factor based on the number of decimal places
+    my $adjustment_factor = 10**$decimal_places;
+    my $rounded_value     = ceil($value_to_round * $adjustment_factor) / $adjustment_factor;
+
+    return $rounded_value;
+}
+
+=head2 rounddown_stake
+
+=over 4
+
+=item <value_to_round> : number to round down
+
+=item <decimal_places> : round to specific decimal places
+
+Takes a numerical value and round down it upto its decimal places. 
+For example, rounddown_stake(652.1193505595861, 2) = 652.11.
+
+=back
+
+=cut
+
+sub rounddown_stake {
+    my ($value_to_round, $decimal_places) = @_;
+    $decimal_places //= 2;
+
+    # Calculate the adjustment factor based on the number of decimal places
+    my $adjustment_factor = 10**$decimal_places;
+    my $rounded_value     = floor($value_to_round * $adjustment_factor) / $adjustment_factor;
+
+    return $rounded_value;
 }
 
 1;

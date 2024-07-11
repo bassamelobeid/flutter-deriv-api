@@ -47,7 +47,6 @@ sub create_account {
     }
 
     # we should check for restricted_country
-    # we will also check for `is_signup_allowed` && `is_partner_signup_allowed`
     return {error => {code => 'invalid residence'}} unless $country;
 
     if ($country->restricted()) {
@@ -56,7 +55,7 @@ sub create_account {
 
     my $signup_config = $country->signup();
 
-    if (!$signup_config->{account} && !$signup_config->{partners}) {
+    if (!$signup_config->{country_enabled} && !$signup_config->{partners}) {
         return {error => {code => 'invalid residence'}};
     }
 

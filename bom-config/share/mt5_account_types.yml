@@ -6,8 +6,10 @@ demo\p01_ts01\financial\labuan_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts01
   product: stp
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts01\financial\bvi_stp_usd:
   account_type: demo
@@ -15,8 +17,10 @@ demo\p01_ts01\financial\bvi_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts01
   product: stp
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts01\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financial
   account_type: demo
@@ -24,8 +28,10 @@ demo\p01_ts01\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv.com Limited
 demo\p01_ts01\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 demo\p01_ts01\financial\maltainvest_std_usd: *demo_maltainvest_financial_financial
 
@@ -35,8 +41,10 @@ demo\p01_ts01\financial\svg_std_usd: &demo_svg_financial_financial
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts01\financial\svg_std-lim_usd:
   account_type: demo
@@ -44,8 +52,10 @@ demo\p01_ts01\financial\svg_std-lim_usd:
   market_type: financial
   sub_account_type: financial
   sub_account_category: lim
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts01\financial\vanuatu_std_usd:
   account_type: demo
@@ -53,8 +63,10 @@ demo\p01_ts01\financial\vanuatu_std_usd:
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts01\synthetic\svg_std_usd:
   account_type: demo
@@ -62,8 +74,10 @@ demo\p01_ts01\synthetic\svg_std_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts01
   product: synthetic
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts01\synthetic\bvi_std_usd: 
   account_type: demo
@@ -71,8 +85,10 @@ demo\p01_ts01\synthetic\bvi_std_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts01
   product: synthetic
+  landing_company_name: Deriv.com Limited
 
 demo_bvi_financial_financial_stp: &demo_bvi_financial_financial_stp
   account_type: demo
@@ -80,8 +96,10 @@ demo_bvi_financial_financial_stp: &demo_bvi_financial_financial_stp
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts01
   product: stp
+  landing_company_name: Deriv.com Limited
 demo\bvi_financial_stp: *demo_bvi_financial_financial_stp
 demo01\financial\bvi_stp_usd: *demo_bvi_financial_financial_stp
 
@@ -93,8 +111,10 @@ demo\p01_ts02\financial\labuan_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts02
   product: stp
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts02\financial\bvi_stp_usd:
   account_type: demo
@@ -102,8 +122,10 @@ demo\p01_ts02\financial\bvi_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts02
   product: stp
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts02\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financial
   account_type: demo
@@ -111,8 +133,10 @@ demo\p01_ts02\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts02
   product: financial
+  landing_company_name: Deriv.com Limited
 demo\p01_ts02\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 
 demo\p01_ts02\financial\svg_std_usd: &demo_svg_financial_financial
@@ -121,8 +145,10 @@ demo\p01_ts02\financial\svg_std_usd: &demo_svg_financial_financial
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts02
   product: financial
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts02\financial\svg_std-lim_usd:
   account_type: demo
@@ -130,8 +156,10 @@ demo\p01_ts02\financial\svg_std-lim_usd:
   market_type: financial
   sub_account_type: financial
   sub_account_category: lim
+  product_type: financial
   server: p01_ts02
   product: financial
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts02\financial\vanuatu_std_usd:
   account_type: demo
@@ -139,8 +167,10 @@ demo\p01_ts02\financial\vanuatu_std_usd:
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts02
   product: financial
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts02\synthetic\svg_std_usd:
   account_type: demo
@@ -148,8 +178,10 @@ demo\p01_ts02\synthetic\svg_std_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts02
   product: synthetic
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts02\synthetic\bvi_std_usd: 
   account_type: demo
@@ -157,8 +189,10 @@ demo\p01_ts02\synthetic\bvi_std_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts02
   product: synthetic
+  landing_company_name: Deriv.com Limited
 
 # Demo trade server 03
 
@@ -168,8 +202,10 @@ demo\p01_ts03\financial\labuan_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts03
   product: stp
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts03\financial\bvi_stp_usd:
   account_type: demo
@@ -177,8 +213,10 @@ demo\p01_ts03\financial\bvi_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts03
   product: stp
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts03\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financial
   account_type: demo
@@ -186,8 +224,10 @@ demo\p01_ts03\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts03
   product: financial
+  landing_company_name: Deriv.com Limited
 demo\p01_ts03\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 
 demo\p01_ts03\financial\svg_std_usd: &demo_svg_financial_financial
@@ -196,8 +236,10 @@ demo\p01_ts03\financial\svg_std_usd: &demo_svg_financial_financial
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts03
   product: financial
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts03\financial\svg_std-lim_usd:
   account_type: demo
@@ -205,8 +247,10 @@ demo\p01_ts03\financial\svg_std-lim_usd:
   market_type: financial
   sub_account_type: financial
   sub_account_category: lim
+  product_type: financial
   server: p01_ts03
   product: financial
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts03\financial\vanuatu_std_usd:
   account_type: demo
@@ -214,8 +258,10 @@ demo\p01_ts03\financial\vanuatu_std_usd:
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts03
   product: financial
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts03\synthetic\svg_std_usd:
   account_type: demo
@@ -223,8 +269,10 @@ demo\p01_ts03\synthetic\svg_std_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts03
   product: synthetic
+  landing_company_name: Deriv.com Limited
 
 # Real platform 01 - trade server 01
 
@@ -234,8 +282,10 @@ real\p01_ts01\financial\bvi_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts01
   product: stp
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p01_ts01\financial\bvi_std-hr_usd: &real_bvi_financial_financial
   account_type: real
@@ -243,8 +293,10 @@ real\p01_ts01\financial\bvi_std-hr_usd: &real_bvi_financial_financial
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv (BVI) Ltd.
 real\p01_ts01\financial\bvi_std_usd: *real_bvi_financial_financial
 
 real\p01_ts01\financial\bvi_std-ab_usd: &real_bvi_financial_booking
@@ -253,8 +305,10 @@ real\p01_ts01\financial\bvi_std-ab_usd: &real_bvi_financial_booking
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv (BVI) Ltd.
 real\p01_ts01\financial\bvi_std-ba_usd: *real_bvi_financial_booking
 
 real\p01_ts01\synthetic\bvi_std_usd: &real_p01ts01_bvi_synthetics_financial
@@ -263,8 +317,10 @@ real\p01_ts01\synthetic\bvi_std_usd: &real_p01ts01_bvi_synthetics_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts01
   product: synthetic
+  landing_company_name: Deriv (BVI) Ltd.
 real\p01_ts01\synthetic\bvi_std-hr_usd: *real_p01ts01_bvi_synthetics_financial
 
 real\p01_ts01\financial\labuan_stp_usd:
@@ -273,8 +329,10 @@ real\p01_ts01\financial\labuan_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts01
   product: stp
+  landing_company_name: Deriv (FX) Ltd
 
 real\p01_ts01\financial\maltainvest_std-hr_eur: &real_maltainvest_financial_financial
   account_type: real
@@ -282,8 +340,10 @@ real\p01_ts01\financial\maltainvest_std-hr_eur: &real_maltainvest_financial_fina
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv Investments (Europe) Limited
 real\p01_ts01\financial\maltainvest_std-hr_gbp: *real_maltainvest_financial_financial
 real\p01_ts01\financial\maltainvest_std-hr_usd: *real_maltainvest_financial_financial
 real\p01_ts01\financial\maltainvest_std-ab_eur: *real_maltainvest_financial_financial
@@ -299,8 +359,10 @@ real\p01_ts01\financial\svg_std-hr_usd: &real_svg_financial_financial
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv (SVG) LLC
 real\p01_ts01\financial\svg_std_usd: *real_svg_financial_financial
 
 real\p01_ts01\financial\svg_std-lim_usd:
@@ -309,8 +371,10 @@ real\p01_ts01\financial\svg_std-lim_usd:
   market_type: financial
   sub_account_type: financial
   sub_account_category: lim
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv (SVG) LLC
 
 real\p01_ts01\financial\svg_std-ab_usd: &real_svg_financial_booking
   account_type: real
@@ -318,8 +382,10 @@ real\p01_ts01\financial\svg_std-ab_usd: &real_svg_financial_booking
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv (SVG) LLC
 real\p01_ts01\financial\svg_std-ba_usd: *real_svg_financial_booking
 
 real\p01_ts01\synthetic\svg_std-hr_usd: &real_svg_gaming_financial
@@ -328,8 +394,10 @@ real\p01_ts01\synthetic\svg_std-hr_usd: &real_svg_gaming_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts01
   product: synthetic
+  landing_company_name: Deriv (SVG) LLC
 real\p01_ts01\synthetic\svg_std_usd\01: *real_svg_gaming_financial
 real\p01_ts01\synthetic\svg_std_usd\02: *real_svg_gaming_financial
 real\p01_ts01\synthetic\svg_std_usd\03: *real_svg_gaming_financial
@@ -341,8 +409,10 @@ real\p01_ts01\financial\vanuatu_std-hr_usd: &real_p01ts01_vanuatu_financial_fina
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts01
   product: financial
+  landing_company_name: Deriv (V) Ltd
 real\p01_ts01\financial\vanuatu_std_usd: *real_p01ts01_vanuatu_financial_financial
 real\p01_ts01\financial\vanuatu_std-ab_usd: *real_p01ts01_vanuatu_financial_financial
 real\p01_ts01\financial\vanuatu_std-ba_usd: *real_p01ts01_vanuatu_financial_financial
@@ -353,8 +423,10 @@ real\p01_ts01\synthetic\vanuatu_std_usd: &real_p01ts01_vanuatu_synthetics_financ
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts01
   product: synthetic
+  landing_company_name: Deriv (V) Ltd
 real\p01_ts01\synthetic\vanuatu_std-hr_usd: *real_p01ts01_vanuatu_synthetics_financial
 
 # Real platform 01 - trade server 02
@@ -365,8 +437,10 @@ real\p01_ts02\financial\bvi_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts02
   product: stp
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p01_ts02\synthetic\bvi_std_usd: &real_p01ts02_bvi_synthetics_financial
   account_type: real
@@ -374,8 +448,10 @@ real\p01_ts02\synthetic\bvi_std_usd: &real_p01ts02_bvi_synthetics_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts02
   product: synthetic
+  landing_company_name: Deriv (BVI) Ltd.
 real\p01_ts02\synthetic\bvi_std-hr_usd: *real_p01ts02_bvi_synthetics_financial
 
 real\p01_ts02\financial\labuan_stp_usd:
@@ -384,8 +460,10 @@ real\p01_ts02\financial\labuan_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts02
   product: stp
+  landing_company_name: Deriv (FX) Ltd
 
 real\p01_ts02\financial\maltainvest_std-hr_gbp: &real_p01ts02_maltainvest_financial_financial
   account_type: real
@@ -393,8 +471,10 @@ real\p01_ts02\financial\maltainvest_std-hr_gbp: &real_p01ts02_maltainvest_financ
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts02
   product: financial
+  landing_company_name: Deriv Investments (Europe) Limited
 real\p01_ts02\financial\maltainvest_std-hr_eur: *real_p01ts02_maltainvest_financial_financial
 real\p01_ts02\financial\maltainvest_std-hr_usd: *real_p01ts02_maltainvest_financial_financial
 
@@ -404,8 +484,10 @@ real\p01_ts02\financial\svg_std-hr_usd: &real_p01ts02_svg_financial_financial
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts02
   product: financial
+  landing_company_name: Deriv (SVG) LLC
 real\p01_ts02\financial\svg_std_usd: *real_p01ts02_svg_financial_financial
 
 real\p01_ts02\synthetic\svg_std-hr_usd: &real_p01ts02_svg_gaming_financial
@@ -414,8 +496,10 @@ real\p01_ts02\synthetic\svg_std-hr_usd: &real_p01ts02_svg_gaming_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts02
   product: synthetic
+  landing_company_name: Deriv (SVG) LLC
 real\p01_ts02\synthetic\svg_std_usd\01: *real_p01ts02_svg_gaming_financial
 real\p01_ts02\synthetic\svg_std_usd\02: *real_p01ts02_svg_gaming_financial
 real\p01_ts02\synthetic\svg_std_usd\03: *real_p01ts02_svg_gaming_financial
@@ -427,8 +511,10 @@ real\p01_ts02\synthetic\vanuatu_std_usd: &real_p01ts02_vanuatu_synthetics_financ
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts02
   product: synthetic
+  landing_company_name: Deriv (V) Ltd
 real\p01_ts02\synthetic\vanuatu_std-hr_usd: *real_p01ts02_vanuatu_synthetics_financial
 
 # Real platform 01 - trade server 03
@@ -439,8 +525,10 @@ real\p01_ts03\financial\bvi_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts03
   product: stp
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p01_ts03\synthetic\bvi_std_usd: &real_p01ts03_bvi_synthetics_financial
   account_type: real
@@ -448,8 +536,10 @@ real\p01_ts03\synthetic\bvi_std_usd: &real_p01ts03_bvi_synthetics_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts03
   product: synthetic
+  landing_company_name: Deriv (BVI) Ltd.
 real\p01_ts03\synthetic\bvi_std-hr_usd: *real_p01ts03_bvi_synthetics_financial
 
 real\p01_ts03\financial\labuan_stp_usd:
@@ -458,8 +548,10 @@ real\p01_ts03\financial\labuan_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts03
   product: stp
+  landing_company_name: Deriv (FX) Ltd
 
 real\p01_ts03\financial\maltainvest_std-hr_gbp: &real_p01ts03_maltainvest_financial_financial
   account_type: real
@@ -467,8 +559,10 @@ real\p01_ts03\financial\maltainvest_std-hr_gbp: &real_p01ts03_maltainvest_financ
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts03
   product: financial
+  landing_company_name: Deriv Investments (Europe) Limited
 real\p01_ts03\financial\maltainvest_std-hr_eur: *real_p01ts03_maltainvest_financial_financial
 real\p01_ts03\financial\maltainvest_std-hr_usd: *real_p01ts03_maltainvest_financial_financial
 
@@ -478,8 +572,10 @@ real\p01_ts03\financial\svg_std-hr_usd: &real_p01ts03_svg_financial_financial
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts03
   product: financial
+  landing_company_name: Deriv (SVG) LLC
 real\p01_ts03\financial\svg_std_usd: *real_p01ts03_svg_financial_financial
 
 real\p01_ts03\synthetic\svg_std-hr_usd: &real_p01ts03_svg_gaming_financial
@@ -488,8 +584,10 @@ real\p01_ts03\synthetic\svg_std-hr_usd: &real_p01ts03_svg_gaming_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts03
   product: synthetic
+  landing_company_name: Deriv (SVG) LLC
 real\p01_ts03\synthetic\svg_std_usd\01: *real_p01ts03_svg_gaming_financial
 real\p01_ts03\synthetic\svg_std_usd\02: *real_p01ts03_svg_gaming_financial
 real\p01_ts03\synthetic\svg_std_usd\03: *real_p01ts03_svg_gaming_financial
@@ -501,8 +599,10 @@ real\p01_ts03\synthetic\vanuatu_std_usd: &real_p01ts03_vanuatu_synthetics_financ
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts03
   product: synthetic
+  landing_company_name: Deriv (V) Ltd
 real\p01_ts03\synthetic\vanuatu_std-hr_usd: *real_p01ts03_vanuatu_synthetics_financial
 
 # Real platform 01 - trade server 04
@@ -513,8 +613,10 @@ real\p01_ts04\financial\bvi_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts04
   product: stp
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p01_ts04\synthetic\bvi_std_usd: &real_p01ts04_bvi_synthetics_financial
   account_type: real
@@ -522,8 +624,10 @@ real\p01_ts04\synthetic\bvi_std_usd: &real_p01ts04_bvi_synthetics_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts04
   product: synthetic
+  landing_company_name: Deriv (BVI) Ltd.
 real\p01_ts04\synthetic\bvi_std-hr_usd: *real_p01ts04_bvi_synthetics_financial
 
 real\p01_ts04\financial\labuan_stp_usd:
@@ -532,8 +636,10 @@ real\p01_ts04\financial\labuan_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p01_ts04
   product: stp
+  landing_company_name: Deriv (FX) Ltd
 
 real\p01_ts04\financial\maltainvest_std-hr_gbp: &real_p01ts04_maltainvest_financial_financial
   account_type: real
@@ -541,8 +647,10 @@ real\p01_ts04\financial\maltainvest_std-hr_gbp: &real_p01ts04_maltainvest_financ
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts04
   product: financial
+  landing_company_name: Deriv Investments (Europe) Limited
 real\p01_ts04\financial\maltainvest_std-hr_eur: *real_p01ts04_maltainvest_financial_financial
 real\p01_ts04\financial\maltainvest_std-hr_usd: *real_p01ts04_maltainvest_financial_financial
 
@@ -552,8 +660,10 @@ real\p01_ts04\financial\svg_std-hr_usd: &real_p01ts04_svg_financial_financial
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p01_ts04
   product: financial
+  landing_company_name: Deriv (SVG) LLC
 real\p01_ts04\financial\svg_std_usd: *real_p01ts04_svg_financial_financial
 
 real\p01_ts04\synthetic\svg_std-hr_usd: &real_p01ts04_svg_gaming_financial
@@ -562,8 +672,10 @@ real\p01_ts04\synthetic\svg_std-hr_usd: &real_p01ts04_svg_gaming_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts04
   product: synthetic
+  landing_company_name: Deriv (SVG) LLC
 real\p01_ts04\synthetic\svg_std_usd\01: *real_p01ts04_svg_gaming_financial
 real\p01_ts04\synthetic\svg_std_usd\02: *real_p01ts04_svg_gaming_financial
 real\p01_ts04\synthetic\svg_std_usd\03: *real_p01ts04_svg_gaming_financial
@@ -575,8 +687,10 @@ real\p01_ts04\synthetic\vanuatu_std_usd: &real_p01ts04_vanuatu_synthetics_financ
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p01_ts04
   product: synthetic
+  landing_company_name: Deriv (V) Ltd
 real\p01_ts04\synthetic\vanuatu_std-hr_usd: *real_p01ts04_vanuatu_synthetics_financial
 
 # Real platform 02 - trade server 02
@@ -587,8 +701,10 @@ real\p02_ts02\financial\bvi_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p02_ts02
   product: stp
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p02_ts02\synthetic\bvi_std_usd: &real_p02ts02_bvi_synthetics_financial
   account_type: real
@@ -596,8 +712,10 @@ real\p02_ts02\synthetic\bvi_std_usd: &real_p02ts02_bvi_synthetics_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p02_ts02
   product: synthetic
+  landing_company_name: Deriv (BVI) Ltd.
 real\p02_ts02\synthetic\bvi_std-hr_usd: *real_p02ts02_bvi_synthetics_financial
 
 real\p02_ts02\financial\labuan_stp_usd:
@@ -606,8 +724,10 @@ real\p02_ts02\financial\labuan_stp_usd:
   market_type: financial
   sub_account_type: financial_stp
   sub_account_category: stp
+  product_type: financial
   server: p02_ts02
   product: stp
+  landing_company_name: Deriv (FX) Ltd
 
 real\p02_ts02\financial\maltainvest_std-hr_gbp: &real_p02ts02_maltainvest_financial_financial
   account_type: real
@@ -615,8 +735,10 @@ real\p02_ts02\financial\maltainvest_std-hr_gbp: &real_p02ts02_maltainvest_financ
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p02_ts02
   product: financial
+  landing_company_name: Deriv Investments (Europe) Limited
 real\p02_ts02\financial\maltainvest_std-hr_eur: *real_p02ts02_maltainvest_financial_financial
 real\p02_ts02\financial\maltainvest_std-hr_usd: *real_p02ts02_maltainvest_financial_financial
 
@@ -626,8 +748,10 @@ real\p02_ts02\financial\svg_std-hr_usd: &real_p02ts02_svg_financial_financial
   market_type: financial
   sub_account_type: financial
   sub_account_category: ''
+  product_type: financial
   server: p02_ts02
   product: financial
+  landing_company_name: Deriv (SVG) LLC
 real\p02_ts02\financial\svg_std_usd: *real_p02ts02_svg_financial_financial
 
 real\p02_ts02\synthetic\svg_std-hr_usd: &real_p02ts02_svg_gaming_financial
@@ -636,8 +760,10 @@ real\p02_ts02\synthetic\svg_std-hr_usd: &real_p02ts02_svg_gaming_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p02_ts02
   product: synthetic
+  landing_company_name: Deriv (SVG) LLC
 real\p02_ts02\synthetic\svg_std_usd\01: *real_p02ts02_svg_gaming_financial
 real\p02_ts02\synthetic\svg_std_usd\02: *real_p02ts02_svg_gaming_financial
 real\p02_ts02\synthetic\svg_std_usd\03: *real_p02ts02_svg_gaming_financial
@@ -649,8 +775,10 @@ real\p02_ts02\synthetic\vanuatu_std_usd: &real_p02ts02_vanuatu_synthetics_financ
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p02_ts02
   product: synthetic
+  landing_company_name: Deriv (V) Ltd
 real\p02_ts02\synthetic\vanuatu_std-hr_usd: *real_p02ts02_vanuatu_synthetics_financial
 
 # Real platform 03 - trade server 01
@@ -661,8 +789,10 @@ real\p03_ts01\synthetic\svg_std-hr_usd\01: &real_p03_ts01_svg_synthetic_financia
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p03_ts01
   product: synthetic
+  landing_company_name: Deriv (SVG) LLC
 real\p03_ts01\synthetic\svg_std_usd\01: *real_p03_ts01_svg_synthetic_financial
 real\p03_ts01\synthetic\svg_std_usd\02: *real_p03_ts01_svg_synthetic_financial
 real\p03_ts01\synthetic\svg_std_usd\03: *real_p03_ts01_svg_synthetic_financial
@@ -674,8 +804,10 @@ real\p03_ts01\synthetic\bvi_std_usd: &real_p03_ts01_bvi_synthetic_financial
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p03_ts01
   product: synthetic
+  landing_company_name: Deriv (BVI) Ltd.
 real\p03_ts01\synthetic\bvi_std-hr_usd: *real_p03_ts01_bvi_synthetic_financial
 
 real\p03_ts01\synthetic\vanuatu_std_usd: &real_p03_ts01_vanuatu_synthetic_financial
@@ -684,8 +816,10 @@ real\p03_ts01\synthetic\vanuatu_std_usd: &real_p03_ts01_vanuatu_synthetic_financ
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p03_ts01
   product: synthetic
+  landing_company_name: Deriv (V) Ltd
 real\p03_ts01\synthetic\vanuatu_std-hr_usd: *real_p03_ts01_vanuatu_synthetic_financial
 
 # Seycheless
@@ -696,8 +830,10 @@ real\p02_ts02\synthetic\seychelles_ib_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: ''
+  product_type: standard
   server: p02_ts02
   product: ib
+  landing_company_name: Deriv.com Limited
 
 real\p01_ts02\synthetic\seychelles_ibt_usd:
   account_type: real
@@ -705,8 +841,10 @@ real\p01_ts02\synthetic\seychelles_ibt_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: 'ibt'
+  product_type: standard
   server: p01_ts02
   product: ibt
+  landing_company_name: Deriv.com Limited
 
 real\p01_ts03\synthetic\seychelles_ibt_usd:
   account_type: real
@@ -714,8 +852,10 @@ real\p01_ts03\synthetic\seychelles_ibt_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: 'ibt'
+  product_type: standard
   server: p01_ts03
   product: ibt
+  landing_company_name: Deriv.com Limited
 
 real\p01_ts04\synthetic\seychelles_ibt_usd:
   account_type: real
@@ -723,8 +863,10 @@ real\p01_ts04\synthetic\seychelles_ibt_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: 'ibt'
+  product_type: standard
   server: p01_ts04
   product: ibt
+  landing_company_name: Deriv.com Limited
 
 real\p02_ts02\synthetic\seychelles_ibt_usd:
   account_type: real
@@ -732,8 +874,10 @@ real\p02_ts02\synthetic\seychelles_ibt_usd:
   market_type: synthetic
   sub_account_type: financial
   sub_account_category: 'ibt'
+  product_type: standard
   server: p02_ts02
   product: ibt
+  landing_company_name: Deriv.com Limited
 
 # DerivEZ Group
 
@@ -741,20 +885,24 @@ real\p02_ts01\all\svg_ez_usd: &real_p02_ts01_svg_derivez
   account_type: real
   landing_company_short: svg
   market_type: all
-  server: p02_ts01
   sub_account_type: derivez
   sub_account_category: ''
+  product_type: standard
+  server: p02_ts01
   product: derivez
+  landing_company_name: Deriv (SVG) LLC
 real\p02_ts01\all\svg_ez-hr_usd: *real_p02_ts01_svg_derivez
 
 demo\p01_ts04\all\svg_ez_usd: &demo_p01_ts04_svg_derivez
   account_type: demo
   landing_company_short: svg
   market_type: all
-  server: p01_ts04
   sub_account_type: derivez
   sub_account_category: ''
+  product_type: standard
+  server: p01_ts04
   product: derivez
+  landing_company_name: Deriv.com Limited
 real\p01_ts04\all\svg_ez-hr_usd: *demo_p01_ts04_svg_derivez
 
 # Mt5 standard Swap Free Group
@@ -765,8 +913,10 @@ real\p01_ts01\all\svg_std-sf_usd:
   market_type: all
   sub_account_type: standard
   sub_account_category: swap_free
+  product_type: swap_free
   server: p01_ts01
   product: swap_free
+  landing_company_name: Deriv (SVG) LLC
 
 real\p01_ts01\all\svg_std-sf-hr_usd:
   account_type: real
@@ -774,8 +924,10 @@ real\p01_ts01\all\svg_std-sf-hr_usd:
   market_type: all
   sub_account_type: standard
   sub_account_category: swap_free_high_risk
+  product_type: swap_free
   server: p01_ts01
   product: swap_free
+  landing_company_name: Deriv (SVG) LLC
 
 real\p02_ts01\all\svg_std-sf_usd:
   account_type: real
@@ -783,8 +935,10 @@ real\p02_ts01\all\svg_std-sf_usd:
   market_type: all
   sub_account_type: standard
   sub_account_category: swap_free
+  product_type: swap_free
   server: p02_ts01
   product: swap_free
+  landing_company_name: Deriv (SVG) LLC
 
 real\p02_ts01\all\svg_std-sf-hr_usd:
   account_type: real
@@ -792,8 +946,10 @@ real\p02_ts01\all\svg_std-sf-hr_usd:
   market_type: all
   sub_account_type: standard
   sub_account_category: swap_free_high_risk
+  product_type: swap_free
   server: p02_ts01
   product: swap_free
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts03\all\svg_std-sf_usd:
   account_type: demo
@@ -801,8 +957,10 @@ demo\p01_ts03\all\svg_std-sf_usd:
   market_type: all
   sub_account_type: standard
   sub_account_category: swap_free
+  product_type: swap_free
   server: p01_ts03
   product: swap_free
+  landing_company_name: Deriv.com Limited
 
 #  Zero spread Real p01_ts01 group
 real\p01_ts01\all\bvi_zs_usd:
@@ -811,8 +969,10 @@ real\p01_ts01\all\bvi_zs_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ''
+  product_type: zero_spread
   server: p01_ts01
   product: zero_spread
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p01_ts01\all\bvi_zs-hr_usd:
   account_type: real
@@ -820,8 +980,10 @@ real\p01_ts01\all\bvi_zs-hr_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: hr
+  product_type: zero_spread
   server: p01_ts01
   product: zero_spread
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p01_ts01\all\bvi_zs-ab_usd:
   account_type: real
@@ -829,8 +991,10 @@ real\p01_ts01\all\bvi_zs-ab_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ab
+  product_type: zero_spread
   server: p01_ts01
   product: zero_spread
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p01_ts01\all\bvi_zs-ba_usd:
   account_type: real
@@ -838,8 +1002,10 @@ real\p01_ts01\all\bvi_zs-ba_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ba
+  product_type: zero_spread
   server: p01_ts01
   product: zero_spread
+  landing_company_name: Deriv (BVI) Ltd.
 
 # Zero spread Real p02_ts01 group
 real\p02_ts01\all\bvi_zs_usd:
@@ -848,8 +1014,10 @@ real\p02_ts01\all\bvi_zs_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ''
+  product_type: zero_spread
   server: p02_ts01
   product: zero_spread
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p02_ts01\all\bvi_zs-hr_usd:
   account_type: real
@@ -857,8 +1025,10 @@ real\p02_ts01\all\bvi_zs-hr_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: hr
+  product_type: zero_spread
   server: p02_ts01
   product: zero_spread
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p02_ts01\all\bvi_zs-ab_usd:
   account_type: real
@@ -866,8 +1036,10 @@ real\p02_ts01\all\bvi_zs-ab_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ab
+  product_type: zero_spread
   server: p02_ts01
   product: zero_spread
+  landing_company_name: Deriv (BVI) Ltd.
 
 real\p02_ts01\all\bvi_zs-ba_usd:
   account_type: real
@@ -875,8 +1047,10 @@ real\p02_ts01\all\bvi_zs-ba_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ba
+  product_type: zero_spread
   server: p02_ts01
   product: zero_spread
+  landing_company_name: Deriv (BVI) Ltd.
 
 # Zero spread demo groups
 demo\p01_ts01\all\bvi_zs_usd:
@@ -885,8 +1059,10 @@ demo\p01_ts01\all\bvi_zs_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ''
+  product_type: zero_spread
   server: p01_ts01
   product: zero_spread
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts02\all\bvi_zs_usd:
   account_type: demo
@@ -894,8 +1070,10 @@ demo\p01_ts02\all\bvi_zs_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ''
+  product_type: zero_spread
   server: p01_ts02
   product: zero_spread
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts03\all\bvi_zs_usd:
   account_type: demo
@@ -903,8 +1081,10 @@ demo\p01_ts03\all\bvi_zs_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ''
+  product_type: zero_spread
   server: p01_ts03
   product: zero_spread
+  landing_company_name: Deriv.com Limited
 
 demo\p01_ts04\all\bvi_zs_usd:
   account_type: demo
@@ -912,5 +1092,7 @@ demo\p01_ts04\all\bvi_zs_usd:
   market_type: all
   sub_account_type: zero_spread
   sub_account_category: ''
+  product_type: zero_spread
   server: p01_ts04
   product: zero_spread
+  landing_company_name: Deriv.com Limited

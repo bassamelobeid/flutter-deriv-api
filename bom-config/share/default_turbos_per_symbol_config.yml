@@ -1,5 +1,8 @@
 common:
   1HZ10V:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -39,6 +42,9 @@ common:
     max_open_position: 5
 
   1HZ25V:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -78,6 +84,9 @@ common:
     max_open_position: 5
 
   1HZ50V:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -117,6 +126,9 @@ common:
     max_open_position: 5
 
   1HZ75V:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -156,6 +168,9 @@ common:
     max_open_position: 5
 
   1HZ100V:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -195,6 +210,9 @@ common:
     max_open_position: 5
 
   1HZ150V:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -234,6 +252,9 @@ common:
     max_open_position: 5
 
   1HZ250V:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -273,6 +294,9 @@ common:
     max_open_position: 5
 
   R_10:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -312,6 +336,9 @@ common:
     max_open_position: 5
 
   R_25:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -351,6 +378,9 @@ common:
     max_open_position: 5
 
   R_50:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9
@@ -390,6 +420,9 @@ common:
     max_open_position: 5
 
   R_75:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 1.1
@@ -429,6 +462,9 @@ common:
     max_open_position: 5
 
   R_100:
+    min_expected_spot_movement_t: 300
+    max_expected_spot_movement_t: 1000000
+    increment_percentage: 0.2
     num_of_barriers: 20
     min_distance_from_spot: 300
     ticks_commission_up_tick: 0.9

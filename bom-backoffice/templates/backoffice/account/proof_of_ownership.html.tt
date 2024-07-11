@@ -1,0 +1,139 @@
+<tr>
+    <td>
+        <table>
+            [% IF doughflow_methods.size %]
+                <tr>
+                    <th><input type="checkbox" name="checkbox-master" onclick="return selectAll()" class='check1'></th>
+                    <th>Payment Method</th>
+                </tr>
+                [% FOR pm IN doughflow_methods %]
+                    <tr>
+                        <td><input type="checkbox" name='poo[[% pm.2 %]]' value="[% pm.1 %]" class='check2'></td>
+                        <td> [% pm.1 %] </td>
+                    </tr>
+                [% END %]
+                <tr>
+                    <td class="label">&nbsp;</td>
+                    <td>
+                        <button name="request_poo" type="submit" class="btn btn--primary" value="1">Request POO</button>
+                    </td>
+                    <br>
+                </tr>
+            [% ELSE %]
+                <tr>
+                    <td> Client has no doughflow transactions </td>
+                </tr>
+            [% END %]
+        </table>
+    </td>
+</tr>
+<br>
+[% IF proof_of_ownership_list.size %]
+    <td class="label" colspan="2">
+        <table width="100%" class="collapsed hover alternate">
+        <form method="POST">
+            <tr>
+                <th>Payment Method</th>
+                <th>Comment</th>
+                <th>Status</th>
+                <th>Requested At</th>
+                <th>Uploaded At</th>
+                <th>Documents</th>
+                <th>Details</th>
+                <th>Actions</th>
+            </tr>
+            [% FOR poo IN proof_of_ownership_list %]
+                <tr>
+                    <td>[% poo.payment_method %]</td>
+                    <td><textarea rows="1" type="text" name="poo_comment_[% poo.id %]" size="15" data-lpignore="true">[% poo.comment %]</textarea></td>
+                    <td>[% poo.status %]</td>
+                    <td>[% poo.creation_time %]</td>
+                    <td>[% poo.uploaded_time || '<i>upload pending</i>' | none %]</td>
+                    <td style="text-align:left;">
+                        [% IF poo.documents.empty %]
+                            <i>No documents uploaded</i>
+                        [% ELSE %]
+                            <ul style="list-style-type:none;padding-inline-start:8px;">
+                                [% FOR doc IN poo.documents %]
+                                    <li> ► <a target="_blank" class="link" href="#" data-poo-doc-id="[% doc %]">[% doc %]</a></li>
+                                [% END %]
+                            <ul>
+                        [% END %]
+                    </td>
+                    <td style="text-align:left;">
+                        [% IF poo.payment_method_details.keys.empty %]
+                            <i>No details</i>
+                        [% ELSE %]
+                            <ul style="list-style-type:none;padding-inline-start:8px;">
+                            [% FOR key IN poo.payment_method_details.keys %]
+                                <li> ► <b>[% key %]:</b> [% poo.payment_method_details.$key %]</li>
+                            [% END %]
+                            </ul>
+                        [% END %]
+                    </td>
+                    <td>
+                        [% IF poo.status != 'pending' %]
+                            <button class="btn btn--primary" name="verify_proof_of_ownership" value="[% poo.id %]">
+                                Verify
+                            </button>
+                            <button class="btn btn--secondary" name="reject_proof_of_ownership" value="[% poo.id %]">
+                                Reject
+                            </button>
+                            <button class="btn btn--secondary" name="delete_proof_of_ownership" value="[% poo.id %]">
+                                Delete
+                            </button>      
+                        [% ELSE %]
+                            <i>Waiting for upload</i>
+                            <button class="btn btn--primary" name="delete_proof_of_ownership" value="[% poo.id %]">
+                                Delete
+                            </button>      
+                        [% END %]
+                    </td>
+                </tr>
+            [% END %]
+            <tr>
+                <td></td>
+                <td colspan="7"><button name="save_comments" type="submit" class="btn btn--primary" value="1">Save Comments</button></td>
+            </tr>
+        </form>
+        </table>
+    </td>
+[% END %]
+<br>
+
+<script>
+    // snatch the url and display text from the documents link section
+    const poolinks = document.querySelectorAll('[data-poo-doc-id]');
+
+    poolinks.forEach(link => {
+        const id = link.getAttribute('data-poo-doc-id');
+        const doclink = document.querySelector('[data-document-id="' + id + '"]');
+
+        if (doclink) {
+            link.innerHTML = doclink.innerHTML;
+            link.href = doclink.getAttribute('href');
+        } else {
+            link.parentNode.removeChild(link); // doc is still uploading or some error occured on the upload process
+        }
+    }); 
+</script>
+
+<script>
+function selectAll () {
+ let master = document.querySelector('.check1');
+ let inputs = document.querySelectorAll('check2');
+ if (master.checked) {
+        for (let i = 0; i < inputs.length; i++) {
+            inputs[i].checked = true;
+            inputs[i].classList = 'check2 data-changed';
+        }
+    
+ }
+ else {
+        for (let i = 0; i < inputs.length; i++) {
+            inputs[i].checked = false;
+        }
+ }
+}
+
+</script>

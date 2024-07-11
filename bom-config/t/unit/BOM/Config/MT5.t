@@ -489,6 +489,8 @@ subtest 'check mt5 account types structure' => sub {
             sub_account_category  => 1,
             server                => 1,
             product               => 1,
+            product_type          => 1,
+            landing_company_name  => 1,
         };
 
         my $actual_keys = {};

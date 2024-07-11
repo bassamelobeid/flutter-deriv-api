@@ -606,59 +606,6 @@ subtest 'skip eligible to migrate flag for demo account' => sub {
     $client_mock->unmock_all;
 };
 
-subtest 'mt5 white label download links assignment' => sub {
-
-    my $client      = BOM::User::Client->new({loginid => 'CR10000'});
-    my $m           = BOM::Platform::Token::API->new;
-    my $token       = $m->create_token($client->loginid, 'test token');
-    my $client_mock = Test::MockModule->new('BOM::User::Client');
-    my $method      = 'mt5_login_list';
-    my $params      = {
-        language => 'EN',
-        token    => $token,
-        args     => {},
-    };
-
-    my $real_params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            account_type     => 'financial',
-            email            => 'real_' . $DETAILS{email},
-            name             => $DETAILS{name},
-            mainPassword     => $DETAILS{password}{main},
-            leverage         => 100,
-            company          => 'bvi',
-            mt5_account_type => 'financial',
-        },
-    };
-    my $result = $c->call_ok('mt5_new_account', $real_params)->has_no_error('real account successfully created')->result;
-    is $result->{account_type}, 'financial', 'real account creation';
-
-    my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
-
-    my ($real_account) = grep { $_->{'group'} && $_->{'group'} =~ /real/ } @$login_list;
-
-    is(
-        $real_account->{white_label}->{download_links}->{windows},
-        'https://download.mql5.com/cdn/web/22698/mt5/derivsvg5setup.exe',
-        'Windows link is correctly assigned'
-    );
-    is(
-        $real_account->{white_label}->{download_links}->{ios},
-        'https://download.mql5.com/cdn/mobile/mt5/ios?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03',
-        'iOS link is correctly assigned'
-    );
-    is(
-        $real_account->{white_label}->{download_links}->{android},
-        'https://download.mql5.com/cdn/mobile/mt5/android?server=DerivSVG-Demo,DerivSVG-Server,DerivSVG-Server-02,DerivSVG-Server-03',
-        'Android link is correctly assigned'
-    );
-    is($real_account->{white_label}->{notification}, 0, 'Notification is correctly assigned');
-
-    $client_mock->unmock_all;
-};
-
 subtest 'mt5 white label links assignment' => sub {
 
     my $client      = BOM::User::Client->new({loginid => 'CR10000'});

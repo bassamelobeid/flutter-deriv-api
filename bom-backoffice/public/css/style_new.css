@@ -1315,3 +1315,11 @@ table.pivot .summary {
     margin: 0;
     padding: 0;
 }
+
+/* Loader implementation */
+.loading_indicator {
+    text-align: center;
+    font-size: 16px;
+    color: #333;
+    padding: 10px;
+}

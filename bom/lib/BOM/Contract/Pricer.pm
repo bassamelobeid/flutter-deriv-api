@@ -182,8 +182,14 @@ sub calc_ask_price_detailed {
                     'order_date'   => $inner->take_profit->{date}->epoch,
                     'order_amount' => $inner->take_profit->{amount}}};
         }
+
+        # handling response for payout_per_points and barriers for turbos
+        # barrier choices should be removed once we switched turbos to payout_per_point
+        $inner->{has_user_defined_barrier}
+            ? ($response->{barrier_choices} = $inner->strike_price_choices)
+            : ($response->{payout_choices} = $inner->payout_choices);
+
         $response->{display_number_of_contracts} = $inner->number_of_contracts;
-        $response->{barrier_choices}             = $inner->strike_price_choices;
         $response->{min_stake}                   = $inner->min_stake;
         $response->{max_stake}                   = $inner->max_stake;
     }

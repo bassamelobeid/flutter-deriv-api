@@ -794,21 +794,10 @@ SQL
 
     $idv_submissions_left = $idv_model->has_expired_document_chance() ? 1 : 0 if $idv_submissions_left <= 0 && $client->get_idv_status() eq 'expired';
 
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-    $app_config->check_for_update();
-    my $payment_method_config = $app_config->payments->payment_methods_with_poo;
-
-    $log->infof("%s: Checking deposits", request()->id);
-    my $doughflow_methods = $client->db->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM payment.doughflow_deposit_methods_without_poo(?, ?)',
-                undef, $client->binary_user_id, $payment_method_config);
-        });
-    my $proof_of_ownership_list = $client->proof_of_ownership->list();
-
     my $poo_access = BOM::Backoffice::Auth::has_authorisation(['AntiFraud', 'CS']);
     $log->infof("%s: Checking POI", request()->id);
     my ($latest_poi_by) = $client->latest_poi_by({only_verified => 1});
+    $log->infof("%s: Finished checking POI ", request()->id);
 
     # checking if the client tax_residence(country) and landing company are part NPJ (TIN not required) so TAX IDENTIFICATION NUMBER will show NPJ country
 
@@ -820,8 +809,9 @@ SQL
         $is_npj = 1;
     }
 
-    BOM::Config::Runtime->instance->app_config->check_for_update();
-    my $dynamic_works_enabled = BOM::Config::Runtime->instance->app_config->partners->enable_dynamic_works;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update();
+    my $dynamic_works_enabled = $app_config->partners->enable_dynamic_works;
 
     my $template_param = {
         is_readonly          => $is_readonly,
@@ -910,7 +900,6 @@ SQL
         risk_disclaimer_updated_at         => $risk_disclaimer_resubmission_updated_at,
         risk_disclaimer_updated_by         => $risk_disclaimer_resubmission_updated_by,
         payment_methods                    => $doughflow_mapper->get_poo_required_methods(),
-        proof_of_ownership_list            => $proof_of_ownership_list,
         disallow_residence_change          => @countries_disallow_residence_change,
         onfido_pending_request             => BOM::User::Onfido::pending_request($client->binary_user_id),
         onfido_supported_country           => BOM::Config::Onfido::is_country_supported(uc($client->place_of_birth || $client->residence // '')),
@@ -919,7 +908,6 @@ SQL
         broker_code                        => $client->broker_code,
         idv_pending_lock                   => $idv_model->get_pending_lock() // -1,
         idv_submissions_left               => $idv_submissions_left,
-        doughflow_methods                  => $doughflow_methods,
         poo_access                         => $poo_access,
         latest_poi_by                      => $latest_poi_by,
         idv_status                         => $client->get_idv_status,

@@ -10,7 +10,7 @@
 
 <form action="[% edit_url %]" enctype='multipart/form-data' method=post>
     [% IF untrusted_statuses %]
-        <table>
+        <table id="status_table">
                 <thead>
                     <tr>
                         <th>&nbsp;</th>
@@ -23,7 +23,7 @@
                 </thead>
                 <tbody>
                 [% FOREACH status IN untrusted_statuses %]
-                    <tr>
+                    <tr id="[% status.code %]">
                         <td align="center"> 
                             <input type="checkbox" name="status_checked" value="[% status.code %]" />
                         </td>
@@ -54,41 +54,10 @@
                         </td>
                     </tr>
                 [% END %]
-                [% FOREACH key IN client_statuses_readonly.keys.sort %]
-                    <tr>
-                        <td> 
-                        </td>
-                        <td align="left">
-                            [% IF client_statuses_readonly.$key.warning %]
-                            <b style="font-size: 1.3rem !important; color:[% client_statuses_readonly.$key.warning %]"> [% key %] <b>
-                            [% ELSE %]
-                            <b> [% key %] <b>
-                            [% END %]
-                        </td>
-                        <td>
-                            <b>
-                                <b>[% client_statuses_readonly.$key.reason %]</b>
-                            </b>
-                        </td>
-                        <td>
-                            <b>
-                                [% client_statuses_readonly.$key.staff_name %]
-                            </b>
-                        </td>
-                        <td>
-                        </td>
-                            <b>
-                                [% client_statuses_readonly.$key.siblings_summary %]
-                            </b>
-                        <td>
-                         <b>
-                           [% client_statuses_readonly.$key.last_modified_date  %]
-                         </b>
-                        </td>
-                    </tr>
-                [% END %]
+                [% INCLUDE 'backoffice/account/read_only_statuses.html.tt' client_statuses_readonly=client_statuses_readonly %]
             </tbody>
          </table>
+         <div id="status_loader" class="loading_indicator"><b>Loading... This will be optimized soon.</b></div>
          <br>
     [% END %]
 <table>
