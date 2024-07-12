@@ -42,13 +42,15 @@ use Future::AsyncAwait;
 use Template::AutoFilter;
 use Encode;
 use Array::Utils qw(intersect);
+use Time::HiRes  qw(gettimeofday tv_interval);
 
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
 use constant {
-    DEFAULT_SOURCE   => 5,
-    DEFAULT_STAFF    => 'AUTOEXPIRY',
-    P2P_ORDER_STATUS => {
+    DEFAULT_SOURCE       => 5,
+    DEFAULT_STAFF        => 'AUTOEXPIRY',
+    P2P_LOCAL_CURRENCIES => 'P2P::LOCAL_CURRENCIES',
+    P2P_ORDER_STATUS     => {
         active => [qw(pending buyer-confirmed timed-out disputed)],
         final  => [qw(completed cancelled refunded dispute-refunded dispute-completed)],
     }};
@@ -174,7 +176,8 @@ sub settings_updated {
     my $app_config           = BOM::Config::Runtime->instance->app_config;
     my @restricted_countries = $app_config->payments->p2p->restricted_countries->@*;
 
-    $app_config->check_for_update(1) if $data->{force_update} && @countries;
+    $app_config->check_for_update(1) if @countries;
+    # We only need to get updated app config if we have at least one active subscription to p2p_settings endpoint
 
     for my $country (@countries) {
         next if any { $_ eq $country } @restricted_countries;
@@ -702,8 +705,9 @@ Called by p2p daemon every minute.
 =cut
 
 sub update_local_currencies {
-
-    my %unique_currencies;
+    my $start_tv       = [gettimeofday];
+    my %new_currencies = ();
+    my $redis          = BOM::Config::Redis->redis_p2p_write();
 
     # if we ever support multiple brokers in P2P, this will need reworking
     for my $broker (map { $_->broker_codes->@* } grep { $_->p2p_available } LandingCompany::Registry::get_all) {
@@ -712,11 +716,18 @@ sub update_local_currencies {
             fixup => sub {
                 $_->selectcol_arrayref('SELECT * FROM p2p.active_local_currencies()');
             })->@*;
-        @unique_currencies{@currency} = () if @currency;
+        @new_currencies{@currency} = () if @currency;
     }
-    delete $unique_currencies{'AAD'};
+    delete $new_currencies{'AAD'};
+    my $new_currencies = join ',', sort keys %new_currencies;
 
-    BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', join ',', keys %unique_currencies);
+    # check if there is change in local currencies
+    if ($new_currencies ne ($redis->get(P2P_LOCAL_CURRENCIES) // '')) {
+        BOM::Config::Redis->redis_p2p_write->set(P2P_LOCAL_CURRENCIES, $new_currencies);
+        BOM::Platform::Event::Emitter::emit(p2p_settings_updated => {});
+        stats_timing('p2p.update_local_currency.processing_time', 1000 * tv_interval($start_tv));
+    }
+
 }
 
 =head2 track_p2p_order_event

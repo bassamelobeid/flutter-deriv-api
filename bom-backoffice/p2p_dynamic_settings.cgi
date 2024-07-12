@@ -90,7 +90,7 @@ if (request()->http_method eq 'POST' and request()->params->{save}) {
             'save'              => 'global',
         });
 
-        BOM::Platform::Event::Emitter::emit(p2p_settings_updated => {force_update => 1})
+        BOM::Platform::Event::Emitter::emit(p2p_settings_updated => {})
             if $settings_saved_flag && any { $setting_keys{$_} } @updated_keys;
     }
 }

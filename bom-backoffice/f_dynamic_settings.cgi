@@ -61,7 +61,7 @@ if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}
         'save'              => request()->param('submitted'),
     });
 
-    BOM::Platform::Event::Emitter::emit(p2p_settings_updated => {force_update => 1})
+    BOM::Platform::Event::Emitter::emit(p2p_settings_updated => {})
         if $settings_saved_flag && any { $_ eq "system.suspend.p2p" } @updated_keys;
     BOM::Platform::Event::Emitter::emit(idv_dynamic_settings_updated => {force_update => 1})
         if $settings_saved_flag && any { $_ =~ /^system\.suspend\.idv/ } @updated_keys;

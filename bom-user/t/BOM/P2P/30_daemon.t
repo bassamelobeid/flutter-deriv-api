@@ -17,6 +17,13 @@ my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock('emit' => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
+my @metrics = ();
+my $mock_dd = Test::MockModule->new('BOM::User::Script::P2PDaemon');
+$mock_dd->redefine(
+    stats_timing => sub {
+        push @metrics, @_;
+    });
+
 # need a separate connection for subscribe mode
 my $redis_config = BOM::Config::redis_p2p_config();
 my $p2p_redis    = RedisDB->new(
@@ -429,9 +436,10 @@ subtest 'verification events' => sub {
 
 subtest 'update local currencies' => sub {
     $emitted_events = {};
+    @metrics        = ();
     BOM::User::Script::P2PDaemon->new->on_min;
-
-    cmp_deeply($emitted_events->{p2p_update_local_currencies}, [{}], 'p2p_update_local_currencies event emitted');
+    cmp_deeply($emitted_events->{p2p_update_local_currencies}, [{}],              'p2p_update_local_currencies event emitted');
+    cmp_deeply({@metrics}, {'p2p.daemon.processing_time_min', re('\d+(\.\d+)?')}, 'Correct DD metric sent to record completion time of on_min');
 };
 
 done_testing();
