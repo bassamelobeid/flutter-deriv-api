@@ -6,9 +6,12 @@ use Test::More;
 use Test::Deep;
 use Test::Future;
 use Test::MockModule;
+use Test::MockTime qw(set_absolute_time set_relative_time restore_time);
 
 use BOM::MT5::User::Cached;
 use JSON::MaybeXS;
+
+set_absolute_time('2024-07-09T00:00:00Z');
 
 my $mock_mt5_api = Test::MockModule->new('BOM::MT5::User::Async');
 my $mock_redis   = Test::MockModule->new('RedisDB');
@@ -90,6 +93,7 @@ subtest 'Second request done through Redis' => sub {
 };
 
 subtest 'Invalidating cache' => sub {
+
     my $cache_invalidated = 0;
     $mock_redis->redefine(
         set => sub {
@@ -109,6 +113,8 @@ subtest 'Invalidating cache' => sub {
         });
 
     BOM::MT5::User::Cached::invalidate_mt5_api_cache($mt5_loginid);
+    set_relative_time(1);
+
     cmp_deeply BOM::MT5::User::Cached::get_user_cached($mt5_loginid)->then(
         sub {
             my $user = shift;
@@ -122,6 +128,7 @@ subtest 'Invalidating cache' => sub {
         })->get(), $mt5_user, 'User matches';
     ok $cache_invalidated, 'Cache invalidated';
     ok($api_timestamp != $timestamp_from_redis), 'Request timestamp does not match previous request';
+
 };
 
 subtest 'Redis get error' => sub {
@@ -197,5 +204,7 @@ subtest 'API returns NotFound' => sub {
         },
         'NotFound Response from API';
 };
+
+restore_time();
 
 done_testing;
