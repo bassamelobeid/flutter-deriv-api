@@ -12,6 +12,7 @@ use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Config::Runtime;
 use BOM::Config::PaymentAgent;
 use BOM::User;
@@ -41,17 +42,12 @@ BOM::Test::Helper::P2PWithClient::bypass_sendbird();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments;
 
-my $agent_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'pa@test.com',
-    residence   => 'in',
-});
-$agent_usd->account('USD');
-
-BOM::User->create(
-    email    => $agent_usd->email,
-    password => 'xxx',
-)->add_client($agent_usd);
+my $agent_usd = BOM::Test::Customer->create(
+    residence => 'in',
+    clients   => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        }])->get_client_object('CR');
 
 #Create payment agent
 $agent_usd->payment_agent({
@@ -461,31 +457,21 @@ done_testing();
 sub create_clients {
     my $country = shift;
 
-    my $email = 'dummy' . rand(999) . '@binary.com';
+    my $test_customer = BOM::Test::Customer->create(
+        residence => $country,
+        clients   => [{
+                name            => 'USD',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+            {
+                name            => 'ETH',
+                broker_code     => 'CR',
+                default_account => 'ETH',
+            }]);
 
-    my $user = BOM::User->create(
-        email    => $email,
-        password => 'xxx',
-    );
-
-    $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        residence      => $country,
-        binary_user_id => $user->id,
-    });
-    $client_usd->account('USD');
-
-    $client_eth = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        residence      => $country,
-        binary_user_id => $user->id,
-    });
-    $client_eth->account('ETH');
-
-    $user->add_client($client_usd);
-    $user->add_client($client_eth);
+    $client_usd = $test_customer->get_client_object('USD');
+    $client_eth = $test_customer->get_client_object('ETH');
 }
 
 sub pa_deposit_and_transfer {

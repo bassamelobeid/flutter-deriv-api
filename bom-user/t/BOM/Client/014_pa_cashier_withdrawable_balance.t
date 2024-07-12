@@ -9,6 +9,7 @@ use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::ExchangeRates;
+use BOM::Test::Customer;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 
 my %rates = (ETH => 4000);
@@ -16,24 +17,19 @@ BOM::Test::Helper::ExchangeRates::populate_exchange_rates(\%rates);
 BOM::Test::Helper::ExchangeRates::populate_exchange_rates_db(BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic, \%rates);
 
 subtest 'Withdrawable balance' => sub {
-
-    my $user = BOM::User->create(
-        email    => 'aff1@test.com',
-        password => 'x'
-    );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        binary_user_id => $user->id,
-    });
-    $client->account('USD');
-
-    my $sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        binary_user_id => $user->id,
-    });
-    $sibling->account('ETH');
-
-    $user->add_client($_) for ($client, $sibling);
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name            => 'CR1',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+            {
+                name            => 'CR2',
+                broker_code     => 'CR',
+                default_account => 'ETH',
+            }]);
+    my $client  = $test_customer->get_client_object('CR1');
+    my $sibling = $test_customer->get_client_object('CR2');
 
     my $pa_details = {
         payment_agent_name    => 'bob1',
@@ -153,17 +149,13 @@ subtest 'Withdrawable balance' => sub {
 };
 
 subtest 'balance_for_doughflow' => sub {
-
-    my $user = BOM::User->create(
-        email    => 'aff4@test.com',
-        password => 'x',
-    );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        binary_user_id => $user->id,
-    });
-    $client->account('USD');
-    $user->add_client($client);
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
     BOM::Test::Helper::Client::top_up($client, 'USD', 101);
 
@@ -205,17 +197,13 @@ subtest 'balance_for_doughflow' => sub {
 };
 
 subtest 'client used MT5 before becoming PA' => sub {
-
-    my $user = BOM::User->create(
-        email    => 'aff5@test.com',
-        password => 'x',
-    );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'aff5@test.com',
-    });
-    $client->account('USD');
-    $user->add_client($client);
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
     BOM::Test::Helper::Client::top_up($client, 'USD', 100);
 

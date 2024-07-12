@@ -33,11 +33,8 @@ $config_mock->mock(
     });
 
 subtest 'The PNV object' => sub {
-    $customer = BOM::Test::Customer->create({
-            email    => BOM::Test::Customer::get_random_email_address(),
-            password => 'test_passwd',
-        },
-        [{
+    $customer = BOM::Test::Customer->create(
+        clients => [{
                 name        => 'CR',
                 broker_code => 'CR'
             },
@@ -349,11 +346,8 @@ subtest 'Verify, Taken and Release' => sub {
     ok !$pnv->is_phone_taken('+44555000'), 'Phone number not taken';
     ok !$pnv->is_phone_taken('+22555000'), 'Phone number not taken';
 
-    my $customer2 = BOM::Test::Customer->create({
-            email    => BOM::Test::Customer::get_random_email_address(),
-            password => 'test_passwd',
-        },
-        [{
+    my $customer2 = BOM::Test::Customer->create(
+        clients => [{
                 name        => 'CR',
                 broker_code => 'CR'
             },

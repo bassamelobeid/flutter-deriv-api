@@ -8,18 +8,15 @@ use Test::MockObject;
 
 use BOM::User::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 
 subtest 'has_po_box_address' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-
-    my $user = BOM::User->create(
-        email    => $client->loginid . '@deriv.com',
-        password => 'secret_pwd'
-    )->add_client($client);
-
-    $client->binary_user_id($user->id);
-    $client->user($user);
-    $client->save;
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
     ok !BOM::User::Utility::has_po_box_address($client), 'client has physical address';
 
@@ -39,16 +36,12 @@ subtest 'has_po_box_address' => sub {
 };
 
 subtest 'is_po_box_verified' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-
-    my $user = BOM::User->create(
-        email    => $client->loginid . '@deriv.com',
-        password => 'secret_pwd'
-    )->add_client($client);
-
-    $client->binary_user_id($user->id);
-    $client->user($user);
-    $client->save;
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
     ok !BOM::User::Utility::has_po_box_address($client), 'client has physical address';
     ok !$client->fully_authenticated(),                  'client is not fully authenticated';

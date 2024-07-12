@@ -1305,11 +1305,8 @@ subtest 'test tin manual approval' => sub {
 };
 
 subtest 'Phone Number verification' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email    => BOM::Test::Customer::get_random_email_address(),
-            password => 'test_passwd',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        clients => [{
                 name        => 'CR',
                 broker_code => 'CR'
             },

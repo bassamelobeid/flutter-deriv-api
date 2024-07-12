@@ -9,58 +9,41 @@ use Test::MockModule;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client                  qw( create_client top_up );
+use BOM::Test::Customer;
 use BOM::Test::Email;
 use Syntax::Keyword::Try;
 use BOM::User::Client;
 use BOM::User::Client::Account;
 
-my $cr_email = 'cr@binary.com';
-my $cr_user  = BOM::User->create(
-    email          => $cr_email,
-    password       => BOM::User::Password::hashpw('jskjd8292922'),
+my $test_customer_cr = BOM::Test::Customer->create(
     email_verified => 1,
-);
-my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$client_cr1->email($cr_email);
-$client_cr1->set_default_account('USD');
-$client_cr1->save();
+    clients        => [{
+            name            => 'CR1',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        },
+        {
+            name            => 'CR2',
+            broker_code     => 'CR',
+            default_account => 'ETH',
+        }]);
+my $client_cr1 = $test_customer_cr->get_client_object('CR1');
+my $client_cr2 = $test_customer_cr->get_client_object('CR2');
 
-my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$client_cr2->email($cr_email);
-$client_cr1->set_default_account('ETH');
-$client_cr1->save();
-
-$cr_user->add_client($client_cr1);
-$cr_user->add_client($client_cr2);
-
-my $email = 'mf@binary.com';
-my $user  = BOM::User->create(
-    email          => $email,
-    password       => BOM::User::Password::hashpw('jskjd8292922'),
+my $test_customer_mf = BOM::Test::Customer->create(
     email_verified => 1,
-);
-
-my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-});
-$client_mf->email($email);
-$client_mf->set_default_account('USD');
-$client_mf->save();
-
-$user->add_client($client_mf);
-my $client_mf1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-});
-$client_mf1->email($email);
-$client_mf1->set_default_account('USD');
-$client_mf1->save();
-
-$user->add_client($client_mf1);
+    clients        => [{
+            name            => 'MF',
+            broker_code     => 'MF',
+            default_account => 'USD',
+        },
+        {
+            name            => 'MF1',
+            broker_code     => 'MF',
+            default_account => 'USD',
+        }]);
+my $client_mf  = $test_customer_mf->get_client_object('MF');
+my $client_mf1 = $test_customer_mf->get_client_object('MF1');
 
 # Authentication should be synced between same landing companies.
 subtest 'Authenticate CR' => sub {
@@ -92,9 +75,7 @@ subtest 'Authenticate MF' => sub {
 };
 
 subtest 'ID_PO_BOX authenticated only for SVG' => sub {
-    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $client_cr1 = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}])->get_client_object('CR');
 
     ok $client_cr1->landing_company->short eq 'svg', 'Client is SVG';
 
@@ -102,9 +83,7 @@ subtest 'ID_PO_BOX authenticated only for SVG' => sub {
     ok $client_cr1->get_authentication('ID_PO_BOX'), "SVG Client has ID_PO_BOX";
     ok $client_cr1->fully_authenticated(),           'SVG Client is fully authenticated';
 
-    my $client_mf1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-    });
+    my $client_mf1 = BOM::Test::Customer->create(clients => [{name => 'MF', broker_code => 'MF'}])->get_client_object('MF');
 
     ok $client_mf1->landing_company->short ne 'svg', 'Client is not SVG';
     $client_cr1->set_authentication('ID_PO_BOX', {status => 'pass'});
@@ -114,17 +93,13 @@ subtest 'ID_PO_BOX authenticated only for SVG' => sub {
 };
 
 subtest 'set_authentication_and_status' => sub {
-    my $cr_user = BOM::User->create(
-        email          => 'test@deriv.com',
-        password       => BOM::User::Password::hashpw('jskjd8292922'),
+    my $client_cr1 = BOM::Test::Customer->create(
         email_verified => 1,
-    );
-    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $client_cr1->email('test@deriv.com');
-    $client_cr1->set_default_account('USD');
-    $client_cr1->save();
+        clients        => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            }])->get_client_object('CR');
 
     $client_cr1->set_authentication_and_status('NEEDS_ACTION', 'Sarah Aziziyan');
     ok $client_cr1->get_authentication('ID_DOCUMENT'), "Client has NEEDS_ACTION";
@@ -368,15 +343,14 @@ subtest 'set_authentication_and_status' => sub {
 };
 
 subtest 'set_staff_name' => sub {
-
-    my $client = create_client();
+    my $client = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}])->get_client_object('CR');
     $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'}, 'Sarah Aziziyan');
     my %client_status = map { $_ => $client->status->$_ } @{$client->status->all};
     is($client_status{"allow_document_upload"}->{"staff_name"}, 'Sarah Aziziyan', "staff_name is correct");
 };
 
 subtest 'fully_authenticated with ID_PO_BOX enabled landing company' => sub {
-    my $client = create_client();
+    my $client = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}])->get_client_object('CR');
     my $mock   = Test::MockModule->new('Business::Config::LandingCompany');
 
     $mock->mock(

@@ -9,6 +9,7 @@ use JSON::MaybeXS;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2PWithClient;
+use BOM::Test::Customer;
 use BOM::Config::Runtime;
 
 my $json = JSON::MaybeXS->new;
@@ -42,15 +43,21 @@ subtest p2p_payment_methods => sub {
                 type         => 'bank',
                 fields       => {account => {display_name => 'UPI ID'}}}});
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'id'
-    });
+    my $test_customer = BOM::Test::Customer->create(
+        residence => 'id',
+        clients   => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
-    my $india_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'in'
-    });
+    my $test_customer_in = BOM::Test::Customer->create(
+        residence => 'in',
+        clients   => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $india_client = $test_customer_in->get_client_object('CR');
 
     cmp_deeply($client->p2p_payment_methods('id'),       {}, 'no payment methods with empty bo config');
     cmp_deeply($india_client->p2p_payment_methods('in'), {}, 'no payment methods with empty bo config');

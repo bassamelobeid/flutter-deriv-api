@@ -6,11 +6,15 @@ use Test::Deep;
 use BOM::User::Client;
 use BOM::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 
 subtest 'get_idv_verified' => sub {
-    my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $test_client_cr = $test_customer->get_client_object('CR');
 
     $test_client_cr->status->clear_age_verification();
 
@@ -42,10 +46,13 @@ subtest 'get_idv_verified' => sub {
 };
 
 subtest 'ignore age verification' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my $mock = Test::MockModule->new(ref($client->status));
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
+    my $mock   = Test::MockModule->new(ref($client->status));
     my $idv_validated;
 
     $mock->mock(
@@ -78,15 +85,13 @@ subtest 'ignore age verification' => sub {
 };
 
 subtest 'onfido after idv validated' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my $user = BOM::User->create(
-        email          => 'emailtest88@email.com',
-        password       => BOM::User::Password::hashpw('asdf12345'),
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
-    $user->add_client($client);
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
     my $mock = Test::MockModule->new(ref($client));
     my @latest_poi_by;

@@ -9,11 +9,8 @@ use BOM::User;
 use BOM::User::Client;
 
 subtest 'wallets' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email    => BOM::Test::Customer::get_random_email_address(),
-            password => 'blahblah',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        clients => [{
                 name         => 'CR',
                 broker_code  => 'CR',
                 account_type => 'standard',
@@ -52,11 +49,10 @@ subtest 'wallets' => sub {
 
     for my $type (qw(crypto p2p paymentagent paymentagent_client)) {
         my $wallet = $customer->create_client(
-            $type,
-            {
-                broker_code  => 'CRW',
-                account_type => $type
-            });
+            name         => $type,
+            broker_code  => 'CRW',
+            account_type => $type,
+        );
         like exception { $wallet->doughflow_pin }, qr/doughflow_pin is not applicable to this account type/, "doughflow_pin error for $type wallet";
         like exception { $wallet->set_doughflow_pin }, qr/set_doughflow_pin is not applicable to this account type/,
             "set_doughflow_pin error for $type wallet";
@@ -64,11 +60,8 @@ subtest 'wallets' => sub {
 };
 
 subtest 'legacy account' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email    => BOM::Test::Customer::get_random_email_address(),
-            password => 'blahblah',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        clients => [{
                 name        => 'CR',
                 broker_code => 'CR',
             },

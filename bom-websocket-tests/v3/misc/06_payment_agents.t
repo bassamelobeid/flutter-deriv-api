@@ -22,12 +22,9 @@ $app_config->set({'payment_agents.initial_deposit_per_country' => '{ "default": 
 my $t = build_wsapi_test();
 
 subtest 'paymentagent create and info' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('jskjd8292922'),
-            email_verified => 1,
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',
@@ -83,12 +80,9 @@ subtest 'paymentagent create and info' => sub {
 };
 
 subtest 'payment agent withdraw justification' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('jskjd8292922'),
-            email_verified => 1,
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',

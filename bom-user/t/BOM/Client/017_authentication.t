@@ -5,6 +5,7 @@ use Test::More;
 use Test::MockModule;
 use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init no_auth_method_sync);    # disable auth method sync db trigger for this test
+use BOM::Test::Customer;
 use BOM::Test::Helper::Client;
 use BOM::Test::Email;
 
@@ -281,15 +282,17 @@ subtest 'set_authentication' => sub {
     );
 
     subtest 'MF compliance email' => sub {
-        my $user = BOM::User->create(
-            email    => 'mf1@test.com',
-            password => 'x',
-        );
-
-        my $client_mf  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
-        my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
-        $user->add_client($client_mf);
-        $user->add_client($client_mlt);
+        my $test_customer = BOM::Test::Customer->create(
+            clients => [{
+                    name        => 'MF',
+                    broker_code => 'MF',
+                },
+                {
+                    name        => 'MLT',
+                    broker_code => 'MLT',
+                }]);
+        my $client_mf  = $test_customer->get_client_object('MF');
+        my $client_mlt = $test_customer->get_client_object('MLT');
 
         @single_auths = ();
         $client_mlt->set_authentication('ID_PO_BOX', {status => 'pass'});
@@ -378,15 +381,17 @@ subtest 'sync_authentication_from_siblings' => sub {
     cmp_bag(\@single_auths, [[$clients{mfw_df}->loginid, 'IDV_PHOTO', 'pass'],], 'non-syncable method copied from MF to MFW');
 
     subtest 'MF compliance email' => sub {
-        my $user = BOM::User->create(
-            email    => 'mf2@test.com',
-            password => 'x',
-        );
-
-        my $client_mf  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
-        my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
-        $user->add_client($client_mf);
-        $user->add_client($client_mlt);
+        my $test_customer = BOM::Test::Customer->create(
+            clients => [{
+                    name        => 'MF',
+                    broker_code => 'MF',
+                },
+                {
+                    name        => 'MLT',
+                    broker_code => 'MLT',
+                }]);
+        my $client_mf  = $test_customer->get_client_object('MF');
+        my $client_mlt = $test_customer->get_client_object('MLT');
 
         @single_auths = ();
         $client_mlt->add_client_authentication_method({authentication_method_code => 'ID_DOCUMENT', status => 'pass'});

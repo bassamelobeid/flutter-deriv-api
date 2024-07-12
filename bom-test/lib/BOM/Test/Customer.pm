@@ -16,16 +16,16 @@ BOM::Test::Customer - Manages customer information and client interactions for b
 
   use BOM::Test::Customer;
 
-  my $customer = BOM::Test::Customer->create({
-        email    => 'example@email.com',
-        password => 'hashed_password',
-      }
-      clients  => [
+  my $customer = BOM::Test::Customer->create(
+        email    => 'example@email.com', (optional)
+        password => 'hashed_password', (optional)
+        <other user attributes>,
+        clients  => [
           { name = 'MF', broker_code => 'MF', default_account => 'USD' },
           { name = 'VRTC', broker_code => 'VRTC' },
           { name = 'CR1', broker_code => 'CR' },
           { name = 'CR2', broker_code => 'CR' },
-      ],
+        ],
   );
 
 =head1 DESCRIPTION
@@ -39,10 +39,19 @@ Function that returns a customer object with the specified attributes and client
 =cut
 
 sub create {
-    my ($class, $customer_attributes, $clients) = @_;
+    my ($class, %customer_attributes) = @_;
+
+    # Extract clients from the attributes
+    die "Missing customer attributes" unless $customer_attributes{clients};
+    my $clients = delete $customer_attributes{clients} || [];
+
+    # Add email if not provided
+    $customer_attributes{email} //= get_random_email_address();
+    # Add password if not provided
+    $customer_attributes{password} //= 'secret_password';
 
     # Initialize user
-    my $user = BOM::User->create(%{$customer_attributes});
+    my $user = BOM::User->create(%customer_attributes);
 
     # ******************************************************************************
     # UNDER NO CIRCUMSTANCES SHOULD YOU ATTEMPT TO ACCESS THESE OBJECTS DIRECTLY
@@ -63,9 +72,9 @@ sub create {
     # ******************************************************************************
 
     # Initialize clients
-    for my $client_request (@{$clients}) {
+    for my $client_request (@$clients) {
         my $name = $client_request->{name};
-        $self->_create_client($name, dclone $client_request, dclone $customer_attributes);
+        $self->_create_client($name, $client_request, \%customer_attributes);
     }
 
     return $self;
@@ -105,7 +114,7 @@ Static function that returns random but unique email address
 
 sub get_random_email_address {
     my $hash = substr(sha1_hex(time . $$ . rand), 0, 20);
-    return "$hash\@deriv.com";
+    return "$hash\@example.com";
 }
 
 =head2 get_user_id
@@ -212,6 +221,17 @@ sub get_client_object {
     return $self->{clients}{$name};
 }
 
+=head2 get_all_client_objects
+
+Retrieves an array of all the clients for this customer
+
+=cut
+
+sub get_all_client_objects {
+    my ($self) = @_;
+    return values %{$self->{clients}};
+}
+
 =head2 get_client_token
 
 Retrieves the client token for a specified name.
@@ -227,6 +247,21 @@ sub get_client_token {
     }
 }
 
+=head2 add_loginid
+
+Adds a loginid with no client for the specified login id, also returns client object added.
+
+=cut
+
+sub add_loginid {
+    my ($self, $name, $loginid, $platform, $account_type, $currency, $attributes, $link_to_wallet_loginid) = @_;
+
+    $self->{user}->add_loginid($loginid, $platform, $account_type, $currency, $attributes, $link_to_wallet_loginid);
+    $self->{loginids}{$name} = $loginid;
+
+    return $loginid;
+}
+
 =head2 add_client
 
 Adds a client for the specified login id, also returns client object added.
@@ -234,10 +269,10 @@ Adds a client for the specified login id, also returns client object added.
 =cut
 
 sub add_client {
-    my ($self, $name, $loginid) = @_;
+    my ($self, $name, $loginid, $link_to_wallet_loginid) = @_;
 
     my $new_client = BOM::User::Client->new({loginid => $loginid});
-    $self->{user}->add_client($new_client);
+    $self->{user}->add_client($new_client, $link_to_wallet_loginid);
     $new_client->binary_user_id($self->{user}->id);
     $new_client->save;
 
@@ -255,8 +290,13 @@ Creates and add a client given the passed client parameters
 =cut
 
 sub create_client {
-    my ($self, $name, $client_request) = @_;
-    return $self->_create_client($name, $client_request, {});
+    my ($self, %client_request) = @_;
+
+    # Extract clients from the attributes
+    die "Missing client name" unless $client_request{name};
+    my $name = delete $client_request{name};
+
+    return $self->_create_client($name, \%client_request, {});
 }
 
 =head2 _create_client
@@ -271,6 +311,10 @@ sub _create_client {
     die "Missing 'name'"        unless defined $name;
     die "Missing 'broker_code'" unless defined $broker_code;
 
+    # Deep copy the client request and customer attributes to avoid modifying the original data
+    $client_request      = dclone($client_request);
+    $customer_attributes = dclone($customer_attributes);
+
     my $client_keys = [
         # non_pep_declaration_time is removed as special case, see below
         qw(account_opening_reason address_city address_line_1 address_line_2 address_postcode address_state allow_login aml_risk_classification cashier_setting_password checked_affiliate_exposures citizen comment custom_max_acbal custom_max_daily_turnover custom_max_payout date_joined date_of_birth default_client fatca_declaration_time fatca_declaration first_name first_time_login gender last_name latest_environment mifir_id myaffiliates_token myaffiliates_token_registered payment_agent_withdrawal_expiration_date phone place_of_birth residence restricted_ip_address salutation secret_answer secret_question small_timer source tax_identification_number tax_residence)
@@ -280,6 +324,7 @@ sub _create_client {
         broker_code    => $broker_code,
         email          => $self->{user}->email,
         binary_user_id => $self->{user}->id,
+        (exists $client_request->{loginid}      ? (loginid      => $client_request->{loginid})      : ()),
         (exists $client_request->{account_type} ? (account_type => $client_request->{account_type}) : ()),
         # There is a hidden constraint here non_pep can only be null IF its a virtual client
         (

@@ -40,14 +40,11 @@ my %client_details = (
 );
 
 subtest 'Address validation' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'br',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'br',
+        clients        => [{
                 name            => 'VRTC',
                 broker_code     => 'VRTC',
                 default_account => 'USD',
@@ -91,14 +88,11 @@ subtest 'Address validation' => sub {
 };
 
 subtest 'Tax residence on restricted country' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'br',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'br',
+        clients        => [{
                 name            => 'VRTC',
                 broker_code     => 'VRTC',
                 default_account => 'USD',
@@ -155,14 +149,11 @@ subtest 'feature flag test' => sub {
     # Set feature flag from virtual account
     # get feature flag from real account
     # compare the results to make sure it has been set on user level
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'br',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'br',
+        clients        => [{
                 name            => 'VRTC',
                 broker_code     => 'VRTC',
                 default_account => 'USD',
@@ -213,15 +204,12 @@ subtest 'feature flag test' => sub {
 };
 
 subtest 'Phone Number verified' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'br',
-            phone          => '+55990000001',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'br',
+        phone          => '+55990000001',
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',
@@ -237,23 +225,19 @@ subtest 'Phone Number verified' => sub {
         set_settings => 1,
     };
 
-    my $customer2 = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'br',
-            phone          => $client->phone,
-        },
-        [{
+    my $customer2 = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'br',
+        phone          => $client->phone,
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',
             },
         ]);
 
-    my $client2 = $customer2->get_client_object('CR');
-    my $token2  = $customer2->get_client_token('CR', ['admin']);
+    my $token2 = $customer2->get_client_token('CR', ['admin']);
 
     my $params2 = {
         set_settings => 1,

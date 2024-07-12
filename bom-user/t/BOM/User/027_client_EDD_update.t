@@ -5,13 +5,11 @@ use Test::More;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client                  qw( create_client );
+use BOM::Test::Customer;
 use BOM::Test::Email;
 use BOM::User::Client;
 
-my $email    = 'test-binary' . '@binary.com';
-my $hash_pwd = BOM::User::Password::hashpw('test');
-my $now      = Date::Utility->today();
+my $now = Date::Utility->today();
 
 # Since the database function get_recent_high_risk_clients fails in circleci (because of the included dblink),
 # database access method is mocked here, returning a predefined expected result.
@@ -27,19 +25,13 @@ my @emitted;
 my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_emitter->mock('emit' => sub { push @emitted, [@_]; });
 
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd,
-);
-
-my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email,
-    residence      => 'id',
-    binary_user_id => $user->id
-});
-
-$user->add_client($client_cr);
+my $test_customer = BOM::Test::Customer->create(
+    residence => 'id',
+    clients   => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        }]);
+my $client_cr = $test_customer->get_client_object('CR');
 
 my $c_no_args = BOM::User::Script::EDDClientsUpdate->new();
 
@@ -63,7 +55,7 @@ subtest 'add payment client CR company with n/a status' => sub {
 
     $expected_db_rows = [{
             loginid          => $client_cr->loginid,
-            binary_user_id   => $user->id,
+            binary_user_id   => $test_customer->get_user_id(),
             status           => 'n/a',
             start_date       => $now->date_yyyymmdd,
             last_review_date => $now->date_yyyymmdd,
@@ -84,7 +76,7 @@ subtest 'add payment client CR company with pending status but after 5 days' => 
     my $landing_company = 'CR';
     $expected_db_rows = [{
             loginid          => $client_cr->loginid,
-            binary_user_id   => $user->id,
+            binary_user_id   => $test_customer->get_user_id(),
             status           => 'contacted',
             start_date       => $now->minus_time_interval('5d')->date_yyyymmdd,
             last_review_date => $now->minus_time_interval('5d')->date_yyyymmdd,
@@ -102,7 +94,7 @@ subtest 'add payment client CR company with pending status' => sub {
     my $landing_company = 'CR';
     $expected_db_rows = [{
             loginid          => $client_cr->loginid,
-            binary_user_id   => $user->id,
+            binary_user_id   => $test_customer->get_user_id(),
             status           => 'contacted',
             start_date       => $now->minus_time_interval('7d')->date_yyyymmdd,
             last_review_date => $now->minus_time_interval('7d')->date_yyyymmdd,
@@ -130,7 +122,7 @@ subtest 'add payment client CR company with pending status with unwelcome' => su
     $client_cr->status->upsert('allow_document_upload', 'system', 'Pending EDD docs/info');
     $expected_db_rows = [{
             loginid          => $client_cr->loginid,
-            binary_user_id   => $user->id,
+            binary_user_id   => $test_customer->get_user_id(),
             status           => 'pending',
             start_date       => $now->minus_time_interval('7d')->date_yyyymmdd,
             last_review_date => $now->minus_time_interval('7d')->date_yyyymmdd,
@@ -148,7 +140,7 @@ subtest 'add payment client CR company with no EDD status set' => sub {
     my $landing_company = 'CR';
     $expected_db_rows = [{
             loginid          => $client_cr->loginid,
-            binary_user_id   => $user->id,
+            binary_user_id   => $test_customer->get_user_id(),
             status           => undef,
             start_date       => undef,
             last_review_date => undef,

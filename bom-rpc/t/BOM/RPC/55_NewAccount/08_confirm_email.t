@@ -68,11 +68,8 @@ $method = 'confirm_email';
 subtest $method => sub {
 
     subtest 'verification_code token validation' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email    => BOM::Test::Customer->get_random_email_address(),
-                password => BOM::User::Password::hashpw('jskjd8292922'),
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            clients => [{
                     name        => 'CR',
                     broker_code => 'CR',
                 },
@@ -141,12 +138,9 @@ subtest $method => sub {
     };
 
     subtest 'already verified user' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer->get_random_email_address(),
-                password       => BOM::User::Password::hashpw('jskjd8292922'),
-                email_verified => 1,
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            clients        => [{
                     name        => 'CR',
                     broker_code => 'CR',
                 },
@@ -194,11 +188,8 @@ subtest $method => sub {
     };
 
     subtest 'email_consent' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email    => BOM::Test::Customer->get_random_email_address(),
-                password => BOM::User::Password::hashpw('jskjd8292922'),
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            clients => [{
                     name        => 'CR',
                     broker_code => 'CR',
                 },
@@ -312,15 +303,12 @@ subtest $method => sub {
             };
 
             subtest 'existing user without email verified' => sub {
-                my $customer = BOM::Test::Customer->create({
-                        email          => BOM::Test::Customer->get_random_email_address(),
-                        password       => BOM::User::Password::hashpw('jskjd8292922'),
-                        residence      => 'au',
-                        account_type   => 'binary',
-                        email_verified => 0,
-                        email_consent  => 0,
-                    },
-                    [{
+                my $customer = BOM::Test::Customer->create(
+                    residence      => 'au',
+                    account_type   => 'binary',
+                    email_verified => 0,
+                    email_consent  => 0,
+                    clients        => [{
                             name        => 'VRTC',
                             broker_code => 'VRTC',
                         },
@@ -362,15 +350,12 @@ subtest $method => sub {
             };
 
             subtest 'exisiting user already email verified' => sub {
-                my $customer = BOM::Test::Customer->create({
-                        email          => BOM::Test::Customer->get_random_email_address(),
-                        password       => BOM::User::Password::hashpw('jskjd8292922'),
-                        residence      => 'au',
-                        account_type   => 'binary',
-                        email_verified => 1,
-                        email_consent  => 0,
-                    },
-                    [{
+                my $customer = BOM::Test::Customer->create(
+                    residence      => 'au',
+                    account_type   => 'binary',
+                    email_verified => 1,
+                    email_consent  => 0,
+                    clients        => [{
                             name        => 'VRTC',
                             broker_code => 'VRTC',
                         },
@@ -396,13 +381,10 @@ subtest $method => sub {
             };
 
             subtest 'Incorrect code type from verify_email' => sub {
-                my $customer = BOM::Test::Customer->create({
-                        email        => BOM::Test::Customer->get_random_email_address(),
-                        password     => BOM::User::Password::hashpw('jskjd8292922'),
-                        residence    => 'au',
-                        account_type => 'binary',
-                    },
-                    [{
+                my $customer = BOM::Test::Customer->create(
+                    residence    => 'au',
+                    account_type => 'binary',
+                    clients      => [{
                             name        => 'VRTC',
                             broker_code => 'VRTC',
                         },
@@ -449,13 +431,10 @@ subtest $method => sub {
             };
 
             subtest 'Expired code from verify_email' => sub {
-                my $customer = BOM::Test::Customer->create({
-                        email        => BOM::Test::Customer->get_random_email_address(),
-                        password     => BOM::User::Password::hashpw('jskjd8292922'),
-                        residence    => 'au',
-                        account_type => 'binary',
-                    },
-                    [{
+                my $customer = BOM::Test::Customer->create(
+                    residence    => 'au',
+                    account_type => 'binary',
+                    clients      => [{
                             name        => 'VRTC',
                             broker_code => 'VRTC',
                         },

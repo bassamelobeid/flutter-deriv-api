@@ -20,14 +20,11 @@ use await;
 
 my $t = build_wsapi_test();
 
-my $customer = BOM::Test::Customer->create({
-        email          => 'pnv+challenge@deriv.com',
-        password       => 'secret_pwd',
-        account_type   => 'binary',
-        email_verified => 1,
-        residence      => 'br',
-    },
-    [{
+my $customer = BOM::Test::Customer->create(
+    account_type   => 'binary',
+    email_verified => 1,
+    residence      => 'br',
+    clients        => [{
             name        => 'CR',
             broker_code => 'CR'
         },

@@ -4,18 +4,17 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Database::ClientDB;
 
 my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic->dbh;
 
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-
-BOM::User->create(
-    email    => $client->email,
-    password => 'x'
-)->add_client($client);
+my $test_customer = BOM::Test::Customer->create(
+    clients => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        }]);
+my $client = $test_customer->get_client_object('CR');
 
 $client->payment_agent({
     payment_agent_name    => 'x',

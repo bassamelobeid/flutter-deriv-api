@@ -11,6 +11,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
 use BOM::Test::Email;
+use BOM::Test::Customer;
 
 use BOM::User::Client;
 use BOM::User::Client::Status;
@@ -253,23 +254,18 @@ subtest 'closed status code' => sub {
 };
 
 subtest 'false profile lock' => sub {
-    my $email   = 'locked_for_false_info@email.com';
-    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
-    });
-    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
-    });
-    my $user = BOM::User->create(
-        email          => 'locked_for_false_info@email.com',
-        password       => "Coconut9009",
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
-
-    $user->add_client($client1);
-    $user->add_client($client2);
+        clients        => [{
+                name        => 'CR1',
+                broker_code => 'CR',
+            },
+            {
+                name        => 'CR2',
+                broker_code => 'CR',
+            }]);
+    my $client1 = $test_customer->get_client_object('CR1');
+    my $client2 = $test_customer->get_client_object('CR2');
 
     ok !$client1->locked_for_false_profile_info, 'client1 is not locked yet';
     ok !$client2->locked_for_false_profile_info, 'client2 is not locked yet';
@@ -355,34 +351,23 @@ subtest 'Upsert' => sub {
 };
 
 subtest 'Propagate' => sub {
-    my $email     = 'propa@gation.com';
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
-    $client_vr->email($email);
-    $client_vr->save;
-
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $client_cr->email($email);
-    $client_cr->save;
-
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-    });
-    $client_mf->email($email);
-    $client_mf->save;
-
-    my $test_user = BOM::User->create(
-        email          => $email,
-        password       => 'holamundo',
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
-
-    $test_user->add_client($client_vr);
-    $test_user->add_client($client_cr);
-    $test_user->add_client($client_mf);
+        clients        => [{
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            },
+            {
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+            {
+                name        => 'MF',
+                broker_code => 'MF',
+            }]);
+    my $client_vr = $test_customer->get_client_object('VRTC');
+    my $client_cr = $test_customer->get_client_object('CR');
+    my $client_mf = $test_customer->get_client_object('MF');
 
     my $clients = [$client_mf, $client_cr, $client_vr];
 
@@ -436,43 +421,68 @@ subtest 'Propagate' => sub {
 };
 
 subtest 'Propagate Clear' => sub {
-    my $email     = 'propa@gation2.com';
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
-    $client_vr->email($email);
-    $client_vr->save;
-
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $client_cr->email($email);
-    $client_cr->save;
-
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-    });
-    $client_mf->email($email);
-    $client_mf->save;
-
-    my $test_user = BOM::User->create(
-        email          => $email,
-        password       => 'holamundo',
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
+        residence      => 'id',
+        citizen        => 'id',
+        clients        => [{
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            },
+            {
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+            {
+                name        => 'MF',
+                broker_code => 'MF',
+            }]);
+    my $client_vr = $test_customer->get_client_object('VRTC');
+    my $client_cr = $test_customer->get_client_object('CR');
+    my $client_mf = $test_customer->get_client_object('MF');
 
-    $test_user->add_client($client_vr);
-    $test_user->add_client($client_cr);
-    $test_user->add_client($client_mf);
+    # my $email     = 'propa@gation2.com';
+    #
+    # my $test_user = BOM::User->create(
+    #     email          => $email,
+    #     password       => 'holamundo',
+    #     email_verified => 1,
+    # );
+    #
+    # my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    #     broker_code => 'VRTC',
+    #     binary_user_id => $test_user->id,
+    # });
+    # $client_vr->email($email);
+    # $client_vr->save;
+    #
+    # my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    #     broker_code => 'CR',
+    #     # binary_user_id => $test_user->id,
+    # });
+    # $client_cr->email($email);
+    # $client_cr->save;
+    #
+    # my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    #     broker_code => 'MF',
+    #     # binary_user_id => $test_user->id,
+    # });
+    # $client_mf->email($email);
+    # $client_mf->save;
+    #
+    # $test_user->add_client($client_vr);
+    # $test_user->add_client($client_cr);
+    # $test_user->add_client($client_mf);
 
     my $clients = [$client_mf, $client_cr, $client_vr];
+    # $clients = [$client_mf];
 
     my $cases = [{
             status  => 'allow_poi_resubmission',
             remover => $client_mf,
         },
         {
-            status  => 'allow_document_upload',
+            status  => 'cooling_off_period',
             remover => $client_cr,
         },
         {
@@ -480,13 +490,12 @@ subtest 'Propagate Clear' => sub {
             remover => $client_vr,
         },
     ];
-
     for my $case ($cases->@*) {
         my $remover = $case->{remover};
         my $status  = $case->{status};
-
         subtest join(' ', $remover->loginid, 'propagating', $status, 'removal') => sub {
             $_->status->set($status) for ($clients->@*);
+            print "Remover: " . $remover->loginid . " Status: " . $status . "\n";
             $remover->propagate_clear_status($status);
 
             for my $client ($clients->@*) {
@@ -503,9 +512,12 @@ subtest 'Propagate Clear' => sub {
 };
 
 subtest 'Forged Documents Status' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
     ok !$client->has_forged_documents, 'Client does not have forged documents';
 
@@ -547,23 +559,27 @@ subtest 'Forged Documents Status' => sub {
 };
 
 subtest 'Deposit Attempt' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
-    $client->status->_build_all;          # reload
+    $client->status->_build_all;    # reload
 
     ok !$client->status->deposit_attempt, "Client didn't have a deposit attempt";
 
     $client->status->upsert('deposit_attempt', 'test', 'Client attempted a deposit');
 
-    $client->status->_build_all;          # reload
+    $client->status->_build_all;    # reload
 
     ok $client->status->deposit_attempt, 'deposit_attempt is set';
 
     $client->status->clear_deposit_attempt;
 
-    $client->status->_build_all;          # reload
+    $client->status->_build_all;    # reload
 
     ok !$client->status->deposit_attempt, 'deposit_attempt is removed';
 };
@@ -730,10 +746,13 @@ subtest 'can_copy' => sub {
 };
 
 subtest 'Status Hierarchy' => sub {
-    my $mock   = Test::MockModule->new('BOM::User::Client::Status');
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $mock          = Test::MockModule->new('BOM::User::Client::Status');
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
     subtest 'Multiple Roots' => sub {
 
@@ -882,9 +901,12 @@ subtest 'Status Actions' => sub {
 
     my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
     $mock->redefine(
         '_get_action_config',
@@ -1024,10 +1046,13 @@ subtest 'is_executable' => sub {
 };
 
 subtest 'can_execute' => sub {
-    my $mock   = Test::MockModule->new('BOM::User::Client::Status');
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $mock          = Test::MockModule->new('BOM::User::Client::Status');
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client = $test_customer->get_client_object('CR');
 
     mock_hierarchy(
         $mock,

@@ -8,32 +8,23 @@ use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
 use BOM::Test::Helper::FinancialAssessment;
+use BOM::Test::Customer;
 
 use BOM::User::Client;
 use BOM::User::Password;
 use BOM::User::FinancialAssessment qw(update_financial_assessment);
 
-my $email    = 'abc' . rand . '@binary.com';
-my $hash_pwd = BOM::User::Password::hashpw('test');
-
-my $user = BOM::User->create(
-    email          => $email,
-    password       => $hash_pwd,
-    email_verified => 1,
-);
-
-my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    email       => $email,
-});
-
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-    email       => $email,
-});
-
-$user->add_client($client_mf);
-$user->add_client($client_vr);
+my $test_customer = BOM::Test::Customer->create(
+    clients => [{
+            name        => 'VRTC',
+            broker_code => 'VRTC',
+        },
+        {
+            name        => 'MF',
+            broker_code => 'MF',
+        }]);
+my $client_vr = $test_customer->get_client_object('VRTC');
+my $client_mf = $test_customer->get_client_object('MF');
 
 subtest 'Social responsibility status removal' => sub {
 
@@ -139,15 +130,12 @@ subtest 'Name change after first deposit' => sub {
 };
 
 subtest 'DIEL after authentication status removal' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-        email       => 'dielflow@test.com',
-    });
-
-    BOM::User->create(
-        email    => $client->email,
-        password => 'test',
-    )->add_client($client);
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'MF',
+                broker_code => 'MF',
+            }]);
+    my $client = $test_customer->get_client_object('MF');
 
     #FA not completed
     my $mocked_client = Test::MockModule->new('BOM::User::Client');

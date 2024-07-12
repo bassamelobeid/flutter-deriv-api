@@ -10,36 +10,30 @@ use Test::MockTime qw(restore_time set_fixed_time);
 use Test::Deep;
 use BOM::User::Client::PaymentAgent;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
-use BOM::Test::Helper::Client                  qw( top_up );
+use BOM::Test::Customer;
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
+use BOM::Test::Helper::Client        qw( top_up );
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 use BOM::Config::Runtime;
 use BOM::Config::PaymentAgent;
 use BOM::Config::Redis;
 
-my $email       = 'JoeSmith@binary.com';
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$test_client->email($email);
-$test_client->save;
-BOM::User->create(
-    email    => $test_client->email,
-    password => 'test',
-)->add_client($test_client);
+my $test_customer = BOM::Test::Customer->create(
+    clients => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        }]);
+my $test_client = $test_customer->get_client_object('CR');
 
-my $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$pa_client->email('pa+' . $email);
-$pa_client->set_default_account('USD');
-$pa_client->save;
-my $user = BOM::User->create(
-    email    => $pa_client->email,
-    password => 'test',
-);
-$user->add_client($pa_client);
+my $test_customer_pa = BOM::Test::Customer->create(
+    email_verified => 1,
+    clients        => [{
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        }]);
+my $pa_client = $test_customer_pa->get_client_object('CR');
 
 # make him a payment agent
 my $object_pa = $pa_client->payment_agent({
@@ -77,6 +71,7 @@ my $payment_agent_1 = BOM::User::Client::PaymentAgent->get_payment_agents(
     currency     => 'USD',
     is_listed    => 't',
 );
+
 ok($payment_agent_1->{'CR10001'});
 ok($payment_agent_1->{'CR10001'}->currency_code eq 'USD');
 ok($payment_agent_1->{'CR10001'}->is_listed == 1);
@@ -95,7 +90,7 @@ my $payment_agent_3 = BOM::User::Client::PaymentAgent->get_payment_agents(
     currency     => 'USD',
 );
 
-is($payment_agent_3->{'CR10001'}->client_loginid, 'CR10001', 'agent is allowed two coutries so getting result even for country pk');
+is($payment_agent_3->{'CR10001'}->client_loginid, 'CR10001', 'agent is allowed two countries so getting result even for country pk');
 ok($payment_agent_3->{'CR10001'}->currency_code eq 'USD');
 ok($payment_agent_3->{'CR10001'}->is_listed == 1);
 
@@ -107,14 +102,11 @@ ok($payment_agent_4->{'CR10001'});
 ok($payment_agent_4->{'CR10001'}->currency_code eq 'USD');
 ok($payment_agent_4->{'CR10001'}->is_listed == 1);
 
-# Add new payment agent with is_listed = false
-my $pa_client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$pa_client_2->email('pa+' . $email);
-$pa_client_2->set_default_account('USD');
-$pa_client_2->save;
-$user->add_client($pa_client_2);
+my $pa_client_2 = $test_customer_pa->create_client(
+    name            => 'CR2',
+    broker_code     => 'CR',
+    default_account => 'USD'
+);
 
 # make him a payment agent
 my $object_pa2 = $pa_client_2->payment_agent({
@@ -169,13 +161,12 @@ ok($payment_agent_8->{'CR10002'}->is_listed == 0);
 dies_ok { BOM::User::Client::PaymentAgent->get_payment_agents() };
 
 # Add new payment agent to check validation for adding multiple target_countries
-my $pa_client_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$pa_client_3->email('pa+' . $email);
-$pa_client_3->set_default_account('USD');
-$pa_client_3->save;
-$user->add_client($pa_client_3);
+my $pa_client_3 = $test_customer_pa->create_client(
+    name            => 'CR3',
+    broker_code     => 'CR',
+    default_account => 'USD'
+);
+
 # make him a payment agent
 $pa_client_3->payment_agent({
     payment_agent_name    => 'Joe 3',
@@ -232,16 +223,13 @@ subtest 'get payment agents by name' => sub {
 };
 
 subtest 'validate payment agent details' => sub {
-    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $client1->email('validate+' . $email);
-    $client1->save;
-
-    BOM::User->create(
-        email    => $client1->email,
-        password => 'test',
-    )->add_client($client1);
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client1 = $test_customer->get_client_object('CR');
 
     my $pa = $client1->set_payment_agent();
 
@@ -538,25 +526,19 @@ subtest 'validate payment agent details' => sub {
 };
 
 subtest 'copy payment agent details and related' => sub {
-    my $user = BOM::User->create(
-        email    => 'copy+' . $email,
-        password => 'test',
-    );
-    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $client1->email($user->email);
-    $client1->set_default_account('USD');
-    $client1->save;
-    $user->add_client($client1);
-
-    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $client2->email($user->email);
-    $client2->set_default_account('BTC');
-    $client2->save;
-    $user->add_client($client2);
+    my $test_customer = BOM::Test::Customer->create(
+        clients => [{
+                name            => 'CR1',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+            {
+                name            => 'CR2',
+                broker_code     => 'CR',
+                default_account => 'BTC',
+            }]);
+    my $client1 = $test_customer->get_client_object('CR1');
+    my $client2 = $test_customer->get_client_object('CR2');
 
     my $args1 = {
         'payment_agent_name'            => 'Copy PA 1',

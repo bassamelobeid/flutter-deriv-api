@@ -9,6 +9,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
 use BOM::Test::Helper::FinancialAssessment;
+use BOM::Test::Customer;
 
 use BOM::User;
 use BOM::User::Client;
@@ -19,10 +20,6 @@ use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Test::Deep;
 populate_exchange_rates();
 
-my $email    = 'abc' . rand . '@binary.com';
-my $email_mf = 'abc' . rand . '@binary.com';
-my $hash_pwd = BOM::User::Password::hashpw('test');
-
 # Since the database function get_recent_high_risk_clients fails in circleci (because of the included dblink),
 # database access method is mocked here, returning a predefined expected result.
 my $mock_aml = Test::MockModule->new("BOM::User::Script::AMLClientsUpdate");
@@ -32,64 +29,36 @@ $mock_aml->mock(
         return $expected_db_rows;
     });
 
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd,
-);
+my $test_customer = BOM::Test::Customer->create(
+    residence => 'id',
+    clients   => [{
+            name        => 'CR1',
+            broker_code => 'CR',
+        },
+        {
+            name        => 'CR2',
+            broker_code => 'CR',
+        },
+        {
+            name        => 'VRTC',
+            broker_code => 'VRTC',
+        }]);
+my $client_cr  = $test_customer->get_client_object('CR1');
+my $client_cr2 = $test_customer->get_client_object('CR2');
 
-my $user_mf = BOM::User->create(
-    email    => $email_mf,
-    password => $hash_pwd,
-);
+my $test_customer_mf = BOM::Test::Customer->create(
+    residence => 'de',
+    clients   => [{
+            name        => 'MF1',
+            broker_code => 'MF',
+        },
+        {
+            name        => 'MF2',
+            broker_code => 'MF',
+        }]);
+my $client_mf_1 = $test_customer_mf->get_client_object('MF1');
+my $client_mf_2 = $test_customer_mf->get_client_object('MF2');
 
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    email          => $email,
-    residence      => 'id',
-    binary_user_id => $user->id
-});
-
-my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email,
-    residence      => 'id',
-    binary_user_id => $user->id
-});
-
-my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email,
-    residence      => 'id',
-    binary_user_id => $user->id
-});
-
-my $client_vr_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC',
-    email          => $email_mf,
-    residence      => 'de',
-    binary_user_id => $user_mf->id
-});
-
-my $client_mf_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    email          => $email_mf,
-    residence      => 'de',
-    binary_user_id => $user_mf->id
-});
-
-my $client_mf_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MF',
-    email          => $email_mf,
-    residence      => 'de',
-    binary_user_id => $user_mf->id
-});
-
-$user->add_client($client_vr);
-$user->add_client($client_cr);
-$user->add_client($client_cr2);
-
-$user_mf->add_client($client_mf_1);
-$user_mf->add_client($client_mf_2);
 my $res;
 
 my $c = BOM::User::Script::AMLClientsUpdate->new();
@@ -139,19 +108,13 @@ subtest 'low aml risk client MF company' => sub {
 subtest 'aml risk becomes high CR landing company' => sub {
     my $landing_company = 'CR';
 
-    my $user1 = BOM::User->create(
-        email    => 'test@deriv.com',
-        password => $hash_pwd,
-    );
-
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $user1->email,
-        residence      => 'id',
-        binary_user_id => $user1->id
-    });
-
-    $user1->add_client($test_client);
+    my $test_customer = BOM::Test::Customer->create(
+        residence => 'id',
+        clients   => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $test_client = $test_customer->get_client_object('CR');
 
     my $mocked_cli    = Test::MockModule->new(ref($client_cr));
     my $mocked_status = 'verified';
@@ -498,7 +461,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     $client_cr2->status->setnx('allow_document_upload', 'system', 'Pending authentication or FA');
     # financial assessment complete, unauthenticated
     my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
-    update_financial_assessment($user, $data);
+    update_financial_assessment($client_cr->user, $data);
     undef $client_cr->{financial_assessment};    # let it be reloaded from database
     ok $client_cr->is_financial_assessment_complete, 'financial_assessment completed';
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
@@ -517,7 +480,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
         $_->financial_assessment({data => '{}'});
         $_->save;
     }
-    update_financial_assessment($user, {});
+    update_financial_assessment($client_cr->user, {});
     undef $client_cr->{financial_assessment};
     is $client_cr->is_financial_assessment_complete, 0, 'FA is not complete';
     is @called_for_clients,                          1, 'update_status_after_auth_fa called automatically by financial assessment';
@@ -527,7 +490,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
 
     # financial assessment incompelete, authenticated, different reason
     $client_cr->status->upsert('withdrawal_locked', 'system', 'Some reason');
-    update_financial_assessment($user, $data);
+    update_financial_assessment($client_cr->user, $data);
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
     ok $client_cr->status->withdrawal_locked, 'withdrawal is locked for another reason - cannot be auto-removed';
     undef @called_for_clients;
@@ -539,7 +502,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     $client_cr->status->set('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
     $client_cr->{status}  = undef;
     $client_cr2->{status} = undef;
-    update_financial_assessment($user, $data);
+    update_financial_assessment($client_cr->user, $data);
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
     ok !$client_cr->status->withdrawal_locked,      'withdrawal lock is auto-removed by financial_assessment';
     ok !$client_cr->status->allow_document_upload,  'allow_document_upload is auto-removed by financial_assessment';
@@ -567,7 +530,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     # financial assessment incomplete, authenticated, correct reason, expired documents
     $mocked_documents->mock('expired' => sub { return 1 });
     $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
-    update_financial_assessment($user, $data);
+    update_financial_assessment($client_cr->user, $data);
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
     ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-lock (documents expired)';
     undef @called_for_clients;
@@ -585,26 +548,19 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
 
     #financial assessment complete, flags should get removed
     $client_cr->{status} = undef;
-    update_financial_assessment($user, $data);
+    update_financial_assessment($client_cr->user, $data);
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
     ok !$client_cr->status->financial_assessment_required, 'financial_assessment_required removed because FA completed';
     ok !$client_cr->status->withdrawal_locked,             'withdrawal_locked with "FA needs to be completed" message removed because FA completed';
     undef @called_for_clients;
 
-    my $client_copy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'copyme@test.com',
-        residence   => 'id',
-    });
-    my $user_copy = BOM::User->create(
-        email    => 'copyme@test.com',
-        password => 'Abcd1234',
-    );
-
-    $user_copy->add_client($client_copy);
-    $client_copy->binary_user_id($user_copy->id);
-    $client_copy->user($user_copy);
-    $client_copy->save;
+    my $test_customer = BOM::Test::Customer->create(
+        residence => 'id',
+        clients   => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client_copy = $test_customer->get_client_object('CR');
 
     $client_copy->status->set('financial_assessment_required', 'test', 'test');
     $client_copy->status->set('withdrawal_locked',             'test', 'Pending authentication or FA');
@@ -643,34 +599,23 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
 };
 
 subtest 'AML risk update' => sub {
-    my $user_cr = BOM::User->create(
-        email    => 'aml_risk_update_cr@deriv.com',
-        password => 'password',
-    );
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $user_cr->email,
-        binary_user_id => $user_cr->id,
-        residence      => 'br'
-    });
-    $client_cr->set_default_account('EUR');
-    $client_cr->save;
-    $user_cr->add_client($client_cr);
+    my $test_customer = BOM::Test::Customer->create(
+        residence => 'br',
+        clients   => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'EUR',
+            }]);
+    my $client_cr = $test_customer->get_client_object('CR');
 
-    my $user_mf = BOM::User->create(
-        email    => 'aml_risk_update_mf@deriv.com',
-        password => 'password',
-    );
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'MF',
-        email          => $user_mf->email,
-        binary_user_id => $user_mf->id,
-        residence      => 'es'
-    });
-    $client_mf->set_default_account('EUR');
-    $client_mf->save;
-
-    $user_mf->add_client($client_mf);
+    my $test_customer_mf = BOM::Test::Customer->create(
+        residence => 'es',
+        clients   => [{
+                name            => 'MF',
+                broker_code     => 'MF',
+                default_account => 'EUR',
+            }]);
+    my $client_mf = $test_customer_mf->get_client_object('MF');
 
     my @emails;
     my $mock_script = Test::MockModule->new('BOM::User::Script::AMLClientsUpdate');
@@ -725,8 +670,7 @@ subtest 'AML risk update' => sub {
         is $client_cr->aml_risk_classification, 'high', 'Risk classification changed to high: balance crossed the high threshold';
         is scalar @emails,                      1,      'An email is sent for the high risk client';
 
-        my $mail    = $emails[0];
-        my $user_id = $user_cr->id;
+        my $mail = $emails[0];
         like $mail->{subject}, qr/Daily AML risk update/, 'email subject is correct';
         my $loginid = $client_cr->loginid;
         ok $mail->{message}->[0] =~ qr/$loginid/, 'loginids is found in email content';
@@ -784,8 +728,7 @@ subtest 'AML risk update' => sub {
 
         is scalar @emails, 1, 'An email is sent for the high risk client';
 
-        my $mail    = $emails[0];
-        my $user_id = $user_mf->id;
+        my $mail = $emails[0];
         like $mail->{subject}, qr/Daily AML risk update/, 'email subject is correct';
         my $loginid = $client_mf->loginid;
         ok $mail->{message}->[0] =~ qr/$loginid/, 'MF loginid is found in email content';

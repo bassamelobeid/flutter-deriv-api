@@ -39,12 +39,9 @@ my $app_id = $app->{app_id};
 my $idv_limit    = 2;
 my $onfido_limit = BOM::User::Onfido::limit_per_user;
 my $hash_pwd     = BOM::User::Password::hashpw('jskjd8292922');
-my $customer_mf  = BOM::Test::Customer->create({
-        email          => 'abc@binary.com',
-        password       => $hash_pwd,
-        email_verified => 1,
-    },
-    [{
+my $customer_mf  = BOM::Test::Customer->create(
+    email_verified => 1,
+    clients        => [{
             name            => 'MF',
             broker_code     => 'MF',
             default_account => 'EUR'
@@ -62,13 +59,10 @@ my $customer_mf  = BOM::Test::Customer->create({
 my $test_client = $customer_mf->get_client_object('MF');
 $customer_mf->get_client_object('MFDIS')->status->set('disabled', 1, 'test disabled');
 
-my $customer_cr = BOM::Test::Customer->create({
-        email          => 'sample@binary.com',
-        password       => $hash_pwd,
-        email_verified => 1,
-        citizen        => 'id',
-    },
-    [{
+my $customer_cr = BOM::Test::Customer->create(
+    email_verified => 1,
+    citizen        => 'id',
+    clients        => [{
             name        => 'VRTC',
             broker_code => 'VRTC',
         },
@@ -92,11 +86,8 @@ my $test_client_p2p = $customer_cr->get_client_object('P2P');
 # Add mt5 account to return mt5_additional_kyc_required tag
 BOM::User->new(id => $customer_cr->get_user_id())->add_loginid("MTR1234", 'mt5', 'real', 'USD', {group => 'test/test'});
 
-my $customer_wallet = BOM::Test::Customer->create({
-        email    => 'wallet@test.com',
-        password => 'something',
-    },
-    [{
+my $customer_wallet = BOM::Test::Customer->create(
+    clients => [{
             name            => 'CRW',
             broker_code     => 'CRW',
             account_type    => 'doughflow',
@@ -2141,12 +2132,9 @@ subtest 'get account status' => sub {
             };
 
             subtest "email not verified" => sub {
-                my $customer = BOM::Test::Customer->create({
-                        email          => BOM::Test::Customer->get_random_email_address(),
-                        password       => $hash_pwd,
-                        email_verified => 0,
-                    },
-                    [{
+                my $customer = BOM::Test::Customer->create(
+                    email_verified => 0,
+                    clients        => [{
                             name            => 'CR',
                             broker_code     => 'CR',
                             default_account => 'USD',

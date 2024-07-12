@@ -30,12 +30,9 @@ sub init_test {
 subtest 'Check client selection logic for virtual vs duplicate (currency issue)' => sub {
     init_test();
     # We need a bunch of clients to test with.
-    my $customer = BOM::Test::Customer->create({
-            email          => 'user-service@deriv.com',
-            password       => 'forthewin!!',
-            email_verified => 1,
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        clients        => [{
                 name        => 'CLIENT1',
                 broker_code => 'CR',
             },

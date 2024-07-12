@@ -7,6 +7,7 @@ use Test::Warnings;
 
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::MT5::User::Async;
 use BOM::Rules::Engine;
 use BOM::TradingPlatform;
@@ -24,18 +25,16 @@ $app_config->system->suspend->wallets(0);
 $app_config->system->suspend->wallet_migration(0);
 
 subtest 'Suspend runtime settings' => sub {
-    my ($user) = create_user();
-
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
-
-    $client_cr->set_default_account('USD');
-    $user->add_client($client_cr);
+    my $customer = create_customer();
+    $customer->create_client(
+        name            => 'CR',
+        broker_code     => 'CR',
+        default_account => 'USD',
+        residence       => 'aq'
+    );
 
     my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
@@ -90,18 +89,15 @@ subtest 'Country eligibility' => sub {
     ok(@test_cases > 0, 'Should have at least one test case');
 
     for my $test_case (@test_cases) {
-        my ($user) = create_user($test_case->{country});
-
-        my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => $test_case->{country},
-        });
-
-        $client_cr->set_default_account('USD');
-        $user->add_client($client_cr);
+        my $customer = create_customer($test_case->{country});
+        $customer->create_client(
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+            residence       => $test_case->{country});
 
         my $migration = BOM::User::WalletMigration->new(
-            user   => $user,
+            user   => BOM::User->new(id => $customer->get_user_id()),
             app_id => 1,
         );
 
@@ -112,24 +108,22 @@ subtest 'Country eligibility' => sub {
     }
 
     subtest 'multiple residences, one invalid' => sub {
-        my ($user) = create_user();
-
-        my $client_aq = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'aq',
-        });
-        $client_aq->set_default_account('USD');
-        $user->add_client($client_aq);
-
-        my $client_id = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'id',
-        });
-        $client_id->set_default_account('BTC');
-        $user->add_client($client_id);
+        my $customer = create_customer();
+        $customer->create_client(
+            name            => 'CR1',
+            broker_code     => 'CR',
+            default_account => 'USD',
+            residence       => 'aq'
+        );
+        $customer->create_client(
+            name            => 'CR2',
+            broker_code     => 'CR',
+            default_account => 'BTC',
+            residence       => 'id'
+        );
 
         my $migration = BOM::User::WalletMigration->new(
-            user   => $user,
+            user   => BOM::User->new(id => $customer->get_user_id()),
             app_id => 1,
         );
 
@@ -137,24 +131,22 @@ subtest 'Country eligibility' => sub {
     };
 
     subtest 'multiple residences, one empty' => sub {
-        my ($user) = create_user();
-
-        my $client_aq = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'aq',
-        });
-        $client_aq->set_default_account('USD');
-        $user->add_client($client_aq);
-
-        my $client_none = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => '',
-        });
-        $client_none->set_default_account('BTC');
-        $user->add_client($client_none);
+        my $customer = create_customer();
+        $customer->create_client(
+            name            => 'CR1',
+            broker_code     => 'CR',
+            default_account => 'USD',
+            residence       => 'aq'
+        );
+        $customer->create_client(
+            name            => 'CR2',
+            broker_code     => 'CR',
+            default_account => 'BTC',
+            residence       => ''
+        );
 
         my $migration = BOM::User::WalletMigration->new(
-            user   => $user,
+            user   => BOM::User->new(id => $customer->get_user_id()),
             app_id => 1,
         );
 
@@ -163,71 +155,72 @@ subtest 'Country eligibility' => sub {
 };
 
 subtest 'checks for SVG USD real account and non MF' => sub {
-    my ($user) = create_user();
+    my $customer = create_customer();
 
     my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
     ok !$migration->is_eligible(no_cache => 1), 'No real account not eligible';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], bag(qw(no_real_account no_svg_usd_account)), 'Failed checks for no real account';
 
-    my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
-
-    $client_btc->set_default_account('BTC');
-    $user->add_client($client_btc);
+    $customer->create_client(
+        name            => 'CR1',
+        broker_code     => 'CR',
+        default_account => 'BTC',
+        residence       => 'aq'
+    );
 
     ok !$migration->is_eligible(no_cache => 1), 'Not eligible with only crypto';
-    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['no_svg_usd_account'], 'Failed checks with only crypto';
+    cmp_deeply [$migration->eligibility_checks(no_cache => 1)], bag(qw(no_real_account no_svg_usd_account)), 'Failed checks with only crypto';
 
-    my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
+    $customer->create_client(
+        name            => 'CR2',
+        broker_code     => 'CR',
+        default_account => 'USD',
+        residence       => 'aq'
+    );
 
-    $user->add_client($client_usd);
-    $client_usd->set_default_account('USD');
-
-    # reset cached clients
+    # reset user object cached clients
     $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
     ok $migration->is_eligible(no_cache => 1), 'Eligible with USD real account';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks with USD real account';
 
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-        residence   => 'aq',
-    });
+    $customer->create_client(
+        name            => 'MF1',
+        broker_code     => 'MF',
+        default_account => 'USD',
+        residence       => 'aq'
+    );
 
-    $client_mf->set_default_account('USD');
-    $user->add_client($client_mf);
+    # reset user object cached clients
+    $migration = BOM::User::WalletMigration->new(
+        user   => BOM::User->new(id => $customer->get_user_id()),
+        app_id => 1,
+    );
 
     ok !$migration->is_eligible(no_cache => 1), 'Not eligible with MF account';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['has_non_svg_real_account'], 'Failed checks with MF real account';
 };
 
 subtest 'currency not set' => sub {
+    my $customer = create_customer();
 
-    my ($user) = create_user();
-
-    my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
-        app_id => 1,
+    my $client1 = $customer->create_client(
+        name        => 'CR1',
+        broker_code => 'CR',
+        residence   => 'aq'
     );
 
-    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
-
-    $user->add_client($client1);
+    my $migration = BOM::User::WalletMigration->new(
+        user   => BOM::User->new(id => $customer->get_user_id()),
+        app_id => 1,
+    );
 
     ok !$migration->is_eligible(no_cache => 1), 'Not eligible with no currency set';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], bag('currency_not_set', 'no_svg_usd_account'),
@@ -235,20 +228,25 @@ subtest 'currency not set' => sub {
 
     $client1->set_default_account('USD');
 
-    # reset client cache
+    # reset user object cached clients
     $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
     ok $migration->is_eligible(no_cache => 1), 'Eligible after setting currency';
 
-    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $customer->create_client(
+        name        => 'CR2',
         broker_code => 'CR',
-        residence   => 'aq',
-    });
+        residence   => 'aq'
+    );
 
-    $user->add_client($client2);
+    # reset user object cached clients
+    $migration = BOM::User::WalletMigration->new(
+        user   => BOM::User->new(id => $customer->get_user_id()),
+        app_id => 1,
+    );
 
     ok !$migration->is_eligible(no_cache => 1), 'Not eligible after adding sibling with no currency set';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['currency_not_set'], 'Failed checks is currency_not_set';
@@ -256,40 +254,38 @@ subtest 'currency not set' => sub {
 };
 
 subtest 'EUR account' => sub {
-    my ($user) = create_user();
+    my $customer = create_customer();
 
     my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
-    my $client_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
-
-    $client_eur->set_default_account('EUR');
-    $user->add_client($client_eur);
+    $customer->create_client(
+        name            => 'CR',
+        broker_code     => 'CR',
+        default_account => 'EUR',
+        residence       => 'aq'
+    );
 
     ok !$migration->is_eligible(no_cache => 1), 'Not eligible with EUR account';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], ['no_svg_usd_account'], 'Failed checks with EUR account';
 };
 
 subtest 'p2p' => sub {
-    my ($user) = create_user();
+    my $customer = create_customer();
 
     my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
-
-    $client->set_default_account('USD');
-    $user->add_client($client);
+    my $client = $customer->create_client(
+        name            => 'CR',
+        broker_code     => 'CR',
+        default_account => 'USD',
+        residence       => 'aq'
+    );
 
     ok $migration->is_eligible(no_cache => 1), 'Eligible at first';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks at first';
@@ -301,20 +297,19 @@ subtest 'p2p' => sub {
 };
 
 subtest 'payment agent' => sub {
-    my ($user) = create_user();
+    my $customer = create_customer();
 
     my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
-
-    $client->set_default_account('USD');
-    $user->add_client($client);
+    my $client = $customer->create_client(
+        name            => 'CR',
+        broker_code     => 'CR',
+        default_account => 'USD',
+        residence       => 'aq'
+    );
 
     ok $migration->is_eligible(no_cache => 1), 'Eligible at first';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks at first';
@@ -333,7 +328,7 @@ subtest 'payment agent' => sub {
     $client->save();
 
     $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
@@ -342,21 +337,24 @@ subtest 'payment agent' => sub {
 };
 
 subtest 'join date' => sub {
-    my ($user, $vr_client) = create_user();
+    my $customer = create_customer();
 
     my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
+    my $client = $customer->create_client(
+        name            => 'CR',
+        broker_code     => 'CR',
+        default_account => 'USD',
+        residence       => 'aq'
+    );
 
-    $client->set_default_account('USD');
-    $user->add_client($client);
-
+    $migration = BOM::User::WalletMigration->new(
+        user   => BOM::User->new(id => $customer->get_user_id()),
+        app_id => 1,
+    );
     $client->date_joined(Date::Utility->new->minus_time_interval('89d')->db_timestamp);
     $client->save;
 
@@ -368,7 +366,7 @@ subtest 'join date' => sub {
 
     # reset client cache
     $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
@@ -379,20 +377,19 @@ subtest 'skip joining date check of internal staff who are using company email' 
     my @emails = ('newbie@deriv.com', 'newbie@regentmarkets.com');
 
     for my $email (@emails) {
-        my ($user, $vr_client) = create_user('aq', $email);
+        my $customer = create_customer('aq', $email);
 
         my $migration = BOM::User::WalletMigration->new(
-            user   => $user,
+            user   => BOM::User->new(id => $customer->get_user_id()),
             app_id => 1,
         );
 
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'aq',
-        });
-
-        $client->set_default_account('USD');
-        $user->add_client($client);
+        my $client = $customer->create_client(
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+            residence       => 'aq'
+        );
 
         $client->date_joined(Date::Utility->new->minus_time_interval('89d')->db_timestamp);
         $client->save;
@@ -402,20 +399,19 @@ subtest 'skip joining date check of internal staff who are using company email' 
 };
 
 subtest 'payment agent transactions' => sub {
-    my ($user) = create_user();
+    my $customer = create_customer();
 
     my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
-
-    $client->set_default_account('USD');
-    $user->add_client($client);
+    my $client = $customer->create_client(
+        name            => 'CR',
+        broker_code     => 'CR',
+        default_account => 'USD',
+        residence       => 'aq'
+    );
 
     ok $migration->is_eligible(no_cache => 1), 'Eligible at first';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks at first';
@@ -448,20 +444,19 @@ subtest 'payment agent transactions' => sub {
 };
 
 subtest 'disabled or duplicate account not eligible' => sub {
-    my ($user) = create_user();
+    my $customer = create_customer();
 
     my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
-
-    $client->set_default_account('USD');
-    $user->add_client($client);
+    my $client = $customer->create_client(
+        name            => 'CR',
+        broker_code     => 'CR',
+        default_account => 'USD',
+        residence       => 'aq'
+    );
 
     ok $migration->is_eligible(no_cache => 1), 'Eligible at first';
     cmp_deeply [$migration->eligibility_checks(no_cache => 1)], [], 'No failed checks at first';
@@ -469,7 +464,7 @@ subtest 'disabled or duplicate account not eligible' => sub {
     $client->status->set('disabled', 'system', 'for testing');
 
     my $migration1 = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
@@ -479,7 +474,7 @@ subtest 'disabled or duplicate account not eligible' => sub {
     $client->status->_clear('disabled');
 
     my $migration2 = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
@@ -489,7 +484,7 @@ subtest 'disabled or duplicate account not eligible' => sub {
     $client->status->set('duplicate_account', 'system', 'for testing');
 
     my $migration3 = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
@@ -498,49 +493,40 @@ subtest 'disabled or duplicate account not eligible' => sub {
 };
 
 subtest 'skip joining date check for internal client' => sub {
-    my ($user, $vr_client) = create_user();
+    my $customer = create_customer();
 
     my $migration = BOM::User::WalletMigration->new(
-        user   => $user,
+        user   => BOM::User->new(id => $customer->get_user_id()),
         app_id => 1,
     );
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'aq',
-    });
-
-    $client->set_default_account('USD');
-    $user->add_client($client);
-
+    my $client = $customer->create_client(
+        name            => 'CR',
+        broker_code     => 'CR',
+        default_account => 'USD',
+        residence       => 'aq'
+    );
     $client->date_joined(Date::Utility->new->minus_time_interval('89d')->db_timestamp);
     $client->save;
     $client->status->set('internal_client', 'system', 'for testing');
 
-    ok $migration->is_eligible(no_cache => 1), 'Will be eligibile with recent join date because of internal client status';
+    ok $migration->is_eligible(no_cache => 1), 'Will be eligible with recent join date because of internal client status';
 };
 
-my $user_counter = 1;
-
-sub create_user {
+sub create_customer {
     my $residence = shift;
     my $email     = shift;
 
-    my $user = BOM::User->create(
-        email    => $email // 'testuser' . $user_counter++ . '@example.com',
-        password => '123',
-    );
+    my $customer = BOM::Test::Customer->create(
+        ($email ? (email => $email) : ()),
+        residence => $residence // 'aq',
+        clients   => [{
+                name            => 'VRTC',
+                broker_code     => 'VRTC',
+                default_account => 'USD',
+            }]);
 
-    my $client_virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        residence   => $residence // 'aq',
-    });
-
-    $client_virtual->set_default_account('USD');
-
-    $user->add_client($client_virtual);
-
-    return ($user, $client_virtual);
+    return $customer;
 }
 
 done_testing();

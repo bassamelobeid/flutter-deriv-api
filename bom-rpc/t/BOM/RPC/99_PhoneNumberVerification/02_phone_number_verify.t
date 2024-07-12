@@ -20,11 +20,8 @@ use BOM::Config::Redis;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my $customer = BOM::Test::Customer->create({
-        email    => 'example@binary.com',
-        password => 'test_passwd',
-    },
-    [{
+my $customer = BOM::Test::Customer->create(
+    clients => [{
             name        => 'CR',
             broker_code => 'CR'
         },

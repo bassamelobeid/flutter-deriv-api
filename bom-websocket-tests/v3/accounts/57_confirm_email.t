@@ -23,11 +23,8 @@ my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
 subtest 'confirm_email Input Field Validation' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email    => BOM::Test::Customer->get_random_email_address(),
-            password => BOM::User::Password::hashpw('jskjd8292922'),
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        clients => [{
                 name        => 'CR',
                 broker_code => 'CR',
             },
@@ -86,11 +83,8 @@ subtest 'confirm_email Input Field Validation' => sub {
 };
 
 subtest 'confirm_email token validation' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email    => BOM::Test::Customer->get_random_email_address(),
-            password => BOM::User::Password::hashpw('jskjd8292922'),
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        clients => [{
                 name        => 'CR',
                 broker_code => 'CR',
             },
@@ -237,13 +231,10 @@ subtest 'confirm_email token validation' => sub {
     is($user_data->{class},  'UserNotFound', 'User not found');
 
     #user already verified
-    $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('jskjd8292922'),
-            email_verified => 1,
-            email_consent  => 0,
-        },
-        [{
+    $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        email_consent  => 0,
+        clients        => [{
                 name        => 'CR',
                 broker_code => 'CR',
             },

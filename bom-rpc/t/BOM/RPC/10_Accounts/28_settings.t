@@ -33,14 +33,10 @@ $app_config->cgi->terms_conditions_versions('{ "deriv": "' . $tnc_version . '" }
 
 # init db
 my $token_gen = BOM::Platform::Token::API->new;
-my $hash_pwd  = BOM::User::Password::hashpw('jskjd8292922');
 
-my $customer_X = BOM::Test::Customer->create({
-        email                    => 'abc@binary.com',
-        password                 => $hash_pwd,
-        non_pep_declaration_time => undef,
-    },
-    [{
+my $customer_X = BOM::Test::Customer->create(
+    non_pep_declaration_time => undef,
+    clients                  => [{
             name            => 'MF',
             broker_code     => 'MF',
             default_account => 'USD'
@@ -54,12 +50,9 @@ my $test_client_X_mf = $customer_X->get_client_object('MF');
 my $test_client_X_vr = $customer_X->get_client_object('VRTC');
 
 # User Y
-my $customer_Y = BOM::Test::Customer->create({
-        email    => 'sample@binary.com',
-        password => $hash_pwd,
-        citizen  => 'at',
-    },
-    [{
+my $customer_Y = BOM::Test::Customer->create(
+    citizen => 'at',
+    clients => [{
             name        => 'VRTC',
             broker_code => 'VRTC'
         },
@@ -100,23 +93,17 @@ $test_client_Y_cr_2->save;
 $test_client_Y_cr_2->get_payment_agent->set_countries(['id', 'in']);
 
 # User Q
-my $customer_Q = BOM::Test::Customer->create({
-        email     => 'abcd@binary.com',
-        password  => $hash_pwd,
-        residence => 'id',
-    },
-    [{
+my $customer_Q = BOM::Test::Customer->create(
+    residence => 'id',
+    clients   => [{
             name        => 'VRTC',
             broker_code => 'VRTC'
         },
     ]);
 
 # Client disabled
-my $customer_client_disabled = BOM::Test::Customer->create({
-        email    => 'disabled@client.com',
-        password => $hash_pwd,
-    },
-    [{
+my $customer_client_disabled = BOM::Test::Customer->create(
+    clients => [{
             name        => 'MF',
             broker_code => 'MF'
         },
@@ -1294,17 +1281,14 @@ subtest 'set_settings on virtual account should not change real account settings
 };
 
 subtest 'set_settings with empty phone' => sub {
-    my $user = BOM::User->create(
-        email    => 'testematil@example.com',
-        password => $hash_pwd,
-    );
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        phone          => '',
-        email          => $user->email,
-        binary_user_id => $user->id,
-    });
-    $user->add_client($test_client);
+    my $customer = BOM::Test::Customer->create(
+        phone   => '',
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $test_client = $customer->get_client_object('CR');
 
     my $m      = BOM::Platform::Token::API->new;
     my $token  = $m->create_token($test_client->loginid, 'test token');
@@ -1323,19 +1307,14 @@ subtest 'set_settings with empty phone' => sub {
 };
 
 subtest 'set_settings set tax_identification_number with client with tin_approved_time' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    $test_client->tin_approved_time(Date::Utility->new()->datetime_yyyymmdd_hhmmss);
-    $test_client->save();
-
-    my $user = BOM::User->create(
-        email    => 'testematil1@example.com',
-        password => $hash_pwd,
-    );
-
-    $user->add_client($test_client);
+    my $customer = BOM::Test::Customer->create(
+        tin_approved_time => Date::Utility->new()->datetime_yyyymmdd_hhmmss,
+        clients           => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $test_client = $customer->get_client_object('CR');
 
     my $m      = BOM::Platform::Token::API->new;
     my $token  = $m->create_token($test_client->loginid, 'test token');
@@ -1353,17 +1332,14 @@ subtest 'set_settings set tax_identification_number with client with tin_approve
 };
 
 subtest 'set_settings with feature flag' => sub {
-    my $user = BOM::User->create(
-        email    => 'a001+feature-flag@example.com',
-        password => $hash_pwd,
-    );
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        email          => $user->email,
-        broker_code    => 'CR',
-        phone          => '',
-        binary_user_id => $user->id,
-    });
-    $user->add_client($test_client);
+    my $customer = BOM::Test::Customer->create(
+        phone   => '',
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $test_client = $customer->get_client_object('CR');
 
     my $m      = BOM::Platform::Token::API->new;
     my $token  = $m->create_token($test_client->loginid, 'test token');
@@ -1378,21 +1354,18 @@ subtest 'set_settings with feature flag' => sub {
 };
 
 subtest 'set_settings with salutation update' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        salutation  => 'Ms',
-        gender      => 'f'
-    });
+    my $customer = BOM::Test::Customer->create(
+        salutation => 'Ms',
+        gender     => 'f',
+        clients    => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $test_client = $customer->get_client_object('CR');
 
     ok $test_client->salutation eq 'Ms', 'Salutation is Ms';
     ok $test_client->gender eq 'f',      'gender is set correctly as female';
-
-    my $user = BOM::User->create(
-        email    => 'test001@example.com',
-        password => $hash_pwd,
-    );
-
-    $user->add_client($test_client);
 
     my $m      = BOM::Platform::Token::API->new;
     my $token  = $m->create_token($test_client->loginid, 'test token');
@@ -1918,23 +1891,17 @@ subtest 'get_settings returns correct address_state' => sub {
 };
 
 subtest 'Phone number verified' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'br',
-            phone          => '+55990000001',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'br',
+        phone          => '+55990000001',
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',
             },
         ]);
-
-    my $client = $customer->get_client_object('CR');
-
     my $token = $customer->get_client_token('CR', ['admin']);
 
     my $params = {
@@ -1945,23 +1912,17 @@ subtest 'Phone number verified' => sub {
 
         }};
 
-    my $customer2 = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'br',
-            phone          => '+55990000001',
-        },
-        [{
+    my $customer2 = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'br',
+        phone          => '+55990000001',
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',
             },
         ]);
-
-    my $client2 = $customer2->get_client_object('CR');
-
     my $token2 = $customer2->get_client_token('CR', ['admin']);
 
     my $params2 = {

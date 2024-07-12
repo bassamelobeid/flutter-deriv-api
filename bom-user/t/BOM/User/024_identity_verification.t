@@ -10,7 +10,7 @@ use Test::Exception;
 use Test::MockObject;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-
+use BOM::Test::Customer;
 use BOM::User;
 use BOM::User::IdentityVerification;
 use BOM::Config::Redis;
@@ -22,8 +22,7 @@ use JSON::MaybeUTF8 qw( decode_json_utf8 encode_json_utf8 );
 use constant IDV_REQUEST_PER_USER_PREFIX => 'IDV::REQUEST::PER::USER::';
 use constant IDV_LOCK_PENDING            => 'IDV::LOCK::PENDING::';
 
-my $user_cr;
-my $user_mf;
+my $user_db = BOM::Database::UserDB::rose_db()->dbic;
 
 my $client_cr;
 my $client_mf;
@@ -34,29 +33,23 @@ my $idv_model_cmf;
 my $idv_model_nx;
 
 lives_ok {
-    $user_cr = BOM::User->create(
-        email    => 'cr@binary.com',
-        password => "hello",
-    );
-    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        binary_user_id => $user_cr->id,
-    });
-    $user_cr->add_client($client_cr);
+    my $test_customer_cr = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    $client_cr = $test_customer_cr->get_client_object('CR');
 
-    $user_mf = BOM::User->create(
-        email    => 'mf@binary.com',
-        password => "hello",
-    );
-    $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'MF',
-        binary_user_id => $user_mf->id,
-    });
-    $user_mf->add_client($client_cr);
+    my $test_customer_mf = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'MF',
+                broker_code => 'MF',
+            }]);
+    $client_mf = $test_customer_mf->get_client_object('MF');
 
-    $idv_model_ccr = BOM::User::IdentityVerification->new(user_id => $user_cr->id);
-    $idv_model_cmf = BOM::User::IdentityVerification->new(user_id => $user_mf->id);
-    $idv_model_nx  = BOM::User::IdentityVerification->new(user_id => -1);             # idv model for not existent user
+    $idv_model_ccr = BOM::User::IdentityVerification->new(user_id => $test_customer_cr->get_user_id());
+    $idv_model_cmf = BOM::User::IdentityVerification->new(user_id => $test_customer_mf->get_user_id());
+    $idv_model_nx  = BOM::User::IdentityVerification->new(user_id => -1);                                 # idv model for not existent user
 }
 'The initalization was successful';
 
@@ -77,7 +70,7 @@ subtest 'add document' => sub {
     }
     'document added successfully';
 
-    my $document = $user_cr->dbic->run(
+    my $document = $user_db->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM idv.document WHERE binary_user_id=?::BIGINT', undef, $client_cr->binary_user_id);
         });
@@ -97,7 +90,7 @@ subtest 'add document' => sub {
     }
     'document re-added with invalid expiration date';
 
-    $document = $user_cr->dbic->run(
+    $document = $user_db->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM idv.document WHERE binary_user_id=?::BIGINT', undef, $client_cr->binary_user_id);
         });
@@ -116,7 +109,7 @@ subtest 'add document' => sub {
     }
     'document re-added with not available expiration date';
 
-    $document = $user_cr->dbic->run(
+    $document = $user_db->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM idv.document WHERE binary_user_id=?::BIGINT', undef, $client_cr->binary_user_id);
         });
@@ -135,7 +128,7 @@ subtest 'add document' => sub {
     }
     'document re-added empty string expiration date';
 
-    $document = $user_cr->dbic->run(
+    $document = $user_db->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM idv.document WHERE binary_user_id=?::BIGINT', undef, $client_cr->binary_user_id);
         });
@@ -154,7 +147,7 @@ subtest 'add document' => sub {
     }
     'document re-added with expiration date successfully';
 
-    $document = $user_mf->dbic->run(
+    $document = $user_db->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM idv.document WHERE binary_user_id=?::BIGINT', undef, $client_mf->binary_user_id);
         });
@@ -672,7 +665,7 @@ subtest 'Decr submissions' => sub {
 
 subtest 'Reset submissions to zero' => sub {
     is $idv_model_ccr->submissions_left, 3, 'Expected submissions left is correct';
-    BOM::User::IdentityVerification::reset_to_zero_left_submissions($user_cr->id);
+    BOM::User::IdentityVerification::reset_to_zero_left_submissions($client_cr->binary_user_id);
     is $idv_model_ccr->submissions_left, 0, 'Expected submissions left is reset';
 };
 
@@ -688,25 +681,19 @@ subtest 'Expired docs chance' => sub {
 };
 
 subtest 'is idv disallowed' => sub {
-    my $user_cr = BOM::User->create(
-        email    => 'cr+idv+disallowed@binary.com',
-        password => 'hello',
-    );
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        binary_user_id => $user_cr->id,
-    });
-    $user_cr->add_client($client_cr);
+    my $test_customer_cr = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client_cr = $test_customer_cr->get_client_object('CR');
 
-    my $user_mf = BOM::User->create(
-        email    => 'mf+idv+disallowed@binary.com',
-        password => 'bye',
-    );
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'MF',
-        binary_user_id => $user_mf->id,
-    });
-    $user_mf->add_client($client_mf);
+    my $test_customer_mf = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'MF',
+                broker_code => 'MF',
+            }]);
+    my $client_mf = $test_customer_mf->get_client_object('MF');
 
     my $mocked_cli = Test::MockModule->new('BOM::User::Client');
     my $manual_status;
@@ -830,25 +817,19 @@ subtest 'identity verification requested' => sub {
 };
 
 subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
-    my $user_cr = BOM::User->create(
-        email    => 'cr+idv+disallowed+rpc@binary.com',
-        password => 'hello',
-    );
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        binary_user_id => $user_cr->id,
-    });
-    $user_cr->add_client($client_cr);
+    my $test_customer_cr = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client_cr = $test_customer_cr->get_client_object('CR');
 
-    my $user_mf = BOM::User->create(
-        email    => 'mf+idv+disallowed+rpc@binary.com',
-        password => 'bye',
-    );
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'MF',
-        binary_user_id => $user_mf->id,
-    });
-    $user_mf->add_client($client_mf);
+    my $test_customer_mf = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'MF',
+                broker_code => 'MF',
+            }]);
+    my $client_mf = $test_customer_mf->get_client_object('MF');
 
     my $mock_data = {};
 
@@ -1263,16 +1244,12 @@ subtest 'idv opt out' => sub {
 };
 
 subtest 'is available' => sub {
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    my $user_cr = BOM::User->create(
-        email    => 'is_available@deriv.com',
-        password => 'secret_pwd'
-    );
-
-    $user_cr->add_client($client_cr);
+    my $test_customer_cr = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            }]);
+    my $client_cr = $test_customer_cr->get_client_object('CR');
 
     my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
     # mocks idv_submissions_left has_expired_document_chance idv_disallowed
@@ -1283,7 +1260,7 @@ subtest 'is available' => sub {
     my $utility_mock = Test::MockModule->new('BOM::Platform::Utility');
     # mocks has_idv
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $user_cr->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer_cr->get_user_id());
 
     my $test_cases = [{
             idv_submissions_left => 1,
@@ -1346,17 +1323,6 @@ subtest 'is available' => sub {
 };
 
 subtest 'supported documents' => sub {
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    my $user_cr = BOM::User->create(
-        email    => 'supported_documents@deriv.com',
-        password => 'secret_pwd'
-    );
-
-    $user_cr->add_client($client_cr);
-
     my $utility_mock = Test::MockModule->new('BOM::Platform::Utility');
 
     my $countries_mock = Test::MockModule->new('Brands::Countries');

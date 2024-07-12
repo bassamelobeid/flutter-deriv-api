@@ -17,13 +17,10 @@ use BOM::Platform::Context qw(request);
 
 use BOM::Event::Actions::Email;
 
-my $customer = BOM::Test::Customer->create({
-        email          => 'test@deriv.com',
-        password       => 'hello',
-        salutation     => 'MR',
-        email_verified => 1,
-    },
-    [{
+my $customer = BOM::Test::Customer->create(
+    salutation     => 'MR',
+    email_verified => 1,
+    clients        => [{
             name        => 'CR',
             broker_code => 'CR',
         },

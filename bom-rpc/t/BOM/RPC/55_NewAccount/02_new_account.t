@@ -551,11 +551,8 @@ subtest $method => sub {
     };
 
     subtest 'Auth client' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email    => BOM::Test::Customer::get_random_email_address(),
-                password => BOM::User::Password::hashpw('Abcd33!@'),
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            clients => [{
                     name        => 'CR',
                     broker_code => 'CR',
                 },
@@ -580,11 +577,8 @@ subtest $method => sub {
     };
 
     subtest 'Create new account' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email    => BOM::Test::Customer::get_random_email_address(),
-                password => BOM::User::Password::hashpw('Abcd33!@'),
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            clients => [{
                     name        => 'VRTC',
                     broker_code => 'VRTC',
                 },
@@ -965,13 +959,10 @@ subtest $method => sub {
 
     subtest 'Initialization' => sub {
         lives_ok {
-            $customer = BOM::Test::Customer->create({
-                    email      => BOM::Test::Customer::get_random_email_address(),
-                    password   => BOM::User::Password::hashpw('Abcd33!@'),
-                    first_name => '',
-                    citizen    => '',
-                },
-                [{
+            $customer = BOM::Test::Customer->create(
+                first_name => '',
+                citizen    => '',
+                clients    => [{
                         name        => 'VRTC',
                         broker_code => 'VRTC',
                     },
@@ -1000,14 +991,11 @@ subtest $method => sub {
     };
 
     subtest 'resident self-declaration' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer::get_random_email_address(),
-                password       => BOM::User::Password::hashpw('Abcd33!@'),
-                email_verified => 1,
-                first_name     => 'tsett',
-                residence      => 'es',
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            first_name     => 'tsett',
+            residence      => 'es',
+            clients        => [{
                     name        => 'VRTC',
                     broker_code => 'VRTC',
                 },
@@ -1039,14 +1027,11 @@ subtest $method => sub {
     };
 
     subtest 'new maltainvest account with resident self declaration' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer::get_random_email_address(),
-                password       => BOM::User::Password::hashpw('Abcd33!@'),
-                email_verified => 1,
-                first_name     => 'tsett',
-                residence      => 'es',
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            first_name     => 'tsett',
+            residence      => 'es',
+            clients        => [{
                     name        => 'VRTC',
                     broker_code => 'VRTC',
                 },
@@ -1285,13 +1270,10 @@ subtest $method => sub {
     };
 
     subtest 'Create new account maltainvest with manual tin approval' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer::get_random_email_address(),
-                password       => BOM::User::Password::hashpw('Abcd33!@'),
-                email_verified => 1,
-                residence      => 'de',
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            residence      => 'de',
+            clients        => [{
                     name        => 'CR',
                     broker_code => 'CR',
                 },
@@ -1332,17 +1314,14 @@ subtest $method => sub {
     };
 
     subtest 'Create new account maltainvest giving tax_identification_number with already approved tin' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email                    => BOM::Test::Customer::get_random_email_address(),
-                password                 => BOM::User::Password::hashpw('Abcd33!@'),
-                email_verified           => 1,
-                residence                => 'de',
-                secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
-                non_pep_declaration_time => '2020-01-02',
-                fatca_declaration_time   => '2020-01-02',
-                tin_approved_time        => Date::Utility->new()->datetime_yyyymmdd_hhmmss,
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified           => 1,
+            residence                => 'de',
+            secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+            non_pep_declaration_time => '2020-01-02',
+            fatca_declaration_time   => '2020-01-02',
+            tin_approved_time        => Date::Utility->new()->datetime_yyyymmdd_hhmmss,
+            clients                  => [{
                     name        => 'CR',
                     broker_code => 'CR',
                 },
@@ -1381,16 +1360,13 @@ subtest $method => sub {
     my $client_cr1;
     subtest 'Init CR CR' => sub {
         lives_ok {
-            $customer = BOM::Test::Customer->create({
-                    email                    => BOM::Test::Customer::get_random_email_address(),
-                    password                 => BOM::User::Password::hashpw('Abcd33!@'),
-                    email_verified           => 1,
-                    residence                => 'za',
-                    secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
-                    non_pep_declaration_time => '2020-01-02',
-                    fatca_declaration_time   => '2020-01-02',
-                },
-                [{
+            $customer = BOM::Test::Customer->create(
+                email_verified           => 1,
+                residence                => 'za',
+                secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+                non_pep_declaration_time => '2020-01-02',
+                fatca_declaration_time   => '2020-01-02',
+                clients                  => [{
                         name        => 'VRTC',
                         broker_code => 'VRTC',
                     },
@@ -1449,17 +1425,14 @@ subtest $method => sub {
     };
 
     subtest 'Check tax information and account opening reason is synchronize to CR from MF new account' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email                     => BOM::Test::Customer::get_random_email_address(),
-                password                  => BOM::User::Password::hashpw('Abcd33!@'),
-                email_verified            => 1,
-                residence                 => 'za',
-                tax_residence             => 'ag',
-                tax_identification_number => '1234567891',
-                account_opening_reason    => 'Speculative',
-                secret_answer             => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified            => 1,
+            residence                 => 'za',
+            tax_residence             => 'ag',
+            tax_identification_number => '1234567891',
+            account_opening_reason    => 'Speculative',
+            secret_answer             => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+            clients                   => [{
                     name        => 'CR',
                     broker_code => 'CR',
                 },
@@ -1508,13 +1481,10 @@ subtest $method => sub {
 
     subtest 'Create a new account maltainvest from a virtual account' => sub {
         #create a virtual de client
-        my $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer::get_random_email_address(),
-                password       => BOM::User::Password::hashpw('Abcd33!@'),
-                email_verified => 1,
-                residence      => 'de',
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            residence      => 'de',
+            clients        => [{
                     name        => 'VRTC',
                     broker_code => 'VRTC',
                 },
@@ -1534,13 +1504,10 @@ subtest $method => sub {
         ok $emitted{'signup_' . $result->{client_id}}, "signup event emitted";
 
         #create a virtual de client
-        $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer::get_random_email_address(),
-                password       => BOM::User::Password::hashpw('Abcd33!@'),
-                email_verified => 1,
-                residence      => 'de',
-            },
-            [{
+        $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            residence      => 'de',
+            clients        => [{
                     name        => 'VRTC',
                     broker_code => 'VRTC',
                 },
@@ -1569,13 +1536,10 @@ subtest $method => sub {
 
     my $auth_token;
     subtest 'Create new account maltainvest without MLT' => sub {
-        my $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer::get_random_email_address(),
-                password       => BOM::User::Password::hashpw('Abcd33!@'),
-                email_verified => 1,
-                residence      => 'at',
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            residence      => 'at',
+            clients        => [{
                     name        => 'VRTC',
                     broker_code => 'VRTC',
                 },
@@ -1679,13 +1643,10 @@ subtest $method => sub {
 
     subtest 'Initialization' => sub {
         lives_ok {
-            $customer = BOM::Test::Customer->create({
-                    email     => BOM::Test::Customer::get_random_email_address(),
-                    password  => BOM::User::Password::hashpw('Abcd3s3!@'),
-                    residence => 'id',
-                    citizen   => 'id',
-                },
-                [{
+            $customer = BOM::Test::Customer->create(
+                residence => 'id',
+                citizen   => 'id',
+                clients   => [{
                         name        => 'VRTC',
                         broker_code => 'VRTC',
                     },
@@ -1767,12 +1728,12 @@ subtest $method => sub {
             ->error_message_is('Permission denied.', 'Error message about service unavailability.');
 
         $customer->create_client(
-            'VRW',
-            {
-                broker_code => 'VRW',
-                citizen     => 'id',
-                residence   => 'id'
-            });
+            name        => 'VRW',
+            broker_code => 'VRW',
+            citizen     => 'id',
+            residence   => 'id',
+        );
+
         $params->{token} = $customer->get_client_token('VRW');
 
         $rpc_ct->call_ok($method, $params)
@@ -1821,13 +1782,10 @@ subtest $method => sub {
 
     subtest 'Initialization' => sub {
         lives_ok {
-            $customer = BOM::Test::Customer->create({
-                    email     => BOM::Test::Customer::get_random_email_address(),
-                    password  => BOM::User::Password::hashpw('Abcd3s3!@'),
-                    residence => 'de',
-                    citizen   => 'de',
-                },
-                [{
+            $customer = BOM::Test::Customer->create(
+                residence => 'de',
+                citizen   => 'de',
+                clients   => [{
                         name        => 'VRTC',
                         broker_code => 'VRTC',
                     },
@@ -1911,12 +1869,11 @@ subtest $method => sub {
             ->error_message_is('Permission denied.', 'Error message about service unavailability.');
 
         $customer->create_client(
-            'VRW',
-            {
-                broker_code => 'VRW',
-                citizen     => 'de',
-                residence   => 'de'
-            });
+            name        => 'VRW',
+            broker_code => 'VRW',
+            citizen     => 'de',
+            residence   => 'de',
+        );
 
         $params->{token} = $customer->get_client_token('VRW');
         $rpc_ct->call_ok($method, $params)
@@ -1973,19 +1930,15 @@ subtest $method => sub {
 
     subtest 'Initialization' => sub {
         lives_ok {
-            $customer = BOM::Test::Customer->create({
-                    email          => BOM::Test::Customer::get_random_email_address(),
-                    password       => BOM::User::Password::hashpw('Abcd3s3!@'),
-                    email_verified => 1,
-                    residence      => 'id',
-                    citizen        => 'id',
-                },
-                [{
+            $customer = BOM::Test::Customer->create(
+                email_verified => 1,
+                residence      => 'id',
+                citizen        => 'id',
+                clients        => [{
                         name        => 'VRTC',
                         broker_code => 'VRTC',
                     },
                 ]);
-
         }
         'Initial users and clients';
     };
@@ -2014,14 +1967,11 @@ subtest $method => sub {
 
     subtest 'Initialization' => sub {
         lives_ok {
-            $customer = BOM::Test::Customer->create({
-                    email          => BOM::Test::Customer::get_random_email_address(),
-                    password       => BOM::User::Password::hashpw('Abcd3s3!@'),
-                    email_verified => 1,
-                    residence      => 'za',
-                    citizen        => 'za',
-                },
-                [{
+            $customer = BOM::Test::Customer->create(
+                email_verified => 1,
+                residence      => 'za',
+                citizen        => 'za',
+                clients        => [{
                         name        => 'VRTC',
                         broker_code => 'VRTC',
                     },
@@ -2056,12 +2006,11 @@ subtest $method => sub {
         $params->{args}->{landing_company_short} = 'maltainvest';
 
         $customer->create_client(
-            'VRW',
-            {
-                broker_code => 'VRW',
-                citizen     => 'za',
-                residence   => 'za'
-            });
+            name        => 'VRW',
+            broker_code => 'VRW',
+            citizen     => 'za',
+            residence   => 'za',
+        );
 
         $params->{token}                             = $customer->get_client_token('VRW');
         $params->{args}->{tax_residence}             = 'de';
@@ -2130,12 +2079,9 @@ subtest $method => sub {
     my $hash_pwd = BOM::User::Password::hashpw($password);
     $email = 'new_email+fa@binary.com';
 
-    $customer = BOM::Test::Customer->create({
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        },
-        [{
+    $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        clients        => [{
                 name        => 'VRTC',
                 broker_code => 'VRTC',
                 citizen     => 'id',
@@ -2403,13 +2349,10 @@ subtest 'Forbidden postcodes' => sub {
         });
 
     my $hash_pwd = BOM::User::Password::hashpw('Abcd33!@');
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer::get_random_email_address(),
-            password       => $hash_pwd,
-            email_verified => 1,
-            residence      => 'gb',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        residence      => 'gb',
+        clients        => [{
                 name        => 'VRTC',
                 broker_code => 'VRTC',
             },
@@ -2452,13 +2395,10 @@ subtest 'Italian TIN test' => sub {
             });
 
         my $hash_pwd = BOM::User::Password::hashpw('Alienbatata20');
-        my $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer::get_random_email_address(),
-                password       => $hash_pwd,
-                email_verified => 1,
-                residence      => 'it',
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            residence      => 'it',
+            clients        => [{
                     name        => 'VRTC',
                     broker_code => 'VRTC',
                 },
@@ -2499,13 +2439,10 @@ subtest 'Italian TIN test' => sub {
             });
 
         my $hash_pwd = BOM::User::Password::hashpw('Alienbatata20');
-        my $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer::get_random_email_address(),
-                password       => $hash_pwd,
-                email_verified => 1,
-                residence      => 'it',
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            residence      => 'it',
+            clients        => [{
                     name        => 'VRTC',
                     broker_code => 'VRTC',
                 },
@@ -2546,13 +2483,10 @@ subtest 'Italian TIN test' => sub {
             });
 
         my $hash_pwd = BOM::User::Password::hashpw('Allison90');
-        my $customer = BOM::Test::Customer->create({
-                email          => BOM::Test::Customer::get_random_email_address(),
-                password       => $hash_pwd,
-                email_verified => 1,
-                residence      => 'it',
-            },
-            [{
+        my $customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            residence      => 'it',
+            clients        => [{
                     name        => 'VRTC',
                     broker_code => 'VRTC',
                 },
@@ -2587,13 +2521,10 @@ subtest 'Italian TIN test' => sub {
 
 subtest 'MF under Duplicated account' => sub {
     my $hash_pwd = BOM::User::Password::hashpw('Abcd1234!!');
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer::get_random_email_address(),
-            password       => $hash_pwd,
-            email_verified => 1,
-            residence      => 'it',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        residence      => 'it',
+        clients        => [{
                 name        => 'VRTC',
                 broker_code => 'VRTC',
             },
@@ -2635,16 +2566,13 @@ subtest 'MF under Duplicated account' => sub {
 
 subtest 'MF under Duplicated account - DIEL country' => sub {
     my $hash_pwd = BOM::User::Password::hashpw('Abcd1234!!');
-    my $customer = BOM::Test::Customer->create({
-            email                     => BOM::Test::Customer::get_random_email_address(),
-            password                  => $hash_pwd,
-            email_verified            => 1,
-            residence                 => 'za',
-            account_opening_reason    => 'Hedging',
-            tax_residence             => 'it',
-            tax_identification_number => 'MRTSVT79M29F8_9P',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified            => 1,
+        residence                 => 'za',
+        account_opening_reason    => 'Hedging',
+        tax_residence             => 'it',
+        tax_identification_number => 'MRTSVT79M29F8_9P',
+        clients                   => [{
                 name        => 'VRTC',
                 broker_code => 'VRTC',
             },
@@ -2773,16 +2701,13 @@ subtest 'MF under Duplicated account - DIEL country' => sub {
 
 subtest 'MF under Duplicated account - Spain' => sub {
     my $hash_pwd = BOM::User::Password::hashpw('Abcd1234!!');
-    my $customer = BOM::Test::Customer->create({
-            email                     => 'test+mf+dup+es' . rand(999) . '@binary.com',
-            password                  => $hash_pwd,
-            email_verified            => 1,
-            residence                 => 'es',
-            account_opening_reason    => 'Hedging',
-            tax_residence             => 'es',
-            tax_identification_number => 'MRTSVT79M29F8_9P',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified            => 1,
+        residence                 => 'es',
+        account_opening_reason    => 'Hedging',
+        tax_residence             => 'es',
+        tax_identification_number => 'MRTSVT79M29F8_9P',
+        clients                   => [{
                 name        => 'VRTC',
                 broker_code => 'VRTC',
             },

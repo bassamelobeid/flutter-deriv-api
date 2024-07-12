@@ -25,14 +25,11 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $t = build_wsapi_test();
 
 subtest 'Onfido country code' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'br',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'br',
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',
@@ -225,14 +222,11 @@ subtest 'POI Attempts' => sub {
 };
 
 subtest 'Proof of ownership' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'br',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'br',
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',
@@ -361,14 +355,11 @@ subtest 'Proof of ownership' => sub {
 };
 
 subtest 'Onfido status with pending flag' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => BOM::User::Password::hashpw('abc123'),
-            email_verified => 1,
-            account_type   => 'binary',
-            residence      => 'co',
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        account_type   => 'binary',
+        residence      => 'co',
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',

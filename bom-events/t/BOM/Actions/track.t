@@ -21,12 +21,9 @@ use BOM::User;
 use BOM::Service;
 use BOM::Platform::Locale qw(get_state_by_id);
 
-my $test_customer = BOM::Test::Customer->create({
-        email          => 'test1@bin.com',
-        password       => 'hello',
-        email_verified => 1,
-    },
-    [{
+my $test_customer = BOM::Test::Customer->create(
+    email_verified => 1,
+    clients        => [{
             name        => 'CR',
             broker_code => 'CR',
         },

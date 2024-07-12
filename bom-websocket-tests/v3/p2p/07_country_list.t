@@ -21,13 +21,10 @@ my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 my $json = JSON::MaybeXS->new;
 
-my $customer = BOM::Test::Customer->create({
-        email          => 'p2p_escrow@test.com',
-        password       => 'something insecure',
-        email_verified => 1,
-        residence      => 'id',
-    },
-    [{
+my $customer = BOM::Test::Customer->create(
+    email_verified => 1,
+    residence      => 'id',
+    clients        => [{
             name            => 'CR',
             broker_code     => 'CR',
             default_account => 'USD'

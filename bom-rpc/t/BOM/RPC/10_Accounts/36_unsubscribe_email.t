@@ -9,14 +9,11 @@ use BOM::Test::Customer;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::BOM::RPC::QueueClient;
 
-my $customer = BOM::Test::Customer->create({
-        email             => 'abc@binary.com',
-        password          => BOM::User::Password::hashpw('jskjd8292922'),
-        email_verified    => 1,
-        email_consent     => 1,
-        has_social_signup => 0,
-    },
-    [{
+my $customer = BOM::Test::Customer->create(
+    email_verified    => 1,
+    email_consent     => 1,
+    has_social_signup => 0,
+    clients           => [{
             name            => 'CR',
             broker_code     => 'CR',
             default_account => 'USD'

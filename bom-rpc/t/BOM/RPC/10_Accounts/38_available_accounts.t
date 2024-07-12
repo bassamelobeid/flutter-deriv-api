@@ -189,19 +189,14 @@ subtest 'wallets' => sub {
 };
 
 subtest 'disabled currencies for signup' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => 'testing',
-            email_verified => 0,
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 0,
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',
             },
         ]);
-
-    my $client = $customer->get_client_object('CR');
 
     my $mock_lc = Test::MockModule->new('Business::Config::LandingCompany');
 
@@ -243,19 +238,14 @@ subtest 'disabled currencies for signup' => sub {
 };
 
 subtest 'suspended crypto currencies' => sub {
-    my $customer = BOM::Test::Customer->create({
-            email          => BOM::Test::Customer->get_random_email_address(),
-            password       => 'testing',
-            email_verified => 0,
-        },
-        [{
+    my $customer = BOM::Test::Customer->create(
+        email_verified => 0,
+        clients        => [{
                 name            => 'CR',
                 broker_code     => 'CR',
                 default_account => 'USD',
             },
         ]);
-
-    my $client = $customer->get_client_object('CR');
 
     my $mock_curr_config = Test::MockModule->new('BOM::Config::CurrencyConfig');
 
@@ -302,12 +292,9 @@ subtest 'Supported Countries' => sub {
 
     for my $country ($countries->@*) {
         subtest $country => sub {
-            my $customer = BOM::Test::Customer->create({
-                    email          => BOM::Test::Customer->get_random_email_address(),
-                    password       => 'testing',
-                    email_verified => 0,
-                },
-                [{
+            my $customer = BOM::Test::Customer->create(
+                email_verified => 0,
+                clients        => [{
                         name            => 'CR',
                         broker_code     => 'CR',
                         default_account => 'USD',
@@ -333,12 +320,9 @@ subtest 'Supported Countries' => sub {
 
     for my $country ($unsupported->@*) {
         subtest $country => sub {
-            my $customer = BOM::Test::Customer->create({
-                    email          => BOM::Test::Customer->get_random_email_address(),
-                    password       => 'testing',
-                    email_verified => 0,
-                },
-                [{
+            my $customer = BOM::Test::Customer->create(
+                email_verified => 0,
+                clients        => [{
                         name            => 'CR',
                         broker_code     => 'CR',
                         default_account => 'USD',

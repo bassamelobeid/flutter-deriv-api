@@ -5,35 +5,24 @@ use Test::More  qw(no_plan);
 use Test::Fatal qw(lives_ok);
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::User::Client;
 use BOM::User;
 
-my $email      = 'abc@binary.com';
-my $email_diel = 'abcd@binary.com';
+my $test_customer = BOM::Test::Customer->create(
+    clients => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        }]);
+my $client_vr = $test_customer->get_client_object('CR');
 
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-    email       => $email,
-});
-
-my $user = BOM::User->create(
-    email    => $email,
-    password => 'test',
-);
-
-my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-    email       => $email,
-    residence   => 'za',
-});
-
-my $user_diel = BOM::User->create(
-    email    => $email_diel,
-    password => 'test',
-);
-
-$user_diel->add_client($client_mf);
-$user->add_client($client_vr);
+my $test_customer_diel = BOM::Test::Customer->create(
+    residence => 'za',
+    clients   => [{
+            name        => 'MF',
+            broker_code => 'MF',
+        }]);
+my $client_mf = $test_customer_diel->get_client_object('MF');
 
 is($client_vr->is_verification_required(), 0, "vr client does not need verification");
 
@@ -106,7 +95,7 @@ $mock_lc->mock(
         return 'malta';
     });
 
-my $user_mock = Test::MockModule->new(ref($user));
+my $user_mock = Test::MockModule->new(ref($client_vr->user));
 $user_mock->mock(
     'has_mt5_regulated_account',
     sub {
@@ -122,7 +111,7 @@ $user_mock->mock(
     });
 
 my $mock_cli_diel  = Test::MockModule->new(ref($client_mf));
-my $user_mock_diel = Test::MockModule->new(ref($user_diel));
+my $user_mock_diel = Test::MockModule->new(ref($client_mf->user));
 
 $mock_lc->unmock_all;
 $mock_lc->mock(
@@ -160,31 +149,59 @@ $client_mf->set_authentication_and_status('ID_DOCUMENT', 'test');
 ok($client_mf->mifir_id, 'mifir id is set');
 
 subtest 'update mifir id' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-    });
-
-    BOM::User->create(
-        email    => $client->email,
-        password => 'test',
-    )->add_client($client);
+    my $test_customer_mifir = BOM::Test::Customer->create(
+        clients => [{
+                name        => 'MF',
+                broker_code => 'MF',
+            }]);
+    my $client = $test_customer_mifir->get_client_object('MF');
 
     is(defined($client->mifir_id), "", 'mifir id is not set');
     $client->update_mifir_id();
     ok($client->mifir_id, 'mifir id is set');
     is($client->mifir_id, 'AT19780623BRAD#PITT#', 'mifir id is correct');
-    $client->first_name('Grad');
+
+    my $response = BOM::Service::user(
+        context    => $test_customer_mifir->get_user_service_context(),
+        command    => 'update_attributes_force',
+        user_id    => $test_customer_mifir->get_user_id(),
+        attributes => {first_name => 'Grad'});
+    is $response->{status}, 'ok', 'first_name updated ok';
     $client->update_mifir_id();
     is($client->mifir_id, 'AT19780623BRAD#PITT#', 'mifir id is not changed if already set');
+
     $client->mifir_id(undef);
-    $client->citizen('us');
+    $client->save();
+    $response = BOM::Service::user(
+        context    => $test_customer_mifir->get_user_service_context(),
+        command    => 'update_attributes_force',
+        user_id    => $test_customer_mifir->get_user_id(),
+        attributes => {citizen => 'us'});
+    is $response->{status}, 'ok', 'citizen updated ok';
+    $client = BOM::User::Client->new({loginid => $client->loginid});
     $client->update_mifir_id();
     is($client->mifir_id, undef, 'mifir id is not changed if citizenship is not part of eu set');
-    $client->citizen('za');
+
+    $response = BOM::Service::user(
+        context    => $test_customer_mifir->get_user_service_context(),
+        command    => 'update_attributes_force',
+        user_id    => $test_customer_mifir->get_user_id(),
+        attributes => {citizen => 'za'});
+    is $response->{status}, 'ok', 'citizen updated ok';
+    $client = BOM::User::Client->new({loginid => $client->loginid});
     $client->set_authentication_and_status('ID_DOCUMENT', 'test');
     is($client->mifir_id, 'ZA19780623GRAD#PITT#', 'mifir id is set for diel  if not already set');
+
     $client->mifir_id(undef);
-    $client->citizen('sk');
+    $client->save();
+    $response = BOM::Service::user(
+        context    => $test_customer_mifir->get_user_service_context(),
+        command    => 'update_attributes_force',
+        user_id    => $test_customer_mifir->get_user_id(),
+        attributes => {citizen => 'sk'});
+    is $response->{status}, 'ok', 'citizen updated ok';
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+
     $user_mock->mock(
         'get_onfido_user_reports',
         sub {
@@ -206,8 +223,17 @@ subtest 'update mifir id' => sub {
     $client->save;
     $client->set_authentication_and_status('ID_DOCUMENT', 'test');
     is($client->mifir_id, 'SK1111111111', 'mifir id is set for with document_number');
+
     $client->mifir_id(undef);
-    $client->citizen('cy');
+    $client->save();
+    $response = BOM::Service::user(
+        context    => $test_customer_mifir->get_user_service_context(),
+        command    => 'update_attributes_force',
+        user_id    => $test_customer_mifir->get_user_id(),
+        attributes => {citizen => 'cy'});
+    is $response->{status}, 'ok', 'citizen updated ok';
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+
     $user_mock->mock(
         'get_onfido_user_reports',
         sub {
@@ -229,7 +255,14 @@ subtest 'update mifir id' => sub {
     $client->save;
     $client->set_authentication_and_status('ID_DOCUMENT', 'test');
     is($client->mifir_id, 'CY111111', 'mifir id is set for with personal_number');
-    $client->citizen(undef);
+
+    $response = BOM::Service::user(
+        context    => $test_customer_mifir->get_user_service_context(),
+        command    => 'update_attributes_force',
+        user_id    => $test_customer_mifir->get_user_id(),
+        attributes => {citizen => ''});
+    is $response->{status}, 'ok', 'citizen updated ok';
+    $client = BOM::User::Client->new({loginid => $client->loginid});
     is($client->update_mifir_id(), 0, 'should return false if there is no citizenship');
 };
 done_testing();
