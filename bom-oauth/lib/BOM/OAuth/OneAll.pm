@@ -216,41 +216,4 @@ sub _delete_user {
     return $res;
 }
 
-=head2 anonymize_user
-
-Anonymize the user from oneall
-
-=over 4
-
-=item * C<oneall_user_data> This contains the user's binary_user_id, oneall user_token and the provider (google, facebook etc)
-
-=back
-
-Retuns 1, if the anonymization is successful. 0 otherwise.
-
-=cut
-
-sub anonymize_user {
-    my ($oneall_user_data) = @_;
-
-    my $user_connect = BOM::Database::Model::UserConnect->new;
-    my $count        = 0;
-    for my $user_data (@$oneall_user_data) {
-        my $res = _delete_user("deriv", $user_data->{user_token});
-        # If the above request fails, check and delete if the user is in the binary sub domain
-        if (exists $res->{response}->{request}->{status}->{code} && $res->{response}->{request}->{status}->{code} == 404) {
-            $res = _delete_user("binary", $user_data->{user_token});
-        }
-
-        # if the request was successful then delete the binary_user_connects data
-        if (exists $res->{response}->{request}->{status}->{code} && $res->{response}->{request}->{status}->{code} == 200) {
-            $log->info("Removed oneall profile data for the user id: " . $user_data->{binary_user_id});
-            $user_connect->remove_connect($user_data->{binary_user_id}, $user_data->{provider});
-            $count++;
-        }
-    }
-    return 1 if $count == scalar(@$oneall_user_data);
-    return 0;
-}
-
 1;

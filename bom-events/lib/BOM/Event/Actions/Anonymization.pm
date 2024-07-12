@@ -26,7 +26,6 @@ use BOM::Event::Services;
 use LandingCompany::Registry;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
-use BOM::OAuth::OneAll;
 
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use BOM::Platform::Email       qw(send_email);
@@ -43,7 +42,6 @@ use constant ERROR_MESSAGE_MAPPING => {
     userAlreadyAnonymized => "Client is already anonymized",
     deskError             => "couldn't anonymize user from s3 desk",
     closeIOError          => "couldn't anonymize user from Close.io",
-    oneallError           => "Couldn't anonymize user from Oneall",
     mt5AnonymizationError => "An API error occurred while anonymizing one or more MT5 Accounts"
 };
 
