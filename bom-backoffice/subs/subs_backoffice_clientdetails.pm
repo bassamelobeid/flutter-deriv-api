@@ -350,6 +350,13 @@ my $UNTRUSTED_STATUS = [{
         'show_reason' => 'yes',
         'explanation' => 'Restricts transfers for client with CFDs.',
     },
+    {
+        'linktype'    => 'duplicatedobphone',
+        'comments'    => 'Unwelcome - Duplicate DOB Phone',
+        'code'        => 'duplicate_dob_phone',
+        'show_reason' => 'yes',
+        'explanation' => 'Same DOB and phone number as another client',
+    }
 
 ];
 

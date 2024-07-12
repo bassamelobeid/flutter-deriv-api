@@ -3708,7 +3708,7 @@ async sub check_duplicate_dob_phone {
 
     return unless $duplicate_client;
 
-    $client->status->setnx('unwelcome', 'system', 'Same DOB and phone number as client: ' . $duplicate_client->{loginid});
+    $client->status->setnx('duplicate_dob_phone', 'system', 'Same DOB and phone number as client: ' . $duplicate_client->{loginid});
     send_email({
             from    => '<no-reply@deriv.com>',
             to      => 'x-antifraud-alerts@deriv.com',

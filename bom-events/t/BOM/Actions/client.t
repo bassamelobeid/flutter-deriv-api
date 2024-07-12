@@ -4033,7 +4033,8 @@ subtest 'duplicate dob and phone' => sub {
         # clearing cache for the status
         $test_client2->status->all();
 
-        ok $test_client2->status->unwelcome,           'Unwelcome status applied';
+        ok $test_client2->status->duplicate_dob_phone, 'duplicate_dob_phone status applied';
+        ok $test_client2->status->unwelcome,           'parent unwelcome status applied';
         ok $test_client2->status->reason('unwelcome'), 'Same DOB and phone number as client: ' . $test_client1->{loginid};
 
         $msg = mailbox_search(
@@ -4054,7 +4055,8 @@ subtest 'duplicate dob and phone' => sub {
         # clearing cache for the status
         $test_client2->status->all();
 
-        ok !$test_client2->status->unwelcome, 'Unwelcome status not applied';
+        ok !$test_client2->status->unwelcome,           'Unwelcome status not applied';
+        ok !$test_client2->status->duplicate_dob_phone, 'duplicate_dob_phone status not applied';
 
         $msg = mailbox_search(
             subject => qr/Account created with same DOB and Phone/,

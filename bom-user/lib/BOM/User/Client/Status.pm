@@ -40,7 +40,7 @@ use constant STATUS_CODES => qw(
     allow_duplicate_signup poi_duplicated_documents selfie_pending selfie_verified selfie_rejected resident_self_declaration
     disabled_af_investigation cashier_locked_af_investigation no_withdrawal_or_trading_af_investigation
     unwelcome_af_investigation no_trading_af_investigation per_se_professional disabled_af_notify cashier_locked_af_notify
-    no_withdrawal_or_trading_af_notify unwelcome_af_notify no_trading_af_notify sibling_transfers_blocked cfd_transfers_blocked
+    no_withdrawal_or_trading_af_notify unwelcome_af_notify no_trading_af_notify sibling_transfers_blocked cfd_transfers_blocked duplicate_dob_phone
 );
 
 use constant STATUS_COPY_CONFIG   => Business::Config::Account->new()->statuses_copied_from_siblings();

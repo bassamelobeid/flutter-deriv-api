@@ -989,6 +989,8 @@ rpc
 
     push(@$status, 'email_not_verified') unless $client->user->email_verified;
 
+    push(@$status, 'duplicate_dob_phone') if $client->status->duplicate_dob_phone;
+
     my $age_verif_client = $duplicated // $client;
     # build the structure that details the authentication status for each mt5 jurisdiction
     my $lc = [map { $_->short } LandingCompany::Registry->get_all];

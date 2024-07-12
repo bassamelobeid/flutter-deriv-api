@@ -44,6 +44,7 @@ use constant STATUS_MAP => {
     notradingafnotify                    => 'no_trading_af_notify',
     siblingtransfersblocked              => 'sibling_transfers_blocked',
     cfdtransfersblocked                  => 'cfd_transfers_blocked',
+    duplicatedobphone                    => 'duplicate_dob_phone',
 };
 
 our @EXPORT_OK = qw(STATUS_MAP error_map create_error verify_reactivation);

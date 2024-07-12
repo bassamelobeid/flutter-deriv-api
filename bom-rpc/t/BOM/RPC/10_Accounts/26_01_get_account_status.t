@@ -5,11 +5,14 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
+use Test::Exception;
+use Test::Fatal;
 use List::Util;
 use Encode;
 use JSON::MaybeUTF8                            qw(encode_json_utf8);
 use Encode                                     qw(encode);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use Future;
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Customer;
@@ -25,6 +28,13 @@ use BOM::Config::Redis;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $app = BOM::Database::Model::OAuth->new->create_app({
+    name    => 'test',
+    scopes  => '{read,admin,trade,payments}',
+    user_id => 1
+});
+my $app_id = $app->{app_id};
 
 my $idv_limit    = 2;
 my $onfido_limit = BOM::User::Onfido::limit_per_user;
@@ -105,8 +115,9 @@ BOM::User->new(id => $customer_wallet->get_user_id())->link_wallet_to_trading_ac
     client_id => $customer_wallet->get_client_object('CR')->loginid
 });
 
-my $m = BOM::Platform::Token::API->new;
-my $c = Test::BOM::RPC::QueueClient->new();
+my $m      = BOM::Platform::Token::API->new;
+my $c      = Test::BOM::RPC::QueueClient->new();
+my $rpc_ct = BOM::Test::RPC::QueueClient->new();
 
 my $documents_expired;
 my $documents_uploaded;
@@ -403,6 +414,79 @@ subtest 'get account status' => sub {
             my $is_triggered = scalar grep { $_ eq 'mt5_additional_kyc_required' } $result->{status}->@*;
 
             is $is_triggered, 0, "mt5_additional_kyc_required is not triggered for MF";
+
+        };
+
+        subtest 'Check duplicate DOB phone status' => sub {
+            BOM::Config::Runtime->instance->app_config->anti_fraud->duplicate_dob_phone(1);
+            my $params = {
+                language => 'EN',
+                source   => $app_id,
+                country  => 'id',
+                args     => {},
+            };
+            my $password = 'Abcd33!@';
+            my $hash_pwd = BOM::User::Password::hashpw($password);
+            my $email    = 'cr1_email' . rand(999) . '@binary.com';
+            my $user     = BOM::User->create(
+                email          => $email,
+                password       => $hash_pwd,
+                email_verified => 1,
+            );
+
+            my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code   => 'CR',
+                email         => $email,
+                residence     => 'id',
+                secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+                phone         => '+624433221',
+                date_of_birth => '1990-01-01',
+                first_name    => 'testt',
+                last_name     => 'teststt'
+            });
+            $user->add_client($client1);
+
+            #creating duplicate DOB Client through API request
+            $email = 'cr2_email' . rand(999) . '@deriv.com';
+            my $user2 = BOM::User->create(
+                email          => $email,
+                password       => $hash_pwd,
+                email_verified => 1,
+            );
+            my $vclient = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                    broker_code   => 'VRTC',
+                    email         => $user2->email,
+                    residence     => 'id',
+                    secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
+            $user2->add_client($vclient);
+
+            $params->{token} = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
+
+            $params->{args}->{residence}      = 'id';
+            $params->{args}->{address_state}  = 'Sumatera';
+            $params->{args}->{place_of_birth} = 'id';
+            $params->{args}->{date_of_birth}  = '1990-01-01';
+            $params->{args}->{phone}          = '+624433221';
+
+            $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error->result_value_is(
+                sub { shift->{landing_company} },
+                'Deriv (SVG) LLC',
+                'It should return new account data'
+            )->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return new account data');
+            my $new_loginid = $rpc_ct->result->{client_id};
+
+            my $client2 = BOM::User::Client->new({loginid => $new_loginid});
+            # Setting client status
+            $client2->status->setnx('duplicate_dob_phone', 'system', 'Same DOB and phone number as client: ');
+
+            $params->{token} = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token');
+            my $result = $c->tcall('get_account_status', {token => $params->{token}});
+
+            my $duplicate_dob_phone = scalar grep { $_ eq 'duplicate_dob_phone' } $result->{status}->@*;
+
+            ok $duplicate_dob_phone,                  'duplicate_dob_phone status is triggered';
+            ok $client2->status->unwelcome,           'Client status unwelcome is applied';
+            ok $client2->status->duplicate_dob_phone, 'Client status af_duplicate_dob_phone is applied';
 
         };
 
