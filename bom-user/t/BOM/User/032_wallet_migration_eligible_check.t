@@ -55,7 +55,7 @@ subtest 'Suspend runtime settings' => sub {
 };
 
 subtest 'Country eligibility' => sub {
-    # Only available for aq (antarctica) for now
+    # Now available for aq (antarctica), ma (Morocco) and Swaziland
     my @test_cases = ({
             country => 'aq',
             result  => 1
@@ -83,6 +83,10 @@ subtest 'Country eligibility' => sub {
         {
             country => 'my',
             result  => 0
+        },
+        {
+            country => 'ma',
+            result  => 1
         },
     );
 
