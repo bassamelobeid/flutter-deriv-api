@@ -311,7 +311,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'Only Manual - Origin B.O.',
             manual => {
-                upload_date => '2020-10-10 00:00:01',
+                upload_date => Date::Utility->new('2020-10-10 00:00:01')->epoch,
                 origin      => 'bo',
             },
             idv      => undef,
@@ -321,7 +321,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'Only Manual - Origin Client',
             manual => {
-                upload_date => '2020-10-10 00:00:01',
+                upload_date => Date::Utility->new('2020-10-10 00:00:01')->epoch,
                 origin      => 'client',
             },
             idv      => undef,
@@ -331,7 +331,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'Manual and IDV, manual is more recent',
             manual => {
-                upload_date => '2020-10-10 00:00:01',
+                upload_date => Date::Utility->new('2020-10-10 00:00:01')->epoch,
                 origin      => 'client',
             },
             idv => {
@@ -343,7 +343,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'Manual and IDV, IDV is more recent',
             manual => {
-                upload_date => '2020-10-10 00:00:00',
+                upload_date => Date::Utility->new('2020-10-10 00:00:00')->epoch,
                 origin      => 'bo',
             },
             idv => {
@@ -355,7 +355,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'manual + Onfido, manual is more recent',
             manual => {
-                upload_date => '2020-10-10 00:00:01',
+                upload_date => Date::Utility->new('2020-10-10 00:00:01')->epoch,
                 origin      => 'bo',
             },
             onfido => {
@@ -367,7 +367,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'manual + Onfido, onfido is more recent',
             manual => {
-                upload_date => '2020-10-10 00:00:00',
+                upload_date => Date::Utility->new('2020-10-10 00:00:00')->epoch,
                 origin      => 'bo',
             },
             onfido => {
@@ -379,7 +379,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'manual + Onfido + IDV, manual is more recent',
             manual => {
-                upload_date => '2020-10-10 00:00:01',
+                upload_date => Date::Utility->new('2020-10-10 00:00:01')->epoch,
                 origin      => 'bo',
             },
             onfido => {
@@ -393,7 +393,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'manual + Onfido + IDV, Onfido is more recent',
             manual => {
-                upload_date => '2020-10-10 00:00:00',
+                upload_date => Date::Utility->new('2020-10-10 00:00:00')->epoch,
                 origin      => 'bo',
             },
             onfido => {
@@ -407,7 +407,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'manual + Onfido + IDV, Onfido is more recent (only verified)',
             manual => {
-                upload_date => '2020-10-10 00:00:00',
+                upload_date => Date::Utility->new('2020-10-10 00:00:00')->epoch,
                 origin      => 'bo',
             },
             onfido => {
@@ -422,7 +422,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'manual + Onfido + IDV, Onfido is more recent (only verified, result=clear, not age_verified)',
             manual => {
-                upload_date => '2020-10-10 00:00:00',
+                upload_date => Date::Utility->new('2020-10-10 00:00:00')->epoch,
                 origin      => 'bo',
             },
             onfido => {
@@ -438,7 +438,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'manual + Onfido + IDV, Onfido is more recent (only verified, result=clear, age_verified by Onfido)',
             manual => {
-                upload_date => '2020-10-10 00:00:00',
+                upload_date => Date::Utility->new('2020-10-10 00:00:00')->epoch,
                 origin      => 'bo',
             },
             age_verification => {
@@ -459,7 +459,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'manual + Onfido + IDV, Onfido is more recent (only verified, result=clear, age verif by IDV)',
             manual => {
-                upload_date => '2020-10-10 00:00:00',
+                upload_date => Date::Utility->new('2020-10-10 00:00:00')->epoch,
                 origin      => 'bo',
             },
             age_verification => {
@@ -480,7 +480,7 @@ subtest 'latest poi by' => sub {
         {
             title  => 'manual + Onfido + IDV, IDV is more recent',
             manual => {
-                upload_date => '2020-10-10 00:00:00',
+                upload_date => Date::Utility->new('2020-10-10 00:00:00')->epoch,
                 origin      => 'bo',
             },
             onfido => {
@@ -600,7 +600,7 @@ subtest 'latest poi by' => sub {
                 result     => 'consider',
             },
             manual => {
-                upload_date => Date::Utility->new->_plus_years(1)->date_yyyymmdd,
+                upload_date => Date::Utility->new->_plus_years(1)->epoch,
                 origin      => 'bo',
             },
             age_verification => {
@@ -618,7 +618,7 @@ subtest 'latest poi by' => sub {
                 result     => 'consider',
             },
             manual => {
-                upload_date => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+                upload_date => Date::Utility->new->_minus_years(1)->epoch,
                 origin      => 'bo',
             },
             age_verification => {
@@ -641,7 +641,7 @@ subtest 'latest poi by' => sub {
         sub {
             my ($self) = @_;
 
-            $self->_clear_latest;
+            $self->_clear_uploaded;
 
             return $manual_latest;
         });

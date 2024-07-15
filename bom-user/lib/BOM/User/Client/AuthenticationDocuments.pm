@@ -144,6 +144,8 @@ It may contain:
 
 =item * C<to_be_outdated> an integer that indicates in how many days a category will be outdated
 
+=item * C<latest> the latest uploaded document (proof_of_identity only, which translates into manually uploaded POI only)
+
 =back
 
 Returns the uploaded documents for the client and its siblings, organized in a fancy structure by category.
@@ -195,6 +197,16 @@ sub _build_uploaded {
 
             if (any { $category eq $_ } qw/proof_of_income proof_of_identity proof_of_address/) {
                 $documents{$category_key}{'is_' . $doc_status} += 1;
+            }
+
+            # latest computation is only relevant to proof_of_identity (manual uploads)
+            if ($category_key eq 'proof_of_identity') {
+                if (!defined $documents{$category_key}{latest} || $single_document->id > $documents{$category_key}{latest}{id}) {
+                    $documents{$category_key}{latest} = {
+                        id          => $single_document->id,
+                        upload_date => $single_document->upload_date ? $single_document->upload_date->epoch : undef,
+                    };
+                }
             }
 
             if (my $ttl = $category_config->{time_to_live}) {
@@ -1396,37 +1408,34 @@ sub check_words_similarity {
 
 Gets the latest POI document uploaded (not in the uploading status).
 
+It takes:
+
+=over 4
+
+=item C<$category> - the category of documents
+
+=back
+
+Return the latest document as hashref containing:
+
+=over 4
+
+=item C<id> - the id of the document
+
+=item C<upload_date> - upload date as unix timestamp, for now only B<proof_of_identity> makes sense.
+
+=back
+
 =cut
 
-has latest => (
-    is      => 'lazy',
-    clearer => '_clear_latest',
-);
+sub latest {
+    my ($self, $category) = @_;
 
-=head2 _build_latest
+    my $uploaded = $self->uploaded;
 
-Retrieves the latest uploaded document.
+    return undef unless $uploaded->{$category};
 
-Returns hashref or C<undef> if there is no such a document.
-
-=cut
-
-sub _build_latest {
-    my ($self) = @_;
-
-    my ($latest) = $self->client->db->dbic->run(
-        fixup => sub {
-            return $_->selectall_array(
-                "SELECT * FROM betonmarkets.get_latest_document(?, ?)",
-                {Slice => {}},
-                $self->client->binary_user_id,
-                $self->poi_types,
-            );
-        });
-
-    return undef if !$latest || !$latest->{id};
-
-    return $latest;
+    return $uploaded->{$category}{latest};
 }
 
 =head2 get_poinc_count

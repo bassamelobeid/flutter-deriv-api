@@ -2372,7 +2372,7 @@ subtest 'POI attempts' => sub {
             my ($self) = @_;
             my $latest = $manual_latest;
 
-            $self->_clear_latest;
+            $self->_clear_uploaded;
 
             return $latest;
         });
@@ -2632,7 +2632,7 @@ subtest 'POI attempts' => sub {
                 status      => 'pending',
                 origin      => 'bo',
                 id          => 1,
-                uploaded_at => $now->datetime_yyyymmdd_hhmmss,
+                upload_date => $now->epoch,
             },
             onfido  => undef,
             idv     => undef,
@@ -2651,7 +2651,7 @@ subtest 'POI attempts' => sub {
                 status      => 'rejected',
                 origin      => 'bo',
                 id          => 1,
-                uploaded_at => $now->datetime_yyyymmdd_hhmmss,
+                upload_date => $now->epoch,
             },
             onfido  => undef,
             idv     => undef,
@@ -2670,7 +2670,7 @@ subtest 'POI attempts' => sub {
                 status      => 'verified',
                 origin      => 'bo',
                 id          => 1,
-                uploaded_at => $now->datetime_yyyymmdd_hhmmss,
+                upload_date => $now->epoch,
             },
             onfido  => undef,
             idv     => undef,
@@ -2689,7 +2689,7 @@ subtest 'POI attempts' => sub {
                 status      => 'expired',
                 origin      => 'bo',
                 id          => 1,
-                uploaded_at => $now->datetime_yyyymmdd_hhmmss,
+                upload_date => $now->epoch,
             },
             onfido  => undef,
             idv     => undef,
@@ -2716,7 +2716,7 @@ subtest 'POI attempts' => sub {
                 status      => 'pending',
                 origin      => 'bo',
                 id          => 1,
-                uploaded_at => $after->datetime_yyyymmdd_hhmmss,
+                upload_date => $after->epoch,
             },
             idv => [{
                     issuing_country => 'ke',

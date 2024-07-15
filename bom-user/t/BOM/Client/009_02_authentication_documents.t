@@ -27,7 +27,7 @@ $client->save;
 my $dbh = $client->db->dbic->dbh;
 
 subtest 'Latest' => sub {
-    my $latest = $client->documents->latest;
+    my $latest = $client->documents->latest('proof_of_identity');
 
     ok !$latest, 'No POI uploaded';
 
@@ -42,16 +42,16 @@ subtest 'Latest' => sub {
     my $sth_doc_info = $dbh->prepare($SQL);
     $sth_doc_info->execute($client->loginid);
 
-    $client->documents->_clear_latest;
-    $latest = $client->documents->latest;
+    $client->documents->_clear_uploaded;
+    $latest = $client->documents->latest('proof_of_identity');
     ok !$latest, 'POI still uploading';
 
     $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
     my $sth_doc_finish = $dbh->prepare($SQL);
     $sth_doc_finish->execute($id1);
 
-    $client->documents->_clear_latest;
-    $latest = $client->documents->latest;
+    $client->documents->_clear_uploaded;
+    $latest = $client->documents->latest('proof_of_identity');
     ok $latest, 'Latest POI found';
 };
 
@@ -90,6 +90,10 @@ subtest 'uploaded by Onfido' => sub {
                 }
             },
             expiry_date => re('\d+'),
+            latest      => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
+            },
         },
         onfido => {
             is_expired  => 1,
@@ -145,6 +149,10 @@ subtest 'uploaded by IDV' => sub {
                 }
             },
             expiry_date => re('\d+'),
+            latest      => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
+            },
         },
         onfido => {
             is_expired  => 1,
@@ -1093,7 +1101,6 @@ subtest 'Manual docs uploaded at BO' => sub {
     $sth_doc_finish->execute($id1);
 
     $client->documents->_clear_uploaded;
-    $client->documents->_clear_latest;
     invalidate_object_cache($client);
 
     is $client->get_manual_poi_status, 'pending', 'Pending Manual POI status';
@@ -1136,7 +1143,6 @@ subtest 'Manual docs uploaded at BO' => sub {
     $sth_doc_finish = $dbh->prepare($SQL);
     $sth_doc_finish->execute($id1);
     $client->documents->_clear_uploaded;
-    $client->documents->_clear_latest;
     is $client->get_manual_poi_status, 'pending', 'Pending Manual POI status';
     is $client->get_poi_status,        'pending', 'Pending POI status';
     cmp_deeply [$client->latest_poi_by], ['manual', ignore(), ignore()], 'Manual POI attempted';
@@ -2490,7 +2496,11 @@ subtest 'uploaded building on invalid dates' => sub {
                 }
             },
             is_pending  => 1,
-            is_uploaded => 1
+            is_uploaded => 1,
+            latest      => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
+            },
         },
         proof_of_address => {
             documents => {

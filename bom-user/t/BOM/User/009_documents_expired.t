@@ -266,6 +266,10 @@ subtest 'documents uploaded' => sub {
                     type        => "passport",
                 },
             },
+            latest => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
+            },
             is_expired    => 0,
             is_pending    => 0,
             is_verified   => 2,
@@ -311,6 +315,10 @@ subtest 'documents uploaded' => sub {
                     status      => "verified",
                     type        => "passport",
                 },
+            },
+            latest => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
             },
             is_expired    => 0,
             is_pending    => 0,
@@ -652,6 +660,10 @@ subtest 'rejected and uploaded' => sub {
                     'status'      => 'rejected'
                 }
             },
+            latest => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
+            },
             'is_pending'  => 1,
             'is_rejected' => 1,
             'is_uploaded' => 1
@@ -690,6 +702,10 @@ subtest 'rejected and uploaded' => sub {
                     'status'      => 'verified'
                 }
             },
+            latest => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
+            },
             'expiry_date' => re('\d+'),
             'is_pending'  => 0,
             'is_expired'  => 1,
@@ -721,6 +737,10 @@ subtest 'rejected and uploaded' => sub {
                     'expiry_date' => re('\d+'),
                     'status'      => 'verified'
                 }
+            },
+            latest => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
             },
             'expiry_date' => re('\d+'),
             'is_verified' => 2,
@@ -770,6 +790,10 @@ subtest 'rejected and uploaded' => sub {
                     'id'          => '618900'
                 },
             },
+            latest => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
+            },
             'expiry_date' => re('\d+'),
             'is_uploaded' => 1,
             'is_verified' => 2
@@ -813,6 +837,10 @@ subtest 'rejected and uploaded' => sub {
                     'id'          => '618900'
                 },
             },
+            latest => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
+            },
         }};
 
     cmp_deeply $client->documents->uploaded(), $expected, 'Fresh verified documents make the account verified';
@@ -852,6 +880,10 @@ subtest 'rejected and uploaded' => sub {
                     'type'        => 'passport',
                     'id'          => '618900'
                 },
+            },
+            latest => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
             },
         }};
 
@@ -926,6 +958,10 @@ subtest 'rejected an accepted' => sub {
             },
             'is_pending'  => 1,
             'is_uploaded' => 2,
+            latest        => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
+            },
         }};
 
     # The documents are left in `uploaded` just like an Onfido consider
@@ -972,6 +1008,10 @@ subtest 'rejected an accepted' => sub {
                     'expiry_date' => re('\d+'),
                     'status'      => 'verified'
                 }
+            },
+            latest => {
+                id          => re('\d+'),
+                upload_date => re('\d+'),
             },
             'is_pending'    => 1,
             'expiry_date'   => re('\d+'),

@@ -6274,12 +6274,8 @@ sub latest_poi_by {
     }
 
     if ($manual_allowed) {
-        if (my $document = $self->documents->latest) {
-            my $origin = $document->{origin} // '';
-
-            if ($origin eq 'client' || $origin eq 'bo') {
-                push @triplets, ['manual', $document, Date::Utility->new($document->{upload_date})->epoch];
-            }
+        if (my $document = $self->documents->latest('proof_of_identity')) {
+            push @triplets, ['manual', $document, $document->{upload_date}];
         }
 
         if (my $age_verification = $self->status->age_verification) {
@@ -6394,20 +6390,17 @@ sub poi_attempts {
         }
     }
 
-    if (my $document = $self->documents->latest) {
-        my $origin = $document->{origin} // '';
+    if (my $document = $self->documents->latest('proof_of_identity')) {
+        my $manual_status = $self->get_manual_poi_status();
 
-        if ($origin eq 'client' || $origin eq 'bo') {
-            my $manual_status = $self->get_manual_poi_status();    # docs are more liquid than idv/onfido checks
-
-            push $attempts->@*, {
-                id           => $document->{id},
-                status       => $manual_status,
-                service      => 'manual',
-                country_code => $self->place_of_birth // $self->residence,    # as for now we don't have a column for country on the documents table
-                timestamp    => Date::Utility->new($document->{upload_date})->epoch,
+        push $attempts->@*,
+            {
+            id           => $document->{id},
+            status       => $manual_status,
+            service      => 'manual',
+            country_code => $self->place_of_birth // $self->residence,
+            timestamp    => $document->{upload_date},
             };
-        }
     }
 
     $attempts = [sort { $b->{timestamp} <=> $a->{timestamp} } $attempts->@*];
