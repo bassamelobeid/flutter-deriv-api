@@ -241,7 +241,7 @@ rpc_response {
             },
         },
         supported_languages =>
-            ['EN', 'ID', 'RU', 'ES', 'FR', 'IT', 'MN', 'PT', 'PL', 'DE', 'ZH_CN', 'VI', 'ZH_TW', 'TH', 'TR', 'KO', 'AR', 'BN', 'SI', 'SW'],
+            ['EN', 'ID', 'RU', 'ES', 'FR', 'IT', 'MN', 'PT', 'PL', 'DE', 'ZH_CN', 'VI', 'ZH_TW', 'TH', 'TR', 'KO', 'AR', 'BN', 'SI', 'SW', 'KM'],
         terms_conditions_version => 'Version 1 1970-01-01',
     };
 };
