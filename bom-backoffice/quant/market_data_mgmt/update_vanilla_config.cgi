@@ -360,6 +360,9 @@ if ($r->param('save_vanilla_per_symbol_config')) {
         die "max daily volume cannot be negative"  if ($max_daily_volume < 0);
         die "max daily pnl cannot be negative"     if ($max_daily_pnl < 0);
 
+        my $delta_config_array_ref = decode_json_utf8($delta_config);
+        validate_delta_config($delta_config_array_ref);
+
         my $limit_defs = BOM::Config::quants()->{risk_profile};
         delete $limit_defs->{no_business};
         die "invalid risk_profile" unless $risk_profile and $limit_defs->{$risk_profile};
@@ -368,7 +371,7 @@ if ($r->param('save_vanilla_per_symbol_config')) {
         $vanilla_config = {
             vol_markup              => $vol_markup,
             spread_spot             => $spread_spot,
-            delta_config            => decode_json_utf8($delta_config),
+            delta_config            => $delta_config_array_ref,
             bs_markup               => $bs_markup,
             max_strike_price_choice => $max_strike_price_choice,
             min_number_of_contracts => decode_json_utf8($min_number_of_contracts),
@@ -425,6 +428,9 @@ if ($r->param('save_vanilla_fx_per_symbol_config')) {
         die "max daily pnl must be a number"           unless looks_like_number($max_daily_pnl);
         die "bs markup must be a number"               unless looks_like_number($bs_markup);
 
+        my $delta_config_array_ref = decode_json_utf8($delta_config);
+        validate_delta_config($delta_config_array_ref);
+
         die 'risk profile is incorrect'
             unless grep { $_ eq $risk_profile } ('low_risk', 'medium_risk', 'moderate_risk', 'high_risk', 'extreme_risk');
 
@@ -435,7 +441,7 @@ if ($r->param('save_vanilla_fx_per_symbol_config')) {
 
         my ($new_spread_spot, $new_spread_vol);
         # remove the maturities offered in spread spot and spread vol
-        foreach my $delta (@{decode_json_utf8($delta_config)}) {
+        foreach my $delta (@{$delta_config_array_ref}) {
             foreach my $day (@{decode_json_utf8($maturities_days)}) {
                 $new_spread_spot->{delta}->{$delta}->{day}->{$day} = $existing_spread_spot->{delta}->{$delta}->{day}->{$day};
                 $new_spread_vol->{delta}->{$delta}->{day}->{$day}  = $existing_spread_vol->{delta}->{$delta}->{day}->{$day};
@@ -448,7 +454,7 @@ if ($r->param('save_vanilla_fx_per_symbol_config')) {
 
         $vanilla_config = {
             bs_markup                => $bs_markup,
-            delta_config             => decode_json_utf8($delta_config),
+            delta_config             => $delta_config_array_ref,
             max_strike_price_choice  => $max_strike_price_choice,
             min_number_of_contracts  => decode_json_utf8($min_number_of_contracts),
             max_number_of_contracts  => decode_json_utf8($max_number_of_contracts),
@@ -624,5 +630,35 @@ if ($r->param('save_vanilla_fx_spread')) {
     }
 
     print encode_json_utf8($output);
+}
+
+=head2 validate_delta_config
+
+Description: Validate C<$delta_config> parameter for vanillas.
+This function takes the following arguments.
+
+=over 4
+
+=item - C<$delta_config>, a reference to the delta config array.
+
+=back
+
+Returns an error if any of the following is TRUE:
+
+- C<$delta_config> is NOT an array reference.
+- Values in C<$delta_config> are NOT between 0 and 1 (exclusively)
+
+=cut
+
+sub validate_delta_config {
+    my $delta_config = shift;
+
+    die "Delta Config must be an array" unless (ref($delta_config) eq 'ARRAY');
+
+    foreach (@{$delta_config}) {
+        unless ($_ > 0 && $_ < 1) {
+            die qq(Delta Config value "$_" is not between 0 and 1 (both exclusive));
+        }
+    }
 }
 
