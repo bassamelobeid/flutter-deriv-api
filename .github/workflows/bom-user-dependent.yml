@@ -12,7 +12,7 @@ jobs:
         id: is_dt_exists
         uses: regentmarkets/github-actions/check-existing-test@master
         with:
-          DT_list: 'bom-rpc binary-websocket-api bom-platform'
+          DT_list: 'bom-rpc binary-websocket-api bom-platform bom-backoffice'
   bom-rpc:
     needs: check_existing_test
     if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-rpc') }}
@@ -27,4 +27,9 @@ jobs:
     needs: check_existing_test
     if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-platform') }}
     uses: ./.github/workflows/bom-platform-base.yml
+    secrets: inherit
+  bom-backoffice:
+    needs: check_existing_test
+    if: ${{ !contains(fromJSON(needs.check_existing_test.outputs.result), 'bom-backoffice') }}
+    uses: ./.github/workflows/bom-backoffice-base.yml
     secrets: inherit

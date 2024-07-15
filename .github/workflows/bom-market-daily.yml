@@ -8,47 +8,13 @@ on:
   schedule:
     - cron: '10 11 * * *'
 jobs:
-  syntax_unit:
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ vars.DEBIAN_CI }}
-      credentials:
-        username: circle4regentmarkets
-        password: ${{ secrets.DOCKER_PASSWORD }}
-      options: --user nobody:nogroup
-    defaults:
-      run:
-        shell: bash -le {0}
-        working-directory: /home/git/regentmarkets/bom-core/bom-market
-    env:
-      LOG_LEVEL: debug
-    steps:
-      - name: setup CI step
-        uses: regentmarkets/github-actions/ci-setup@master
-        with:
-          read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
-          repository: regentmarkets/bom-core/bom-market
-      - name: Code structure and syntax
-        run: make syntax
-      - name: unit tests
-        run: make unit
-      - name: Update UID for nobody user
-        uses: regentmarkets/github-actions/update-uid@master
-        if: ${{ !cancelled() }}
-      - name: Upload Test Results
-        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
-        if: ${{ !cancelled() }}
-        with:
-          name: test-results-syntax_unit
-          path: /tmp/test-output/**/*.xml
-          retention-days: 1
-  core:
-    uses: regentmarkets/github-actions/.github/workflows/core.yml@master
+  core_unit_syntax:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@master
     secrets: inherit
     with:
       repository: regentmarkets/bom-core/bom-market
   publish_test_results:
-    needs: [core, syntax_unit]
+    needs: [core_unit_syntax]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:

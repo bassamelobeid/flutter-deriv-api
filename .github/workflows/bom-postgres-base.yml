@@ -13,7 +13,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-bom-postgres
   cancel-in-progress: true
 jobs:
-  core_unit_syntax_diff:
+  core_unit_syntax:
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}
@@ -33,8 +33,11 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: regentmarkets/bom-core/bom-postgres
+          need_service: false
       - name: unit tests
         run: make unit
+      - name: Start services
+        run: start_services
       - name: Core tests
         run: |
           sudo tee -a /etc/hosts < hosts.db

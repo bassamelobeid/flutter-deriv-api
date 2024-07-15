@@ -13,7 +13,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-bom-backoffice
   cancel-in-progress: true
 jobs:
-  core_unit_syntax_diff:
+  core_unit_syntax:
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.debianci_image }}

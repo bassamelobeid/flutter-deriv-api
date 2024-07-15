@@ -11,10 +11,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-bom-feed-plugin
   cancel-in-progress: true
 jobs:
-  core_syntax_diff:
-    uses: regentmarkets/github-actions/.github/workflows/core_syntax_diff.yml@master
+  core_syntax:
+    uses: regentmarkets/github-actions/.github/workflows/core_unit_syntax.yml@master
     secrets: inherit
+    # Set 'need_syntax' to false to skip syntax tests during DT.
     with:
       debianci_image: ${{ inputs.debianci_image }}
       repository: regentmarkets/bom-core/bom-feed-plugin
-      dependent_test: 'true'
+      dependent_test: true
+      need_syntax: false
+      need_unit: false

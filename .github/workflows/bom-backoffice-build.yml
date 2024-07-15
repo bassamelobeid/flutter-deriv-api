@@ -18,7 +18,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 jobs:
-  core_unit_syntax_diff:
+  core_unit_syntax:
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -53,6 +53,6 @@ jobs:
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
         if: ${{ !cancelled() }}
         with:
-          name: test-results-core_unit_syntax_diff
+          name: test-results-core_unit_syntax
           path: /tmp/test-output/**/*.xml
           retention-days: 1

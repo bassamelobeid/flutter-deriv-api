@@ -8,12 +8,7 @@ on:
   schedule:
     - cron: '26 11 * * *'
 jobs:
-  syntax_unit:
-    uses: regentmarkets/github-actions/.github/workflows/syntax_unit.yml@master
-    secrets: inherit
-    with:
-      repository: regentmarkets/bom-core/bom-postgres
-  core:
+  core_unit_syntax:
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.DEBIAN_CI }}
@@ -33,6 +28,13 @@ jobs:
         with:
           read_github_ssh_key: ${{ secrets.READ_GITHUB_SSH_KEY }}
           repository: regentmarkets/bom-core/bom-postgres
+          need_service: false
+      - name: Code structure and syntax
+        run: make syntax
+      - name: unit tests
+        run: make unit
+      - name: Start services
+        run: start_services
       - name: Core tests
         run: |
           sudo tee -a /etc/hosts < hosts.db
@@ -45,11 +47,11 @@ jobs:
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 #v4.3.0
         if: ${{ !cancelled() }}
         with:
-          name: test-results-core
+          name: test-results-core_unit_syntax
           path: /tmp/test-output/**/*.xml
           retention-days: 1
   publish_test_results:
-    needs: [ core , syntax_unit ]
+    needs: [core_unit_syntax]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
