@@ -485,4 +485,23 @@ sub get_server_webapi_info {
     return \%servers;
 }
 
+=head2 get_market_type_from_group
+
+Determines and returns the market type based on the provided MT5 group name.
+
+Parameters:
+    - group_name (String): The name of the MT5 group.
+
+Returns:
+    The market type associated with the given group name. If the group name does not exist in the configuration, it returns undef.
+
+=cut
+
+sub get_market_type_from_group {
+
+    my ($self, $group_name) = @_;
+
+    return BOM::Config::mt5_account_types()->{lc($group_name)}->{market_type};
+}
+
 1;

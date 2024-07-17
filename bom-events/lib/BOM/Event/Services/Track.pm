@@ -129,7 +129,7 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_reset_request => [qw(first_name verification_url code)],
     trading_platform_investor_password_changed       => [qw(first_name contact_url type login)],
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
-    trigger_IB_mt5_technical_account                 => [qw(mt5_account_id binary_user_id provider dw_id)],
+    create_mt5_ib_technical_accounts                 => [qw(mt5_account_id binary_user_id provider partner_id)],
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
     crypto_withdrawal_rejected_email_v2              => [
@@ -261,7 +261,7 @@ my @COMMON_EVENT_METHODS = qw(
     payment_debit_withdrawal
     payment_deposit_reversal
     payment_withdrawal_reversal_event
-    trigger_IB_mt5_technical_account
+    create_mt5_ib_technical_accounts
 );
 
 # list of events that will be forwarded directly to cio as transactional emails
@@ -1794,9 +1794,9 @@ It is triggered for each B<under_antifraud_investigation> event emitted, deliver
 
 =cut
 
-=head2 trigger_IB_mt5_technical_account
+=head2 create_mt5_ib_technical_accounts
 
-It is triggered for each B<trigger_IB_mt5_technical_account> event emitted, delivering it to Rudderstack.
+It is triggered for each B<create_mt5_ib_technical_accounts> event emitted, delivering it to Rudderstack.
 
 =cut
 

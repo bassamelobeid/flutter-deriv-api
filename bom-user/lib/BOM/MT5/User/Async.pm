@@ -1030,6 +1030,48 @@ sub user_balance_change {
         });
 }
 
+=head2 user_balance_check
+
+This subroutine checks the balance of a specified user account on the MT5 platform. 
+It optionally corrects the user's balance and credit funds based on the history of deals.
+
+=over 4
+
+=item * C<$login> (required): The login identifier of the user whose balance is to be checked.
+
+=item * C<$fixflag> (optional): Indicates if client's balance and credit should be corrected post-check. Default is 1 (adjust based on deal history); 0 means no correction.
+
+=back
+
+The subroutine returns a L<Future> object that, on completion, yields a response hashref containing the following keys:
+
+=over 4
+
+=item * C<retcode>: The response code (0 for success, error code otherwise).
+
+=item * C<balance>: The user's balance after correction (user) and before correction (history).
+
+=item * C<credit>: The user's credit funds after correction (user) and before correction (history).
+
+=back
+
+=cut
+
+sub user_balance_check {
+    my ($login, $fixflag) = @_;
+
+    my $param = {
+        login   => $login,
+        fixflag => $fixflag // 1,
+    };
+
+    return _invoke_mt5('UserBalanceCheck', $param)->then(
+        sub {
+            my ($response) = @_;
+            return Future->done($response);
+        });
+}
+
 sub get_open_positions_count {
     my $login = shift;
 

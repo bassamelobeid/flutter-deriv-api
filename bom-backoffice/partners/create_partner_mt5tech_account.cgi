@@ -87,19 +87,19 @@ if ($input->{CreatePartnerMT5TechnicalAccount}) {
         $db->get_affiliates({binary_user_id => $client->{binary_user_id}, provider => 'dynamicworks'})->{affiliates}->[0]->{external_affiliate_id};
 
     if (!defined($dw_id)) {
-        code_exit_BO(_get_display_error_message("Partner DW details does not exit"));
+        code_exit_BO(_get_display_error_message("Partner DW details does not exist"));
     }
 
     BOM::Platform::Event::Emitter::emit(
-        'trigger_IB_mt5_technical_account',
+        'create_mt5_ib_technical_accounts',
         {
             binary_user_id => $client->binary_user_id,
             mt5_account_id => $mt5_account_id,
             provider       => DYNAMICWORKS,
-            dw_id          => $dw_id
+            partner_id     => $dw_id
         });
 
-    my $msg = 'Partner technical account creation intiated';
+    my $msg = 'Partner technical account creation started successfully. You will receive a notification via email.';
     code_exit_BO(_get_display_message($msg));
 
 }

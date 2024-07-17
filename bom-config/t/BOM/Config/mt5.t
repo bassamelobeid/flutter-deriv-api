@@ -1260,4 +1260,18 @@ subtest 'available_groups' => sub {
     }
 };
 
+subtest 'market type from group name' => sub {
+
+    my $mt5_obj = BOM::Config::MT5->new();
+
+    my $group_name_synthetic = 'real\p02_ts02\synthetic\svg_std-hr_usd';
+    my $result_synthetic     = $mt5_obj->get_market_type_from_group($group_name_synthetic);
+    is $result_synthetic, 'synthetic', "correct market type for the given group $group_name_synthetic";
+
+    my $group_name_financial = 'real\p02_ts02\financial\svg_std-hr_usd';
+    my $result_financial     = $mt5_obj->get_market_type_from_group($group_name_financial);
+    is $result_financial, 'financial', "correct market type for the given group $group_name_financial";
+
+};
+
 done_testing();

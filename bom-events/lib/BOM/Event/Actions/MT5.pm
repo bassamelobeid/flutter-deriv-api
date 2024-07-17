@@ -52,7 +52,7 @@ use Net::Async::Redis;
 use ExchangeRates::CurrencyConverter        qw(convert_currency);
 use Format::Util::Numbers                   qw(financialrounding);
 use Deriv::TradingPlatform::MT5::UserRights qw(get_value);
-
+use BOM::Event::Actions::MT5TechnicalAccounts;
 use List::Util qw(sum0);
 use HTML::Entities;
 
@@ -2347,6 +2347,33 @@ sub _get_loginids_for_mt5_transfer {
     }
 
     return $user->bom_real_loginids;
+}
+
+=head2 create_mt5_ib_technical_accounts
+
+Function to create technical accounts for the given MT5 IB Account.
+
+=over 4
+
+=item * C<mt5_account_id> - MT5 IB main agent account
+
+=item * C<binary_user_id> - Binary user id
+
+=item * C<provider> - Provider of affiliate management service
+
+=item * C<partner_id> - Partner id from the provider
+
+=back
+
+=cut
+
+sub create_mt5_ib_technical_accounts {
+
+    my $args = shift;
+
+    BOM::Event::Actions::MT5TechnicalAccounts::create_mt5_ib_technical_accounts($args);
+
+    return 1;
 }
 
 1;
