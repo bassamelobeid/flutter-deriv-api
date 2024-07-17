@@ -45,8 +45,6 @@
             el_info.classList[el_info.id === selected_currency ? 'remove' : 'add']('invisible');
         });
 
-        // set the same currency on general tools
-        document.getElementById('gt_crypto_currencies_list').value = selected_currency;
     }
 
     showCurrencyInfo();

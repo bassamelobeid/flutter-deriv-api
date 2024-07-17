@@ -253,7 +253,7 @@ table td{
                     <button type="button" class="btn btn--primary" onclick="processPendingTransactions()">Bump Transactions</button>
                 </form>
                 [% ELSE %]
-                    <p>There are no pending transactions at the moment.</p>
+                    <p id="no_pending_transaction">There are no pending transactions at the moment.</p>
                 [% END %]
             [% CASE 'bump_eth_transaction' %]
                 <div class="scrollable">
@@ -317,5 +317,16 @@ table td{
             }
         }
         showSelectedSummary();
+        
+        if(document.getElementById('no_pending_transaction').innerHTML != null){
+            var dropdown = document.getElementById("ddl_with_params");
+
+            for (var i = 0; i < dropdown.options.length; i++) {
+                if (dropdown.options[i].text === "Bump transaction") {
+                    dropdown.selectedIndex = i;
+                    break;
+                }
+            }    
+        } 
     </script>
 [% END %]

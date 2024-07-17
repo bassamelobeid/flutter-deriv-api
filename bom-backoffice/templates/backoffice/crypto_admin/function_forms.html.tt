@@ -185,6 +185,7 @@
     }
 
     function showForm(form_id) {
+        var ethResultLinks = document.querySelectorAll(`a[name*='_results__']`);
         document.querySelectorAll('#form_container > div').forEach(el_form => {
             el_form.classList[el_form.id === `form_\${form_id}` ? 'remove' : 'add']('invisible');
         });
@@ -195,7 +196,14 @@
 
         if(form_id == 'bump_eth_transaction') {
             document.forms.get_eth_pending.submit();
-        }
+        } else if(ethResultLinks.length > 0) {
+            var firstLink = ethResultLinks[0];
+            var parentCard = firstLink.parentElement.parentElement;
+
+            if (parentCard) {
+                parentCard.remove();
+            }
+        } 
     }
 
     showForm('[% previous_req %]');

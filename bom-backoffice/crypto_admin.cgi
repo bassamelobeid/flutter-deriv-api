@@ -71,8 +71,9 @@ foreach my $currency_code (@all_cryptos) {
 our $currencies_info;
 my @category_options;
 my $category_selected;
-my $currency_selected = $input{currency} // $input{gt_currency} // 'BTC';
-my $controller_url    = request()->url_for('backoffice/crypto_admin.cgi') . '#results';
+my $currency_selected    = $input{currency}    // 'BTC';
+my $gt_currency_selected = $input{gt_currency} // 'BTC';
+my $controller_url       = request()->url_for('backoffice/crypto_admin.cgi') . '#results';
 our $template_currency_mapper = {
     LTC => 'BTC',
 };
@@ -94,7 +95,7 @@ my $gt_actions = {
                 approver_redis_key => DEACTIVATE_DEPOSIT_ADDRESS_RECORD,
                 request_body       => {
                     type          => 'deposit_new',
-                    currency_code => $currency_selected,
+                    currency_code => $gt_currency_selected,
                     addresses     => \@addresses_array,
                 },
                 request_id       => 'get_new_deposit_addressses',
@@ -110,7 +111,7 @@ my $gt_actions = {
                 approver_redis_key => REVERT_ERROR_TXN_RECORD,
                 request_body       => {
                     type          => 'deposit_error',
-                    currency_code => $currency_selected,
+                    currency_code => $gt_currency_selected,
                 },
                 request_id       => 'get_error_transactions',
                 transaction_type => 'deposit_error',
@@ -130,7 +131,7 @@ my $gt_actions = {
                 approver_redis_key => REVERT_ERROR_TXN_RECORD,
                 request_body       => {
                     type          => 'withdrawal_error',
-                    currency_code => $currency_selected,
+                    currency_code => $gt_currency_selected,
                 },
                 request_id       => 'get_error_transactions',
                 transaction_type => 'withdrawal_error',
@@ -221,7 +222,7 @@ $request_type->{gt_get_reconciliation_txn} = sub {
                 'backoffice/crypto_admin/error_transactions.html.tt',
                 {
                     controller_url => $controller_url,
-                    currency       => $currency_selected,
+                    currency       => $gt_currency_selected,
                     error          => $error->{error},
                 }) || die $tt->error();
             return;
@@ -239,7 +240,7 @@ $request_type->{gt_get_reconciliation_txn} = sub {
             'backoffice/crypto_admin/error_transactions.html.tt',
             {
                 controller_url     => $controller_url,
-                currency           => $currency_selected,
+                currency           => $gt_currency_selected,
                 error_transactions => $error_transactions,
                 transaction_type   => $transaction_type,
             }) || die $tt->error();
@@ -1148,7 +1149,7 @@ $tt->process(
     {
         controller_url    => $controller_url,
         currency_options  => \@all_cryptos,
-        currency_selected => $currency_selected,
+        currency_selected => $gt_currency_selected,
         tool_options      => \@tool_options,
         tool_selected     => $tool_selected,
     },
