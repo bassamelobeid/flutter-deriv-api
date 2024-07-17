@@ -212,15 +212,20 @@ our %ERROR_MAP = do {
         OrderEmailVerificationRequired => localize("We've sent you an email. Click the confirmation link in the email to complete this order."),
         ExcessiveVerificationFailures  =>
             localize("It looks like you've made too many attempts to confirm this order. Please try again after [_1] minutes."),
-        InvalidVerificationToken      => localize('The link that you used appears to be invalid. Please check and try again.'),
-        ExcessiveVerificationRequests => localize('Please wait for [_1] seconds before requesting another email.'),
-        InvalidLocalCurrency          => localize('Invalid currency provided.'),
-        BlockTradeNotAllowed          => localize("You're not eligible for block trading. Contact our Customer Support team for more information."),
-        BlockTradeDisabled            => localize('Block trading is currently unavailable. Please try again later.'),
-        AuthenticationRequired        => localize('Submit your proof of address and identity before signing up for Deriv P2P.'),
-        InvalidOrderExpiryPeriod      => localize('Invalid order expiry period provided.'),
-        InvalidCountry                => localize('[_1] is not a valid country code or a country where P2P is offered.'),
-        AdvertCounterpartyIneligible  => localize("You do not meet the advertiser's requirements for placing an order on this advert."),
+        InvalidVerificationToken       => localize('The link that you used appears to be invalid. Please check and try again.'),
+        ExcessiveVerificationRequests  => localize('Please wait for [_1] seconds before requesting another email.'),
+        InvalidLocalCurrency           => localize('Invalid currency provided.'),
+        BlockTradeNotAllowed           => localize("You're not eligible for block trading. Contact our Customer Support team for more information."),
+        BlockTradeDisabled             => localize('Block trading is currently unavailable. Please try again later.'),
+        AuthenticationRequired         => localize('Submit your proof of address and identity before signing up for Deriv P2P.'),
+        InvalidOrderExpiryPeriod       => localize('Invalid order expiry period provided.'),
+        InvalidCountry                 => localize('[_1] is not a valid country code or a country where P2P is offered.'),
+        AdvertCounterpartyIneligible   => localize("You do not meet the advertiser's requirements for placing an order on this advert."),
+        InvalidScheduleInterval        => localize('The value [_1] is invalid. Period start and end values must be multiples of [_2].'),
+        InvalidScheduleRange           => localize('The end time of a period must be greater than the start time.'),
+        AdvertiserScheduleAvailability =>
+            localize("The advertiser's scheduled availability does not allow placing an order on this ad at this time."),
+        ClientScheduleAvailability => localize('Your scheduled availability does not allow placing an order on this ad at this time.'),
     );
 };
 

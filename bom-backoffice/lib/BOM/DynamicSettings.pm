@@ -640,6 +640,7 @@ sub get_settings_by_group {
                 payments.p2p.dispute_response_time
                 payments.p2p.order_expiry_options
                 payments.p2p.limit_upgrade_restricted_countries
+                payments.p2p.business_hours_minutes_interval
             )]};
 
     my $settings;
@@ -761,7 +762,8 @@ sub get_extra_validations {
         'payments.p2p.advert_counterparty_terms.join_days_steps'       => [\&_validate_positive_number, \&_validate_whole_number],
         'payments.p2p.advert_counterparty_terms.rating_steps'          => \&_validate_positive_number,
         'payments.p2p.dispute_response_time'                           => \&_validate_positive_number,
-        'payments.p2p.order_expiry_options' => [\&_validate_positive_number, \&_validate_whole_number, \&_validate_order_expiry_options],
+        'payments.p2p.order_expiry_options'            => [\&_validate_positive_number, \&_validate_whole_number, \&_validate_order_expiry_options],
+        'payments.p2p.business_hours_minutes_interval' => \&_validate_whole_number,
     };
 
     my $validations = $setting_validators->{$setting} or return ();

@@ -4,7 +4,7 @@ use Test::More;
 use Test::Warnings;
 use B::Deparse;
 
-use BOM::User::Client;
+use P2P;
 use BOM::RPC::v3::P2P;
 
 Test::Warnings::allow_warnings(1);
@@ -25,8 +25,8 @@ my @subs = qw(
 my $deparse = B::Deparse->new();
 no strict 'refs';
 
-for my $name (keys %{'BOM::User::Client::'}) {
-    my $sub = BOM::User::Client->can($name);
+for my $name (keys %{'P2P::'}) {
+    my $sub = P2P->can($name);
     next unless $sub && $name =~ /p2p/ or grep { /^$name$/ } @subs;
     my $code        = $deparse->coderef2text($sub);
     my @error_codes = ($code =~ /\{\'error_code\', \'(.+?)\'/g);

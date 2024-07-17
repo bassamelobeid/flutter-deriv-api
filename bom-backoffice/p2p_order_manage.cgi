@@ -19,6 +19,10 @@ use Scalar::Util          qw(looks_like_number);
 use Format::Util::Numbers qw(financialrounding);
 use BOM::Platform::Event::Emitter;
 use JSON::MaybeXS;
+use DateTime;
+use DateTime::TimeZone;
+use BOM::P2P::BOUtility;
+use Log::Any qw($log);
 
 my $cgi = CGI->new;
 
@@ -67,9 +71,10 @@ my $db_collector = BOM::Database::ClientDB->new({
         broker_code => 'FOG',
     })->db->dbic;
 
-my ($order, $transactions, $history, $chat_messages, @verification_history);
+my ($order, @transactions, $history, $chat_messages, @verification_history, %timezones, %schedules);
 my $chat_messages_limit = 20;
 my $chat_page           = int($input{p} // 1);
+my $tz_offset           = 0;
 
 $chat_page = 1
     unless $chat_page > 0;    # The default page is 1 so math is well adjusted
@@ -123,6 +128,12 @@ if (my $id = $input{order_id}) {
                 $_->selectrow_hashref('SELECT * FROM p2p.order_list(?,NULL,NULL,NULL,NULL,NULL)', undef, $id);
             });
         die "Order $id not found\n" unless $order;
+
+        if ($input{tz} && $input{tz} ne 'UST') {
+            my $tz = DateTime::TimeZone->new(name => $input{tz});
+            $tz_offset = $tz->offset_for_datetime(DateTime->now());
+        }
+
         if ($order->{type} eq 'buy') {
             $order->{client_role}     = 'BUYER';
             $order->{advertiser_role} = 'SELLER';
@@ -143,7 +154,7 @@ if (my $id = $input{order_id}) {
             if $order->{disputer_loginid} eq $order->{advertiser_loginid};
         $order->{client_id}   //= '[not an advertiser]';
         $order->{client_name} //= '[not an advertiser]';
-        $order->{$_} = Date::Utility->new($order->{$_})->datetime_ddmmmyy_hhmmss for qw( created_time expire_time );
+        $order->{$_} = format_time(Date::Utility->new($order->{$_}), $tz_offset) for qw( created_time expire_time );
         ($order->{$_} = $order->{$_} ? 'Yes' : 'No') for qw( client_confirmed advertiser_confirmed );
         $order->{$_}             = ucfirst($order->{$_}) for qw( type status advert_type);
         $order->{amount_display} = financialrounding('amount', $order->{account_currency}, $order->{amount});
@@ -173,42 +184,39 @@ if (my $id = $input{order_id}) {
         $order->{advert_payment_method_names} = join ', ',
             sort map { $pm_defs->{$_}{display_name} } ($order->{advert_payment_method_names} // [])->@*;
 
-        $transactions = $db->run(
+        my $transaction_history = $db->run(
             fixup => sub {
                 $_->selectall_arrayref('SELECT * FROM p2p.order_transaction_history(?)', {Slice => {}}, $id);
             });
 
-        foreach my $row ($transactions->@*) {
-            $row->{src_loginid}  = $order->{TRANSACTION_MAPPER->{$row->{type}}->{src_loginid}};
-            $row->{dest_loginid} = $order->{TRANSACTION_MAPPER->{$row->{type}}->{dest_loginid}};
+        my %history_by_ts;
+        for my $row (@$transaction_history) {
+            $row->{src_loginid}               = $order->{TRANSACTION_MAPPER->{$row->{type}}->{src_loginid}};
+            $row->{dest_loginid}              = $order->{TRANSACTION_MAPPER->{$row->{type}}->{dest_loginid}};
+            $row->{du}                        = Date::Utility->new($row->{transaction_time});
+            $history_by_ts{$row->{du}->epoch} = $row;
         }
 
-        my $status_history  = $client->p2p_order_status_history($order->{id});
-        my $status_by_stamp = +{map { Date::Utility->new($_->{stamp})->datetime_yyyymmdd_hhmmss => $_->{status} } reverse $status_history->@*};
-        my $status_bag      = +{map { $_->{status} => Date::Utility->new($_->{stamp})->datetime_yyyymmdd_hhmmss } $status_history->@*};
+        my $status_history = $client->p2p_order_status_history($order->{id});
 
-        # We try to pair a transaction with its correspondent status by timestamp
-        foreach ($transactions->@*) {
-            my $stamp = Date::Utility->new($_->{transaction_time})->datetime_yyyymmdd_hhmmss;
-
-            if (defined $status_by_stamp->{$stamp}) {
-                $_->{status} = $status_by_stamp->{$stamp};
-                delete $status_bag->{$_->{status}};
-            }
+        for my $row (@$status_history) {
+            my $du = Date::Utility->new($row->{stamp});
+            # match the status with transaction when epoch matches
+            $history_by_ts{$du->epoch}->@{qw(status du)} = ($row->{status}, $du);
         }
 
-        # If a status is not matching a transaction, just push it and generate an empty tx row
-        push @$transactions, (map { +{status => $_, transaction_time => $status_bag->{$_}} } keys %$status_bag);
-        # Finally, sort by timestamp
-        $transactions =
-            [sort { Date::Utility->new($a->{transaction_time})->epoch cmp Date::Utility->new($b->{transaction_time})->epoch } $transactions->@*];
+        for my $ts (sort keys %history_by_ts) {
+            my $item = $history_by_ts{$ts};
+            $item->{stamp} = format_time($item->{du}, $tz_offset);
+            push @transactions, $item;
+        }
 
         if (my $items = BOM::Config::Redis->redis_p2p->lrange("P2P::VERIFICATION_HISTORY::$id", 0, -1)) {
             for my $item (@$items) {
                 my ($ts, $event) = split /\|/, $item;
                 push @verification_history,
                     {
-                    datetime => Date::Utility->new($ts)->datetime_yyyymmdd_hhmmss,
+                    datetime => format_time(Date::Utility->new($ts), $tz_offset),
                     event    => $event
                     };
             }
@@ -258,6 +266,36 @@ if (my $id = $input{order_id}) {
                         $chat_messages_limit, $chat_messages_limit * ($chat_page - 1));
                 });
         }
+
+        for my $country (uniq($order->{client_country}, $order->{advertiser_country}, BOM::Backoffice::Utility::get_office_countries())) {
+            $timezones{$country} = DateTime::TimeZone->names_in_country($country);
+        }
+
+        @schedules{qw(client_orig advertiser_orig)} = $order->@{qw(client_schedule advertiser_schedule)};
+
+        $schedules{client_current} = $db->run(
+            fixup => sub {
+                $_->selectrow_array('SELECT periods FROM p2p.get_advertiser_schedule(?)', undef, $order->{client_id});
+            });
+        delete $schedules{client_orig} if ($schedules{client_orig} // '') eq ($schedules{client_current} // '');
+
+        $schedules{advertiser_current} = $db->run(
+            fixup => sub {
+                $_->selectrow_array('SELECT periods FROM p2p.get_advertiser_schedule(?)', undef, $order->{advertiser_id});
+            });
+        delete $schedules{advertiser_orig} if ($schedules{advertiser_orig} // '') eq ($schedules{advertiser_current} // '');
+
+        if (grep { defined $_ } values %schedules) {
+            try {
+                for my $k (qw(client_orig advertiser_orig client_current advertiser_current)) {
+                    $schedules{$k} = BOM::P2P::BOUtility::format_schedule($schedules{$k}, $tz_offset) if $schedules{$k};
+                }
+
+            } catch ($e) {
+                $log->warnf('error processing advertiser schedules for order %s: %s', $order->{id}, $e);
+                undef %schedules;
+            }
+        }
     } catch ($e) {
         print '<p class="error">' . $e . '</p>';
     }
@@ -265,14 +303,14 @@ if (my $id = $input{order_id}) {
 
 # Resolve chat_user_id into client loginids and role
 $chat_messages //= [];
-$chat_messages = [map { prep_chat_message($_, $order) } @{$chat_messages}];
+$chat_messages = [map { prep_chat_message($_, $order, $tz_offset) } @$chat_messages];
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_order_manage.tt',
     {
         broker             => $broker,
         order              => $order,
-        transactions       => $transactions,
+        transactions       => \@transactions,
         history            => $history,
         chat_messages      => $chat_messages,
         chat_messages_next => scalar @{$chat_messages} < $chat_messages_limit
@@ -285,7 +323,11 @@ BOM::Backoffice::Request::template()->process(
         dispute_reasons      => \%dispute_reasons,
         can_dispute          => $can_dispute,
         verification_history => \@verification_history,
+        timezones            => \%timezones,
+        schedules            => \%schedules,
+        timezone_offset      => sprintf('%+d', $tz_offset / 3600),
     });
+
 code_exit_BO();
 
 =head2 prep_chat_message
@@ -307,10 +349,12 @@ Returns,
 =cut
 
 sub prep_chat_message {
-    my ($chat, $order) = @_;
-    $chat->{chat_user} = $chat->{chat_user_id};
-    $chat->{chat_role} = 'other';
-    $chat->{chat_user} = $order->{client_loginid}
+    my ($chat, $order, $tz_offset) = @_;
+
+    $chat->{created_time} = format_time(Date::Utility->new($chat->{created_time}), $tz_offset);
+    $chat->{chat_user}    = $chat->{chat_user_id};
+    $chat->{chat_role}    = 'other';
+    $chat->{chat_user}    = $order->{client_loginid}
         if $order->{client_chat_user_id} eq $chat->{chat_user_id};
     $chat->{chat_user} = $order->{advertiser_loginid}
         if $order->{advertiser_chat_user_id} eq $chat->{chat_user_id};
@@ -330,4 +374,10 @@ sub get_escrow {
         return $c->loginid
             if $c->broker eq $broker && $c->currency eq $currency;
     }
+}
+
+sub format_time {
+    my ($du, $offset) = @_;
+    $du = $du->plus_time_interval($offset . 's') if $offset;
+    return $du->datetime . ' (' . $du->full_day_name . ')';
 }

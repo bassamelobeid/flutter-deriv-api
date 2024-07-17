@@ -358,6 +358,7 @@ subtest 'create advert (sell)' => sub {
         $expected{advertiser_details}->{is_blocked}     = $expected{advertiser_details}->{is_favourite} = 0;
         $expected{advertiser_details}->{is_recommended} = undef;
         $expected{is_eligible}                          = 1;
+        $expected{is_client_schedule_available}         = 1;
 
         cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
     };

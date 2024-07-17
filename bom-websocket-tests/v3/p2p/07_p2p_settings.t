@@ -58,7 +58,9 @@ my %vals = (
         completion_rate => [50, 70, 90],
         join_days       => [30, 20, 10],
         rating          => [2,  3,  4],
-    });
+    },
+    business_hours_minutes_interval => 16,
+);
 
 $app_config->set({'payments.p2p.available'                                       => 1});
 $app_config->set({'payments.p2p.enabled'                                         => 1});
@@ -87,6 +89,7 @@ $app_config->set({'payments.p2p.block_trade.maximum_advert'                     
 $app_config->set({'payments.p2p.advert_counterparty_terms.completion_rate_steps' => $vals{counterparty_term_steps}{completion_rate}});
 $app_config->set({'payments.p2p.advert_counterparty_terms.join_days_steps'       => $vals{counterparty_term_steps}{join_days}});
 $app_config->set({'payments.p2p.advert_counterparty_terms.rating_steps'          => $vals{counterparty_term_steps}{rating}});
+$app_config->set({'payments.p2p.business_hours_minutes_interval'                 => $vals{business_hours_minutes_interval}});
 
 my $user = BOM::User->create(
     email    => 'client@test.com',

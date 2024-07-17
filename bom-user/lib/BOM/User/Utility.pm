@@ -394,6 +394,7 @@ sub get_p2p_settings {
             join_days       => $p2p_config->advert_counterparty_terms->join_days_steps,
             rating          => $p2p_config->advert_counterparty_terms->rating_steps,
         },
+        business_hours_minutes_interval => $p2p_config->business_hours_minutes_interval,
     };
 
     return $result;

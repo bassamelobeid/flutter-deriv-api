@@ -182,7 +182,7 @@
         </tr>
         <tr>
             <td>Residence</td>
-            <td>[% advertiser.residence %] [% request.country_emoji(advertiser.residence) | none %]</td>
+            <td>[% advertiser.country %] [% request.country_emoji(advertiser.country) | none %]</td>
         </tr>
         <tr>
             <td>Online</td>
@@ -273,7 +273,7 @@
             <td>[% stats.sell_fraud_count %] ([% advertiser.account_currency %] [% stats.sell_fraud_amount %])</td>
         </tr>         
     </table>
-    
+
     <br/><br/>
     <h3>Adverts</h3>
     [% IF ads.size %]
@@ -304,6 +304,7 @@
                 <th scope="col">Payment methods</th>
                 <th scope="col">Payment info</th>
                 <th scope="col">Contact info</th>
+                <th scope="col">Order expiry</th>
                 <th scope="col">Open orders</th>
             </tr>
         </thead>
@@ -312,7 +313,7 @@
             <tr>
                 <td>[% ad.id %]</td>
                 <td>[% ad.created_time %]</td>
-                <td>[% ad.is_visible | none %]</td>
+                <td>[% ad.is_visible | none %][% FOREACH s = ad.visibility_status %]<br>[% s %][% END %]</td>
                 <td>[% ad.is_active | none %]</td>
                 <td>[% ad.is_deleted | none %] </td>
                 <td>[% ad.type.ucfirst %]</td>
@@ -330,6 +331,7 @@
                 <td>[% IF ad.payment_method_names %][% ad.payment_method_names.join(', ') %][% ELSE %][% ad.payment_method %][% END %]</td>
                 <td>[% ad.payment_info %]</td>
                 <td>[% ad.contact_info %]</td>
+                <td>[% ad.order_expiry_period / 60 %]m</td>
                 <td>
                 [% IF not is_readonly %]
                 <a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { advert_id => ad.id }) %]">[% ad.active_orders %]</a>
@@ -351,7 +353,7 @@
         <table class="full-width border hover alternate">
             <thead>
                 <tr>
-                    <th scope="col">Type</th>
+                    <th scope="col">Method</th>
                     <th scope="col">Active</th>
                     <th scope="col">Settings</th>
                 </tr>
@@ -371,45 +373,86 @@
                  [% END %]
             </tbody>
         </table>
-    </div>
-    
+    </div>    
+    [% END %]
+
+    <br/><br/>
+    <h3>Business Hours</h3>
+    [% IF schedule %]
+        <form action="[% request.url_for('backoffice/p2p_advertiser_manage.cgi') %]" method="get">
+        <input type="hidden" name="id" value="[% advertiser.id %]"/>        
+        Timezone for display:
+        <select name="tz">
+            <option>UST</option>
+            [% FOREACH tz = timezones %]
+            <option value="[% tz.0 %]" [% tz.0 == request.params.tz && 'selected' %]>[% tz.0 %] ([% tz.1 %] [% request.country_emoji(tz.1) | none %])</option>
+            [% END %]
+        </select>
+        <button type="submit" class="btn btn--primary">Refresh hours</button>
+        </form>
+        <table class="border">
+        [% FOREACH day = schedule %]
+            <tr><td>[% day.0 %]</td><td>[% day.1 %]</td></tr>
+        [% END %]
+        </table>
+        <p>Times above are in [% IF timezone_offset %][% request.params.tz %] (UST [% timezone_offset %])[% ELSE %]UST[% END %]</p>
+    [% ELSE %]
+        <p>24 hours, 7 days</p>
     [% END %]
     
+    [% BLOCK audit_value %]
+        [% IF val && field == 'Payment Method' %]
+            <table class="small">
+                <tr>
+                    <td>Method</td>
+                    <td>[% val.method %]</td>
+                <tr>
+                [% FOREACH k = val.params.keys.sort %]
+                <tr>
+                    <td>[% k %]</td>
+                    <td>[% val.params.$k %]</td>
+                </tr>                    
+                [% END %]
+                <tr>
+                    <td>Enabled</td>
+                    <td>[% IF val.is_enabled %]Yes[% ELSE %]No[% END %]</td>
+                <tr>                              
+            </table>     
+        [% ELSIF field == 'Schedule' %]
+            [% IF val %]
+                [% FOREACH p = val %][% p.0 %]: [% p.1 %]<br>[% END %]                     
+            [% ELSE %]
+               24 hours, 7 days
+            [% END %]
+        [% ELSE %]
+            [% val %]
+        [% END %]
+    [% END %]
+
     <br/><br/>
-    <h3>History</h3>
+    <h3>History (1 year max)</h3>
     [% IF audit.size %]
     <div class="scrollable">
      <table class="full-width border">
         <thead>
             <tr>
                 <th scope="col">Time</th>
-                <th scope="col">Operation</th>
-                <th scope="col">Change user</th>
-                <th scope="col">IP</th>
-                <th scope="col">Enabled</th>
-                <th scope="col">Approved</th>
-                <th scope="col">Listed</th>
-                <th scope="col">Blocked until</th>
-                <th scope="col">Band Level</th>
-                <th scope="col">CC Sell Auth</th>
-                <th scope="col">Name</th>
-                <th scope="col">Real Name</th>
-                <th scope="col">Ad description</th>
-                <th scope="col">Payment info</th>
-                <th scope="col">Contact info</th>
+                <th scope="col">User</th>
+                <th scope="col">Type</th>
+                <th scope="col">Change</th>
+                <th scope="col">New value</th>
+                <th scope="col">Old value</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody style="vertical-align: top;">
             [% FOREACH item = audit %]
             <tr>
-                <td>[% item.ts %]</td>
-                <td>[% item.operation %]</td>
+                <td>[% item.stamp %]</td>
                 <td>[% item.pg_userid %]</td>
-                <td>[% item.remote_addr %]</td>
-                [% next = loop.next %]
-                [% FOREACH fld = ['is_enabled','is_approved','is_listed','blocked_until','trade_band','cc_sell_authorized','name','show_name','default_advert_description','payment_info','contact_info'] %]
-                    <td [% IF item.$fld != next.$fld %]class="bg-highlight"[% END %]>[% item.$fld %]</td>
-                [% END %]                  
+                <td>[% item.operation | lower %]</td>
+                <td>[% item.field %]</td>
+                <td>[% PROCESS audit_value val=item.new_value field=item.field %]</td>
+                <td>[% PROCESS audit_value val=item.old_value field=item.field %]</td>     
             </tr>
             [% END %]
         </tbody>

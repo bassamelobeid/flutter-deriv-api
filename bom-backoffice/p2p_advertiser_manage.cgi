@@ -13,16 +13,21 @@ use BOM::Database::ClientDB;
 use BOM::User::Client;
 use BOM::User::Utility;
 use BOM::Platform::Event::Emitter;
+use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
+use BOM::P2P::BOUtility;
 use Format::Util::Numbers qw(financialrounding);
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
-use List::Util   qw(min max first any);
+use List::Util   qw(min max first any uniq);
 use Data::Dumper;
+use DateTime;
 use DateTime::Format::Pg;
+use DateTime::TimeZone;
 use Date::Utility;
 use JSON::MaybeUTF8 qw(:v1);
+use Log::Any        qw($log);
 
 use constant {
     P2P_ADVERTISER_BLOCK_ENDS_AT        => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
@@ -172,9 +177,7 @@ $output{is_readonly} = $is_readonly;
 if ($input{loginID} || $input{name} || $input{id}) {
     $output{advertiser} = $db->run(
         fixup => sub {
-            $_->selectrow_hashref(
-                'SELECT l.*, c.first_name, c.last_name, c.residence FROM p2p.advertiser_list_v2(?,?,NULL,?,NULL) l
-            JOIN betonmarkets.client c ON c.loginid = l.client_loginid', undef, @input{qw/id loginID name/});
+            $_->selectrow_hashref('SELECT * FROM p2p.advertiser_list_v2(?,?,NULL,?,NULL)', undef, @input{qw/id loginID name/});
         });
     $output{error} //= 'Advertiser not found' unless $output{advertiser};
 }
@@ -217,13 +220,60 @@ if ($output{advertiser}) {
     $output{range} = ($start + 1) . '-' . min(($start + $page_size), scalar @$ads) . ' of ' . (scalar @$ads);
     $output{ads}   = [splice(@$ads, $start, $page_size)];
 
+    if (my $schedule = $output{advertiser}->{schedule}) {
+        try {
+            for my $country (sort { $a cmp $b } uniq($output{advertiser}->{country}, BOM::Backoffice::Utility::get_office_countries())) {
+                push $output{timezones}->@*, map { [$_, $country] } DateTime::TimeZone->names_in_country($country);
+            }
+
+            my $offset;
+            if ($input{tz} && $input{tz} ne 'UST') {
+                my $tz = DateTime::TimeZone->new(name => $input{tz});
+                $offset = $tz->offset_for_datetime(DateTime->now());
+                $output{timezone_offset} = sprintf('%+d', $offset / 3600);
+            }
+
+            $output{schedule} = BOM::P2P::BOUtility::format_schedule($schedule, $offset);
+        } catch ($e) {
+            $log->warnf('error processing audit schedule data of advertiser %s: %s', $output{advertiser}->{id}, $e);
+        }
+    }
+
     $output{audit} = $db->run(
         fixup => sub {
-            $_->selectall_arrayref(
-                "SELECT *,date_trunc('seconds',stamp) ts FROM audit.p2p_advertiser WHERE id = ? ORDER BY stamp DESC",
-                {Slice => {}},
-                $output{advertiser}->{id});
+            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_audit_history(?)', {Slice => {}}, $output{advertiser}->{id});
         });
+
+    $_->{stamp} = Date::Utility->new($_->{stamp})->datetime for $output{audit}->@*;
+
+    my $method_defs = BOM::Config::p2p_payment_methods();    ## todo: use P2P::_p2p_payment_methods_cached
+
+    for my $update ($output{audit}->@*) {
+        if ($update->{field} eq 'Payment Method') {
+            for my $k (grep { $update->{$_} } qw(new_value old_value)) {
+                try {
+                    my $pm     = decode_json_utf8($update->{$k});
+                    my $method = delete $pm->{method};
+                    my $def    = $method_defs->{$method} // {};
+                    $update->{$k}             = {method => $def->{display_name} // $method};
+                    $update->{$k}{is_enabled} = delete $pm->{is_enabled};
+                    $update->{$k}{params}     = {map { $def->{fields}{$_}{display_name} // $_ => $pm->{$_} } keys %$pm};
+                } catch ($e) {
+                    $log->warnf('error processing audit payment method data of advertiser %s: %s', $output{advertiser}->{id}, $e);
+                }
+            }
+        }
+
+        if ($update->{field} eq 'Schedule') {
+            for my $k (grep { $update->{$_} } qw(new_value old_value)) {
+                try {
+                    $update->{$k} = BOM::P2P::BOUtility::format_schedule($update->{$k});
+                } catch ($e) {
+                    $log->warnf('error processing audit schedule data of advertiser %s: %s', $output{advertiser}->{id}, $e);
+                }
+            }
+        }
+    }
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $output{p2p_config} = $app_config->payments->p2p;
@@ -231,7 +281,7 @@ if ($output{advertiser}) {
     my $bands = $db->run(
         fixup => sub {
             $_->selectall_arrayref("SELECT DISTINCT(trade_band) FROM p2p.p2p_country_trade_band WHERE country = ? OR country = 'default'",
-                undef, $output{advertiser}->{residence});
+                undef, $output{advertiser}->{country});
         });
     $output{bands}                = [map { $_->[0] } @$bands];
     $output{p2p_balance}          = $client->p2p_balance;

@@ -688,6 +688,11 @@ payments:
               isa: ArrayRef
               global: 1
               default: [3,4,4.5]
+        business_hours_minutes_interval:
+          isa: Int
+          description: 'Minutes for start and end of business hours periods must be an exact multiple of this value. Set to 0 to allow any value.'
+          global: 1
+          default: 15
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section

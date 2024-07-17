@@ -245,6 +245,16 @@ sub update_self_exclusion_time_settings {
     }
 }
 
+=head2 get_office_countries
+
+Returns country codes of all Deriv offices.
+
+=cut
+
+sub get_office_countries {
+    return qw(my gb fr mt cy gg de hk sg jo ae py rw ky vg vu);
+}
+
 1;
 
 __END__

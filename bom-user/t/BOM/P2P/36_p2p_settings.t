@@ -97,6 +97,7 @@ subtest 'p2p_settings' => sub {
             join_days       => [9,   27,  88],
             rating          => [2.3, 3.6, 4.7],
         },
+        business_hours_minutes_interval => 16,
     );
 
     $p2p_config->available(1);
@@ -136,6 +137,7 @@ subtest 'p2p_settings' => sub {
     $p2p_config->advert_counterparty_terms->completion_rate_steps($vals{counterparty_term_steps}{completion_rate});
     $p2p_config->advert_counterparty_terms->join_days_steps($vals{counterparty_term_steps}{join_days});
     $p2p_config->advert_counterparty_terms->rating_steps($vals{counterparty_term_steps}{rating});
+    $p2p_config->business_hours_minutes_interval($vals{business_hours_minutes_interval});
 
     cmp_deeply(
         exception {

@@ -8,6 +8,23 @@
 [% IF order %]
     <hr>
     <h3>Details for order [% order.id %]</h3>
+
+    <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker}) %]" method="get">
+    <label>Timezone for display:</label>
+    <select name="tz">
+        <option>UST</option>
+        [% FOREACH country = timezones.keys.sort %]
+            [% FOREACH timezone = timezones.$country.sort %]
+            <option value="[% timezone %]" [% timezone == request.params.tz && 'selected' %]>[% timezone %] ([% country %] [% request.country_emoji(country) | none %])</option>
+            [% END %]
+        [% END %]
+    </select>
+    <input type="hidden" name="order_id" value="[% order.id %]">
+    <button class="btn btn--primary" type="submit">Get order</button>
+    </form>
+    Times currently shown in [% IF timezone_offset %][% request.params.tz %] (UST [% timezone_offset %])[% ELSE %]UST[% END %]
+    <br/><br/>
+
     <table class="border" style="table-layout:fixed; width:100%; overflow-wrap: break-word;">
         <tr>
             <td style="width:150px;">Status</td>
@@ -275,6 +292,45 @@
     [% END %]
 
     <br>
+    <h3>Business Hours</h3>
+
+    <table class="border"><tbody style="vertical-align: top;">
+
+    <tr><td>Client Hours (current)</td><td>
+    [% IF schedules.client_current %]
+        [% FOREACH p = schedules.client_current %][% p.0 %]: [% p.1 %]<br>[% END %]
+    [% ELSE %]
+        24 hours, 7 days
+    [% END %]
+    </td></tr>
+
+    <tr><td>Client Hours at time of order creation</td><td>
+    [% IF schedules.client_orig %]
+        [% FOREACH p = schedules.client_orig %][% p.0 %]: [% p.1 %]<br>[% END %]
+    [% ELSE %]
+    24 hours, 7 days
+    [% END %]
+    </td></tr>
+
+    <tr><td>Advertiser Hours (current)</td><td>
+    [% IF schedules.advertiser_current %]
+        [% FOREACH p = schedules.advertiser_current %][% p.0 %]: [% p.1 %]<br>[% END %]
+    [% ELSE %]
+    24 hours, 7 days
+    [% END %]
+    </td></tr>
+
+    <tr><td>Advertiser's Business Hours at time of order creation</td><td>
+    [% IF schedules.advertiser_orig %]
+        [% FOREACH p = schedules.advertiser_orig %][% p.0 %]: [% p.1 %]<br>[% END %]
+    [% ELSE %]
+    24 hours, 7 days
+    [% END %]
+    </td></tr>
+
+    </tbody></table>
+
+    <br>
     <h3>Order History</h3>
     <table class="full-width border">
         <thead>
@@ -294,7 +350,7 @@
             [% FOREACH t = transactions %]
                 [% IF t.type %]
                     <tr>
-                        <td rowspan=2>[% t.transaction_time %]</td>
+                        <td rowspan=2>[% t.stamp %]</td>
                         <td rowspan=2>[% t.status %]</td>
                         <td rowspan=2>[% t.type %]</td>
                         <td>From</td>
@@ -314,7 +370,7 @@
                     </tr>
                 [% ELSE %]
                     <tr>
-                        <td>[% t.transaction_time %]</td>
+                        <td>[% t.stamp %]</td>
                         <td>[% t.status %]</td>
                         <td colspan=8></td>
                     </tr>

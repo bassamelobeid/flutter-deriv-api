@@ -164,6 +164,7 @@ subtest 'trade partners' => sub {
                 is_favourite               => 1,
                 is_listed                  => 1,
                 is_online                  => 1,
+                is_schedule_available      => 1,
                 is_recommended             => 0,
                 last_name                  => 'pItT',
                 last_online_time           => num($online_time, 3),
@@ -197,6 +198,7 @@ subtest 'trade partners' => sub {
                 is_favourite               => 0,
                 is_listed                  => 1,
                 is_online                  => 1,
+                is_schedule_available      => 1,
                 is_recommended             => 0,
                 last_online_time           => num($online_time, 3),
                 name                       => 'test advertiser 103',
@@ -212,7 +214,10 @@ subtest 'trade partners' => sub {
                 total_completion_rate      => undef,
                 total_orders_count         => 0,
                 total_turnover             => '0.00'
-            }]);
+            }
+        ],
+        'expected p2p_advertiser_list result'
+    );
 
     #negative offset
     $resp = $t->await::p2p_advertiser_list({

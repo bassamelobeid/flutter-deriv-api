@@ -6,7 +6,7 @@ use warnings;
 no indirect;
 use Syntax::Keyword::Try;
 use Date::Utility;
-use List::Util                       qw(all first any min max none pairgrep uniq reduce);
+use List::Util                       qw(all first any min max none pairgrep uniq reduce pairfirst);
 use Array::Utils                     qw(array_minus intersect);
 use List::MoreUtils                  qw( minmax );
 use Text::Trim                       qw(trim);
@@ -132,8 +132,8 @@ use constant {
         PP024 => 'OrderReviewExists',
         PP025 => 'AdvertiserExist',
         PP026 => 'AdvertCounterpartyIneligible',
-
     },
+
 };
 
 =head2 p2p_settings
@@ -191,6 +191,8 @@ sub p2p_advertiser_create {
         ->{withdrawal_limits}{$self->client->landing_company->short}{lifetime_limit};
     my $p2p_create_order_chat = BOM::Config::Runtime->instance->app_config->payments->p2p->create_order_chat;
 
+    $param{schedule} = $self->_validate_advertiser_schedule(%param);
+
     my ($advertiser, $token, $expiry);
     unless ($p2p_create_order_chat) {
         my ($id) = $self->db->dbic->run(
@@ -218,18 +220,18 @@ sub p2p_advertiser_create {
         $advertiser = $self->db->dbic->run(
             fixup => sub {
                 $_->selectrow_hashref(
-                    'SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    undef,             $id,    $self->loginid, $name, @param{qw/default_advert_description payment_info contact_info/},
-                    $sb_user->user_id, $token, $expiry,        $lc_withdrawal_limit
+                    'SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    undef,             $id,    $self->loginid, $name,                @param{qw/default_advert_description payment_info contact_info/},
+                    $sb_user->user_id, $token, $expiry,        $lc_withdrawal_limit, $param{schedule},
                 );
             });
     } else {
         $advertiser = $self->db->dbic->run(
             fixup => sub {
                 $_->selectrow_hashref(
-                    'SELECT * FROM p2p.advertiser_create_v2(?, ?, ?, ?, ?, ?)',
+                    'SELECT * FROM p2p.advertiser_create_v2(?, ?, ?, ?, ?, ?, ?)',
                     undef, $self->loginid, $name, @param{qw/default_advert_description payment_info contact_info/},
-                    $lc_withdrawal_limit
+                    $lc_withdrawal_limit, $param{schedule},
                 );
             });
     }
@@ -317,6 +319,36 @@ sub _p2p_advertiser_trade_partners {
         }) // [];
 }
 
+=head2 _validate_advertiser_schedule
+
+Validates and formats the schedule param in p2p_advertiser_create and p2p_advertiser_update.
+
+=cut
+
+sub _validate_advertiser_schedule {
+    my ($self, %param) = @_;
+
+    return unless exists $param{schedule};
+
+    # An empty array will delete the schedule in db function
+    my @periods = map { [$_->@{qw(start_min end_min)}] } ($param{schedule} // [])->@*;
+    my @values  = map { @$_ } @periods;
+
+    my $interval = BOM::Config::Runtime->instance->app_config->payments->p2p->business_hours_minutes_interval;
+
+    if ($interval) {
+        my $invalid_entry = first { $_ % $interval } sort grep { defined $_ } @values;
+        die +{
+            error_code     => 'InvalidScheduleInterval',
+            message_params => [$invalid_entry, $interval]} if $invalid_entry;
+    }
+
+    die +{error_code => 'InvalidScheduleRange'} if pairfirst { defined($a) && defined($b) && $b <= $a } @values;
+
+    return encode_json_utf8(\@periods);
+
+}
+
 =head2 p2p_advertiser_blocked
 
 Returns true if the advertiser is blocked.
@@ -345,9 +377,10 @@ sub p2p_advertiser_update {
 
     # Return the current information of the advertiser if nothing changed
     return $advertiser_info
-        unless grep { exists $advertiser_info->{$_} and $param{$_} ne $advertiser_info->{$_} } keys %param
+        unless grep { exists $advertiser_info->{$_} and ($param{$_} // '') ne $advertiser_info->{$_} } keys %param
         or exists $param{show_name}
-        or $param{upgrade_limits};
+        or $param{upgrade_limits}
+        or exists $param{schedule};
 
     if (exists $param{name}) {
         $param{name} = trim($param{name});
@@ -379,13 +412,15 @@ sub p2p_advertiser_update {
         }
     }
 
+    $param{schedule} = $self->_validate_advertiser_schedule(%param);
+
     my $update = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.advertiser_update_v2(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, NULL, NULL, ?, NULL)',
+                'SELECT * FROM p2p.advertiser_update_v2(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, NULL, NULL, ?, NULL, ?)',
                 undef,
                 $advertiser_info->{id},
-                @param{qw/is_approved is_listed name default_advert_description payment_info contact_info trade_band show_name/});
+                @param{qw/is_approved is_listed name default_advert_description payment_info contact_info trade_band show_name schedule/});
         });
 
     BOM::Platform::Event::Emitter::emit(
@@ -674,6 +709,9 @@ sub p2p_advert_list {
         die +{error_code => 'BlockTradeDisabled'} unless BOM::Config::Runtime->instance->app_config->payments->p2p->block_trade->enabled;
     }
 
+    # avoid hitting db if advertiser schedule isn't available now
+    return [] if $param{hide_client_schedule_unavailable} && !($self->_p2p_advertiser_cached->{is_schedule_available} // 1);
+
     if ($param{counterparty_type}) {
         $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};
     }
@@ -692,14 +730,15 @@ sub p2p_advert_list {
 
     my $list = $self->_p2p_adverts(
         %param,
-        is_active               => 1,
-        can_order               => 1,
-        advertiser_is_approved  => 1,
-        advertiser_is_listed    => 1,
-        client_loginid          => $self->loginid,
-        account_currency        => $self->currency,
-        hide_blocked            => 1,
-        country_payment_methods => encode_json_utf8(\%country_payment_methods),
+        is_active                            => 1,
+        can_order                            => 1,
+        advertiser_is_approved               => 1,
+        advertiser_is_listed                 => 1,
+        client_loginid                       => $self->loginid,
+        account_currency                     => $self->currency,
+        hide_blocked                         => 1,
+        country_payment_methods              => encode_json_utf8(\%country_payment_methods),
+        hide_advertiser_schedule_unavailable => 1,
     );
 
     return $self->_advert_details($list, $param{amount});
@@ -865,6 +904,9 @@ sub p2p_order_create {
     die +{error_code => 'AdvertCounterpartyIneligible'}
         if any { $advert->{$_} }
         qw (client_ineligible_completion_rate client_ineligible_rating client_ineligible_join_date client_ineligible_country);
+
+    die +{error_code => 'ClientScheduleAvailability'}     unless $advert->{client_schedule_available};
+    die +{error_code => 'AdvertiserScheduleAvailability'} unless $advert->{advertiser_schedule_available};
 
     my $advert_type = $advert->{type};
 
@@ -2052,11 +2094,13 @@ sub _p2p_adverts {
     die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
-    $param{max_order} = convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $self->currency);
-    $param{reversible_limit}                  = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
-    $param{reversible_lookback}               = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
-    $param{fiat_deposit_restricted_countries} = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_countries;
-    $param{fiat_deposit_restricted_lookback}  = BOM::Config::Runtime->instance->app_config->payments->p2p->fiat_deposit_restricted_lookback;
+    my $payments_config = BOM::Config::Runtime->instance->app_config->payments;
+    $param{max_order}                         = convert_currency($payments_config->p2p->limits->maximum_order, 'USD', $self->currency);
+    $param{reversible_limit}                  = $payments_config->reversible_balance_limits->p2p / 100;
+    $param{reversible_lookback}               = $payments_config->reversible_deposits_lookback;
+    $param{fiat_deposit_restricted_countries} = $payments_config->p2p->fiat_deposit_restricted_countries;
+    $param{fiat_deposit_restricted_lookback}  = $payments_config->p2p->fiat_deposit_restricted_lookback;
+    $param{default_order_expiry}              = $payments_config->p2p->order_timeout;
     $param{advertiser_name} =~ s/([%_])/\\$1/g         if $param{advertiser_name};
     $param{local_currency} = uc $param{local_currency} if $param{local_currency};
 
@@ -2082,17 +2126,15 @@ sub _p2p_adverts {
         $param{$field} += 0 if defined $param{$field};
     }
 
+    my @fields = qw(id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
+        client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
+        use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map country_payment_methods
+        fiat_deposit_restricted_countries fiat_deposit_restricted_lookback block_trade hide_ineligible default_order_expiry
+        hide_advertiser_schedule_unavailable hide_client_schedule_unavailable);
+
     $self->db->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                {Slice => {}},
-                @param{
-                    qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
-                        client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
-                        use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map country_payment_methods
-                        fiat_deposit_restricted_countries fiat_deposit_restricted_lookback block_trade hide_ineligible/
-                });
+            $_->selectall_arrayref('SELECT * FROM p2p.advert_list(' . (join ',', map { '?' } 0 .. $#fields) . ')', {Slice => {}}, @param{@fields});
         }) // [];
 }
 
@@ -2825,6 +2867,18 @@ sub _advertiser_details {
         $details->{last_name}  = $advertiser->{last_name};
     }
 
+    if ($advertiser->{schedule}) {
+        $details->{is_schedule_available} = $advertiser->{is_schedule_available};
+        try {
+            my $schedule = decode_json_utf8($advertiser->{schedule});
+            $details->{schedule} = [map { {start_min => $_->[0], end_min => $_->[1]} } @$schedule];
+        } catch ($e) {
+            $log->warnf('invalid advertiser schedule json for %s: %s', $advertiser->{client_loginid}, $e);
+        }
+    } else {
+        $details->{is_schedule_available} = 1;
+    }
+
     # only advertiser themself can see these fields
     if ($self->loginid eq $loginid) {
         $details->{payment_info}      = $advertiser->{payment_info} // '';
@@ -2857,7 +2911,7 @@ sub _advertiser_details {
             min_order_amount => financialrounding('amount', $advertiser->{account_currency}, $advertiser->{block_trade_min_order_amount}),
             max_order_amount => financialrounding('amount', $advertiser->{account_currency}, $advertiser->{block_trade_max_order_amount}),
             }
-            if all { defined $advertiser->{$_} } qw(block_trade_min_order_amount block_trade_max_order_amount);
+            if $self->_can_advertiser_block_trade($advertiser);
 
         if ($advertiser->{blocked_until}) {
             my $block_time = Date::Utility->new($advertiser->{blocked_until});
@@ -2959,7 +3013,7 @@ sub _advert_details {
 
             # to match p2p_advert_list params, plus checking if advertiser blocked
             is_visible => (
-                all { $advert->{$_} } qw(is_active can_order advertiser_is_approved advertiser_is_listed)
+                all { $advert->{$_} } qw(is_active can_order advertiser_is_approved advertiser_is_listed advertiser_schedule_available)
                     and ($is_advert_owner ? 1 : not($advert->{advertiser_blocked} or $advert->{client_blocked}))
                     # when client is ad owner, no point checking advertiser_blocked/client_blocked since it's always FALSE
                     and (($advert->{payment_method_names} // [])->@* or $advert->{payment_method}) and not $advert->{is_deleted}
@@ -2994,6 +3048,7 @@ sub _advert_details {
                 # calculate the number of positive recommendations
                 recommended_count => defined $advert->{advertiser_recommended_average} ? $advert->{advertiser_recommended_count} : undef,
                 $self->_p2p_advertiser_online_status($advert->{advertiser_loginid}, $advert->{advertiser_country}),
+                is_schedule_available => $advert->{advertiser_schedule_available},
             },
         };
 
@@ -3055,6 +3110,7 @@ sub _advert_details {
                         and $advert->{advertiser_available_limit} < $advert->{min_order_amount};
                     push @reasons, 'advertiser_temp_ban'               if $advert->{advertiser_temp_ban};
                     push @reasons, 'advertiser_block_trade_ineligible' if $advert->{block_trade} and not $advert->{advertiser_can_block_trade};
+                    push @reasons, 'advertiser_schedule'               if !$advert->{advertiser_schedule_available};
                 }
                 $result->{visibility_status} = \@reasons;
             }
@@ -3063,7 +3119,8 @@ sub _advert_details {
             push $result->{eligibility_status}->@*, 'country'         if $advert->{client_ineligible_country};
             push $result->{eligibility_status}->@*, 'join_date'       if $advert->{client_ineligible_join_date};
             push $result->{eligibility_status}->@*, 'rating_average'  if $advert->{client_ineligible_rating};
-            $result->{is_eligible} = $result->{eligibility_status} ? 0 : 1;
+            $result->{is_eligible}                  = $result->{eligibility_status} ? 0 : 1;
+            $result->{is_client_schedule_available} = $advert->{client_schedule_available};
         }
 
         push @results, $result;
@@ -3221,6 +3278,17 @@ Returns true if the status is final.
 sub _is_order_status_final {
     my (undef, $status) = @_;
     return any { $status eq $_ } P2P_ORDER_STATUS->{final}->@*;
+}
+
+=head2 _can_advertiser_block_trade
+
+Returns true if if advertiser (raw db response) has block trading ability.
+
+=cut
+
+sub _can_advertiser_block_trade {
+    my (undef, $advertiser) = @_;
+    return (all { defined $advertiser->{$_} } qw(block_trade_min_order_amount block_trade_max_order_amount)) ? 1 : 0;
 }
 
 =head2 _p2p_record_stat
