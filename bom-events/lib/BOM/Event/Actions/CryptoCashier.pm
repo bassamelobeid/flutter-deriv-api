@@ -129,7 +129,9 @@ sub withdrawal_handler {
         BOM::Platform::Event::Emitter::emit(
             'crypto_withdrawal_email',
             {
-                amount             => $txn_info->{amount},
+                amount => $txn_metadata->{received_amount}
+                ? $txn_metadata->{received_amount}
+                : $txn_info->{amount},
                 loginid            => $txn_metadata->{loginid},
                 currency           => $txn_metadata->{currency_code},
                 transaction_hash   => $txn_info->{transaction_hash},
@@ -201,7 +203,9 @@ sub withdrawal_rejected_handler {
         BOM::Platform::Event::Emitter::emit(
             'crypto_withdrawal_rejected_email_v2',
             {
-                amount           => $txn_info->{amount},
+                amount => $txn_metadata->{received_amount}
+                ? $txn_metadata->{received_amount}
+                : $txn_info->{amount},
                 loginid          => $txn_metadata->{loginid},
                 currency         => $txn_metadata->{currency_code},
                 reference_no     => $txn_info->{id},

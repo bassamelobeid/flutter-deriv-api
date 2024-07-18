@@ -186,6 +186,61 @@ subtest 'withdrawal_handler - Priority withdrawal' => sub {
     $mocked_event_emitter->unmock_all;
 };
 
+subtest 'withdrawal_handler - Priority withdrawal With Received Amount in metadata' => sub {
+
+    my $txn_info = {
+        id                 => 1,
+        address_hash       => 'address_hash',
+        address_url        => 'address_url',
+        amount             => 2,
+        is_valid_to_cancel => 0,
+        status_code        => 'SENT',
+        status_message     => 'message',
+        submit_date        => '162',
+        transaction_hash   => 'transaction_hash',
+        transaction_type   => 'withdrawal',
+        transaction_url    => 'transaction_url',
+    };
+
+    my $txn_metadata = {
+        loginid         => 'loginid',
+        currency_code   => 'ETH',
+        is_priority     => 1,
+        estimated_fee   => 1,
+        client_amount   => 2,
+        received_amount => 1,
+    };
+
+    my $expected_events = [{
+            crypto_withdrawal_email => {
+                amount             => $txn_metadata->{received_amount},
+                loginid            => $txn_metadata->{loginid},
+                currency           => $txn_metadata->{currency_code},
+                transaction_hash   => $txn_info->{transaction_hash},
+                transaction_url    => $txn_info->{transaction_url},
+                reference_no       => $txn_info->{id},
+                transaction_status => $txn_info->{status_code},
+                is_priority        => $txn_metadata->{is_priority},
+                fee_paid           => $txn_metadata->{estimated_fee},
+                requested_amount   => $txn_metadata->{client_amount}}
+        },
+    ];
+
+    my @events;
+    $mocked_event_emitter->mock(
+        emit => sub {
+            my ($event_name, $event_data) = @_;
+            push @events, {$event_name => $event_data};
+            return;
+        },
+    );
+
+    BOM::Event::Actions::CryptoCashier::withdrawal_handler($txn_info, $txn_metadata);
+    is_deeply \@events, $expected_events, 'Correct events';
+
+    $mocked_event_emitter->unmock_all;
+};
+
 subtest 'deposit_pending_handler' => sub {
 
     my $txn_info = {
@@ -437,6 +492,58 @@ subtest 'withdrawal_rejected_handler - Priority Withdrawal' => sub {
     my $expected_events = [{
             crypto_withdrawal_rejected_email_v2 => {
                 amount           => $txn_info->{amount},
+                loginid          => $txn_metadata->{loginid},
+                currency         => $txn_metadata->{currency_code},
+                reference_no     => $txn_info->{id},
+                reject_code      => $txn_metadata->{reason_code},
+                reject_remark    => '',
+                is_priority      => $txn_metadata->{is_priority},
+                fee_paid         => $txn_metadata->{estimated_fee},
+                requested_amount => $txn_metadata->{client_amount}}
+        },
+    ];
+
+    my @events;
+    $mocked_event_emitter->mock(
+        emit => sub {
+            my ($event_name, $event_data) = @_;
+            push @events, {$event_name => $event_data};
+            return;
+        },
+    );
+
+    BOM::Event::Actions::CryptoCashier::withdrawal_rejected_handler($txn_info, $txn_metadata);
+    is_deeply \@events, $expected_events, 'Correct events';
+
+    $mocked_event_emitter->unmock_all;
+};
+
+subtest 'withdrawal_rejected_handler - Priority Withdrawal With Received Amount in metadata' => sub {
+    my $txn_info = {
+        id                 => 1,
+        address_hash       => 'address_hash',
+        address_url        => 'address_url',
+        amount             => 2,
+        is_valid_to_cancel => 0,
+        status_code        => 'REJECTED',
+        status_message     => 'message',
+        submit_date        => '162',
+        transaction_type   => 'withdrawal',
+    };
+
+    my $txn_metadata = {
+        loginid         => 'loginid',
+        currency_code   => 'ETH',
+        is_priority     => 1,
+        estimated_fee   => 1,
+        client_amount   => 2,
+        reason_code     => 'other',
+        received_amount => 1,
+    };
+
+    my $expected_events = [{
+            crypto_withdrawal_rejected_email_v2 => {
+                amount           => $txn_metadata->{received_amount},
                 loginid          => $txn_metadata->{loginid},
                 currency         => $txn_metadata->{currency_code},
                 reference_no     => $txn_info->{id},
