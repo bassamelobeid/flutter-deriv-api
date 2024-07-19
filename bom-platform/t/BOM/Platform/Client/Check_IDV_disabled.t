@@ -4,13 +4,13 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::Exception;
+use Test::MockModule;
+use Test::MockObject;
+
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
-use Test::MockModule;
 use BOM::Platform::Utility;
 use BOM::User::IdentityVerification;
-
-use Test::MockObject;
 
 subtest 'is idv disabled' => sub {
     my %args = (
@@ -168,6 +168,93 @@ subtest 'has idv all countries' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->idv_triplets([qw( )]);
 };
 
+subtest 'is_idv_selfish' => sub {
+    my %args = ();
+
+    throws_ok {
+        BOM::Platform::Utility::is_idv_selfish(%args);
+    }
+    qr/no country/, 'is_idv_selfish dies with "no country" message if no country is provided';
+
+    $args{country} = 'xx';
+
+    throws_ok {
+        BOM::Platform::Utility::is_idv_selfish(%args);
+    }
+    qr/no provider/, 'is_idv_selfish dies with "no provider" message if no provider is provided';
+
+    subtest 'mocked test' => sub {
+        my $config_mock     = Test::MockModule->new('BOM::Config');
+        my $provider_config = {
+            providers => {
+                provider_a => {
+                    display_name      => 'Provider A',
+                    selfish_countries => ['py']
+                },
+                provider_b => {display_name => 'Provider B'}}};
+        $config_mock->mock(
+            'identity_verification',
+            sub {
+                return $provider_config;
+            });
+
+        %args = (
+            provider => 'provider_a',
+            country  => 'py'
+        );
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'provider is selfish for specified selfish country';
+
+        $args{provider} = 'provider_b';
+        ok !BOM::Platform::Utility::is_idv_selfish(%args), 'provider is not selfish if no specified selfish countries';
+
+        $config_mock->unmock_all;
+    };
+
+    subtest 'providers tests' => sub {
+        $args{provider} = 'smile_identity';
+        ok !BOM::Platform::Utility::is_idv_selfish(%args), 'smile_identity is not selfish';
+
+        $args{provider} = 'zaig';
+        $args{country}  = 'br';
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'zaig is selfish for br';
+        $args{country} = 'xx';
+        ok !BOM::Platform::Utility::is_idv_selfish(%args), 'zaig is not selfish for other countries';
+
+        $args{provider} = 'derivative_wealth';
+        ok !BOM::Platform::Utility::is_idv_selfish(%args), 'derivative_wealth is not selfish';
+
+        $args{provider} = 'data_zoo';
+        $args{country}  = 'cl';
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'data_zoo is selfish for cl';
+        $args{country} = 'id';
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'data_zoo is selfish for id';
+        $args{country} = 'in';
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'data_zoo is selfish for in';
+        $args{country} = 'pe';
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'data_zoo is selfish for pe';
+        $args{country} = 'vn';
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'data_zoo is selfish for vn';
+        $args{country} = 'xx';
+        ok !BOM::Platform::Utility::is_idv_selfish(%args), 'data_zoo is not selfish for other countries';
+
+        $args{provider} = 'metamap';
+        ok !BOM::Platform::Utility::is_idv_selfish(%args), 'metamap is not selfish';
+
+        $args{provider} = 'identity_pass';
+        ok !BOM::Platform::Utility::is_idv_selfish(%args), 'identity_pass is not selfish';
+
+        $args{provider} = 'ai_prise';
+        $args{country}  = 'bd';
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'ai_prise is selfish for bd';
+        $args{country} = 'cn';
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'ai_prise is selfish for cn';
+        $args{country} = 'mx';
+        ok BOM::Platform::Utility::is_idv_selfish(%args), 'ai_prise is selfish for mx';
+        $args{country} = 'xx';
+        ok !BOM::Platform::Utility::is_idv_selfish(%args), 'ai_prise is not selfish for other countries';
+    };
+};
+
 subtest 'idv_configuration' => sub {
     subtest 'force check_for_update' => sub {
         my $forced;
@@ -232,7 +319,16 @@ subtest 'idv_configuration' => sub {
                 return $provider_config;
             });
 
-        my $expected = {providers => {provider_a => {countries => {ke => {documents => {passport => {enabled => 1}}}}}}};
+        my $expected = {
+            providers => {
+                provider_a => {
+                    countries => {
+                        ke => {
+                            documents => {
+                                passport => {
+                                    enabled    => 1,
+                                    is_selfish => 0
+                                }}}}}}};
 
         $config = BOM::Platform::Utility::idv_configuration();
         cmp_deeply $config, $expected, 'no runtime error for bogus identity_verification config';
@@ -264,15 +360,19 @@ subtest 'idv_configuration' => sub {
         my $provider_config = {
             providers => {
                 provider_a => {
-                    display_name => 'Provider A',
+                    display_name      => 'Provider A',
+                    selfish_countries => ['ke'],
                 },
                 provider_b => {
-                    display_name => 'Provider B',
-                    additional   => {
+                    display_name      => 'Provider B',
+                    selfish_countries => ['py'],
+                    additional        => {
                         checks_per_month => 3,
                     }
                 },
-                provider_c => {display_name => 'Provider C'}}};
+                provider_c => {
+                    display_name => 'Provider C',
+                }}};
         $config_mock->mock(
             'identity_verification',
             sub {
@@ -284,12 +384,19 @@ subtest 'idv_configuration' => sub {
             providers => {
                 provider_a => {
                     countries => {
-                        ke => {documents => {passport => {enabled => 1}}},
+                        ke => {
+                            documents => {
+                                passport => {
+                                    enabled    => 1,
+                                    is_selfish => 1
+                                }}
+                        },
                         py => {
                             documents => {
                                 passport => {
                                     enabled    => 1,
-                                    has_backup => 1
+                                    has_backup => 1,
+                                    is_selfish => 0
                                 }}}}
                 },
                 provider_b => {
@@ -298,16 +405,26 @@ subtest 'idv_configuration' => sub {
                             documents => {
                                 passport => {
                                     enabled    => 1,
-                                    has_backup => 1
+                                    has_backup => 1,
+                                    is_selfish => 1
                                 },
-                                national_id => {enabled => 1}}
+                                national_id => {
+                                    enabled    => 1,
+                                    is_selfish => 1
+                                }}
                         },
                     },
                     additional => {checks_per_month => 3}
                 },
                 provider_c => {
                     countries => {
-                        ng => {documents => {drivers_license => {enabled => 1}}},
+                        ng => {
+                            documents => {
+                                drivers_license => {
+                                    enabled    => 1,
+                                    is_selfish => 0
+                                }}
+                        },
                     }}}};
         cmp_deeply $config, $expected, 'expected configuration for enabled providers';
 
@@ -318,22 +435,45 @@ subtest 'idv_configuration' => sub {
             providers => {
                 provider_a => {
                     countries => {
-                        ke => {documents => {passport => {enabled => 1}}},
-                        py => {documents => {passport => {enabled => 0}}}}
+                        ke => {
+                            documents => {
+                                passport => {
+                                    enabled    => 1,
+                                    is_selfish => 1
+                                }}
+                        },
+                        py => {
+                            documents => {
+                                passport => {
+                                    enabled    => 0,
+                                    is_selfish => 0
+                                }}}}
                 },
                 provider_b => {
                     countries => {
                         py => {
                             documents => {
-                                passport    => {enabled => 0},
-                                national_id => {enabled => 1}}
+                                passport => {
+                                    enabled    => 0,
+                                    is_selfish => 1
+                                },
+                                national_id => {
+                                    enabled    => 1,
+                                    is_selfish => 1
+                                }}
                         },
                     },
                     additional => {checks_per_month => 3}
                 },
                 provider_c => {
                     countries => {
-                        ng => {documents => {drivers_license => {enabled => 0}}},
+                        ng => {
+                            documents => {
+                                drivers_license => {
+                                    enabled    => 0,
+                                    is_selfish => 0
+                                }}
+                        },
                     }}}};
         cmp_deeply $config, $expected, 'expected configuration for disabled document_type';
 
@@ -346,27 +486,46 @@ subtest 'idv_configuration' => sub {
             providers => {
                 provider_a => {
                     countries => {
-                        ke => {documents => {passport => {enabled => 0}}},
+                        ke => {
+                            documents => {
+                                passport => {
+                                    enabled    => 0,
+                                    is_selfish => 1
+                                }}
+                        },
                         py => {
                             documents => {
                                 passport => {
                                     enabled    => 0,
                                     has_backup => 1,
+                                    is_selfish => 0
                                 }}}}
                 },
                 provider_b => {
                     countries => {
                         py => {
                             documents => {
-                                passport    => {enabled => 1},
-                                national_id => {enabled => 1}}
+                                passport => {
+                                    enabled    => 1,
+                                    is_selfish => 1
+                                },
+                                national_id => {
+                                    enabled    => 1,
+                                    is_selfish => 1
+                                }}
                         },
                     },
                     additional => {checks_per_month => 3}
                 },
                 provider_c => {
                     countries => {
-                        ng => {documents => {drivers_license => {enabled => 1}}},
+                        ng => {
+                            documents => {
+                                drivers_license => {
+                                    enabled    => 1,
+                                    is_selfish => 0
+                                }}
+                        },
                     }}}};
 
         cmp_deeply $config, $expected, 'expected configuration for disabled provider';
@@ -451,9 +610,13 @@ subtest 'idv_configuration' => sub {
 
         my @expecteds = ({
                 enabled    => ignore(),
+                is_selfish => ignore(),
                 has_backup => 1,
             },
-            {enabled => ignore()});
+            {
+                enabled    => ignore(),
+                is_selfish => ignore(),
+            });
 
         foreach my $provider (keys $config->{providers}->%*) {
             my $provider = $config->{providers}->{$provider};

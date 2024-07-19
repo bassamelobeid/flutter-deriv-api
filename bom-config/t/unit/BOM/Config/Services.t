@@ -122,37 +122,33 @@ subtest 'identify_vetification.yml integrity check' => sub {
         ],
         providers => {
             smile_identity => {
-                selfish      => 0,
                 portal_base  => 'https://portal.smileidentity.com/partner/job_results/production/%s',
                 display_name => 'Smile Identity',
             },
             derivative_wealth => {
-                selfish      => 0,
                 display_name => 'Derivative Wealth',
             },
             metamap => {
-                selfish      => 0,
                 display_name => 'Metamap',
             },
             ai_prise => {
-                selfish      => 1,
-                display_name => 'AiPrise',
+                selfish_countries => ['bd', 'cn', 'mx'],
+                display_name      => 'AiPrise',
             },
             identity_pass => {
-                selfish      => 0,
                 display_name => 'Identity Pass',
                 additional   => {
                     checks_per_month => 15000,
                 }
             },
             data_zoo => {
-                selfish      => 1,
-                display_name => 'Data Zoo',
+                selfish_countries => ['cl', 'id', 'in', 'pe', 'vn'],
+                display_name      => 'Data Zoo',
             },
             zaig => {
-                selfish      => 1,
-                portal_base  => 'https://dash.zaig.com.br/natural-person/%s',
-                display_name => 'Zaig',
+                selfish_countries => ['br'],
+                portal_base       => 'https://dash.zaig.com.br/natural-person/%s',
+                display_name      => 'Zaig',
             }}};
     cmp_deeply $config, $expected, 'Expected information for config yml file';
 };

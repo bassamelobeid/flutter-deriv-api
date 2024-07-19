@@ -683,6 +683,7 @@ SQL
             $idv_record->{status_messages} = [map { $rejected_reasons->{$_} ? localize($rejected_reasons->{$_}) : $_ } grep { $_ } $messages->@*];
             $idv_record->{document_type} =
                 $countries_list->{$idv_record->{issuing_country}}->{config}->{idv}->{document_types}->{$idv_record->{document_type}}->{display_name};
+            my $idv_record_issuing_country_code = $idv_record->{issuing_country};
             $idv_record->{issuing_country} = $countries_instance->country_from_code($idv_record->{issuing_country});
             $idv_record->{document_expiration_date} ||= "Lifetime Valid";
             $idv_record->{document_expiration_date} = "-" if uc($idv_record->{status}) eq "FAILED";
@@ -694,10 +695,11 @@ SQL
             my $idv_report = $idv_document_check->{report};
             $idv_report = eval { decode_json_text $idv_report } if $idv_report;
 
-            my $provider         = $idv_document_check->{provider}                   // '';
-            my $providers_config = BOM::Config::identity_verification()->{providers} // {};
-            my $provider_config  = $providers_config->{$provider}                    // {};
-            my $is_selfish       = $provider_config->{selfish};
+            my $provider   = $idv_document_check->{provider} // '';
+            my $is_selfish = BOM::Platform::Utility::is_idv_selfish(
+                country  => $idv_record_issuing_country_code,
+                provider => $provider
+            );
 
             if (defined $provider && $is_selfish) {
                 $idv_record->{tooltip}   = $idv_document_check->{provider} . " provider does not return personal data";

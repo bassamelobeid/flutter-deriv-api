@@ -396,6 +396,27 @@ sub is_idv_disabled {
     return 0;
 }
 
+=head2 is_idv_selfish
+
+Checks if the IDV provider is selfish for the given country.
+
+=cut
+
+sub is_idv_selfish {
+    my %args = @_;
+    my ($country, $provider) = @args{qw/country provider/};
+
+    die 'no country'  unless $country;
+    die 'no provider' unless $provider;
+
+    my $config          = BOM::Config::identity_verification();
+    my $provider_config = $config->{'providers'}->{$provider} // {};
+
+    my $selfish_countries = $provider_config->{selfish_countries} // [];
+
+    return any { $country eq $_ } $selfish_countries->@*;
+}
+
 =head2 has_idv
 
 Checks if IDV is enabled and supported for the given country.
@@ -511,12 +532,16 @@ sub idv_configuration {
 
                 $config_bundle{'providers'}{$provider}{'additional'} = $additional_config->{'providers'}->{$provider}->{'additional'}
                     if defined $additional_config->{'providers'}->{$provider}->{'additional'};
+
                 $config_bundle{'providers'}{$provider}{'countries'}{$country}{'documents'}{$doc_type}{'enabled'} =
                     is_idv_disabled(%args) ? 0 : 1;
 
                 $config_bundle{'providers'}{$provider}{'countries'}{$country}{'documents'}{$doc_type}{'has_backup'} = 1
                     if scalar $providers->@* > 1
                     && any { $_ ne $provider && !is_idv_disabled(country => $country, provider => $_, document_type => $doc_type) } $providers->@*;
+
+                $config_bundle{'providers'}{$provider}{'countries'}{$country}{'documents'}{$doc_type}{'is_selfish'} =
+                    is_idv_selfish(%args) ? 1 : 0;
             }
         }
     }
