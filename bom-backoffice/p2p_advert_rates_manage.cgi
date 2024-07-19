@@ -22,6 +22,7 @@ use Scalar::Util    qw(looks_like_number);
 use Array::Utils    qw(intersect);
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
+use Math::BigFloat;
 use BOM::Platform::Event::Emitter;
 
 use constant ACTIVATION_KEY => 'P2P::AD_ACTIVATION';
@@ -203,7 +204,7 @@ for my $currency (sort keys %currencies) {
 
     if (my $quote = ExchangeRates::CurrencyConverter::usd_rate($currency)) {
         my $dt = Date::Utility->new($quote->{epoch});
-        $currency_item->{feed_quote}      = $quote->{quote};
+        $currency_item->{feed_quote}      = Math::BigFloat->new($quote->{quote});
         $currency_item->{feed_quote_age}  = $age_format->($quote->{epoch});
         $currency_item->{feed_quote_time} = $dt->datetime;
         $currency_item->{old_quote}       = 1 if $dt->is_before(Date::Utility->new->minus_time_interval('24h'));
