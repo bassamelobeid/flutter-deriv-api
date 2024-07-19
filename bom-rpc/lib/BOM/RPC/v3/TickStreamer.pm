@@ -15,12 +15,14 @@ use BOM::Platform::Context qw (localize);
 use Quant::Framework;
 use BOM::Config::Chronicle;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
+use List::Util                 qw(max);
 
 use constant MAX_TICK_COUNT => 5000;
+
 # limiter for trade days
 use constant TRADING_DAY_CHECK_LIMIT => 5;
 use constant SECONDS_IN_DAY          => 86400;
-use constant EPOCH_VALUE_THREE_YEARS => 365 * SECONDS_IN_DAY * 3;
+use constant EPOCH_VALUE_ONE_YEAR    => 365 * SECONDS_IN_DAY;
 
 rpc ticks => sub {
     my $params = shift;
@@ -60,7 +62,8 @@ rpc ticks_history => sub {
 
     }
 
-    my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
+    my $style =
+        $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
 
     # default to 60 if not defined or send as 0 for candles
     $args->{granularity} = $args->{granularity} || 60 if $style eq 'candles';
@@ -132,7 +135,8 @@ sub _candles {
     my $count       = $args->{count};
 
     my @all_ohlc;
-    # This ohlc_daily_list is the only one will get ohlc from feed.tick for a period
+
+# This ohlc_daily_list is the only one will get ohlc from feed.tick for a period
     if ($end_time - $start_time <= $granularity) {
         my $ohlc = $ul->feed_api->ohlc_daily_list({
                 start_time => $start_time,
@@ -143,6 +147,7 @@ sub _candles {
             push @all_ohlc, $ohlc;
         }
     } elsif ($granularity >= 86400 and $ul->ohlc_daily_open) {
+
         # For the underlying nocturne, for daily ohlc, the date need to be date
         $start_time = Date::Utility->new($start_time)->truncate_to_day;
         $end_time   = Date::Utility->new($end_time)->truncate_to_day;
@@ -219,20 +224,28 @@ sub _validate_start_end {
 
     # special case to send explicit error when
     # both are timestamp & start > end time
-    if ($start and $end and $start =~ /^[0-9]+$/ and $end =~ /^[0-9]+$/ and $start > $end) {
+    if (    $start
+        and $end
+        and $start =~ /^[0-9]+$/
+        and $end   =~ /^[0-9]+$/
+        and $start > $end)
+    {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidStartEnd',
                 message_to_client => localize("Start time [_1] must be before end time [_2]", $start, $end)});
     }
 
-    # if no start but there is count and granularity, use count and granularity to calculate the start time to look back
+# if no start but there is count and granularity, use count and granularity to calculate the start time to look back
     if (not $start and $count and $granularity) {
         $count = MAX_TICK_COUNT if $count <= 0 || $count > MAX_TICK_COUNT;
         my $expected_start = Date::Utility->new($end - ($count * $granularity));
 
         my $trial_count = 0;
+
         # handle for non trading day as well
-        while ($trial_count < TRADING_DAY_CHECK_LIMIT and not $trading_calendar->trades_on($exchange, $expected_start)) {
+        while ($trial_count < TRADING_DAY_CHECK_LIMIT
+            and not $trading_calendar->trades_on($exchange, $expected_start))
+        {
             $expected_start = $expected_start->minus_time_interval('1d');
             $trial_count++;
         }
@@ -241,14 +254,17 @@ sub _validate_start_end {
     }
 
     my $licensed_epoch = $ul->last_licensed_display_epoch;
+
     # we must not return to the client any ticks/candles after this epoch
     if (   not $start
         or $start !~ /^[0-9]+$/
-        or $start <= time() - EPOCH_VALUE_THREE_YEARS
         or $start >= $licensed_epoch)
     {
         $start = $licensed_epoch - SECONDS_IN_DAY;
     }
+
+    my $max_lookback = time() - EPOCH_VALUE_ONE_YEAR;
+    $start = max($start, $max_lookback);
 
     if (   not $end
         or $end !~ /^[0-9]+$/
@@ -267,8 +283,9 @@ sub _validate_start_end {
     }
 
     if ($ul->feed_license ne 'realtime') {
-        # if feed doesn't have realtime license, we should adjust end_time in such a way
-        # as not to break license conditions
+
+# if feed doesn't have realtime license, we should adjust end_time in such a way
+# as not to break license conditions
         if ($licensed_epoch < $end) {
             my $shift_back = $end - $licensed_epoch;
             if ($ul->feed_license ne 'delayed' or $ul->delay_amount > 0) {
@@ -299,6 +316,18 @@ sub _validate_start_end {
     $args->{start} = $start;
     $args->{end}   = $end;
     $args->{count} = $count;
+# assuming feed is 1 tick/s, we will return MAX_TICK_COUNT amount of candles only
+# all units in seconds.
+#
+# MAX_TICK_COUNT       = (end_epoch - modified_start_epoch)/granularity
+# modified_start_epoch = end_epoch - (MAX_TICK_COUNT * granularity)
+
+    if ($args->{granularity}) {
+        if ((($args->{end} - $args->{start}) / $args->{granularity}) > MAX_TICK_COUNT) {
+            $args->{start} =
+                $args->{end} - (MAX_TICK_COUNT * $args->{granularity});
+        }
+    }
 
     if ($start > $end) {
         return BOM::RPC::v3::Utility::create_error({

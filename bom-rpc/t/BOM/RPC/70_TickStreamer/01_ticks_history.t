@@ -190,6 +190,35 @@ subtest '_validate_start_end' => sub {
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is $result->{data}->{history}->{times}->[0], $trading_calendar->closing_on($ul->exchange, $now)->minus_time_interval('60m')->epoch,
         'If exchange close at end time and sent adjust_start_time then it should shift back start time';
+
+    my $once_upon_a_time = $now->minus_time_interval('360d')->epoch;
+    my $args;
+    $args->{start}       = $once_upon_a_time;
+    $args->{end}         = $now->epoch;
+    $args->{style}       = 'candles';
+    $args->{granularity} = 60;
+
+    $result = BOM::RPC::v3::TickStreamer::_validate_start_end({%$args, ul => create_underlying('1HZ10V')});
+
+    # start time should be minus 60s * 5000
+    my $shift         = 5000 * 60;
+    my $implied_start = $now->minus_time_interval($shift . 's')->epoch;
+    is $result->{start}, $implied_start, 'start time will be trimmed such that number of candles returned are capped at 5000';
+
+    $args->{granularity} = 300;
+    $result = BOM::RPC::v3::TickStreamer::_validate_start_end({%$args, ul => create_underlying('1HZ10V')});
+    # start time should be minus 300s * 5000
+    $shift         = 5000 * 300;
+    $implied_start = $now->minus_time_interval($shift . 's')->epoch;
+    is $result->{start}, $implied_start, 'start time will be trimmed such that number of candles returned are capped at 5000';
+
+    $args->{granularity} = 14400;
+    $result = BOM::RPC::v3::TickStreamer::_validate_start_end({%$args, ul => create_underlying('1HZ10V')});
+    # start time should be minus 14400s * 5000
+    $shift         = 5000 * 14400;
+    $implied_start = $now->minus_time_interval($shift . 's')->epoch;
+    ok $result->{start} != $implied_start, 'start time not trimmed as candles are less than 5000';
+
 };
 
 subtest 'start/end date boundary checks' => sub {
@@ -197,20 +226,14 @@ subtest 'start/end date boundary checks' => sub {
     my $start = time() - (365 * 86400 * 4);    # 4 years from now
     my $end   = $start + (86400 * 2);          # 2 day after start
 
-    my $symbol         = 'frxUSDJPY';
-    my $ul             = create_underlying($symbol);
-    my $licensed_epoch = $ul->last_licensed_display_epoch;
-    my $start_failsafe = $licensed_epoch - 86400;
-
+    my $symbol = 'frxUSDJPY';
+    my $ul     = create_underlying($symbol);
     $params->{args}                  = {};
     $params->{args}->{start}         = $start;
     $params->{args}->{end}           = $end;
     $params->{args}->{granularity}   = '86400';
     $params->{args}->{count}         = '10000';
     $params->{args}->{ticks_history} = $symbol;
-
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $result->{data}->{candles}->[0]->{epoch}, $start_failsafe, 'When start time is less than 3 years, reset it to licensed epoch - 86400';
 
     # Test - When end is after now
     $start                   = $now->minus_time_interval('7h');                                                 # 7 hours before now
