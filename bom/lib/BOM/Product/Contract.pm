@@ -338,6 +338,31 @@ sub is_after_settlement {
     return 0;
 }
 
+=head2 make_is_valid_to_update()
+
+Usage  :    my $valid_updates = $object->make_is_valid_to_update();
+Returns:    A hash reference where keys are allowed limit orders (stop_loss, stop_out, take_profit) and values indicate if they are valid for update (1 for valid, 0 for invalid).
+            Returns undef if no allowed limit orders are found.
+
+=cut
+
+sub make_is_valid_to_update {
+    my $self = shift;
+
+    my $allowed_limit_orders = $self->category->allowed_limit_order;
+    my $allowed_updates      = $self->category->allowed_update;
+
+    my %valid_updates;
+    if (@$allowed_limit_orders) {
+        foreach my $allowed (@$allowed_limit_orders) {
+            my $limit_order = grep { $_ eq $allowed } @$allowed_updates;
+            $valid_updates{$allowed} = $limit_order ? 1 : 0;
+        }
+    }
+
+    return \%valid_updates if %valid_updates;
+}
+
 =head2 is_expired
 
 Returns true if this contract is expired.

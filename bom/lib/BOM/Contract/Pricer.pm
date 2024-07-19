@@ -249,28 +249,35 @@ sub calc_bid_price_detailed {
     my $inner              = $contract->inner_contract;
     my $is_valid_to_settle = $inner->is_settleable;
     my $underlying         = $inner->underlying;
+    my $valid_updates      = $inner->make_is_valid_to_update();
 
     my $response = {
+        barrier_count       => $inner->two_barriers ? 2 : 1,
+        bid_price           => formatnumber('price', $inner->currency, $inner->bid_price),
+        contract_type       => $inner->code,
+        currency            => $inner->currency,
         current_spot_time   => 0 + $inner->current_tick->epoch,
-        underlying          => $underlying->symbol,
-        display_name        => $underlying->display_name,
-        is_expired          => $inner->is_expired,
-        is_forward_starting => $inner->starts_as_forward_starting,
-        is_path_dependent   => $inner->is_path_dependent,
-        is_intraday         => $inner->is_intraday,
-        date_start          => 0 + $inner->date_start->epoch,
         date_expiry         => 0 + $inner->date_expiry->epoch,
         date_settlement     => 0 + $inner->date_settlement->epoch,
-        currency            => $inner->currency,
+        date_start          => 0 + $inner->date_start->epoch,
+        display_name        => $underlying->display_name,
+        expiry_time         => $inner->date_expiry->epoch,
+        is_expired          => $inner->is_expired,
+        is_forward_starting => $inner->starts_as_forward_starting,
+        is_intraday         => $inner->is_intraday,
+        is_path_dependent   => $inner->is_path_dependent,
+        is_settleable       => $is_valid_to_settle,
+        is_valid_to_cancel  => $inner->is_valid_to_cancel,
         longcode            => $inner->longcode,
         shortcode           => $inner->shortcode,
-        contract_type       => $inner->code,
-        bid_price           => formatnumber('price', $inner->currency, $inner->bid_price),
-        is_settleable       => $is_valid_to_settle,
-        barrier_count       => $inner->two_barriers ? 2 : 1,
-        is_valid_to_cancel  => $inner->is_valid_to_cancel,
-        expiry_time         => $inner->date_expiry->epoch,
+        underlying          => $underlying->symbol,
     };
+
+    $response->{current_spot}       = $inner->current_spot if $underlying->feed_license eq 'realtime';
+    $response->{is_valid_to_update} = $valid_updates       if $valid_updates;
+    $response->{multiplier}         = $inner->multiplier   if $inner->can('multiplier');
+    $response->{tick_count}         = $inner->tick_count   if $inner->expiry_type eq 'tick';
+
     if (!$inner->uses_barrier) {
         $response->{barrier_count} = 0;
         $response->{barrier}       = undef;
@@ -280,10 +287,6 @@ sub calc_bid_price_detailed {
         $response->{reset_time}    = 0 + $inner->reset_spot->epoch;
         $response->{reset_barrier} = $underlying->pipsized_value($inner->reset_spot->quote);
     }
-
-    $response->{multiplier}   = $inner->multiplier   if $inner->can('multiplier');
-    $response->{current_spot} = $inner->current_spot if $underlying->feed_license eq 'realtime';
-    $response->{tick_count}   = $inner->tick_count   if $inner->expiry_type eq 'tick';
 
     if ($inner->is_binary) {
         $response->{payout} = $inner->payout;

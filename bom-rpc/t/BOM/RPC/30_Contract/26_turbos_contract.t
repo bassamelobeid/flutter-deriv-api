@@ -212,6 +212,7 @@ subtest 'turbos - get_bid' => sub {
         is_sold                     => 0,
         is_valid_to_cancel          => 0,
         is_valid_to_sell            => 1,
+        is_valid_to_update          => {take_profit => 1},
         longcode                    => ignore(),
         shortcode                   => ignore(),
         stash                       => {
