@@ -11,7 +11,6 @@ use BOM::Database::Model::OAuth;
 use JSON::MaybeUTF8 qw(:v1);
 use MIME::Base64    qw(encode_base64 decode_base64);
 use BOM::OAuth::O;
-use Data::Dumper;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static     qw(get_message_mapping);
 use Locale::Codes::Country qw( code2country );
@@ -383,11 +382,25 @@ subtest 'redirect scenaions' => sub {
     $mock_helper->unmock_all;
 };
 
-subtest 'app_id redirect (mobile)' => sub {
+subtest 'app_id redirect (official app)' => sub {
+    my $official_app_id = 1;
+    my $test_data       = get_test_data(app_id => $official_app_id);
+    my $res             = $t->get_ok("/social-login/callback/app/$official_app_id?code=$test_data->{code}&state=$test_data->{state}");
+    $res->status_is(302)->header_like('location' => qr{binary\.com\/})->header_like('location' => qr{$test_data->{code}})
+        ->header_like('location' => qr{$test_data->{state}});
+};
+
+subtest 'app_id redirect (invalid app)' => sub {
+    my $invalid_app_id = '999999';
+    my $test_data      = get_test_data(app_id => $invalid_app_id);
+    my $res            = $t->get_ok("/social-login/callback/app/$invalid_app_id?code=$test_data->{code}&state=$test_data->{state}");
+    $res->status_is(200)->json_is('/error', 'invalid_request')->json_is('/error_description', 'the request was missing valid app_id');
+};
+
+subtest 'app_id redirect (unofficial app)' => sub {
     my $test_data = get_test_data(app_id => $app_id);
     my $res       = $t->get_ok("/social-login/callback/app/$app_id?code=$test_data->{code}&state=$test_data->{state}");
-    $res->status_is(302)->header_like('location' => qr{example\.com\/})->header_like('location' => qr{$test_data->{code}})
-        ->header_like('location' => qr{$test_data->{state}});
+    $res->status_is(200)->json_is('/error', 'invalid_request')->json_is('/error_description', 'The request was missing a valid app id.');
 };
 
 subtest 'invalid response from social login service' => sub {

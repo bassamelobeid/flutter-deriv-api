@@ -15,6 +15,7 @@ use constant OK_STATUS_CODE => 200;
 use BOM::OAuth::SocialLoginClient;
 use Locale::Codes::Country qw( code2country );
 use BOM::Config;
+use Log::Any qw( $log );
 
 =head2 redirect_to_auth_page
 
@@ -300,6 +301,19 @@ sub callback {
     }
 }
 
+=head2 _bad_request
+
+Handle error and return bad request response.
+
+=cut
+
+sub _bad_request {
+    my ($c, $error) = @_;
+
+    $log->info($c->_to_error_message($error));
+    return $c->throw_error('invalid_request', $error);
+}
+
 =head2 app_callback
 
 Handle app_id callback (mobile flow).
@@ -315,6 +329,9 @@ sub app_callback {
     my $oauth_model = BOM::Database::Model::OAuth->new;
     my $app         = $oauth_model->verify_app($app_id);
     return $c->_bad_request('the request was missing valid app_id') unless $app;
+
+    my $is_official_app = $oauth_model->is_official_app($app_id);
+    return $c->_bad_request('The request was missing a valid app id.') unless $is_official_app;
 
     my @params = ($provider_response->%*);
     return BOM::OAuth::Common::redirect_to($c, $app->{redirect_uri}, \@params);
