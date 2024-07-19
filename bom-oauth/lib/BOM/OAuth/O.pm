@@ -30,7 +30,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::OAuth::Common;
-use BOM::OAuth::Helper     qw(request_details_string exception_string build_signup_url);
+use BOM::OAuth::Helper     qw(request_details_string exception_string build_signup_url is_passkeys_available);
 use BOM::OAuth::Static     qw(get_message_mapping get_error_message_titles);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
@@ -118,6 +118,7 @@ sub authorize {
         signup_url                => build_signup_url($params_signup_url),
         firebase                  => BOM::Config::third_party()->{firebase},
         fe_rudderstack_write_key  => BOM::Config::third_party()->{rudderstack},
+        passkeys_available        => is_passkeys_available($c),
     );
 
     try {

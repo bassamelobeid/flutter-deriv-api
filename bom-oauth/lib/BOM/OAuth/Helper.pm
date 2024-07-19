@@ -6,13 +6,15 @@ use MIME::Base64 qw(encode_base64 decode_base64);
 use JSON::MaybeXS;    #Using `JSON::MaybeXS` to maintain order of the result string.
 use Exporter qw(import);
 our @EXPORT_OK = qw(
-    request_details_string
+    build_signup_url
     exception_string
+    is_passkeys_available
+    query_params_cookie
+    request_details_string
+    set_query_params_cookie
     social_login_callback_base
     strip_array_values
-    query_params_cookie
-    set_query_params_cookie
-    build_signup_url);
+);
 
 =head2 extract_brand_from_params
 
@@ -285,6 +287,41 @@ sub build_signup_url {
     }
 
     return $signup_url;
+}
+
+=head2 is_passkeys_available
+
+=head2 SYNOPSIS
+
+    my $passkeys_available = is_passkeys_available($c);
+
+=head2 DESCRIPTION
+
+This subroutine checks if the "passkeys_available" cookie is set to "true" in the request. This cookie is used to determine if the user has created passkeys.
+
+=head2 PARAMETERS
+
+=over 4
+
+=item * C<$c> - The Mojolicious controller object, used to access the request's cookies.
+
+=back
+
+=head2 RETURN VALUE
+
+Returns 1 if the "passkeys_available" cookie is set to "true", otherwise returns 0.
+
+=cut
+
+sub is_passkeys_available {
+    my $c            = shift;
+    my $cookie_value = $c->cookie('passkeys_available');
+
+    if (defined $cookie_value && $cookie_value eq 'true') {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 =head2 set_query_params_cookie
