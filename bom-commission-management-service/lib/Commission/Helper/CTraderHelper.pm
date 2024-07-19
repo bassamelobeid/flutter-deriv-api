@@ -3,6 +3,7 @@ package Commission::Helper::CTraderHelper;
 use strict;
 use warnings;
 
+use BOM::Config;
 use HTTP::Tiny;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use Log::Any        qw($log);
@@ -36,10 +37,15 @@ This module provides helper methods for cTrader related tasks.
 =cut
 
 use constant {
-    HTTP_TIMEOUT => 20,
+    HTTP_TIMEOUT                     => 20,
+    CTRADER_SYMBOL_LIST_KEY          => 'CTRADER::SYMBOL_LIST',
+    CTRADER_TRADERID_LOGINID_MAP_KEY => 'CTRADER::TRADERID_LOGINID_MAP',
+    HTTP_HEADERS                     => {
+        'Content-Type' => "application/json",
+    },
 };
 
-my ($redis, $ctrader_server);
+my ($redis, $ctrader_server_type, $ctrader_server_urls);
 
 =head2 new
 
@@ -50,8 +56,14 @@ Creates and returns a new L<Commission::Helper::CTraderHelper> instance.
 sub new {
     my ($class, %args) = @_;
 
-    $redis          = $args{redis};
-    $ctrader_server = $args{server};
+    $redis               = $args{redis};
+    $ctrader_server_type = $args{server};
+
+    my $ct_config = BOM::Config::ctrader_proxy_api_config();
+
+    $ctrader_server_urls = {
+        real => $ct_config->{ctrader_live_proxy_url},
+        demo => $ct_config->{ctrader_demo_proxy_url}};
 
     return bless {%args, redis => $redis}, $class;
 }
@@ -65,14 +77,22 @@ Returns the loginid of the given trader id.
 sub get_loginid {
     my ($self, %args) = @_;
 
-    my $result = $self->call_api(
-        server  => $ctrader_server,
-        method  => 'tradermanager_get',
-        payload => {traderIds => $args{traderIds}});
+    my $traderid = $args{traderIds};
+    my $prefix   = $ctrader_server_type eq 'real' ? 'CTR' : 'CTD';
 
-    my $prefix = $ctrader_server eq 'real' ? 'CTR' : 'CTD';
+    my $loginid = $redis->hget(CTRADER_TRADERID_LOGINID_MAP_KEY, $traderid)->get;
 
-    return $prefix . $result->[0]->{login};
+    unless ($loginid) {
+        my $result = $self->call_api(
+            server  => $ctrader_server_type,
+            method  => 'tradermanager_get',
+            payload => {traderIds => $args{traderIds}});
+
+        $loginid = $result->[0]{login};
+        $redis->hset(CTRADER_TRADERID_LOGINID_MAP_KEY, $traderid, $loginid)->get if $loginid;
+    }
+
+    return $prefix . $loginid;
 }
 
 =head2 get_underlying_symbol
@@ -86,7 +106,7 @@ sub get_underlying_symbol {
 
     my $symbol_id = $self->get_symbolid_by_dealid(dealId => $args{dealId});
 
-    my $symbol_json = $redis->hget("CTRADER::SYMBOL_LIST", $symbol_id)->get;
+    my $symbol_json = $redis->hget(CTRADER_SYMBOL_LIST_KEY, $symbol_id)->get;
 
     # call get_symbol_by_id(symbolId) to set value for symbol_json if symbol_json is empty
     $symbol_json = $self->get_symbol_by_id(symbolId => $symbol_id) unless $symbol_json;
@@ -106,7 +126,7 @@ sub get_symbolid_by_dealid {
     my ($self, %args) = @_;
 
     my $result = $self->call_api(
-        server  => $ctrader_server,
+        server  => $ctrader_server_type,
         method  => 'ctradermanager_getdealbyid',
         payload => {dealId => $args{dealId}});
 
@@ -126,13 +146,13 @@ sub get_symbol_by_id {
 
     # call cTrader get_symbol_by_id(symbolId)
     my $result = $self->call_api(
-        server  => $ctrader_server,
+        server  => $ctrader_server_type,
         method  => 'ctradermanager_getsymbolbyid',
         payload => {symbolId => $symbol_id});
 
     # call cTrader get_asset_by_id(quotedAssetId)
     my $asset_result = $self->call_api(
-        server  => $ctrader_server,
+        server  => $ctrader_server_type,
         method  => 'ctradermanager_getassetbyid',
         payload => {assetId => $result->{quoteAssetId}});
     $asset_result->{type} =~ s/^PROTO_//;    # Remove PROTO_ prefix from asset type
@@ -144,7 +164,7 @@ sub get_symbol_by_id {
         type     => $asset_result->{type},
     };
 
-    $redis->hset("CTRADER::SYMBOL_LIST", $symbol_id, encode_json_utf8($symbol))->get;
+    $redis->hset(CTRADER_SYMBOL_LIST_KEY, $symbol_id, encode_json_utf8($symbol))->get;
 
     return encode_json_utf8($symbol);
 }
@@ -159,7 +179,7 @@ sub populate_symbol_list {
     my ($self, %args) = @_;
 
     my $result = $self->call_api(
-        server => $ctrader_server,
+        server => $ctrader_server_type,
         method => 'ctradermanager_getsymbollist'
     );
 
@@ -168,7 +188,7 @@ sub populate_symbol_list {
         my $symbol_name = $symbol->{name};
 
         my $asset = $self->call_api(
-            server  => $ctrader_server,
+            server  => $ctrader_server_type,
             method  => 'ctradermanager_getassetbyid',
             payload => {assetId => $symbol->{quoteAssetId}});
         $asset->{type} =~ s/^PROTO_//;    # Remove PROTO_ prefix from asset type
@@ -179,7 +199,7 @@ sub populate_symbol_list {
             type     => $asset->{type},
         };
 
-        $redis->hset("CTRADER::SYMBOL_LIST", $symbol_id, encode_json_utf8($symbol))->get;
+        $redis->hset(CTRADER_SYMBOL_LIST_KEY, $symbol_id, encode_json_utf8($symbol))->get;
     }
 
 }
@@ -233,18 +253,9 @@ Takes the following named arguments, plus others according to the method.
 sub call_api {
     my ($self, %args) = @_;
 
-    my $config          = YAML::XS::LoadFile('/etc/rmg/ctrader_proxy_api.yml');
-    my $ctrader_servers = {
-        real => $config->{ctrader_live_proxy_url},
-        demo => $config->{ctrader_demo_proxy_url}};
-
-    my $server_url = $ctrader_servers->{$ctrader_server};
+    my $server_url = $ctrader_server_urls->{$ctrader_server_type};
     $server_url .= $args{path} ? $args{path} : 'trader';
-
     my $quiet   = delete $args{quiet};
-    my $headers = {
-        'Content-Type' => "application/json",
-    };
     my $payload = encode_json_utf8(\%args);
 
     my $resp;
@@ -253,7 +264,7 @@ sub call_api {
             $server_url,
             {
                 content => $payload,
-                headers => $headers
+                headers => HTTP_HEADERS,
             });
 
         $resp->{content} = decode_json_utf8($resp->{content} || '{}');

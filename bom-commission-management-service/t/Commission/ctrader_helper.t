@@ -6,6 +6,15 @@ use Test::MockObject;
 use Commission::Helper::CTraderHelper;
 
 my $redis_mock    = Test::MockObject->new;
+my $mocked_config = Test::MockModule->new('BOM::Config');
+$mocked_config->mock(
+    'ctrader_proxy_api_config',
+    sub {
+        return {
+            ctrader_live_proxy_url => 'http://dummy:3002/',
+            ctrader_demo_proxy_url => 'http://dummy:3003/'
+        };
+    });
 my $helper        = Commission::Helper::CTraderHelper->new(redis => $redis_mock);
 my $mocked_helper = Test::MockModule->new('Commission::Helper::CTraderHelper');
 
