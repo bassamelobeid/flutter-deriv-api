@@ -1,9 +1,5 @@
 
 [% IF sidcs.size > 0 %]
-[% sidcs %]
-[% END %]
-
-[% IF sidcs.size > 0 %]
     [% WRAPPER layout title="SELECT CAMPAIGN SIDC" %]
         <table border="0" width="100%" id="client_edit" onload="init_text_validations()">
             <thead>

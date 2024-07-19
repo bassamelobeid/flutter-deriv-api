@@ -34,7 +34,7 @@ use constant {
 
 BOM::Config::Runtime->instance->app_config->check_for_update();
 
-code_exit_BO("This page is not accessible as partners.enable_dynamic_works is disabled")
+code_exit_BO(_get_display_error_message("This page is not accessible as partners.enable_dynamic_works is disabled"))
     unless BOM::Config::Runtime->instance->app_config->partners->enable_dynamic_works;
 
 my $input = request()->params;

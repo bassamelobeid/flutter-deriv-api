@@ -3,7 +3,7 @@
     <form id='generateDCC' action="[% request.url_for('backoffice/f_makeclientdcc.cgi') | none %]" method='get' class='bo_ajax_form'>
         <input type='hidden' name='l' value='EN'>
         <input type='hidden' name='transtype' value='Edit affiliates token'>
-        <label>Login ID:</label><input type='text' name='client_loginid' placeholder='required' value='[% loginid %]' data-lpignore='true' />
+        <label>Login ID:</label><input type='text' name='client_loginid' placeholder='required' data-lpignore='true' />
         <br><br><input type='submit' class="btn btn--primary" value='Make Dual Control Code (by [% clerk %] )'>
     </form>
 [% END %]
@@ -11,8 +11,8 @@
 [% WRAPPER layout title="CLIENT PARTNER INFO" %]
     <form id='selectSIDC' action="[% request.url_for('backoffice/partners/select_partner_sidc.cgi') | none %]" method='post'>
         <input type='hidden' name='l' value='EN'>
-        <label>Login ID:</label><input type='text' name='ClientLoginid' placeholder='required' value='[% ClientLoginid %]' data-lpignore='true' />
-        <label>Partner ID:</label><input type='text' maxlength="32" name='partner_id' value='[% partner_id %]' data-lpignore='true' />
+        <label>Login ID:</label><input type='text' name='ClientLoginid' placeholder='required' value='[% loginid %]' data-lpignore='true' />
+        <label>Partner ID:</label><input type='text' maxlength="32" name='partner_id' placeholder='required' value='[% partner_id %]' data-lpignore='true' />
         <br><br><label>DCC:</label><input type='text' name='DCcode' placeholder='required' value='[% prev_dcc %]' data-lpignore='true' />
         <br><br><input type='checkbox' name='verification' id='chk_verify_token' value='true' /><label for='chk_verify_token'>I understand this action is irreversible ([% clerk %])</label>
         <br><br><input type='submit' name='EditPartnerID' class="btn btn--primary" value='Edit affiliates token'/>

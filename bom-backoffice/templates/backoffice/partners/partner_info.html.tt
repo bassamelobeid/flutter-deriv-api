@@ -3,7 +3,7 @@
     <td class="bg-lightgrey" colspan="2">#PARTNER INFO</td>
 </tr>
 <tr>
-    <td class="label">Partner ID</td>
+    <td class="label">Partner TOKEN/SIDC</td>
     <td>:
     [% IF partner_details.partner_token %]
         [% partner_details.partner_token %] (This is the Token/SIDC <strong>currently registered</strong> with [% partner_details.provider %].)
@@ -11,8 +11,8 @@
         <strong>None</strong>
     [% END %]
     <a class="btn btn--primary" href="[% request.url_for('backoffice/partners/client_partner_details.cgi', {loginid => client.loginid , broker = client.broker }) %]">View partner details</a>
-    <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/partners/change_partner_id.cgi', {loginid => client.loginid , partner_id = client.partner_id }) %]">Edit partner ID</a>
-    <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/partners/link_partner.cgi', {loginid => client.loginid , partner_id = client.partner_id }) %]">Link partner</a>
+    <a [% IF is_readonly || partner_details.partner_token %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" href="[% request.url_for('backoffice/partners/set_partner_id.cgi', {loginid => client.loginid}) %]" [% END %]> Link to Partner Campaign </a>
+    <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/partners/link_partner.cgi', {loginid => client.loginid}) %]">Link partner to provider</a>
     <a  class="btn btn--primary" href="[% request.url_for('backoffice/f_ib_affiliate.cgi', {loginid => client.loginid}) | url %]">IB Affiliate status</a>
     <a [% IF is_readonly %] class="btn btn--disabled" [% ELSE %]  class="btn btn--primary" [% END %] href="[% request.url_for('backoffice/partners/create_partner_mt5tech_account.cgi', {loginid => client.loginid}) %]">Create partner MT5 tech account</a>
     </td>
