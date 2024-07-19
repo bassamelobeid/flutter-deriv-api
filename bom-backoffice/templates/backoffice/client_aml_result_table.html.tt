@@ -1,0 +1,9 @@
+<h1>Lexis Nexis Results</h1>
+<div id="tableContainer" style="overflow-x: auto;"></div>
+<script type="text/javascript">
+    var jsonData = [% lexis_nexis_results_json FILTER none %];
+
+    if (jsonData) {
+        populateContainer(jsonData, 6, "#tableContainer");
+    }
+</script>

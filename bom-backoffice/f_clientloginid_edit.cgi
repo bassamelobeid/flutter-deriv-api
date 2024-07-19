@@ -42,6 +42,7 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook_for_client );
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::LexisNexisAPI;
 use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Backoffice::FormAccounts;
@@ -342,18 +343,22 @@ if (defined $input{request_risk_screen}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
 
-sub find_risk_screen {
-    my (%args) = @_;
+if ($input{show_lexis_nexis_result_table}) {
+    my $lexis_nexis_results = lexis_nexis_results($input{lexis_nexis_alert_id});
 
-    my @search_fields = qw/binary_user_id client_entity_id status/;
+    my $parsed_lexis_nexis_results = parse_lexis_nexis_results($lexis_nexis_results);
 
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-    my $rows = $dbic->run(
-        fixup => sub {
-            return $_->selectall_arrayref('select * from users.get_risk_screen(?,?,?)', {Slice => {}}, @args{@search_fields});
-        });
+    my $encoded_parsed_lexis_nexis_results_json = encode_json_utf8($parsed_lexis_nexis_results);
 
-    return @$rows;
+    print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/json_to_tables.css?version=1') . '"/>';
+
+    print '<script src="' . request()->url_for('js/json_to_tables.js?version=6') . '"></script>';
+
+    BOM::Backoffice::Request::template()
+        ->process('backoffice/client_aml_result_table.html.tt', {lexis_nexis_results_json => $encoded_parsed_lexis_nexis_results_json},)
+        || die BOM::Backoffice::Request::template()->error(), "\n";
+
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
 
 if (defined $input{show_aml_screen_table}) {
@@ -362,12 +367,16 @@ if (defined $input{show_aml_screen_table}) {
     $risk_screen->{flags_str} = join(',', $risk_screen->{flags}->@*) if $risk_screen && $risk_screen->{flags};
 
     my $lexis_nexis = $client->user->lexis_nexis;
+
+    my $lexis_nexis_result_table_form_action = request()->url_for('backoffice/f_clientloginid_edit.cgi?loginID=' . $client->loginid);
+
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_edit_aml_screening_table.html.tt',
         {
-            risk_screen    => $risk_screen,
-            lexis_nexis    => $lexis_nexis,
-            sanction_check => $client->sanctions_check
+            risk_screen                          => $risk_screen,
+            lexis_nexis                          => $lexis_nexis,
+            sanction_check                       => $client->sanctions_check,
+            lexis_nexis_result_table_form_action => $lexis_nexis_result_table_form_action,
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 

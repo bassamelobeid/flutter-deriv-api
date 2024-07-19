@@ -17,7 +17,7 @@
             [% IF risk_screen %]
             <tr>
                 <td> 
-                [% IF risk_screen.client_entity_id %] 
+                [% IF risk_screen.client_entity_id %]
                     <a href="https://batch.riskscreen.com/entity/view/[% risk_screen.client_entity_id %]">[% risk_screen.interface_reference %]</a>
                 [% ELSE %]
                     [% risk_screen.interface_reference %]
@@ -43,6 +43,13 @@
 
 <caption>LexisNexis</caption>
 
+[% IF lexis_nexis %]
+<tr>
+    <td class="label"></td>
+    
+</tr>
+[% END %]
+
 <tr>
     <td colspan=2>
         <table class="collapsed hover alternate">
@@ -55,6 +62,8 @@
 
                 <th>Alert Id</th>
 
+                <th>Actions</th>
+
             </tr>
             [% IF lexis_nexis %]
             <tr>
@@ -65,6 +74,14 @@
                 <td>[% lexis_nexis.note %]</td>
 
                 <td>[% IF lexis_nexis.alert_id %] [% lexis_nexis.alert_id %][% END %]</td>
+
+                <td>
+        <form action="[% lexis_nexis_result_table_form_action %]" method="POST">
+            <input type="hidden" name="lexis_nexis_alert_id" value="[% lexis_nexis.alert_id %]">
+            <input type="hidden" name="show_lexis_nexis_result_table" value=1>
+            <button type="submit" class="btn btn--primary">Show LexisNexis Result Table</button>
+        </form>
+    </td>
 
             </tr>
             [% ELSE %]

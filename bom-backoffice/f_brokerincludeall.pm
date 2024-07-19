@@ -5,6 +5,8 @@ use lib qw(. .. ../subs ../oop);
 
 use subs::subs_presentation_backoffice;
 
+use subs::subs_backoffice_client_aml_result;
+
 use subs::subs_backoffice_clientdetails;
 
 use subs::subs_backoffice_reports;

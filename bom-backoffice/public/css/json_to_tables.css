@@ -1,0 +1,45 @@
+.jsonTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.jsonTable th,
+.jsonTable td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.jsonTable th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.jsonTable tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.resultBox {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 20px;
+    background-color: #f9f9f9;
+    overflow: hidden;
+}
+
+.nestedTableTitle {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    color: #666;
+}
+
+.splitTableContainer {
+    overflow-x: auto;
+}
+
+.splitTable {
+    margin-top: 10px;
+}
