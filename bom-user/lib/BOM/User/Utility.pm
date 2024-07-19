@@ -620,7 +620,7 @@ sub has_po_box_address {
 
     my $client_address = [$client->address_1, $client->address_2];
 
-    my $po_box_address_patterns = [map { qr/\b$_\b/i } @{po_box_patterns()}];
+    my $po_box_address_patterns = [map { qr/$_/i } @{po_box_patterns()}];
 
     foreach my $address_line (@$client_address) {
         foreach my $pattern (@$po_box_address_patterns) {

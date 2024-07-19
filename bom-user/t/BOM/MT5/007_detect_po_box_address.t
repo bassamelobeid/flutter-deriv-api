@@ -20,19 +20,56 @@ subtest 'has_po_box_address' => sub {
 
     ok !BOM::User::Utility::has_po_box_address($client), 'client has physical address';
 
-    my $patterns = BOM::User::Utility::po_box_patterns();
-    for my $pattern ($patterns->@*) {
-        lives_ok { $client->address_1($pattern . ' 777') } "set address_1 to po box address pattern '$pattern'";
+    my @addresses = (
+        'po box',
+        'p.o box',
+        'p.o. box',
+        'p.. o.    box',
+        'p   .o  .  box',
+        'p o box',
+        'p obox',
+        'po.box',
+        'pobox',
+        'pbox',
+        'pbag',
+        'private bag',
+        'privatebag',
+        'postofficebox',
+        'post office box',
+        'apartado postal',
+        'apartadopostal',
+        'casilla        postal',
+        'casilla decorreo',
+        'caixapostal',
+        'caixa postal',
+        'caixa       postal',
+        'caixa de correio',
+        'caixa      de     correio',
+        'cxpostal',
+        'cx    postal'
+    );
+
+    for my $address (@addresses) {
+        lives_ok { $client->address_1($address . ' 777') } "set address_1 to po box address pattern '$address'";
         ok BOM::User::Utility::has_po_box_address($client), 'po box address detected in address line 1';
         $client->address_1('street 123');
 
-        lives_ok { $client->address_2('PY ' . $pattern . ' 777') } "set address_2 to po box address pattern '$pattern'";
+        lives_ok { $client->address_2('PY ' . $address . ' 777') } "set address_2 to po box address pattern '$address'";
         ok BOM::User::Utility::has_po_box_address($client), 'po box address detected in address line 2';
+
+        lives_ok { $client->address_2('CALLE' . $address . '13') } "set address to po box address pattern '$address'";
+        ok BOM::User::Utility::has_po_box_address($client), 'po box address detected even not as full words';
         $client->address_2('big avenue');
     }
 
-    lives_ok { $client->address_1('OPO OBOX STREET 777') } 'set address_1 to contain po box address pattern';
-    ok !BOM::User::Utility::has_po_box_address($client), 'client has physical address, only match complete words';
+    lives_ok { $client->address_1('Via del po') } 'set address_1 to contain po box address pattern';
+    ok !BOM::User::Utility::has_po_box_address($client), 'address that contains "po" is not detected as a po box address';
+
+    lives_ok { $client->address_1('box street') } 'set address_1 to contain po box address pattern';
+    ok !BOM::User::Utility::has_po_box_address($client), 'address that contains "box" is not detected as a po box address';
+
+    lives_ok { $client->address_1('testP ObOX RUTA 9') } 'set address_1 to contain po box address pattern';
+    ok BOM::User::Utility::has_po_box_address($client), 'po box address detected even if not a complete word and regardless of case';
 };
 
 subtest 'is_po_box_verified' => sub {

@@ -1,19 +1,11 @@
-- po box
-- p.o box
-- p.o. box
-- p o box
-- pobox
+- p\s*\.*\s*o\s*\.*\s*box
 - pbox
 - pbag
-- pbag
-- private bag
-- privatebag
-- bag
-- box
-- apartado postal
-- casilla postal
-- casilla de correo
-- caixa postal
-- caixa de correio
-- caixa
-- cx postal
+- private\s*bag
+- post\s*office\s*box
+- apartado\s*postal
+- casilla\s*postal
+- casilla\s*de\s*correo
+- caixa\s*postal
+- caixa\s*de\s*correio
+- cx\s*postal
