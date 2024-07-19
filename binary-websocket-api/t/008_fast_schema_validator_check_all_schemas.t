@@ -69,7 +69,6 @@ my $unsupported_schemas = {
     'trading_platform_withdrawal/send.json'            => 1,
     'transaction/receive.json'                         => 1,
     'verify_email/send.json'                           => 1,
-    'verify_email_cellxpert/send.json'                 => 1,
     'website_config/receive.json'                      => 1,
     'website_status/receive.json'                      => 1,
 };

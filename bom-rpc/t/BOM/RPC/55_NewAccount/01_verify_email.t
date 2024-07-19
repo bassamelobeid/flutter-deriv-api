@@ -25,24 +25,6 @@ my ($user, $client, $email);
 my $rpc_ct;
 my $method = 'verify_email';
 
-my $should_cellxpert_api_for_is_username_available_fail = 0;
-my $is_affiliate_username_available                     = 0;
-my $mock_cellxpert_server                               = Test::MockModule->new('WebService::Async::Cellxpert');
-$mock_cellxpert_server->mock(
-    'is_username_available',
-    sub {
-        if ($should_cellxpert_api_for_is_username_available_fail) {
-            return Future->fail({result => "not ok"});
-        } else {
-            if ($is_affiliate_username_available) {
-                return Future->done(1);
-            } else {
-                return Future->done(0);
-            }
-
-        }
-    });
-
 my @params = (
     $method,
     {
@@ -105,72 +87,6 @@ subtest 'Account opening request with an invalid email address' => sub {
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidEmail', 'If email address is invalid it should return error')
         ->error_message_is('This email address is invalid.', 'If email address is invalid it should return error_message');
-};
-
-#Todo: these 3 old endpoints tests should be remove after removing partner_account_opening in websocket-api schema
-
-subtest 'Partner account opening request if affiliate exists on CellXpert thirdparty' => sub {
-    $params[1]->{args}->{verify_email} = 'test' . rand(999) . '@binary.com';
-    $params[1]->{args}->{type}         = 'partner_account_opening';
-
-    my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_system_error->has_error()->result;
-    is $result->{error}->{code}, 'CXUsernameExists', 'A user with this email already exists';
-};
-
-subtest 'Partner account opening request if affiliate NOT exists on CellXpert thirdparty' => sub {
-    my @emitted;
-    no warnings 'redefine';
-    local *BOM::Platform::Event::Emitter::emit = sub { push @emitted, @_ };
-    $is_affiliate_username_available   = 1;
-    $params[1]->{args}->{verify_email} = 'test' . rand(999) . '@binary.com';
-    $params[1]->{args}->{type}         = 'partner_account_opening';
-
-    $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
-
-};
-
-subtest 'Partner account opening request if cellXpert webservice raise error' => sub {
-    $should_cellxpert_api_for_is_username_available_fail = 1;
-    $params[1]->{args}->{verify_email}                   = 'test' . rand(999) . '@binary.com';
-    $params[1]->{args}->{type}                           = 'partner_account_opening';
-
-    my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_system_error->has_error()->result;
-    is $result->{error}->{code}, 'CXRuntimeError', 'Could not register user';
-};
-
-$params[0] = 'verify_email_cellxpert';
-
-subtest 'Partner account opening request if affiliate exists on CellXpert thirdparty (new Endpoint)' => sub {
-    $should_cellxpert_api_for_is_username_available_fail = 0;
-    $is_affiliate_username_available                     = 0;
-    $params[1]->{args}->{verify_email_cellxpert}         = 'test' . rand(999) . '@binary.com';
-    $params[1]->{args}->{type}                           = 'partner_account_opening';
-
-    my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_system_error->has_error()->result;
-    is $result->{error}->{code}, 'CXUsernameExists', 'A user with this email already exists';
-};
-
-subtest 'Partner account opening request if affiliate NOT exists on CellXpert thirdparty  (new Endpoint)' => sub {
-    my @emitted;
-    no warnings 'redefine';
-    local *BOM::Platform::Event::Emitter::emit = sub { push @emitted, @_ };
-    $is_affiliate_username_available             = 1;
-    $params[1]->{args}->{verify_email_cellxpert} = 'test' . rand(999) . '@binary.com';
-    $params[1]->{args}->{type}                   = 'partner_account_opening';
-
-    $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
-
-};
-
-subtest 'Partner account opening request if cellXpert webservice raise error  (new Endpoint)' => sub {
-    $should_cellxpert_api_for_is_username_available_fail = 1;
-    $params[1]->{args}->{verify_email_cellxpert}         = 'test' . rand(999) . '@binary.com';
-    $params[1]->{args}->{type}                           = 'partner_account_opening';
-
-    my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_system_error->has_error()->result;
-    is $result->{error}->{code}, 'CXRuntimeError', 'Could not register user';
 };
 
 $params[0] = 'verify_email';
@@ -508,7 +424,7 @@ subtest 'Closed account' => sub {
                 return @loginids;
             });
 
-        my $endpoints = [qw/verify_email_cellxpert verify_email/];
+        my $endpoints = [qw/verify_email/];
         my $types     = [qw/account_opening reset_password foobar/];
 
         # for account closed sort of emails

@@ -51,7 +51,6 @@ subtest 'Examples not requiring auth work without error' => sub {
         new_account_virtual
         reset_password
         unsubscribe_email
-        verify_email_cellxpert
         confirm_email
     );
 

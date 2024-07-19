@@ -56,8 +56,6 @@
         password: ''
         sftp_allowed: ''
         user: ''
-      cellxperts:
-        base_uri: some env
       close_io:
         api_key: ''
         api_url: ''

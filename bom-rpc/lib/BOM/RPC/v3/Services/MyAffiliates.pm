@@ -36,7 +36,7 @@ BEGIN {
 }
 
 =head2 affiliate_add_general
-Common function used by both `affiliate_add_person` and `affiliate_add_company` functions
+Common function used by `affiliate_add_person` function
 =over 4
 =item * C<email> - C<Str> The email that entered in previous step of registration
 =item * C<args> - C<Hash ref> Hash ref consists of : password, first_name, last_name, term and conditions

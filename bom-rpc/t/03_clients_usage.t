@@ -9,7 +9,10 @@ use BOM::Test::CheckUserClientsUsage;
 # and a failure or issue with of one of the clients (VR) would cause a stall
 # or a timeout. Do you really need to use $user->clients()??
 
+# Note, if this test fails because you removed a call to $user->clients()
+# just set the count to the new value.
+
 my $repo = 'bom-rpc';
-is(BOM::Test::CheckUserClientsUsage::check_count($repo), 10, "Usage of user->clients pattern in '$repo' matches expectations");
+is(BOM::Test::CheckUserClientsUsage::check_count($repo), 9, "Usage of user->clients pattern in '$repo' matches expectations");
 
 done_testing();

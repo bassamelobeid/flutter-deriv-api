@@ -454,28 +454,6 @@ sub available_loginid {
     return $client->loginid;
 }
 
-=head2 partner_account_opening
-
-If $self->type is `partner_account_opening` then this function will execute
-
-This is related to CellXpert API (Thirdparty replacement for myaffiliate) registration and 
-will call CX service to handle registration
-
-=over 4
-
-=back
-
-=cut
-
-sub partner_account_opening {
-    my ($self) = @_;
-    return BOM::RPC::v3::Services::CellxpertService::verify_email(
-        $self->{email},
-        $self->{email_verification},
-        $self->{existing_user},
-        $self->{language}, $self->{url_params});
-}
-
 =head2 common_payment_withdraw
 
 helper function for same actions in both `payment_withdraw` and `paymentagent_withdraw`

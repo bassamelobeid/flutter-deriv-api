@@ -226,11 +226,6 @@ test_sendrecv 'account_list/test_send.json', 'account_list/test_receive.json';
 fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
 test_sendrecv 'logout/test_send.json', 'logout/test_receive.json';
 
-# verify_email for cellxpert
-
-test_sendrecv 'verify_email_cellxpert/test_send_to_fail.json', 'verify_email_cellxpert/test_receive_fail.json';
-fail_test_sendrecv 'verify_email_cellxpert/test_send.json', 'verify_email_cellxpert/test_receive_fail.json';
-
 # VIRTUAL ACCOUNT OPENING FOR (CR with FATCA declaration)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test3@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',

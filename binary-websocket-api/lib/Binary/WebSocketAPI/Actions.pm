@@ -42,20 +42,6 @@ sub actions_config {
         ],
         ['active_symbols', {stash_params => [qw/ token account_tokens /]}],
         [
-            'affiliate_add_company',
-            {
-                stash_params => [qw/ token account_tokens server_name client_ip user_agent /],
-                category     => 'account',
-            }
-        ],
-        [
-            'affiliate_add_person',
-            {
-                stash_params => [qw/ token account_tokens server_name client_ip user_agent /],
-                category     => 'account',
-            }
-        ],
-        [
             'affiliate_register_person',
             {
                 stash_params => [qw/ server_name token account_tokens /],
@@ -797,13 +783,6 @@ sub actions_config {
         ],
         [
             'verify_email',
-            {
-                stash_params => [qw/ server_name token account_tokens /],
-                category     => 'account',
-            }
-        ],
-        [
-            'verify_email_cellxpert',
             {
                 stash_params => [qw/ server_name token account_tokens /],
                 category     => 'account',
