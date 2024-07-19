@@ -4,8 +4,20 @@ use Test::More;
 use Test::Deep;
 use Test::MockModule;
 use BOM::Backoffice::VirtualStatus;
+use BOM::User::PhoneNumberVerification;
+use BOM::Service;
 
 # remember to mock anything that would hit the DB as unit tests don't support DB access
+
+my $srv_mock = Test::MockModule->new('BOM::Service');
+$srv_mock->mock(
+    'user',
+    sub {
+        return +{
+            status     => 'ok',
+            attributes => {},
+        };
+    });
 
 my $client_mock = Test::MockModule->new('BOM::User::Client');
 my $is_financial_assessment_complete;
@@ -191,5 +203,35 @@ subtest 'mt5 withdrawal locked' => sub {
     $outdated                  = 1;
     cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'Virtual withdrawal locked not needed as the real status is there';
 };
+
+subtest 'pnv' => sub {
+    my $pnv_mock = Test::MockModule->new('BOM::User::PhoneNumberVerification');
+    my $verified;
+    $pnv_mock->mock(
+        'verified',
+        sub {
+            return $verified;
+        });
+
+    $verified = undef;
+    cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)}, +{}, 'No PNV needed';
+
+    $verified = 1;
+    cmp_deeply + {BOM::Backoffice::VirtualStatus::get($client)},
+        +{
+        'Phone Number Verified' => {
+            last_modified_date => re('.*'),
+            reason             => 'OTP challenge pass',
+            staff_name         => "SYSTEM",
+            status_code        => "phone_number_verified",
+            warning            => 'var(--color-red)',
+        }
+        },
+        'Virtual PNV status';
+
+    $pnv_mock->unmock_all;
+};
+
+$srv_mock->unmock_all;
 
 done_testing;

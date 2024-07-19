@@ -1727,10 +1727,25 @@ system:
   isa: section
   contains:
     onfido:
+      description: "Onfido settings"
       isa: section
       contains:
         global_daily_limit:
           description: global daily limits for onfido requests
+          default: 5000
+          isa: Num
+          global: 1
+    phone_number_verification:
+      description: "Phone Number Verification settings"
+      isa: section
+      contains:
+        whatsapp_daily_limit:
+          description: global daily limits for whatsapp verifications
+          default: 5000
+          isa: Num
+          global: 1
+        sms_daily_limit:
+          description: global daily limits for sms verifications
           default: 5000
           isa: Num
           global: 1
@@ -1912,6 +1927,21 @@ system:
           description: "Suspend duplicate POI document checks"
           isa: Bool
           default: 1
+          global: 1
+        phone_number_verification:
+          description: "Suspend Phone Number Verifications"
+          isa: Bool
+          default: 0
+          global: 1
+        pnv_whatsapp:
+          description: "Suspend Whatsapp Phone Number Verifications"
+          isa: Bool
+          default: 0
+          global: 1
+        pnv_sms:
+          description: "Suspend SMS Phone Number Verifications"
+          isa: Bool
+          default: 0
           global: 1
     services:
       description: "Enable integrations with internal microservices"

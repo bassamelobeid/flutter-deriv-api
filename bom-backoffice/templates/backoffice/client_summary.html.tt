@@ -1,6 +1,16 @@
 [% IF full_name %] <p><b>Full Name: </b>[% full_name %]</p>[% END %]
 [% IF date_of_birth %] <p><b>Date of Birth: </b>[% date_of_birth %]</p>[% END %]
-[% IF phone %]<p><b>Phone: </b>[% phone %]</p>[% END %]
+[% IF phone %]<p><b>Phone: </b>
+    <span class="[% IF phone_number_verified %]pnv-verified[% END %]">[% phone %] 
+        [% IF phone_number_verified %]
+            <span><b><i>verified</i></b>
+            <a href="[% request.url_for( 'backoffice/f_clientloginid_edit.cgi', {loginID => loginid, removePNV => 1 }) %]"
+                 onclick="return confirm('This will remove the phone number verified status from [% loginid %] and its siblings, do you want to continue?');">
+                 [REMOVE]
+            </a></span> 
+        [% END %]
+    </span></p>
+[% END %]
 [% IF secret_question %] 
     <p><b>Secret Question: </b>[% secret_question %]</p>
     [% IF secret_answer %]

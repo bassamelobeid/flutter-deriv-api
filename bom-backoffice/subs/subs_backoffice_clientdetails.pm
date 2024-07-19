@@ -56,6 +56,7 @@ use BOM::User::LexisNexis;
 use BOM::Config::Compliance;
 use BOM::Service;
 use Deriv::TradingPlatform::MT5::UserRights qw(to_hash);
+use BOM::User::PhoneNumberVerification;
 
 my $compliance_config = BOM::Config::Compliance->new;
 
@@ -818,7 +819,16 @@ SQL
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update();
+
     my $dynamic_works_enabled = $app_config->partners->enable_dynamic_works;
+
+    my $pnv = BOM::User::PhoneNumberVerification->new(
+        $client->binary_user_id,
+        +{
+            correlation_id => UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4),
+            auth_token     => "Unused but required to be present",
+            environment    => "bom-backoffice",
+        });
 
     my $template_param = {
         is_readonly          => $is_readonly,
@@ -928,6 +938,7 @@ SQL
         onfido_suspended                   => BOM::Config::Runtime->instance->app_config->system->suspend->onfido,
         is_idv_validated                   => $client->is_idv_validated,
         dynamic_works_enabled              => $dynamic_works_enabled,
+        phone_number_verified              => $pnv->verified,
     };
 
     $log->infof("%s: Finished printing client details", request()->id);

@@ -306,7 +306,12 @@ sub get_settings_by_group {
                 system.suspend.idv_providers
                 system.suspend.idv_document_types
                 system.suspend.idv_triplets
+                system.suspend.phone_number_verification
+                system.suspend.pnv_whatsapp
+                system.suspend.pnv_sms
                 system.onfido.global_daily_limit
+                system.phone_number_verification.whatsapp_daily_limit
+                system.phone_number_verification.sms_daily_limit
                 system.suspend.access_token_sharing
                 system.mt5.load_balance.demo.all.p01_ts01
                 system.mt5.load_balance.demo.all.p01_ts02

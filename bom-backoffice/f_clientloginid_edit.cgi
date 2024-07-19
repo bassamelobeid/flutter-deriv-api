@@ -54,6 +54,8 @@ use BOM::User::SocialResponsibility;
 use BOM::User::Phone;
 use BOM::Backoffice::UserService;
 use BOM::Service;
+use BOM::User::PhoneNumberVerification;
+use UUID::Tiny;
 
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 use feature 'switch';
@@ -111,6 +113,22 @@ my $loginid_details = $details{loginid_details};
 
 if (my $error_message = write_operation_error()) {
     print "<p class=\"notify notify--warning\">$error_message</p>";
+    code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+}
+
+my $pnv = BOM::User::PhoneNumberVerification->new(
+    $client->binary_user_id,
+    +{
+        correlation_id => UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4),
+        auth_token     => "Unused but required to be present",
+        environment    => "bom-backoffice",
+    });
+
+delete $input{phone} if $pnv->verified;
+
+if (defined $input{removePNV}) {
+    $pnv->release();
+    print "<p class=\"notify\">The Phone Number Verified status has been removed.</p>";
     code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
 }
 
@@ -1773,13 +1791,15 @@ unless (BOM::Backoffice::Auth::has_authority(['AccountsLimited', 'AccountsAdmin'
     my @filtered_mt5_ids = grep { $loginid_details->{$_}->{attributes}->{landing_company} eq $client->landing_company->{short} } $mt_logins->@*;
 
     my $template_data = {
-        full_name       => trim($client->full_name),
-        date_of_birth   => $client->date_of_birth,
-        phone           => $client->phone,
-        secret_question => $client->secret_question,
-        secret_answer   => $secret_answer,
-        secret_error    => $secret_error,
-        mt_logins       => @filtered_mt5_ids ? \@filtered_mt5_ids : '',
+        full_name             => trim($client->full_name),
+        date_of_birth         => $client->date_of_birth,
+        phone                 => $client->phone,
+        phone_number_verified => $pnv->verified,
+        secret_question       => $client->secret_question,
+        secret_answer         => $secret_answer,
+        secret_error          => $secret_error,
+        mt_logins             => @filtered_mt5_ids ? \@filtered_mt5_ids : '',
+        loginid               => $client->loginid,
     };
 
     BOM::Backoffice::Request::template()->process('backoffice/client_summary.html.tt', $template_data)

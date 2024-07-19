@@ -16,6 +16,9 @@ use JSON::MaybeUTF8 qw(decode_json_utf8);
 use BOM::Config::Services;
 use BOM::Service;
 use BOM::User;
+use BOM::Config::Runtime;
+use BOM::Config::Redis;
+use URI::Escape;
 
 use constant PNV_VERIFY_PREFIX     => 'PHONE::NUMBER::VERIFICATION::VERIFY::';
 use constant PNV_NEXT_PREFIX       => 'PHONE::NUMBER::VERIFICATION::NEXT::';
@@ -31,6 +34,55 @@ use constant HTTP_TIMEOUT          => 20;                                       
 use constant EMAIL_OTP_ALPHABET   => [0 .. 9];
 use constant EMAIL_OTP_LENGTH     => 6;
 use constant EMAIL_OTP_EXPIRES_IN => TEN_MINUTES;
+
+# Global limits
+use constant ONE_DAY          => 86400;                                              # In seconds
+use constant PNV_GLOBAL_LIMIT => 'PNV::GLOBAL::LIMIT::';
+
+=head2 redis
+
+Returns the current L<RedisDB> instance or creates a new one if neeeded.
+
+=cut
+
+has redis => (
+    is      => 'lazy',
+    clearer => '_clear_redis',
+);
+
+=head2 _build_redis
+
+Create the C<RedisDB> instance.
+
+=cut
+
+sub _build_redis {
+    return BOM::Config::Redis::redis_events_write();
+}
+
+=head2 app_config
+
+Returns the current L<BOM::Config::Runtime> instance or creates a new one if neeeded.
+
+=cut
+
+has app_config => (
+    is      => 'lazy',
+    clearer => '_clear_app_config',
+);
+
+=head2 _build_app_config
+
+Create the C<BOM::Config::Runtime> instance.
+
+=cut
+
+sub _build_app_config {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update;
+
+    return $app_config;
+}
 
 =head2 http
 
@@ -163,7 +215,7 @@ sub clear_verify_attempts {
 
     return undef if $self->verified;
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    my $redis = $self->redis;
 
     $redis->del(PNV_VERIFY_PREFIX . $self->binary_user_id);
 }
@@ -179,7 +231,7 @@ sub clear_attempts {
 
     return undef if $self->verified;
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    my $redis = $self->redis;
 
     $redis->del(PNV_NEXT_PREFIX . $self->binary_user_id);
 }
@@ -193,7 +245,7 @@ Blocks the email atttempt if the redis TTL has not yet passed.
 sub email_blocked {
     my ($self) = @_;
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    my $redis = $self->redis;
 
     my $ttl = $redis->ttl(PNV_NEXT_EMAIL_PREFIX . $self->binary_user_id) // 0;
 
@@ -213,7 +265,7 @@ sub next_email_attempt {
 
     return undef if $self->verified;
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    my $redis = $self->redis;
 
     my $ttl = $redis->ttl(PNV_NEXT_EMAIL_PREFIX . $self->binary_user_id) // 0;
 
@@ -231,7 +283,7 @@ Blocks the verification atttempts of the OTP due to too many attempts.
 sub verify_blocked {
     my ($self) = @_;
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    my $redis = $self->redis;
 
     my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->binary_user_id) // 0;
 
@@ -251,7 +303,7 @@ sub next_attempt {
 
     return undef if $self->verified;
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    my $redis = $self->redis;
 
     my $ttl = $redis->ttl(PNV_NEXT_PREFIX . $self->binary_user_id) // 0;
 
@@ -273,7 +325,7 @@ sub next_verify_attempt {
 
     return undef if $self->verified;
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    my $redis = $self->redis;
 
     my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->binary_user_id) // 0;
 
@@ -338,7 +390,8 @@ sub generate_otp {
     my ($self, $carrier, $phone, $lang) = @_;
 
     my $config = BOM::Config::Services->config('phone_number_verification');
-    my $url    = sprintf("http://%s:%d/pnv/challenge/%s/%s/%s", $config->{host}, $config->{port}, $carrier, $phone, $lang);
+    my $url =
+        sprintf("http://%s:%d/pnv/challenge/%s/%s/%s", $config->{host}, $config->{port}, uri_escape($carrier), uri_escape($phone), uri_escape($lang));
 
     # Hit the PNV golang service
     try {
@@ -346,7 +399,16 @@ sub generate_otp {
 
         $resp->{content} = decode_json_utf8($resp->{content} || '{}');
 
-        return 1 if $resp->{content}->{success};
+        if ($resp->{content}->{success}) {
+            my $redis = $self->redis;
+
+            $redis->multi;
+            $redis->incrby(PNV_GLOBAL_LIMIT . $carrier, 1);
+            $redis->expire(PNV_GLOBAL_LIMIT . $carrier, ONE_DAY, 'NX');
+            $redis->exec;
+
+            return 1;
+        }
     } catch ($e) {
         $log->errorf("Unable to generate phone number for user %d: %s", $self->binary_user_id, $e);
     }
@@ -363,7 +425,7 @@ Adjust the next attempt timestamp accordingly.
 
 sub increase_verify_attempts {
     my ($self)   = @_;
-    my $redis    = BOM::Config::Redis::redis_events_write();
+    my $redis    = $self->redis;
     my $attempts = $redis->get(PNV_VERIFY_PREFIX . $self->binary_user_id) // 0;
 
     $attempts++;
@@ -382,7 +444,7 @@ Adjust the next attempt timestamp accordingly.
 
 sub increase_attempts {
     my ($self)   = @_;
-    my $redis    = BOM::Config::Redis::redis_events_write();
+    my $redis    = $self->redis;
     my $attempts = $redis->get(PNV_NEXT_PREFIX . $self->binary_user_id) // 0;
 
     # the next attempt will be unlocked as soon as the OTP expires
@@ -503,8 +565,10 @@ Adjust the next email attempt timestamp accordingly.
 =cut
 
 sub increase_email_attempts {
-    my ($self)   = @_;
-    my $redis    = BOM::Config::Redis::redis_events_write();
+    my ($self) = @_;
+
+    my $redis = $self->redis;
+
     my $attempts = $redis->get(PNV_NEXT_EMAIL_PREFIX . $self->binary_user_id) // 0;
 
     # the next attempt will be unlocked as soon as the OTP expires
@@ -542,7 +606,7 @@ sub verify_otp {
     my ($self, $phone, $otp) = @_;
 
     my $config = BOM::Config::Services->config('phone_number_verification');
-    my $url    = sprintf("http://%s:%d/pnv/verify/%s/%s", $config->{host}, $config->{port}, $phone, $otp);
+    my $url    = sprintf("http://%s:%d/pnv/verify/%s/%s", $config->{host}, $config->{port}, uri_escape($phone), uri_escape($otp));
 
     # Hit the PNV golang service
     try {
@@ -582,6 +646,92 @@ sub clear_phone {
     $dirty_phone =~ s/\D//g;
 
     return $dirty_phone;    # no longer dirty hehe
+}
+
+=head2 carriers_availability
+
+Check our dynamic settings and limits to compute the available carriers list.
+
+If PNV is disabled as a whole, then all the carriers are considered disabled.
+
+Return a hashref of available carriers.
+
+=cut
+
+sub carriers_availability {
+    my ($self) = @_;
+
+    my $app_config = $self->app_config;
+
+    my $carriers = {
+        sms      => 0,
+        whatsapp => 0,
+    };
+
+    return $carriers if $app_config->system->suspend->phone_number_verification;
+
+    for my $carrier (keys $carriers->%*) {
+        $carriers->{$carrier} = 1 unless $self->is_suspended($carrier) || $self->is_depleted($carrier);
+    }
+
+    return $carriers;
+}
+
+=head2 is_depleted 
+
+Computes a flag that determines if the given provider has depleted it requests.
+
+=over 4
+
+=item C<$carrier> - the name of the carrier to check
+
+=back
+
+Return boolean.
+
+=cut
+
+sub is_depleted {
+    my ($self, $carrier) = @_;
+
+    my $app_config = $self->app_config;
+
+    my $redis = $self->redis;
+
+    my $count = $redis->get(PNV_GLOBAL_LIMIT . $carrier) // 0;
+
+    my $limit = 0;
+
+    $limit = $app_config->system->phone_number_verification->whatsapp_daily_limit if $carrier eq 'whatsapp';
+    $limit = $app_config->system->phone_number_verification->sms_daily_limit      if $carrier eq 'sms';
+
+    my $depletion = $count >= $limit ? 1 : 0;
+
+    return $depletion;
+}
+
+=head2 is_suspended 
+
+Computes a flag that determines if the given provider is suspended by settings.
+
+=over 4
+
+=item C<$carrier> - the name of the carrier to check
+
+=back
+
+Return boolean.
+
+=cut
+
+sub is_suspended {
+    my ($self, $carrier) = @_;
+
+    my $app_config = $self->app_config;
+
+    return $app_config->system->suspend->pnv_whatsapp ? 1 : 0 if $carrier eq 'whatsapp';
+    return $app_config->system->suspend->pnv_sms      ? 1 : 0 if $carrier eq 'sms';
+    return 1;
 }
 
 1

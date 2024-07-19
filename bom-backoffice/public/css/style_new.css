@@ -1316,6 +1316,10 @@ table.pivot .summary {
     padding: 0;
 }
 
+.pnv-verified {
+    color: darkgreen;
+}
+
 /* Loader implementation */
 .loading_indicator {
     text-align: center;

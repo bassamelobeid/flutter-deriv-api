@@ -151,6 +151,9 @@
                     "verified"
                 ],
                 "properties": {
+                    "carriers": {
+                        "type": "array"
+                    },
                     "next_attempt": {
                         "type": "integer"
                     },

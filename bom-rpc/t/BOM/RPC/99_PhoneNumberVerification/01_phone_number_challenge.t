@@ -19,7 +19,16 @@ use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use BOM::Service;
 
-my $c = BOM::Test::RPC::QueueClient->new();
+my $c     = BOM::Test::RPC::QueueClient->new();
+my $redis = BOM::Config::Redis::redis_events();
+
+my $dd_mock = Test::MockModule->new('BOM::RPC::v3::PhoneNumberVerification');
+my @dog_stash;
+$dd_mock->mock(
+    'stats_inc',
+    sub {
+        push @dog_stash, +{@_};
+    });
 
 my $customer = BOM::Test::Customer->create(
     clients => [{
@@ -49,6 +58,7 @@ my $generate_otp_params = {
     phone   => undef,
     lang    => undef,
 };
+my $count = 0;
 
 my $pnv_mock = Test::MockModule->new(ref($pnv));
 $pnv_mock->mock(
@@ -127,7 +137,197 @@ $pnv_mock->mock(
         return 1;
     });
 
+subtest 'Suspended' => sub {
+    BOM::Config::Runtime->instance->app_config->system->suspend->phone_number_verification(1);
+
+    @dog_stash = ();
+
+    my $params_vr = {
+        token    => $customer->get_client_token('VR'),
+        language => 'EN',
+        args     => {
+            carrier    => 'whatsapp',
+            email_code => $email_code,
+        }};
+
+    $increase_attempts = undef;
+    $c->call_ok('phone_number_challenge', $params_vr)
+        ->has_no_system_error->has_error->error_code_is('PhoneNumberVerificationSuspended', 'suspended!');
+
+    is $increase_attempts, undef, 'attempts not increased';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:VRTC', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {
+            'pnv.challenge.suspended' => {tags => ['broker:VRTC', 'residence:id', 'carrier:whatsapp',]},
+        },
+        ],
+        'Expected dog stash';
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->phone_number_verification(0);
+};
+
+subtest 'SMS is Suspended' => sub {
+    BOM::Config::Runtime->instance->app_config->system->suspend->pnv_sms(1);
+
+    @dog_stash = ();
+
+    my $params_vr = {
+        token    => $customer->get_client_token('VR'),
+        language => 'EN',
+        args     => {
+            carrier    => 'sms',
+            email_code => $email_code,
+        }};
+
+    $increase_attempts = undef;
+    $c->call_ok('phone_number_challenge', $params_vr)
+        ->has_no_system_error->has_error->error_code_is('PhoneNumberVerificationSuspended', 'suspended!');
+
+    is $increase_attempts, undef, 'attempts not increased';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:VRTC', 'residence:id', 'carrier:sms',]},
+        },
+        {
+            'pnv.challenge.sms_suspended' => {tags => ['broker:VRTC', 'residence:id', 'carrier:sms',]},
+        },
+        ],
+        'Expected dog stash';
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->pnv_sms(0);
+};
+
+subtest 'SMS is Depleted' => sub {
+    $redis->set(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 5000);
+
+    @dog_stash = ();
+
+    my $params_vr = {
+        token    => $customer->get_client_token('VR'),
+        language => 'EN',
+        args     => {
+            carrier    => 'sms',
+            email_code => $email_code,
+        }};
+
+    $increase_attempts = undef;
+    $c->call_ok('phone_number_challenge', $params_vr)
+        ->has_no_system_error->has_error->error_code_is('PhoneNumberVerificationSuspended', 'suspended!');
+
+    is $increase_attempts, undef, 'attempts not increased';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:VRTC', 'residence:id', 'carrier:sms',]},
+        },
+        {
+            'pnv.challenge.sms_depleted' => {tags => ['broker:VRTC', 'residence:id', 'carrier:sms',]},
+        },
+        ],
+        'Expected dog stash';
+
+    $redis->del(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms');
+};
+
+subtest 'An unkwnon carrier is always Suspended' => sub {
+    @dog_stash = ();
+
+    my $params_vr = {
+        token    => $customer->get_client_token('VR'),
+        language => 'EN',
+        args     => {
+            carrier    => 'telegram',
+            email_code => $email_code,
+        }};
+
+    $increase_attempts = undef;
+    $c->call_ok('phone_number_challenge', $params_vr)
+        ->has_no_system_error->has_error->error_code_is('PhoneNumberVerificationSuspended', 'suspended!');
+
+    is $increase_attempts, undef, 'attempts not increased';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:VRTC', 'residence:id', 'carrier:telegram',]},
+        },
+        {
+            'pnv.challenge.unsupported_carrier' => {tags => ['broker:VRTC', 'residence:id', 'carrier:telegram',]},
+        },
+        ],
+        'Expected dog stash';
+};
+
+subtest 'Whatsapp is Suspended' => sub {
+    BOM::Config::Runtime->instance->app_config->system->suspend->pnv_whatsapp(1);
+
+    @dog_stash = ();
+
+    my $params_vr = {
+        token    => $customer->get_client_token('VR'),
+        language => 'EN',
+        args     => {
+            carrier    => 'whatsapp',
+            email_code => $email_code,
+        }};
+
+    $increase_attempts = undef;
+    $c->call_ok('phone_number_challenge', $params_vr)
+        ->has_no_system_error->has_error->error_code_is('PhoneNumberVerificationSuspended', 'suspended!');
+
+    is $increase_attempts, undef, 'attempts not increased';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:VRTC', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {
+            'pnv.challenge.whatsapp_suspended' => {tags => ['broker:VRTC', 'residence:id', 'carrier:whatsapp',]},
+        },
+        ],
+        'Expected dog stash';
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->pnv_whatsapp(0);
+};
+
+subtest 'Whatsapp is Depleted' => sub {
+    $redis->set(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp', 5000);
+
+    @dog_stash = ();
+
+    my $params_vr = {
+        token    => $customer->get_client_token('VR'),
+        language => 'EN',
+        args     => {
+            carrier    => 'whatsapp',
+            email_code => $email_code,
+        }};
+
+    $increase_attempts = undef;
+    $c->call_ok('phone_number_challenge', $params_vr)
+        ->has_no_system_error->has_error->error_code_is('PhoneNumberVerificationSuspended', 'suspended!');
+
+    is $increase_attempts, undef, 'attempts not increased';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:VRTC', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {
+            'pnv.challenge.whatsapp_depleted' => {tags => ['broker:VRTC', 'residence:id', 'carrier:whatsapp',]},
+        },
+        ],
+        'Expected dog stash';
+
+    $redis->del(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp');
+};
+
 subtest 'Virtual challenge' => sub {
+    @dog_stash = ();
+
     my $params_vr = {
         token    => $customer->get_client_token('VR'),
         language => 'EN',
@@ -140,18 +340,40 @@ subtest 'Virtual challenge' => sub {
     $c->call_ok('phone_number_challenge', $params_vr)->has_no_system_error->has_error->error_code_is('VirtualNotAllowed', 'invalid token!');
 
     is $increase_attempts, undef, 'attempts not increased';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:VRTC', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {
+            'pnv.challenge.virtual_not_allowed' => {tags => ['broker:VRTC', 'residence:id', 'carrier:whatsapp',]},
+        },
+        ],
+        'Expected dog stash';
 };
 
 subtest 'Invalid Email Code' => sub {
+    @dog_stash = ();
+
     $verified          = 0;
     $next_attempt      = 0;
     $increase_attempts = undef;
     $c->call_ok('phone_number_challenge', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'virtual is not allowed!');
 
     is $increase_attempts, 1, 'attempts increased';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {'pnv.challenge.invalid_email_code' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]}}
+        ],
+        'Expected dog stash';
 };
 
 subtest 'Invalid Phone Number' => sub {
+    @dog_stash = ();
+
     my $client_cr = $customer->get_client_object('CR');
     $client_cr->phone('+++');
     $client_cr->save;
@@ -175,9 +397,19 @@ subtest 'Invalid Phone Number' => sub {
 
     # need to refresh the object after phone update
     $pnv = BOM::User::PhoneNumberVerification->new($customer->get_user_id(), $customer->get_user_service_context());
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {'pnv.challenge.invalid_phone' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]}}
+        ],
+        'Expected dog stash';
 };
 
 subtest 'Already verified' => sub {
+    @dog_stash = ();
+
     $verified = 0;
     generate_email_code();
     $verified              = 1;
@@ -192,9 +424,19 @@ subtest 'Already verified' => sub {
     is $increase_attempts,     undef, 'attempts increased';
     is $clear_attempts,        undef, 'attempts not cleared';
     is $clear_verify_attempts, undef, 'verify attempts not cleared';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {'pnv.challenge.already_verified' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]}}
+        ],
+        'Expected dog stash';
 };
 
 subtest 'Phone number taken' => sub {
+    @dog_stash = ();
+
     $verified = 0;
     $taken    = 1;
     generate_email_code();
@@ -204,15 +446,25 @@ subtest 'Phone number taken' => sub {
     $clear_verify_attempts = undef;
 
     $c->call_ok('phone_number_challenge', $params)
-        ->has_no_system_error->has_error->error_code_is('PhoneNumberTaken', 'the account is already verified');
+        ->has_no_system_error->has_error->error_code_is('PhoneNumberTaken', 'the phone number is not available.');
 
     is $increase_attempts,     undef, 'attempts increased';
     is $clear_attempts,        undef, 'attempts not cleared';
     is $clear_verify_attempts, undef, 'verify attempts not cleared';
     $taken = undef;
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {'pnv.challenge.phone_number_taken' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]}}
+        ],
+        'Expected dog stash';
 };
 
 subtest 'No attempts left' => sub {
+    @dog_stash = ();
+
     $verified = 0;
     generate_email_code();
 
@@ -228,9 +480,19 @@ subtest 'No attempts left' => sub {
     is $increase_attempts,     1,     'attempts increased';
     is $clear_attempts,        undef, 'attempts not cleared';
     is $clear_verify_attempts, undef, 'verify attempts not cleared';
+
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {'pnv.challenge.no_attempts_left' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]}}
+        ],
+        'Expected dog stash';
 };
 
 subtest 'Generate a valid OTP' => sub {
+    @dog_stash = ();
+
     my $client_cr = $customer->get_client_object('CR');
     my $uid       = $customer->get_user_id();
 
@@ -289,7 +551,16 @@ subtest 'Generate a valid OTP' => sub {
     is $clear_attempts,        undef, 'attempts not cleared';
     is $clear_verify_attempts, 1,     'verify attempts cleared';
 
+    cmp_deeply [@dog_stash],
+        [{
+            'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]},
+        },
+        {'pnv.challenge.success' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]}}
+        ],
+        'Expected dog stash';
+
     subtest 'try to generate an OTP again' => sub {
+        @dog_stash           = ();
         $generate_otp_result = 1;
         $generate_otp_params = {
             carrier => undef,
@@ -319,6 +590,8 @@ subtest 'Generate a valid OTP' => sub {
         $clear_verify_attempts = undef;
 
         $params->{args}->{carrier} = 'sms';
+
+        @dog_stash = ();
 
         my $res = $c->call_ok('phone_number_challenge', $params)->has_no_system_error->has_no_error->result;
 
@@ -350,6 +623,14 @@ subtest 'Generate a valid OTP' => sub {
         is $increase_attempts,     1,     'attempts increased';
         is $clear_attempts,        undef, 'attempts not cleared';
         is $clear_verify_attempts, 1,     'verify attempts cleared';
+
+        cmp_deeply [@dog_stash],
+            [{
+                'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id', 'carrier:sms',]},
+            },
+            {'pnv.challenge.success' => {tags => ['broker:CR', 'residence:id', 'carrier:sms',]}}
+            ],
+            'Expected dog stash';
     };
 
 };
@@ -365,6 +646,8 @@ subtest 'No carrier is given' => sub {
         }};
 
     subtest 'Invalid Email Code' => sub {
+        @dog_stash = ();
+
         $verified                     = 0;
         $next_attempt                 = 0;
         $increase_attempts            = undef;
@@ -375,6 +658,8 @@ subtest 'No carrier is given' => sub {
     };
 
     subtest 'Already verified' => sub {
+        @dog_stash = ();
+
         $verified = 0;
 
         $verified              = 1;
@@ -389,9 +674,19 @@ subtest 'No carrier is given' => sub {
         is $increase_attempts,     undef, 'attempts increased';
         is $clear_attempts,        undef, 'attempts not cleared';
         is $clear_verify_attempts, undef, 'verify attempts not cleared';
+
+        cmp_deeply [@dog_stash],
+            [{
+                'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id',]},
+            },
+            {'pnv.challenge.already_verified' => {tags => ['broker:CR', 'residence:id',]}}
+            ],
+            'Expected dog stash';
     };
 
     subtest 'Phone number taken' => sub {
+        @dog_stash = ();
+
         $verified = 0;
         $taken    = 1;
 
@@ -401,15 +696,25 @@ subtest 'No carrier is given' => sub {
         $clear_verify_attempts = undef;
 
         $c->call_ok('phone_number_challenge', $params)
-            ->has_no_system_error->has_error->error_code_is('PhoneNumberTaken', 'the account is already verified');
+            ->has_no_system_error->has_error->error_code_is('PhoneNumberTaken', 'the phone number is not available');
 
         is $increase_attempts,     undef, 'attempts increased';
         is $clear_attempts,        undef, 'attempts not cleared';
         is $clear_verify_attempts, undef, 'verify attempts not cleared';
         $taken = undef;
+
+        cmp_deeply [@dog_stash],
+            [{
+                'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id',]},
+            },
+            {'pnv.challenge.phone_number_taken' => {tags => ['broker:CR', 'residence:id',]}}
+            ],
+            'Expected dog stash';
     };
 
     subtest 'No attempts left' => sub {
+        @dog_stash = ();
+
         $verified = 0;
         generate_email_code();
 
@@ -426,9 +731,19 @@ subtest 'No carrier is given' => sub {
         is $increase_attempts,     1,     'attempts increased';
         is $clear_attempts,        undef, 'attempts not cleared';
         is $clear_verify_attempts, undef, 'verify attempts not cleared';
+
+        cmp_deeply [@dog_stash],
+            [{
+                'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id',]},
+            },
+            {'pnv.challenge.no_attempts_left' => {tags => ['broker:CR', 'residence:id',]}}
+            ],
+            'Expected dog stash';
     };
 
     subtest 'Generate a valid OTP' => sub {
+        @dog_stash = ();
+
         my $client_cr = $customer->get_client_object('CR');
 
         generate_email_code();
@@ -470,7 +785,17 @@ subtest 'No carrier is given' => sub {
         is $clear_attempts,        1,     'attempts cleared';
         is $clear_verify_attempts, undef, 'verify attempts not cleared';
 
+        cmp_deeply [@dog_stash],
+            [{
+                'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id',]},
+            },
+            {'pnv.challenge.verify_code_only' => {tags => ['broker:CR', 'residence:id',]}}
+            ],
+            'Expected dog stash';
+
         subtest 'generate a valid OTP twice, first without carrier, second with carrier ' => sub {
+            @dog_stash = ();
+
             $verified = 0;
             generate_email_code();
 
@@ -509,15 +834,25 @@ subtest 'No carrier is given' => sub {
             is $clear_attempts,        1,     'attempts cleared';
             is $clear_verify_attempts, undef, 'verify attempts not cleared';
 
+            cmp_deeply [@dog_stash],
+                [{
+                    'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id',]},
+                },
+                {'pnv.challenge.verify_code_only' => {tags => ['broker:CR', 'residence:id',]}}
+                ],
+                'Expected dog stash';
+
             $params = {
                 token    => $customer->get_client_token('CR'),
                 language => 'EN',
                 args     => {
-                    carrier    => 'whastapp',
+                    carrier    => 'whatsapp',
                     email_code => $email_code,
                 }};
 
             $log->clear();
+
+            @dog_stash = ();
 
             $res = $c->call_ok('phone_number_challenge', $params)->has_no_system_error->has_no_error->result;
 
@@ -533,7 +868,7 @@ subtest 'No carrier is given' => sub {
                 [{
                     category => 'BOM::RPC::v3::PhoneNumberVerification',
                     level    => 'debug',
-                    message  => "Sending OTP to $phone, via whastapp, for user $uid",
+                    message  => "Sending OTP to $phone, via whatsapp, for user $uid",
                 }
                 ],
                 'expected log generated';
@@ -542,10 +877,19 @@ subtest 'No carrier is given' => sub {
             is $clear_attempts,        1, 'attempts cleared';
             is $clear_verify_attempts, 1, 'verify attempts cleared';
 
+            cmp_deeply [@dog_stash],
+                [{
+                    'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]},
+                },
+                {'pnv.challenge.success' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]}}
+                ],
+                'Expected dog stash';
         };
     };
 
     subtest 'generate OTP failed' => sub {
+        @dog_stash = ();
+
         my $client_cr = $customer->get_client_object('CR');
         $generate_otp_result = 0;
         $generate_otp_params = {
@@ -603,6 +947,14 @@ subtest 'No carrier is given' => sub {
         is $increase_attempts,     1,     'attempts increased';
         is $clear_attempts,        undef, 'attempts not cleared';
         is $clear_verify_attempts, undef, 'verify attempts not cleared';
+
+        cmp_deeply [@dog_stash],
+            [{
+                'pnv.challenge.request' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]},
+            },
+            {'pnv.challenge.failed_otp' => {tags => ['broker:CR', 'residence:id', 'carrier:whatsapp',]}}
+            ],
+            'Expected dog stash';
     };
 };
 
@@ -647,5 +999,7 @@ sub generate_email_code {
 
     $params->{args}->{email_code} = $email_code;
 }
+
+$dd_mock->unmock_all;
 
 done_testing();

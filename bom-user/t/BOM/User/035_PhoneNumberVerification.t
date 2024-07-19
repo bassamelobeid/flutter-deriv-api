@@ -196,65 +196,143 @@ subtest 'Next Verify Attempt' => sub {
 };
 
 subtest 'Generate OTP' => sub {
+    my $redis = $pnv->redis;
+    my $count;
+
     my $http = +{
         status  => 200,
         content => '',
     };
 
     my $mock_http_tiny = Test::MockModule->new('HTTP::Tiny');
-    $mock_http_tiny->mock(get => sub { return {status => $http->{status}, content => $http->{content}}; });
+    my $url;
+    $mock_http_tiny->mock(
+        get => sub {
+            (undef, $url) = @_;
+            return {
+                status  => $http->{status},
+                content => $http->{content}};
+        });
 
     $pnv->update(0);
 
     $pnv = BOM::User::PhoneNumberVerification->new($customer->get_user_id(), $customer->get_user_service_context());
 
-    subtest 'success: truthy' => sub {
-        $log->clear();
-        $http->{status}  = 200;
-        $http->{content} = encode_json_utf8({
-            success => 1,
-        });
+    for my $carrier (qw/whatsapp sms/) {
+        subtest $carrier => sub {
+            subtest 'success: truthy' => sub {
+                $count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $count, 0, "Redis counter is at 0";
 
-        ok $pnv->generate_otp('whatsapp', '+5958090934', 'es'), 'Generate OTP succeeded';
-        $log->empty_ok('no generated logs');
-    };
+                $log->clear();
+                $url             = undef;
+                $http->{status}  = 200;
+                $http->{content} = encode_json_utf8({
+                    success => 1,
+                });
 
-    subtest 'success: falsey' => sub {
-        $log->clear();
-        $http->{status}  = 200;
-        $http->{content} = encode_json_utf8({
-            success => 0,
-        });
+                ok $pnv->generate_otp($carrier, '+5958090934', 'es'), 'Generate OTP succeeded';
+                $log->empty_ok('no generated logs');
 
-        ok !$pnv->generate_otp('whatsapp', '+5958090934', 'es'), 'Generate OTP failed';
-        $log->empty_ok('no generated logs');
-    };
+                my $new_count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $new_count, 1, "Redis counter has increased";
 
-    subtest 'success: undef' => sub {
-        $log->clear();
-        $http->{status}  = 200;
-        $http->{content} = encode_json_utf8({});
+                my $ttl = $redis->ttl(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier);
+                ok $ttl > 0, 'Expected some TTL set';
 
-        ok !$pnv->generate_otp('whatsapp', '+5958090934', 'es'), 'Generate OTP failed';
-        $log->empty_ok('no generated logs');
-    };
+                is $url, "http://127.0.0.1:9500/pnv/challenge/$carrier/%2B5958090934/es", 'escaped url';
+            };
 
-    subtest 'undef raw response' => sub {
-        $log->clear();
-        $http->{status}  = 200;
-        $http->{content} = undef;
+            subtest 'success: falsey' => sub {
+                $count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $count, 1, "Redis counter is at 1";
 
-        ok !$pnv->generate_otp('whatsapp', '+5958090934', 'es'), 'Generate OTP failed';
-        $log->empty_ok('no generated logs');
-    };
+                $log->clear();
+                $url             = undef;
+                $http->{status}  = 200;
+                $http->{content} = encode_json_utf8({
+                    success => 0,
+                });
 
-    subtest 'invalid json   ' => sub {
-        $http->{status}  = 200;
-        $http->{content} = "{'success':1}";
+                ok !$pnv->generate_otp($carrier, '+5958090934', 'en'), 'Generate OTP failed';
+                $log->empty_ok('no generated logs');
 
-        ok !$pnv->generate_otp('whatsapp', '+5958090934', 'es'), 'Generate OTP failed';
-        $log->contains_ok(qr/Unable to generate phone number for user/);
-    };
+                my $new_count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $new_count, 1,                                                               "Redis counter is not increased";
+                is $url,       "http://127.0.0.1:9500/pnv/challenge/$carrier/%2B5958090934/en", 'escaped url';
+            };
+
+            subtest 'success: undef' => sub {
+                $count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $count, 1, "Redis counter is at 1";
+
+                $log->clear();
+                $url             = undef;
+                $http->{status}  = 200;
+                $http->{content} = encode_json_utf8({});
+
+                ok !$pnv->generate_otp($carrier, '+5958090934', 'es'), 'Generate OTP failed';
+                $log->empty_ok('no generated logs');
+
+                my $new_count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $new_count, 1,                                                               "Redis counter is not increased";
+                is $url,       "http://127.0.0.1:9500/pnv/challenge/$carrier/%2B5958090934/es", 'escaped url';
+            };
+
+            subtest 'undef raw response' => sub {
+                $count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $count, 1, "Redis counter is at 1";
+
+                $log->clear();
+                $url             = undef;
+                $http->{status}  = 200;
+                $http->{content} = undef;
+
+                ok !$pnv->generate_otp($carrier, '+595 8090934', 'es'), 'Generate OTP failed';
+                $log->empty_ok('no generated logs');
+
+                my $new_count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $new_count, 1,                                                                  "Redis counter is not increased";
+                is $url,       "http://127.0.0.1:9500/pnv/challenge/$carrier/%2B595%208090934/es", 'escaped url';
+            };
+
+            subtest 'invalid json   ' => sub {
+                $count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $count, 1, "Redis counter is at 1";
+
+                $log->clear();
+                $url             = undef;
+                $http->{status}  = 200;
+                $http->{content} = "{'success':1}";
+
+                ok !$pnv->generate_otp($carrier, '+5958090934', 'es'), 'Generate OTP failed';
+                $log->contains_ok(qr/Unable to generate phone number for user/);
+
+                my $new_count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $new_count, 1,                                                               "Redis counter is not increased";
+                is $url,       "http://127.0.0.1:9500/pnv/challenge/$carrier/%2B5958090934/es", 'escaped url';
+            };
+
+            subtest 'success: truthy (again)' => sub {
+                $count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $count, 1, "Redis counter is at 1";
+
+                $log->clear();
+                $url             = undef;
+                $http->{status}  = 200;
+                $http->{content} = encode_json_utf8({
+                    success => 1,
+                });
+
+                ok $pnv->generate_otp($carrier, '+5958090934', 'es'), 'Generate OTP succeeded';
+                $log->empty_ok('no generated logs');
+
+                my $new_count = $redis->get(+BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . $carrier) // 0;
+                is $new_count, 2,                                                               "Redis counter has increased";
+                is $url,       "http://127.0.0.1:9500/pnv/challenge/$carrier/%2B5958090934/es", 'escaped url';
+            };
+        };
+    }
 
     $mock_http_tiny->unmock_all();
 };
@@ -411,13 +489,21 @@ subtest 'Verify the OTP' => sub {
     };
 
     my $mock_http_tiny = Test::MockModule->new('HTTP::Tiny');
-    $mock_http_tiny->mock(get => sub { return {status => $http->{status}, content => $http->{content}}; });
+    my $url;
+    $mock_http_tiny->mock(
+        get => sub {
+            (undef, $url) = @_;
+            return {
+                status  => $http->{status},
+                content => $http->{content}};
+        });
 
     $pnv->update(0);
     $pnv = BOM::User::PhoneNumberVerification->new($customer->get_user_id(), $customer->get_user_service_context());
 
     subtest 'success: truthy' => sub {
         $log->clear();
+        $url             = undef;
         $http->{status}  = 200;
         $http->{content} = encode_json_utf8({
             success => 1,
@@ -425,43 +511,54 @@ subtest 'Verify the OTP' => sub {
 
         ok $pnv->verify_otp('+5958090934', '12345'), 'Verify OTP succeeded';
         $log->empty_ok('no generated logs');
+
+        is $url, "http://127.0.0.1:9500/pnv/verify/%2B5958090934/12345", 'escaped url';
     };
 
     subtest 'success: falsey' => sub {
         $log->clear();
+        $url             = undef;
         $http->{status}  = 200;
         $http->{content} = encode_json_utf8({
             success => 0,
         });
 
-        ok !$pnv->verify_otp('+5958090934', '12345'), 'Verify OTP failed';
+        ok !$pnv->verify_otp('+595 8090934', '12345'), 'Verify OTP failed';
         $log->empty_ok('no generated logs');
+
+        is $url, "http://127.0.0.1:9500/pnv/verify/%2B595%208090934/12345", 'escaped url';
     };
 
     subtest 'success: undef' => sub {
         $log->clear();
+        $url             = undef;
         $http->{status}  = 200;
         $http->{content} = encode_json_utf8({});
 
         ok !$pnv->verify_otp('+5958090934', '12345'), 'Verify OTP failed';
         $log->empty_ok('no generated logs');
+        is $url, "http://127.0.0.1:9500/pnv/verify/%2B5958090934/12345", 'escaped url';
     };
 
     subtest 'undef raw response' => sub {
         $log->clear();
+        $url             = undef;
         $http->{status}  = 200;
         $http->{content} = undef;
 
         ok !$pnv->verify_otp('+5958090934', '12345'), 'Verify OTP failed';
         $log->empty_ok('no generated logs');
+        is $url, "http://127.0.0.1:9500/pnv/verify/%2B5958090934/12345", 'escaped url';
     };
 
     subtest 'invalid json   ' => sub {
         $http->{status}  = 200;
+        $url             = undef;
         $http->{content} = "{'success':1}";
 
         ok !$pnv->verify_otp('+5958090934', '12345'), 'Verify OTP failed';
         $log->contains_ok(qr/Unable to verify phone number for user/);
+        is $url, "http://127.0.0.1:9500/pnv/verify/%2B5958090934/12345", 'escaped url';
     };
 
     $mock_http_tiny->unmock_all();
@@ -544,6 +641,312 @@ subtest 'Clear Phone' => sub {
     is $pnv->clear_phone('++6633423++324324-2342.00'), '6633423324324234200', 'Expected phone after clean up';
     is $pnv->clear_phone('123-123.00'),                '12312300',            'Expected phone after clean up';
     is $pnv->clear_phone('123456'),                    '123456',              'Expected phone after clean up';
+};
+
+subtest 'Suspended carriers' => sub {
+    my $app_config = $pnv->app_config;
+
+    my $tests = [{
+            title  => 'Functional whatsapp',
+            before => sub {
+                $app_config->system->suspend->pnv_whatsapp(0),;
+            },
+            after => sub {
+                $app_config->system->suspend->pnv_whatsapp(0),;
+            },
+            result  => 0,
+            carrier => 'whatsapp',
+        },
+        {
+            title  => 'Suspended whatsapp',
+            before => sub {
+                $app_config->system->suspend->pnv_whatsapp(1),;
+            },
+            after => sub {
+                $app_config->system->suspend->pnv_whatsapp(0),;
+            },
+            result  => 1,
+            carrier => 'whatsapp',
+        },
+        {
+            title  => 'Functional sms',
+            before => sub {
+                $app_config->system->suspend->pnv_sms(0),;
+            },
+            after => sub {
+                $app_config->system->suspend->pnv_sms(0),;
+            },
+            result  => 0,
+            carrier => 'sms',
+        },
+        {
+            title  => 'Suspended sms',
+            before => sub {
+                $app_config->system->suspend->pnv_sms(1),;
+            },
+            after => sub {
+                $app_config->system->suspend->pnv_sms(0),;
+            },
+            result  => 1,
+            carrier => 'sms',
+        },
+        {
+            title  => 'Unknown carrier',
+            before => sub {
+            },
+            after => sub {
+            },
+            result  => 1,
+            carrier => 'telegram',
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($title, $before, $after, $result, $carrier) = @{$test}{qw/title before after result carrier/};
+
+        subtest $title => sub {
+            $before->();
+
+            is $pnv->is_suspended($carrier), $result, "Expected result for $carrier = $result";
+
+            $after->();
+        };
+    }
+};
+
+subtest 'Depleted carriers' => sub {
+    my $redis      = $pnv->redis;
+    my $app_config = $pnv->app_config;
+
+    my $tests = [{
+            title  => 'Functional whatsapp',
+            before => sub {
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp', 0);
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(1),;
+            },
+            after => sub {
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(5000),
+                    $redis->del(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp');
+            },
+            result  => 0,
+            carrier => 'whatsapp',
+        },
+        {
+            title  => 'Depleted whatsapp',
+            before => sub {
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp', 1);
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(1),;
+            },
+            after => sub {
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(5000),
+                    $redis->del(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp');
+            },
+            result  => 1,
+            carrier => 'whatsapp',
+        },
+        {
+            title  => 'Functional sms',
+            before => sub {
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 0);
+                $app_config->system->phone_number_verification->sms_daily_limit(1),;
+            },
+            after => sub {
+                $app_config->system->phone_number_verification->sms_daily_limit(5000),
+                    $redis->del(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms');
+            },
+            result  => 0,
+            carrier => 'sms',
+        },
+        {
+            title  => 'Depleted sms',
+            before => sub {
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 1);
+                $app_config->system->phone_number_verification->sms_daily_limit(1),;
+            },
+            after => sub {
+                $app_config->system->phone_number_verification->sms_daily_limit(5000),
+                    $redis->del(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms');
+            },
+            result  => 1,
+            carrier => 'sms',
+        },
+        {
+            title  => 'Unknown carrier',
+            before => sub {
+            },
+            after => sub {
+            },
+            result  => 1,
+            carrier => 'telegram',
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($title, $before, $after, $result, $carrier) = @{$test}{qw/title before after result carrier/};
+
+        subtest $title => sub {
+            $before->();
+
+            is $pnv->is_depleted($carrier), $result, "Expected result for $carrier = $result";
+
+            $after->();
+        };
+    }
+};
+
+subtest 'Available carriers' => sub {
+    my $redis      = $pnv->redis;
+    my $app_config = $pnv->app_config;
+
+    my $tests = [{
+            title  => 'PNV shutdown as a whole',
+            before => sub {
+                $app_config->system->suspend->phone_number_verification(1);
+            },
+            after => sub {
+                $app_config->system->suspend->phone_number_verification(0);
+            },
+            result => {
+                whatsapp => 0,
+                sms      => 0,
+            },
+        },
+        {
+            title  => 'Functional whatsapp and sms',
+            before => sub {
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp', 0);
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(1);
+                $app_config->system->suspend->pnv_whatsapp(0);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 0);
+                $app_config->system->phone_number_verification->sms_daily_limit(1);
+                $app_config->system->suspend->pnv_sms(0);
+            },
+            after => sub {
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(5000),
+                    $redis->del(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp');
+                $app_config->system->suspend->pnv_whatsapp(0);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 5000);
+                $app_config->system->phone_number_verification->sms_daily_limit(1);
+                $app_config->system->suspend->pnv_sms(0);
+            },
+            result => {
+                whatsapp => 1,
+                sms      => 1,
+            },
+        },
+        {
+            title  => 'Whatsapp is suspended',
+            before => sub {
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp', 0);
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(1);
+                $app_config->system->suspend->pnv_whatsapp(1);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 0);
+                $app_config->system->phone_number_verification->sms_daily_limit(1);
+                $app_config->system->suspend->pnv_sms(0);
+            },
+            after => sub {
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(5000);
+                $redis->del(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp');
+                $app_config->system->suspend->pnv_whatsapp(0);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 5000);
+                $app_config->system->phone_number_verification->sms_daily_limit(1);
+                $app_config->system->suspend->pnv_sms(0);
+            },
+            result => {
+                whatsapp => 0,
+                sms      => 1,
+            },
+        },
+        {
+            title  => 'Whatsapp is depleted',
+            before => sub {
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp', 1);
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(1);
+                $app_config->system->suspend->pnv_whatsapp(0);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 0);
+                $app_config->system->phone_number_verification->sms_daily_limit(1), $app_config->system->suspend->pnv_sms(0);
+            },
+            after => sub {
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(5000);
+                $redis->del(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp');
+                $app_config->system->suspend->pnv_whatsapp(0);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 5000);
+                $app_config->system->phone_number_verification->sms_daily_limit(1);
+                $app_config->system->suspend->pnv_sms(0);
+            },
+            result => {
+                whatsapp => 0,
+                sms      => 1,
+            },
+        },
+        {
+            title  => 'SMS is suspended',
+            before => sub {
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp', 0);
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(1);
+                $app_config->system->suspend->pnv_whatsapp(0);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 0);
+                $app_config->system->phone_number_verification->sms_daily_limit(1), $app_config->system->suspend->pnv_sms(1);
+            },
+            after => sub {
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(5000);
+                $redis->del(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp');
+                $app_config->system->suspend->pnv_whatsapp(0);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 5000);
+                $app_config->system->phone_number_verification->sms_daily_limit(1);
+                $app_config->system->suspend->pnv_sms(0);
+            },
+            result => {
+                whatsapp => 1,
+                sms      => 0,
+            },
+        },
+        {
+            title  => 'SMS is depleted',
+            before => sub {
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp', 0);
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(1);
+                $app_config->system->suspend->pnv_whatsapp(0);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 1);
+                $app_config->system->phone_number_verification->sms_daily_limit(1);
+                $app_config->system->suspend->pnv_sms(0);
+            },
+            after => sub {
+                $app_config->system->phone_number_verification->whatsapp_daily_limit(5000);
+                $redis->del(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'whatsapp');
+                $app_config->system->suspend->pnv_whatsapp(0);
+
+                $redis->set(BOM::User::PhoneNumberVerification::PNV_GLOBAL_LIMIT . 'sms', 5000);
+                $app_config->system->phone_number_verification->sms_daily_limit(1);
+                $app_config->system->suspend->pnv_sms(0);
+            },
+            result => {
+                whatsapp => 1,
+                sms      => 0,
+            },
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($title, $before, $after, $result) = @{$test}{qw/title before after result/};
+
+        subtest $title => sub {
+            $before->();
+
+            cmp_deeply $pnv->carriers_availability(), $result, "Expected result for available carriers";
+
+            $after->();
+        };
+    }
 };
 
 $config_mock->unmock_all;

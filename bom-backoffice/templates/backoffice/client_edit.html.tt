@@ -812,7 +812,19 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     <tr>
         <td class="label">Tel</td>
-        <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" data-lpignore="true" /> Note: this number's intl. code can be: <b>[% client_phone_country %]</b></td>
+        <td>: 
+            <span class="[% IF phone_number_verified %]pnv-verified[% END %]">
+                <input [% IF phone_number_verified %]disabled="disabled"[% END %] type="text" name="phone" value="[% client.phone %]" size="20" data-lpignore="true" /> Note: this number's intl. code can be: <b>[% client_phone_country %].</b>
+
+                [% IF phone_number_verified %]
+                    <i>This phone number is <b>verified</b></i>
+                    <a href="[% request.url_for( 'backoffice/f_clientloginid_edit.cgi', {loginID => client.loginid, removePNV => 1 }) %]"
+                        onclick="return confirm('This will remove the phone number verified status from [% client.loginid %] and its siblings, do you want to continue?');">
+                        [REMOVE]
+                    </a></span> 
+                [% END %]
+            </span></p>
+        </td>
     </tr>
     <tr>
         <td class="bg-lightgrey" colspan="2">#Secrets</td>

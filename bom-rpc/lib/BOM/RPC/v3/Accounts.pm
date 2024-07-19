@@ -2200,9 +2200,13 @@ rpc get_settings => sub {
         $settings->{employment_status} = $settings->{financial_assessment}->{employment_status};
     }
 
-    my $pnv = BOM::User::PhoneNumberVerification->new($params->{user_id}, $params->{user_service_context});
+    my $pnv      = BOM::User::PhoneNumberVerification->new($params->{user_id}, $params->{user_service_context});
+    my $carriers = +{};
+    $carriers = $pnv->carriers_availability() unless $settings->{phone_number_verified};
+
     $settings->{phone_number_verification} = {
         verified => $settings->{phone_number_verified},
+        carriers => [grep { $carriers->{$_} } keys $carriers->%*],
         defined $pnv->next_attempt        ? (next_attempt        => $pnv->next_attempt)        : (),
         defined $pnv->next_email_attempt  ? (next_email_attempt  => $pnv->next_email_attempt)  : (),
         defined $pnv->next_verify_attempt ? (next_verify_attempt => $pnv->next_verify_attempt) : (),

@@ -202,8 +202,7 @@ subtest 'get settings' => sub {
         token => $customer_Y->get_client_token('CR0'),
     };
     my $result = $c->tcall($method, $params);
-    note explain $result;
-    is_deeply(
+    cmp_deeply(
         $result,
         {
             'country'                        => 'Indonesia',
@@ -240,12 +239,196 @@ subtest 'get settings' => sub {
             'trading_hub'                    => 0,
             'dxtrade_user_exception'         => 0,
             'phone_number_verification'      => {
+                'carriers'            => bag(qw/whatsapp sms/),
                 'verified'            => 0,
                 'next_attempt'        => $time,
                 'next_email_attempt'  => $time,
                 'next_verify_attempt' => $time,
             },
         });
+
+    subtest 'No carriers available' => sub {
+        my $carriers = +{};
+
+        my $pnv_mock = Test::MockModule->new('BOM::User::PhoneNumberVerification');
+        $pnv_mock->mock(
+            'carriers_availability',
+            sub {
+                return $carriers;
+            });
+
+        my $result = $c->tcall($method, $params);
+        cmp_deeply(
+            $result,
+            {
+                'country'                        => 'Indonesia',
+                'residence'                      => 'Indonesia',
+                'salutation'                     => 'MR',
+                'is_authenticated_payment_agent' => 0,
+                'country_code'                   => 'id',
+                'date_of_birth'                  => '267408000',
+                'address_state'                  => 'LA',
+                'address_postcode'               => '232323',
+                'phone'                          => '+15417543010',
+                'last_name'                      => 'pItT',
+                'email'                          => $customer_Y->get_email(),
+                'address_line_2'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+                'address_city'                   => 'Beverly Hills',
+                'address_line_1'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+                'first_name'                     => 'bRaD',
+                'email_consent'                  => '0',
+                'allow_copiers'                  => '0',
+                'client_tnc_status'              => '',
+                'place_of_birth'                 => undef,
+                'tax_residence'                  => undef,
+                'tax_identification_number'      => undef,
+                'account_opening_reason'         => undef,
+                'request_professional_status'    => 0,
+                'citizen'                        => 'at',
+                'user_hash'                      => hmac_sha256_hex($customer_Y->get_email(), BOM::Config::third_party()->{elevio}->{account_secret}),
+                'has_secret_answer'              => 1,
+                'non_pep_declaration'            => 1,
+                'fatca_declaration'              => 1,
+                'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
+                'preferred_language'             => 'FA',
+                'feature_flag'                   => {wallet => 0},
+                'trading_hub'                    => 0,
+                'dxtrade_user_exception'         => 0,
+                'phone_number_verification'      => {
+                    'carriers'            => [],
+                    'verified'            => 0,
+                    'next_attempt'        => $time,
+                    'next_email_attempt'  => $time,
+                    'next_verify_attempt' => $time,
+                },
+            });
+
+        $pnv_mock->unmock_all;
+    };
+
+    subtest 'Whatsapp is not available' => sub {
+        my $carriers = +{
+            sms      => 1,
+            whatsapp => 0,
+        };
+
+        my $pnv_mock = Test::MockModule->new('BOM::User::PhoneNumberVerification');
+        $pnv_mock->mock(
+            'carriers_availability',
+            sub {
+                return $carriers;
+            });
+
+        my $result = $c->tcall($method, $params);
+        cmp_deeply(
+            $result,
+            {
+                'country'                        => 'Indonesia',
+                'residence'                      => 'Indonesia',
+                'salutation'                     => 'MR',
+                'is_authenticated_payment_agent' => 0,
+                'country_code'                   => 'id',
+                'date_of_birth'                  => '267408000',
+                'address_state'                  => 'LA',
+                'address_postcode'               => '232323',
+                'phone'                          => '+15417543010',
+                'last_name'                      => 'pItT',
+                'email'                          => $customer_Y->get_email(),
+                'address_line_2'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+                'address_city'                   => 'Beverly Hills',
+                'address_line_1'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+                'first_name'                     => 'bRaD',
+                'email_consent'                  => '0',
+                'allow_copiers'                  => '0',
+                'client_tnc_status'              => '',
+                'place_of_birth'                 => undef,
+                'tax_residence'                  => undef,
+                'tax_identification_number'      => undef,
+                'account_opening_reason'         => undef,
+                'request_professional_status'    => 0,
+                'citizen'                        => 'at',
+                'user_hash'                      => hmac_sha256_hex($customer_Y->get_email(), BOM::Config::third_party()->{elevio}->{account_secret}),
+                'has_secret_answer'              => 1,
+                'non_pep_declaration'            => 1,
+                'fatca_declaration'              => 1,
+                'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
+                'preferred_language'             => 'FA',
+                'feature_flag'                   => {wallet => 0},
+                'trading_hub'                    => 0,
+                'dxtrade_user_exception'         => 0,
+                'phone_number_verification'      => {
+                    'carriers'            => [qw/sms/],
+                    'verified'            => 0,
+                    'next_attempt'        => $time,
+                    'next_email_attempt'  => $time,
+                    'next_verify_attempt' => $time,
+                },
+            });
+
+        $pnv_mock->unmock_all;
+    };
+
+    subtest 'SMS is not available' => sub {
+        my $carriers = +{
+            sms      => 0,
+            whatsapp => 1,
+        };
+
+        my $pnv_mock = Test::MockModule->new('BOM::User::PhoneNumberVerification');
+        $pnv_mock->mock(
+            'carriers_availability',
+            sub {
+                return $carriers;
+            });
+
+        my $result = $c->tcall($method, $params);
+        cmp_deeply(
+            $result,
+            {
+                'country'                        => 'Indonesia',
+                'residence'                      => 'Indonesia',
+                'salutation'                     => 'MR',
+                'is_authenticated_payment_agent' => 0,
+                'country_code'                   => 'id',
+                'date_of_birth'                  => '267408000',
+                'address_state'                  => 'LA',
+                'address_postcode'               => '232323',
+                'phone'                          => '+15417543010',
+                'last_name'                      => 'pItT',
+                'email'                          => $customer_Y->get_email(),
+                'address_line_2'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+                'address_city'                   => 'Beverly Hills',
+                'address_line_1'                 => 'Ronald-Street ()lanes B/O12, park’s view app#1288 ; german',
+                'first_name'                     => 'bRaD',
+                'email_consent'                  => '0',
+                'allow_copiers'                  => '0',
+                'client_tnc_status'              => '',
+                'place_of_birth'                 => undef,
+                'tax_residence'                  => undef,
+                'tax_identification_number'      => undef,
+                'account_opening_reason'         => undef,
+                'request_professional_status'    => 0,
+                'citizen'                        => 'at',
+                'user_hash'                      => hmac_sha256_hex($customer_Y->get_email(), BOM::Config::third_party()->{elevio}->{account_secret}),
+                'has_secret_answer'              => 1,
+                'non_pep_declaration'            => 1,
+                'fatca_declaration'              => 1,
+                'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
+                'preferred_language'             => 'FA',
+                'feature_flag'                   => {wallet => 0},
+                'trading_hub'                    => 0,
+                'dxtrade_user_exception'         => 0,
+                'phone_number_verification'      => {
+                    'carriers'            => [qw/whatsapp/],
+                    'verified'            => 0,
+                    'next_attempt'        => $time,
+                    'next_email_attempt'  => $time,
+                    'next_verify_attempt' => $time,
+                },
+            });
+
+        $pnv_mock->unmock_all;
+    };
 
     subtest 'PNV verified' => sub {
         my $response = BOM::Service::user(
@@ -257,7 +440,7 @@ subtest 'get settings' => sub {
 
         $result = $c->tcall($method, $params);
         note explain $result;
-        is_deeply(
+        cmp_deeply(
             $result,
             {
                 'country'                        => 'Indonesia',
@@ -294,6 +477,7 @@ subtest 'get settings' => sub {
                 'trading_hub'                    => 0,
                 'dxtrade_user_exception'         => 0,
                 'phone_number_verification'      => {
+                    'carriers' => [],
                     'verified' => 1,
                 },
             });
@@ -333,7 +517,7 @@ subtest 'get settings' => sub {
     is $response->{status}, 'ok', 'update preferred_language ok';
 
     $params->{token} = $customer_Q->get_client_token('VRTC');
-    is_deeply(
+    cmp_deeply(
         $c->tcall($method, $params),
         {
             'country'                        => 'Indonesia',
@@ -370,6 +554,7 @@ subtest 'get settings' => sub {
             'trading_hub'                    => 0,
             'dxtrade_user_exception'         => 0,
             'phone_number_verification'      => {
+                'carriers'            => bag(qw/whatsapp sms/),
                 'verified'            => 0,
                 'next_attempt'        => $time,
                 'next_email_attempt'  => $time,
@@ -381,7 +566,7 @@ subtest 'get settings' => sub {
 
     $params->{token} = $customer_X->get_client_token('VRTC');
     $result = $c->tcall($method, $params);
-    is_deeply(
+    cmp_deeply(
         $result,
         {
             'country'                        => 'Indonesia',
@@ -420,6 +605,7 @@ subtest 'get settings' => sub {
             'financial_assessment'           => {'employment_status' => 'Employed'},
             'fatca_declaration'              => 1,
             'phone_number_verification'      => {
+                'carriers'            => bag(qw/whatsapp sms/),
                 'verified'            => 0,
                 'next_attempt'        => $time,
                 'next_email_attempt'  => $time,
@@ -476,13 +662,14 @@ subtest 'get settings' => sub {
         'trading_hub'                    => 0,
         'dxtrade_user_exception'         => 0,
         'phone_number_verification'      => {
+            'carriers'            => bag(qw/whatsapp sms/),
             'verified'            => 0,
             'next_attempt'        => $time,
             'next_email_attempt'  => $time,
             'next_verify_attempt' => $time,
         },
     };
-    is_deeply($result, $expected, 'return 1 for authenticated payment agent');
+    cmp_deeply($result, $expected, 'return 1 for authenticated payment agent');
 
     $result   = $c->tcall($method, $params);
     $expected = {
@@ -520,19 +707,20 @@ subtest 'get settings' => sub {
         'trading_hub'                    => 0,
         'dxtrade_user_exception'         => 0,
         'phone_number_verification'      => {
+            'carriers'            => bag(qw/whatsapp sms/),
             'verified'            => 0,
             'next_attempt'        => $time,
             'next_email_attempt'  => $time,
             'next_verify_attempt' => $time,
         },
     };
-    is_deeply($result, $expected, 'return 1 for code of conduct approval');
+    cmp_deeply($result, $expected, 'return 1 for code of conduct approval');
 
     $poi_status = 'verified';
     $result     = $c->tcall($method, $params);
     $expected->{immutable_fields} =
         ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
-    is_deeply($result, $expected, 'immutable fields changed after authentication');
+    cmp_deeply($result, $expected, 'immutable fields changed after authentication');
 
     # poi name mismatch
     $poi_status        = 'expired';
@@ -547,7 +735,7 @@ subtest 'get settings' => sub {
     $result            = $c->tcall($method, $params);
     $expected->{immutable_fields} =
         ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
-    is_deeply($result, $expected, 'first name and last name not allowed to change while already age verified');
+    cmp_deeply($result, $expected, 'first name and last name not allowed to change while already age verified');
 
     # poi dob mismatch
     $poi_status        = 'expired';
@@ -564,7 +752,7 @@ subtest 'get settings' => sub {
     $result            = $c->tcall($method, $params);
     $expected->{immutable_fields} =
         ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
-    is_deeply($result, $expected, 'dob not allowed to change while already age verified');
+    cmp_deeply($result, $expected, 'dob not allowed to change while already age verified');
 
     # personal details locked
     $poi_status              = 'expired';
@@ -574,14 +762,14 @@ subtest 'get settings' => sub {
     $result                  = $c->tcall($method, $params);
 
     $expected->{immutable_fields} = ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'secret_answer', 'secret_question'];
-    is_deeply($result, $expected, 'first and last name forbidden once again due to personal details locked');
+    cmp_deeply($result, $expected, 'first and last name forbidden once again due to personal details locked');
 
     $poi_status                   = 'none';
     $poi_name_mismatch            = 0;
     $personal_details_locked      = 0;
     $result                       = $c->tcall($method, $params);
     $expected->{immutable_fields} = ['residence', 'secret_answer', 'secret_question'];
-    is_deeply($result, $expected, 'immutable fields changed back to pre-authentication list');
+    cmp_deeply($result, $expected, 'immutable fields changed back to pre-authentication list');
 
     $mock_status->unmock_all;
 };
@@ -1105,7 +1293,7 @@ subtest 'set settings' => sub {
     delete $emitted->{profile_change}->{properties}->{updated_fields}->{address_city};
     delete $emitted->{profile_change}->{properties}->{updated_fields}->{address_line_2};
     delete $emitted->{profile_change}->{properties}->{updated_fields}->{address_state};
-    is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
+    cmp_deeply $emitted->{profile_change}->{properties}->{updated_fields},
         {
         'address_line_1' => 'address line 1',
         },
@@ -1136,7 +1324,7 @@ subtest 'set settings' => sub {
     is($is_proff_status_event_triggered, 1, 'The client is fully authenicated. Hence the professional_status_requested event has triggered');
     $mocked_client->unmock('fully_authenticated');
 
-    is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
+    cmp_deeply $emitted->{profile_change}->{properties}->{updated_fields},
         {request_professional_status => 0},
         "updated fields are correctly sent to track event";
 
@@ -1164,7 +1352,7 @@ subtest 'set settings' => sub {
     delete $emitted->{poi_check_rules};
     cmp_deeply($c->tcall($method, $params), {status => 1}, 'update successfully');
     ok($emitted->{profile_change}, 'profile_change emit exist');
-    is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
+    cmp_deeply $emitted->{profile_change}->{properties}->{updated_fields},
         {
         'place_of_birth'   => 'ir',
         'address_postcode' => ''
@@ -1185,7 +1373,7 @@ subtest 'set settings' => sub {
     is $emitted->{check_name_changes_after_first_deposit}, undef, 'no name change check yet';
     $params->{args} = {first_name => 'bob'};
     $c->tcall($method, $params);
-    is_deeply($emitted->{check_name_changes_after_first_deposit}, {loginid => $test_client_Y_cr_1->loginid}, 'name change check event emitted');
+    cmp_deeply($emitted->{check_name_changes_after_first_deposit}, {loginid => $test_client_Y_cr_1->loginid}, 'name change check event emitted');
 
     my $poi_fields = {
         first_name    => 'Maria',
@@ -1271,7 +1459,7 @@ subtest 'set_settings on virtual account should not change real account settings
     is($result->{email_consent}, $params->{args}{email_consent}, "CR account email_consent setting changed successfully");
 
     my $expected_result = {$get_settings_cr->%*, email_consent => $params->{args}{email_consent}};
-    is_deeply($result, $expected_result, 'CR account settings remain unchanged');
+    cmp_deeply($result, $expected_result, 'CR account settings remain unchanged');
 
     # Virtual account should not get beef with onfido
     ok !$emitted->{sync_onfido_details};
@@ -1761,6 +1949,8 @@ subtest 'get settings from real with a dup account' => sub {
     $dup_client->status->_build_all;
 
     my $dupless_result = $c->tcall('get_settings', {$params->%*, token => $dup_token});
+
+    $dupless_result->{phone_number_verification}->{carriers} = bag($dupless_result->{phone_number_verification}->{carriers}->@*);
 
     cmp_bag $dupless_result->{immutable_fields},
         [map { exists $dupless_result->{$_} || /^secret_/ ? $_ : () } $dupless_result->{immutable_fields}->@*],

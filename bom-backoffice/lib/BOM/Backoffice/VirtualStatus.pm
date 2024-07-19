@@ -15,6 +15,8 @@ Note: nothing to do with virtual accounts, think about artificially injected sta
 
 use BOM::User::Client;
 use Date::Utility;
+use BOM::User::PhoneNumberVerification;
+use UUID::Tiny;
 
 =head2 get
 
@@ -40,9 +42,46 @@ sub get {
     my %list = (
         'MT5 Withdrawal Locked' => _mt5_withdrawal_locked($client),
         'Withdrawal Locked'     => _withdrawal_locked($client),
-        'Cashier Locked'        => _cashier_locked($client));
+        'Cashier Locked'        => _cashier_locked($client),
+        'Phone Number Verified' => _phone_number_verified($client),
+    );
 
     return map { $list{$_} ? ($_ => $list{$_}) : () } keys %list;
+}
+
+=head2 _phone_number_verified
+
+Computes the virtual C<phone_number_verified> status.
+
+It takes the following arguments:
+
+=over 4
+
+=item C<$client> - the client being computed.
+
+=back 
+
+Returns a virtual C<phone_number_verified> status hashref or C<undef> if there is no need to add it.
+
+=cut
+
+sub _phone_number_verified {
+    my ($client) = @_;
+
+    my $pnv = BOM::User::PhoneNumberVerification->new(
+        $client->binary_user_id,
+        +{
+            correlation_id => UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4),
+            auth_token     => "Unused but required to be present",
+            environment    => "bom-backoffice",
+        });
+
+    return undef unless $pnv->verified;
+
+    return _build_fake_status(
+        'phone_number_verified',
+        'OTP challenge pass' => 1,
+    );
 }
 
 =head2 _cashier_locked

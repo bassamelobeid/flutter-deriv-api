@@ -575,7 +575,7 @@ subtest $rule_name => sub {
     $args->{phone} = '+44900';
 
     lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Does not fail if number is not taken';
-
+    $pnv_mock->unmock_all();
 };
 
 done_testing;
