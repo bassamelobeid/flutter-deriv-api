@@ -1,0 +1,5 @@
+FROM busybox:1.36.1
+COPY ./ /src
+WORKDIR /src
+USER nobody
+CMD ["cp", "-r", ".", "/home/git/regentmarkets"]
