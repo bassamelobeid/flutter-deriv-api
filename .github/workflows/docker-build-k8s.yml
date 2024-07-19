@@ -21,7 +21,7 @@ jobs:
       - uses: regentmarkets/ci-actions-docker-build/build_and_test@ad694a43d2c1a3a498c25693ef452004c789525c
         with:
           ssh_key: "${{ secrets.READ_GITHUB_SSH_KEY }}"
-          submodules: 'recursive'
+          submodules: false
           project_type: "skip"
           context: .
           dockerfile: ${{ env.DOCKERFILE_PATH }}
