@@ -8,6 +8,7 @@ use Test::MockObject;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Event::RedisConnection;
 use BOM::Platform::Context qw(request);
 
 subtest 'Event emmission' => sub {
@@ -29,8 +30,8 @@ subtest 'Event emmission' => sub {
         lpush => sub { shift; push @queue_data, \@_ },
     );
 
-    my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
-    $mock_emitter->redefine(_write_connection => sub { return $mock_queue });
+    my $mock_redis = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_redis->redefine(_write_connection => sub { return $mock_queue });
 
     my $context = {
         brand_name => 'binary',
@@ -89,7 +90,7 @@ subtest 'Event emmission' => sub {
             'Mertic args are correct.';
     }
 
-    $mock_emitter->unmock_all;
+    $mock_redis->unmock_all;
     $mock_datadog->unmock_all;
 };
 subtest 'Event emmission with custom event name' => sub {
@@ -111,8 +112,8 @@ subtest 'Event emmission with custom event name' => sub {
         lpush => sub { shift; push @queue_data, \@_ },
     );
 
-    my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
-    $mock_emitter->redefine(_write_connection => sub { return $mock_queue });
+    my $mock_redis = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_redis->redefine(_write_connection => sub { return $mock_queue });
 
     my $context = {
         brand_name => 'binary',
@@ -173,7 +174,7 @@ subtest 'Event emmission with custom event name' => sub {
             'Mertic args are correct.';
     }
 
-    $mock_emitter->unmock_all;
+    $mock_redis->unmock_all;
     $mock_datadog->unmock_all;
 };
 
@@ -196,8 +197,8 @@ subtest 'Event emmission when custom event name in empty' => sub {
         lpush => sub { shift; push @queue_data, \@_ },
     );
 
-    my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
-    $mock_emitter->redefine(_write_connection => sub { return $mock_queue });
+    my $mock_redis = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_redis->redefine(_write_connection => sub { return $mock_queue });
 
     my $context = {
         brand_name => 'binary',
@@ -257,7 +258,7 @@ subtest 'Event emmission when custom event name in empty' => sub {
             'Mertic args are correct.';
     }
 
-    $mock_emitter->unmock_all;
+    $mock_redis->unmock_all;
     $mock_datadog->unmock_all;
 };
 

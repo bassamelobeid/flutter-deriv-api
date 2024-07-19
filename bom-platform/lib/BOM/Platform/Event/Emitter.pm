@@ -11,6 +11,7 @@ use Log::Any                   qw($log);
 use RedisDB;
 use Syntax::Keyword::Try;
 use BOM::Config;
+use BOM::Platform::Event::RedisConnection qw(_write_connection _read_connection);
 
 use BOM::Platform::Context qw(request);
 use Log::Any               qw($log);
@@ -174,36 +175,6 @@ sub get {
     }
 
     return $decoded_data;
-}
-
-sub _write_connection {
-    if ($connections->{write}) {
-        try {
-            $connections->{write}->ping();
-        } catch {
-            $connections->{write} = undef;
-        }
-    }
-
-    return _get_connection_by_type('write');
-}
-
-sub _read_connection {
-    return _get_connection_by_type('read');
-}
-
-sub _get_connection_by_type {
-    my $type = shift;
-
-    my $config = BOM::Config::redis_events_config();
-
-    $connections->{$type} //= RedisDB->new(
-        timeout => TIMEOUT,
-        host    => $config->{$type}->{host},
-        port    => $config->{$type}->{port},
-        ($config->{$type}->{password} ? (password => $config->{$type}->{password}) : ()));
-
-    return $connections->{$type};
 }
 
 =head2 _stream_name
