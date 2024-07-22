@@ -64,6 +64,7 @@ my %event_stream_mapping = (
     mt5_inactive_account_closed         => 'BULK_EVENTS_STREAM',
     mt5_inactive_notification           => 'BULK_EVENTS_STREAM',
     derivx_account_deactivated          => 'BULK_EVENTS_STREAM',
+    batch_payment                       => 'BULK_EVENTS_STREAM',
     affiliate_loginids_sync             => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
     derivez_inactive_account_closed     => 'BULK_EVENTS_STREAM',
     derivez_inactive_notification       => 'BULK_EVENTS_STREAM',

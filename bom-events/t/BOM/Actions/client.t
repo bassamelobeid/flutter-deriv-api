@@ -10,6 +10,8 @@ use Test::Fatal;
 use Test::Deep;
 use Guard;
 use Log::Any::Test;
+use Scalar::Util                               qw(looks_like_number);
+use Format::Util::Numbers                      qw(financialrounding formatnumber);
 use Log::Any                                   qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
@@ -9384,5 +9386,111 @@ sub reset_onfido_check {
                 undef, $check->{id}, $check->{status}, $check->{result});
         });
 }
+
+subtest "batch payments event" => sub {
+
+    my $email = 'dummy@binary.com';
+    my $user  = BOM::User->create(
+        email    => $email,
+        password => '1234',
+    );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $user->add_client($client);
+
+    my @emitted_events;
+    my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mocked_emitter->mock(emit => sub { push @emitted_events, {$_[0] => $_[1]}; });
+
+    my $amount       = 10000.00;
+    my $debit_amount = 50.00;
+    my $currency     = 'USD';
+    $amount = formatnumber('price', $currency, $amount) if looks_like_number($amount);
+    my ($payment_processor, $trace_id, $transaction_id, $transaction_type, $payment_method);
+    $client->set_default_account($currency);
+
+    my $args = {
+        event_name => 'batch_payment',
+        properties => {
+            csv_lines => [
+                      $client->loginid
+                    . ',credit,affiliate_reward,'
+                    . $currency . ','
+                    . $amount
+                    . ',Payment from Deriv Investments (Europe) Limited Mar 2024\n',
+            ],
+            format          => 'generic',
+            skip_validation => 0,
+            notify_client   => 1,
+            payment_limits  => 1000000
+        }};
+
+    subtest 'successful transaction - credit' => sub {
+
+        my $result      = BOM::Event::Actions::Client::batch_payment($args)->get;
+        my $email_event = $emitted_events[0];
+
+        ok(exists $email_event->{send_email}, 'correct email event emitted');
+
+        is($email_event->{send_email}->{message}->@*, $args->{properties}->{csv_lines}->@*, 'correct message in email event');
+        my $balance = $client->default_account->balance;
+        is($balance, $amount, 'correct amount credited to account');
+
+        @emitted_events = ();
+    };
+    subtest 'successful transaction - debit' => sub {
+        $args->{properties}->{csv_lines} =
+            [     $client->loginid
+                . ',debit,affiliate_reward,'
+                . $currency . ','
+                . $debit_amount
+                . ',Payment from Deriv Investments (Europe) Limited Mar 2024\n',
+            ];
+        my $result      = BOM::Event::Actions::Client::batch_payment($args)->get;
+        my $email_event = $emitted_events[0];
+
+        ok(exists $email_event->{send_email}, 'correct email event emitted');
+        is($email_event->{send_email}->{message}->@*, $args->{properties}->{csv_lines}->@*, 'correct message in email event');
+        my $balance = formatnumber('price', $currency, $client->default_account->balance) if looks_like_number($client->default_account->balance);
+        is($balance, sprintf('%.2f', $amount - $debit_amount), 'correct amount debited from account');
+
+        @emitted_events = ();
+    };
+    subtest 'failed transaction (params missing, testing failure email)' => sub {
+        my $loginid  = $client->loginid;
+        my $currency = 'USD';
+        $args->{properties}->{csv_lines} =
+            [$loginid . ',debit,affiliate_reward,' . ',' . $debit_amount . ',Payment from Deriv Investments (Europe) Limited Mar 2024\n',];
+
+        my $result      = BOM::Event::Actions::Client::batch_payment($args)->get;
+        my $email_event = $emitted_events[0];
+
+        ok(exists $email_event->{send_email}, 'correct email event emitted');
+
+        my $subject = $email_event->{send_email}->{subject};
+        like($subject, qr/.*Failures/s, 'Email subject contains the expected error');
+
+        my $balance = formatnumber('price', $currency, $client->default_account->balance) if looks_like_number($client->default_account->balance);
+
+        is($balance, sprintf('%.2f', $amount - $debit_amount), 'correct account balance (no change)');
+
+        undef @emitted_events;
+    };
+    subtest 'doughflow credit' => sub {
+        $args->{properties}->{csv_lines} =
+            [$client->loginid . ',credit,123,DCash1,NETeller,' . $currency . ',' . $amount . ',123444\n'];
+        $args->{properties}->{format}        = 'doughflow';
+        $args->{properties}->{notify_client} = 1;
+
+        my $result      = BOM::Event::Actions::Client::batch_payment($args)->get;
+        my $email_event = $emitted_events[0];
+
+        ok(exists $email_event->{payment_credit_deposit}, 'correct email event emitted');
+        my $balance = formatnumber('price', $currency, $client->default_account->balance) if looks_like_number($client->default_account->balance);
+        is($balance, sprintf('%.2f', $amount * 2 - $debit_amount), 'correct amount credited to account');
+
+        undef @emitted_events;
+    };
+
+};
 
 done_testing();

@@ -17,12 +17,14 @@ no indirect;
 
 use Brands;
 use DataDog::DogStatsd::Helper;
+use Data::Dumper;
 use Date::Utility;
 use Digest::MD5;
 use Encode                           qw(decode_utf8 encode_utf8);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use File::Temp;
 use Format::Util::Numbers qw(financialrounding formatnumber);
+use Scalar::Util          qw(looks_like_number);
 use Future::AsyncAwait;
 use Future::Utils qw(fmap0);
 use IO::Async::Loop;
@@ -82,6 +84,7 @@ use BOM::Event::Actions::DynamicWorks;
 use Email::Stuffer;
 use Business::Config;
 use Business::Config::LandingCompany::Registry;
+use ExchangeRates::CurrencyConverter qw(in_usd);
 
 # For smartystreets datadog stats_timing
 $Future::TIMES = 1;
@@ -3392,6 +3395,188 @@ sub qualifying_payment_check {
     }
 
     return undef;
+}
+
+=head2 batch_payment
+
+Event to handle batch payment for credits and deposits from Backoffice
+
+=cut
+
+async sub batch_payment {
+    my $args            = shift;
+    my $properties      = $args->{properties};
+    my $csv_lines       = $properties->{csv_lines};
+    my $brand           = request()->brand;
+    my $format          = $properties->{format};
+    my $staff           = $properties->{staff};
+    my $skip_validation = $properties->{skip_validation};
+    my $notify_client   = $properties->{notify_client};
+    my %client_to_be_processed;
+
+    my @payment_failures;
+    foreach my $line (@$csv_lines) {
+        chomp $line;
+        $line =~ s/"//g;
+        my (@row_values) = split ',', $line;
+
+        my (
+            $login_id, $action, $payment_type, $payment_processor, $payment_method, $trace_id,
+            $currency, $amount, $remark,       $transaction_id,    $cols_expected,  $transaction_type
+        );
+
+        if ($format eq 'doughflow') {
+            ($login_id, $action, $trace_id, $payment_processor, $payment_method, $currency, $amount, $transaction_id) = @row_values;
+            $payment_type = 'external_cashier';
+            if (($action // '') eq 'credit') {
+                $cols_expected = 8;
+            } else {
+                $cols_expected = 7;
+            }
+        } else {
+            ($login_id, $action, $payment_type, $currency, $amount, $remark) = @row_values;
+            $cols_expected = 6;
+        }
+
+        my ($client, $signed_amount);
+        try {
+            my $curr_regex = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
+            $amount        = formatnumber('price', $currency, $amount) if looks_like_number($amount);
+            $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
+
+            die "Found " . scalar(@row_values) . " fields, needed $cols_expected for $format payments\n" unless scalar(@row_values) == $cols_expected;
+            die "Invalid transaction type: $action\n"                 if $action !~ /^(debit|credit|reversal)$/;
+            die "Invalid $amount: $amount\n"                          if $amount !~ $curr_regex or $amount == 0;
+            die "Statement comment cannot be empty for this format\n" if $format ne 'doughflow' && !$remark;
+
+            $client = BOM::User::Client->new({loginid => $login_id}) or die "Invalid loginid: $login_id\n";
+            die "Currency $currency does not match client $login_id currency of " . $client->account->currency_code . "\n"
+                if $client->account->currency_code ne $currency;
+            die "Amount $currency $amount exceeds the payment limit of USD " . $properties->{payment_limits} . " for user $staff\n"
+                if in_usd($amount, $currency) > $properties->{payment_limits};
+
+            if ($format eq 'doughflow') {
+                if ($action eq 'credit') {
+                    die "Transaction id is mandatory for doughflow credit\n" if ($transaction_id // '') !~ '\w+';
+                    die "Payment processor is mandatory for doughflow credit\n" unless $payment_processor;
+                    $transaction_type = 'deposit';
+                } else {
+                    die "Payment method is mandatory for doughflow debit and reversal\n" unless $payment_method;
+                    $transaction_type = 'withdrawal'          if $action eq 'debit';
+                    $transaction_type = 'withdrawal_reversal' if $action eq 'reversal';
+                }
+                $remark = "DoughFlow $transaction_type trace_id=$trace_id created_by=INTERNET payment_method=$payment_method";
+                $remark .= " payment_processor=$payment_processor";
+                $remark .= " transaction_id=$transaction_id";
+            }
+
+            unless ($skip_validation) {
+                $client->validate_payment(
+                    currency    => $currency,
+                    amount      => $signed_amount,
+                    rule_engine => BOM::Rules::Engine->new(client => $client));
+            }
+            if ($payment_type ne 'test_account') {
+                my $payment_mapper = BOM::Database::DataMapper::Payment->new({
+                    client_loginid => $login_id,
+                    currency_code  => $currency,
+                });
+
+                chomp($remark);
+                if (
+                    my $duplicate_record = $payment_mapper->get_transaction_id_of_account_by_comment({
+                            amount  => $signed_amount,
+                            comment => $remark,
+                        }))
+                {
+                    die "Same transaction found in client account. Check [transaction id: $duplicate_record]\n";
+                }
+            }
+            my $trx;
+            if ($payment_type eq 'mt5_adjustment') {
+                $trx = $client->payment_mt5_transfer(
+                    currency     => $currency,
+                    amount       => $signed_amount,
+                    payment_type => 'mt5_transfer',
+                    remark       => $remark,
+                    staff        => $staff,
+                );
+            } else {
+                $trx = $client->smart_payment(
+                    currency          => $currency,
+                    amount            => $signed_amount,
+                    payment_type      => $payment_type,
+                    remark            => $remark,
+                    staff             => $staff,
+                    payment_processor => $payment_processor,
+                    payment_method    => $payment_method,
+                    transaction_type  => $transaction_type,
+                    trace_id          => $trace_id,
+                    transaction_id    => $transaction_id,
+                    ($skip_validation ? () : (rule_engine => BOM::Rules::Engine->new(client => $client))),
+                );
+            }
+
+            if ($format eq 'doughflow' and $notify_client) {
+                my $action_resolved = uc $action;
+                $action_resolved = 'WITHDRAWAL_REVERSAL' if $action_resolved eq 'REVERSAL';
+                my %event_name = (
+                    'DEBIT'               => 'payment_debit_withdrawal',
+                    'CREDIT'              => 'payment_credit_deposit',
+                    'WITHDRAWAL_REVERSAL' => 'payment_withdrawal_reversal_event',
+                    'DEPOSIT_REVERSAL'    => 'payment_deposit_reversal',
+                );
+                my $event = $event_name{$action_resolved} // undef;
+                BOM::Platform::Event::Emitter::emit(
+                    $event,
+                    {
+                        event_name => $event,
+                        loginid    => $client->loginid,
+                        properties => {
+                            type          => $action_resolved,
+                            statement_url => $brand->statement_url({language => $client->user->preferred_language}),
+                            live_chat_url => $brand->live_chat_url({language => $client->user->preferred_language}),
+                            amount        => $amount,
+                            currency      => $currency,
+                            clerk         => $staff,
+                            map { $_ => $client->{$_} } qw[first_name last_name salutation]
+                        }});
+            }
+            $log->info("$login_id, $payment_type, $action, $currency, $amount, Transaction successful with ID: $trx->{id}");
+            $client_to_be_processed{$login_id} = "$login_id,$action,$currency$amount,$remark";
+        } catch ($e) {
+            my $error_msg    = Dumper($e // '');
+            my $failure_info = "Login ID: $login_id, Action: $action, Currency: $currency, Amount: $amount, Error: $error_msg";
+            push @payment_failures, $failure_info;
+            $log->error($failure_info);
+        }
+    }
+
+    if (scalar(keys %client_to_be_processed) > 0) {
+        my @clients_has_been_processed = values %client_to_be_processed;
+
+        BOM::Platform::Event::Emitter::emit(
+            'send_email',
+            {
+                from    => $brand->emails('support'),
+                to      => $brand->emails('payments_notification'),
+                subject => 'Batch Debit/Credit Client Account on ' . Date::Utility->new->date_ddmmmyy,
+                message => \@clients_has_been_processed,
+            });
+
+    }
+
+    if (@payment_failures) {
+        my $error_message = join("\n\n", @payment_failures);
+        BOM::Platform::Event::Emitter::emit(
+            'send_email',
+            {
+                from    => $brand->emails('support'),
+                to      => $brand->emails('payments_notification'),
+                subject => 'Batch Debit/Credit Payment Failures on ' . Date::Utility->new->date_ddmmmyy,
+                message => [$error_message]});
+    }
+    return 1;
 }
 
 =head2 payment_deposit

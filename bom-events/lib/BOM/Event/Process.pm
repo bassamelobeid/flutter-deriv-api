@@ -139,6 +139,7 @@ my $action_mapping = {
         idv_configuration_disable_provider          => \&BOM::Event::Actions::External::idv_configuration_disable_provider,
         idv_configuration_enable_provider           => \&BOM::Event::Actions::External::idv_configuration_enable_provider,
         recheck_onfido_face_similarity              => \&BOM::Event::Actions::Client::recheck_onfido_face_similarity,
+        batch_payment                               => \&BOM::Event::Actions::Client::batch_payment,
         link_user_to_dw_affiliate                   => \&BOM::Event::Actions::DynamicWorks::link_user_to_dw_affiliate,
     },
     track => {
