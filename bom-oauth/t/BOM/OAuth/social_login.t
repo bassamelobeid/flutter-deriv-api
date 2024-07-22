@@ -175,6 +175,7 @@ subtest 'setting up social login' => sub {
         {
             httponly => 1,
             secure   => 1,
+            samesite => 'None'
         },
         'query params cookie settings are correct'
     );

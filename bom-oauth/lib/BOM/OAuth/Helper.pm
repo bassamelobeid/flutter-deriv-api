@@ -341,7 +341,8 @@ sub set_query_params_cookie {
         "qp" => encode_base64($params->to_string, ''),
         {
             secure   => 1,
-            httponly => 1
+            httponly => 1,
+            samesite => 'None'
         });
 }
 
