@@ -37,9 +37,7 @@ It can be called with the following parameters:
 =cut
 
 sub multiplier_hit_type {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::multiplier_hit_type(@args);
+    return BOM::Event::Services::Track::multiplier_hit_type(@_);
 }
 
 =head2 multiplier_near_expire_notification
@@ -58,9 +56,7 @@ It can be called with the following parameters:
 =cut
 
 sub multiplier_near_expire_notification {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::multiplier_near_expire_notification(@args);
+    return BOM::Event::Services::Track::multiplier_near_expire_notification(@_);
 }
 
 =head2 multiplier_near_dc_notification
@@ -79,9 +75,7 @@ It can be called with the following parameters:
 =cut
 
 sub multiplier_near_dc_notification {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::multiplier_near_dc_notification(@args);
+    return BOM::Event::Services::Track::multiplier_near_dc_notification(@_);
 }
 
 1;

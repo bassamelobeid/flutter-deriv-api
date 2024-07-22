@@ -9,6 +9,7 @@ use Test::Deep;
 use BOM::Test::Helper::P2P;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Event::Services::Track;
 use BOM::Platform::Context qw(request);
 use Format::Util::Numbers  qw(financialrounding formatnumber);
@@ -26,7 +27,8 @@ my (undef, $advert2) = BOM::Test::Helper::P2P::create_advert(
     local_currency => 'pyg'
 );
 
-my $mock_segment = Test::MockModule->new('WebService::Async::Segment::Customer');
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+my $mock_segment     = Test::MockModule->new('WebService::Async::Segment::Customer');
 my @identify_args;
 my @track_args;
 
@@ -71,9 +73,9 @@ subtest 'Archived ad' => sub {
         my $payload = $test->{payload};
 
         if (my $error = $test->{error}) {
-            throws_ok { BOM::Event::Actions::P2P::archived_ad($payload) } qr/$error/, "Expected exception thrown: $error";
+            throws_ok { BOM::Event::Actions::P2P::archived_ad($payload, $service_contexts) } qr/$error/, "Expected exception thrown: $error";
         } else {
-            lives_ok { BOM::Event::Actions::P2P::archived_ad($payload)->get } 'Event made it alive';
+            lives_ok { BOM::Event::Actions::P2P::archived_ad($payload, $service_contexts)->get } 'Event made it alive';
 
             my ($customer, $args) = @track_args;
             isa_ok $customer, 'WebService::Async::Segment::Customer', 'Expected identify result';

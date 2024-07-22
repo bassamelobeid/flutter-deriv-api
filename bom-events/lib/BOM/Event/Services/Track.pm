@@ -367,12 +367,15 @@ It can be called with the following named parameters:
 =cut
 
 sub multiplier_hit_type {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     return track_event(
-        event      => 'multiplier_hit_type',
-        loginid    => $args->{loginid},
-        properties => $args,
+        event            => 'multiplier_hit_type',
+        loginid          => $args->{loginid},
+        properties       => $args,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -392,12 +395,15 @@ It can be called with the following named parameters:
 =cut
 
 sub multiplier_near_expire_notification {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     return track_event(
-        event      => 'multiplier_near_expire_notification',
-        loginid    => $args->{loginid},
-        properties => $args,
+        event            => 'multiplier_near_expire_notification',
+        loginid          => $args->{loginid},
+        properties       => $args,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -417,12 +423,15 @@ It can be called with the following named parameters:
 =cut
 
 sub multiplier_near_dc_notification {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     return track_event(
-        event      => 'multiplier_near_dc_notification',
-        loginid    => $args->{loginid},
-        properties => $args,
+        event            => 'multiplier_near_dc_notification',
+        loginid          => $args->{loginid},
+        properties       => $args,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -442,7 +451,10 @@ It can be called with the following named parameters:
 =cut
 
 sub login {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $properties = $args->{properties};
 
     my $app = request->app // {};
@@ -453,6 +465,7 @@ sub login {
         loginid              => $args->{loginid},
         properties           => $properties,
         is_identify_required => 1,
+        service_contexts     => $service_contexts,
     );
 }
 
@@ -472,7 +485,10 @@ It can be called with the following named parameters:
 =cut
 
 sub dp_successful_login {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $properties = $args->{properties};
 
     return track_event(
@@ -480,6 +496,7 @@ sub dp_successful_login {
         loginid              => $args->{loginid},
         properties           => $properties,
         is_identify_required => 1,
+        service_contexts     => $service_contexts,
     );
 }
 
@@ -499,14 +516,25 @@ It can be called with the following named parameters:
 =cut
 
 sub signup {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $client = BOM::User::Client->new({loginid => $args->{loginid}})
         or die 'Could not instantiate client for login ID ' . $args->{loginid};
     my $properties = $args->{properties};
 
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(date_joined email_consent)],
+    );
+    die "User-service read failure for " . $client->binary_user_id . ": $user_data->{message}" unless $user_data->{status} eq 'ok';
+    $user_data = $user_data->{attributes};
+
     # traits will be used for identify
-    my $traits = _create_traits($client);
+    my $traits = _create_traits($client, undef, $service_contexts);
     $traits->{signup_brand} = request->brand_name;
 
     if ($properties->{utm_tags}) {
@@ -522,19 +550,20 @@ sub signup {
 
     $properties->{currency}        = $client->account->currency_code if $client->account;
     $properties->{landing_company} = $client->landing_company->short;
-    $properties->{date_joined}     = $client->date_joined;
-    $properties->{email_consent}   = $client->user->email_consent;
-    $properties->{first_name}      = $properties->{first_name} // $client->first_name // '';
+    $properties->{date_joined}     = $user_data->{date_joined};
+    $properties->{email_consent}   = $user_data->{email_consent};
+    $properties->{first_name}      = $properties->{first_name} // $user_data->{first_name} // '';
 
     my $user_connect = BOM::Database::Model::UserConnect->new;
-    $properties->{provider} = $client->user ? $user_connect->get_connects_by_user_id($client->user->{id})->[0] // 'email' : 'email';
+    $properties->{provider} = $user_connect->get_connects_by_user_id($client->binary_user_id)->[0] // 'email';
 
     return track_event(
         event                => 'signup',
         properties           => $properties,
         client               => $client,
         traits               => $traits,
-        is_identify_required => 1
+        is_identify_required => 1,
+        service_contexts     => $service_contexts,
     );
 
 }
@@ -546,13 +575,16 @@ It is triggered for each B<account_closure> event emitted, delivering the data t
 =cut
 
 sub account_closure {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     return track_event(
         event                => 'account_closure',
         loginid              => $args->{loginid},
         properties           => $args,
         is_identify_required => 1,
+        service_contexts     => $service_contexts,
     );
 }
 
@@ -572,12 +604,15 @@ It can be called with the following parameters:
 =cut
 
 sub new_mt5_signup {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     return track_event(
-        event      => 'mt5_signup',
-        loginid    => $args->{loginid},
-        properties => $args,
+        event            => 'mt5_signup',
+        loginid          => $args->{loginid},
+        properties       => $args,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -597,11 +632,14 @@ It can be called with the following parameters:
 =cut
 
 sub profile_change {
-    my ($args)     = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $client     = BOM::User::Client->new({loginid => $args->{loginid}});
     my $properties = $args->{properties} // {};
 
-    my $traits = _create_traits($client);
+    my $traits = _create_traits($client, undef, $service_contexts);
 
     # Modify some properties to be more readable in segment
     $properties->{updated_fields}{address_state} = $traits->{address}{state} if $properties->{updated_fields}{address_state};
@@ -620,6 +658,7 @@ sub profile_change {
         client               => $client,
         traits               => $traits,
         is_identify_required => 1,
+        service_contexts     => $service_contexts,
     );
 }
 
@@ -640,7 +679,9 @@ It is called with the following parameters:
 =cut
 
 sub transfer_between_accounts {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     # Deref and ref, So we don't modify the main properties that is passed as an argument
     my $properties = {($args->{properties} // {})->%*};
@@ -659,9 +700,10 @@ sub transfer_between_accounts {
     }
 
     return track_event(
-        event      => 'transfer_between_accounts',
-        loginid    => $args->{loginid},
-        properties => $properties
+        event            => 'transfer_between_accounts',
+        loginid          => $args->{loginid},
+        properties       => $properties,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -681,16 +723,20 @@ It can be called with the following parameters:
 =cut
 
 sub document_upload {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $properties = {$args->{properties}->%*};
 
     $properties->{upload_date} = _time_to_iso_8601($properties->{upload_date} // die('required time'));
     $properties->{uploaded_manually_by_staff} //= 0;
 
     return track_event(
-        event      => 'document_upload',
-        loginid    => $args->{loginid},
-        properties => $properties
+        event            => 'document_upload',
+        loginid          => $args->{loginid},
+        properties       => $properties,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -701,13 +747,16 @@ It is triggered for each B<email_subscription> event emitted, delivering it to S
 =cut
 
 sub email_subscription {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     return track_event(
         event                => 'email_subscription',
         loginid              => $args->{loginid},
         properties           => $args,
-        is_identify_required => 1
+        is_identify_required => 1,
+        service_contexts     => $service_contexts,
     );
 }
 
@@ -718,12 +767,15 @@ It is triggered for each B<set_financial_assessment> event emitted, delivering i
 =cut
 
 sub set_financial_assessment {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     return track_event(
-        event      => 'set_financial_assessment',
-        loginid    => $args->{loginid},
-        properties => $args->{params},
+        event            => 'set_financial_assessment',
+        loginid          => $args->{loginid},
+        properties       => $args->{params},
+        service_contexts => $service_contexts,
     );
 }
 
@@ -754,13 +806,16 @@ It is triggered for each B<mt5_inactive_notification> event emitted, delivering 
 =cut
 
 sub mt5_inactive_notification {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = delete $args->{loginid};
     return track_event(
-        event      => 'mt5_inactive_notification',
-        loginid    => $loginid,
-        properties => $args,
+        event            => 'mt5_inactive_notification',
+        loginid          => $loginid,
+        properties       => $args,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -771,47 +826,51 @@ Triggered for each B<mt5_inactive_account_closed> event emitted, delivering it t
 =cut
 
 sub mt5_inactive_account_closed {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = delete $args->{loginid};
     return track_event(
-        event      => 'mt5_inactive_account_closed',
-        loginid    => $loginid,
-        properties => $args,
+        event            => 'mt5_inactive_account_closed',
+        loginid          => $loginid,
+        properties       => $args,
+        service_contexts => $service_contexts,
     );
 }
 
 sub p2p_order_created {
     my %args = @_;
-    my ($order, $parties) = @args{qw(order parties)};
-    return _p2p_order_track($order, $parties, 'p2p_order_created');
+    my ($order, $parties, $service_contexts) = @args{qw(order parties service_contexts)};
+    return _p2p_order_track($service_contexts, $order, $parties, 'p2p_order_created');
 }
 
 sub p2p_order_buyer_has_paid {
     my %args = @_;
-    my ($order, $parties) = @args{qw(order parties)};
-    return _p2p_order_track($order, $parties, 'p2p_order_buyer_has_paid');
+    my ($order, $parties, $service_contexts) = @args{qw(order parties service_contexts)};
+    return _p2p_order_track($service_contexts, $order, $parties, 'p2p_order_buyer_has_paid');
 }
 
 sub p2p_order_seller_has_released {
     my %args = @_;
-    my ($order, $parties) = @args{qw(order parties)};
-    return _p2p_order_track($order, $parties, 'p2p_order_seller_has_released');
+    my ($order, $parties, $service_contexts) = @args{qw(order parties service_contexts)};
+    return _p2p_order_track($service_contexts, $order, $parties, 'p2p_order_seller_has_released');
 }
 
 sub p2p_order_cancelled {
     my %args = @_;
-    my ($order, $parties) = @args{qw(order parties)};
-    return _p2p_order_track($order, $parties, 'p2p_order_cancelled');
+    my ($order, $parties, $service_contexts) = @args{qw(order parties service_contexts)};
+    return _p2p_order_track($service_contexts, $order, $parties, 'p2p_order_cancelled');
 }
 
 sub p2p_order_expired {
     my %args = @_;
-    my ($order, $parties) = @args{qw(order parties)};
+    my ($order, $parties, $service_contexts) = @args{qw(order parties service_contexts)};
 
     my $buyer_has_confirmed = ($order->{status} eq 'refunded') ? 0 : 1;
 
     return _p2p_order_track(
+        $service_contexts,
         $order, $parties,
         'p2p_order_expired',
         {
@@ -838,7 +897,7 @@ Returns, a Future needing both tracking events.
 
 sub p2p_order_dispute {
     my %args = @_;
-    my ($order, $parties) = @args{qw(order parties)};
+    my ($order, $parties, $service_contexts) = @args{qw(order parties service_contexts)};
 
     my %properties = (
         disputer              => 'buyer',
@@ -879,6 +938,7 @@ sub p2p_order_dispute {
                 title     => $buyer_title,
                 %properties,
             },
+            service_contexts => $service_contexts,
         ),
         track_event(
             event      => 'p2p_order_dispute',
@@ -888,6 +948,7 @@ sub p2p_order_dispute {
                 title     => $seller_title,
                 %properties,
             },
+            service_contexts => $service_contexts,
         ),
     );
 }
@@ -999,8 +1060,8 @@ Returns, a Future needing both tracking events.
 
 sub p2p_order_timeout_refund {
     my %args = @_;
-    my ($order, $parties) = @args{qw(order parties)};
-    return _p2p_order_track($order, $parties, 'p2p_order_timeout_refund');
+    my ($service_contexts, $order, $parties) = @args{qw(service_contexts order parties)};
+    return _p2p_order_track($service_contexts, $order, $parties, 'p2p_order_timeout_refund');
 }
 
 =head2 _p2p_dispute_resolution
@@ -1026,11 +1087,12 @@ Returns, a Future needing both tracking events.
 
 sub _p2p_dispute_resolution {
     my %args = @_;
-    my ($order, $parties, $event) = @args{qw(order parties event)};
+    my ($service_contexts, $order, $parties, $event) = @args{qw(service_contexts order parties event)};
     my $disputer = 'buyer';
     $disputer = 'seller' if $parties->{seller}->loginid eq $order->{dispute_details}->{disputer_loginid};
 
     return _p2p_order_track(
+        $service_contexts,
         $order, $parties, $event,
         {
             dispute_reason => $order->{dispute_details}->{dispute_reason},
@@ -1062,19 +1124,21 @@ Returns, a Future needing both tracking events.
 =cut
 
 sub _p2p_order_track {
-    my ($order, $parties, $event, $extras) = @_;
+    my ($service_contexts, $order, $parties, $event, $extras) = @_;
     $extras //= {};
 
     return Future->needs_all(
         track_event(
-            event      => $event,
-            client     => $parties->{buyer},
-            properties => {_p2p_properties($order, $parties, 'buyer')->%*, $extras->%*},
+            event            => $event,
+            client           => $parties->{buyer},
+            properties       => {_p2p_properties($order, $parties, 'buyer')->%*, $extras->%*},
+            service_contexts => $service_contexts,
         ),
         track_event(
-            event      => $event,
-            client     => $parties->{seller},
-            properties => {_p2p_properties($order, $parties, 'seller')->%*, $extras->%*},
+            event            => $event,
+            client           => $parties->{seller},
+            properties       => {_p2p_properties($order, $parties, 'seller')->%*, $extras->%*},
+            service_contexts => $service_contexts,
         ),
     );
 }
@@ -1157,15 +1221,30 @@ async sub track_event {
         unless $client
         or $args{anonymous};
 
+    die "Missing service_contexts" unless $args{service_contexts};
+
     return unless _validate_event($args{event}, $args{brand});
 
     my %customer_args = (user_id => $client ? $client->binary_user_id : BINARY_CUSTOMER);
-    $customer_args{traits} = $args{traits} // _create_traits($client) if $args{is_identify_required};
+    $customer_args{traits} = $args{traits} // _create_traits($client, undef, $args{service_contexts}) if $args{is_identify_required};
     my $customer = _api->new_customer(%customer_args);
 
     my $context = _create_context($args{brand});
 
     $log->debugf('Tracked %s for user %s', $args{event}, $customer_args{user_id});
+
+    # Don't attempt user service call if we're in anon mode, there is no client or user
+    my $user_data = {};
+    if ($client) {
+        $user_data = BOM::Service::user(
+            context    => $args{service_contexts}{user},
+            command    => 'get_attributes',
+            user_id    => $client->binary_user_id,
+            attributes => [qw(email preferred_language)],
+        );
+        die "User-service read failed: $user_data->{message}" unless ($user_data->{status} eq 'ok');
+        $user_data = $user_data->{attributes};
+    }
 
     # Schedule the _send_track_request or identify request to be invoked as soon as the current round of IO operations is complete.
     await $loop->later;
@@ -1174,9 +1253,9 @@ async sub track_event {
             $customer,
             {
                 ($client ? (loginid => $client->loginid) : ()),
-                lang  => uc(($client ? $client->user->preferred_language : undef) // request->language // ''),
+                lang  => uc(($client ? $user_data->{preferred_language} : undef) // request->language // ''),
                 brand => $args{brand}->{name}       // request->brand->name,
-                email => $args{properties}->{email} // ($client ? $client->email : undef),
+                email => $args{properties}->{email} // ($client ? $user_data->{email} : undef),
                 ($args{properties} // {})->%*,
             },
             $args{event},
@@ -1350,13 +1429,21 @@ Arguments:
 =cut
 
 sub _create_traits {
-    my ($client, $brand) = @_;
+    my ($client, $brand, $service_contexts) = @_;
     $brand //= request->brand;
 
     my @siblings     = $client->user ? $client->user->clients(include_disabled => 1) : ($client);
     my @mt5_loginids = $client->user ? $client->user->get_mt5_loginids               : ();
     my $user_connect = BOM::Database::Model::UserConnect->new;
     my $provider     = $client->user ? $user_connect->get_connects_by_user_id($client->user->{id})->[0] // 'email' : 'email';
+
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $client->binary_user_id,
+    );
+    die "User-service read failure for " . $client->binary_user_id . ": $user_data->{message}" unless $user_data->{status} eq 'ok';
+    $user_data = $user_data->{attributes};
 
     my $country_config              = $brand->countries_instance->countries_list->{$client->residence};
     my $available_landing_companies = join ',' => uniq sort grep { $_ ne 'none' } (
@@ -1396,8 +1483,8 @@ sub _create_traits {
 
     # Check DOB existance as virtual account does not have it
     my $client_age;
-    if ($client->date_of_birth) {
-        my ($year, $month, $day) = split('-', $client->date_of_birth);
+    if ($user_data->{date_of_birth}) {
+        my ($year, $month, $day) = split('-', $user_data->{date_of_birth});
         my $dob = Time::Moment->new(
             year  => $year,
             month => $month,
@@ -1408,49 +1495,49 @@ sub _create_traits {
         $client_age = $dob->delta_years(Time::Moment->now_utc);
     }
 
-    my $has_exclude_until = $client->get_self_exclusion                              ? $client->get_self_exclusion->exclude_until : undef;
-    my $unsubscribed      = (not $client->user->email_consent or $has_exclude_until) ? 'true'                                     : 'false';
+    my $has_exclude_until = $client->get_self_exclusion                             ? $client->get_self_exclusion->exclude_until : undef;
+    my $unsubscribed      = (not $user_data->{email_consent} or $has_exclude_until) ? 'true'                                     : 'false';
 
     return {
         # Reserved traits
         address => {
-            street      => $client->address_line_1 . " " . $client->address_line_2,
-            town        => $client->address_city,
-            state       => $client->state ? BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) : '',
-            postal_code => $client->address_postcode,
-            country     => Locale::Country::code2country($client->residence),
+            street => $user_data->{address_line_1} . " " . $user_data->{address_line_2},
+            town   => $user_data->{address_city},
+            state  => $user_data->{address_state} ? BOM::Platform::Locale::get_state_by_id($user_data->{address_state}, $user_data->{residence}) : '',
+            postal_code => $user_data->{address_postcode},
+            country     => Locale::Country::code2country($user_data->{residence}),
         },
         age => $client_age,
 
         #avatar: not_supported,
-        birthday => $client->date_of_birth,
+        birthday => $user_data->{date_of_birth},
 
         #company: not_supported,
         created_at => Date::Utility->new($created_at)->datetime_iso8601,
 
         #description: not_supported,
-        email      => $client->email,
-        first_name => $client->first_name // '',
+        email      => $user_data->{email},
+        first_name => $user_data->{first_name} // '',
 
         #gender     => not_supported for Deriv,
         #id: not_supported,
-        last_name => $client->last_name,
+        last_name => $user_data->{last_name},
 
         #name: automatically filled
-        phone => $client->phone,
+        phone => $user_data->{phone},
 
         #title: not_supported,
         #username: not_supported,
         #website: website,
 
         # Custom traits
-        country                     => Locale::Country::code2country($client->residence),
+        country                     => Locale::Country::code2country($user_data->{residence}),
         currencies                  => join(',', sort(keys %currencies)),
         mt5_loginids                => join(',', sort(@mt5_loginids)),
         landing_companies           => @landing_companies ? join ',' => uniq sort @landing_companies : 'virtual',
         available_landing_companies => $available_landing_companies,
         provider                    => $provider,
-        salutation                  => $client->salutation,
+        salutation                  => $user_data->{salutation},
 
         # subscribe or unsubscribed
         unsubscribed => $unsubscribed,
@@ -1804,12 +1891,16 @@ It is triggered for each B<create_mt5_ib_technical_accounts> event emitted, deli
 for my $event_name (@COMMON_EVENT_METHODS) {
     no strict 'refs';    # allow symbol table manipulation
     *{__PACKAGE__ . '::' . $event_name} = sub {
-        my ($args) = @_;
+        my ($args, $service_contexts) = @_;
+
+        die "Missing service_contexts" unless $service_contexts;
+
         return track_event(
-            event      => $event_name,
-            client     => $args->{client},
-            loginid    => $args->{loginid},
-            properties => $args->{properties} || $args,
+            event            => $event_name,
+            client           => $args->{client},
+            loginid          => $args->{loginid},
+            properties       => $args->{properties} || $args,
+            service_contexts => $service_contexts,
         );
         }
         unless __PACKAGE__->can($event_name);
@@ -1842,13 +1933,16 @@ It is triggered for each B<derivez_inactive_notification> event emitted, deliver
 =cut
 
 sub derivez_inactive_notification {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = delete $args->{loginid};
     return track_event(
-        event      => 'derivez_inactive_notification',
-        loginid    => $loginid,
-        properties => $args,
+        event            => 'derivez_inactive_notification',
+        loginid          => $loginid,
+        properties       => $args,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -1859,13 +1953,16 @@ Triggered for each B<derivez_inactive_account_closed> event emitted, delivering 
 =cut
 
 sub derivez_inactive_account_closed {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = delete $args->{loginid};
     return track_event(
-        event      => 'derivez_inactive_account_closed',
-        loginid    => $loginid,
-        properties => $args,
+        event            => 'derivez_inactive_account_closed',
+        loginid          => $loginid,
+        properties       => $args,
+        service_contexts => $service_contexts,
     );
 }
 

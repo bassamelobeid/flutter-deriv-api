@@ -1641,38 +1641,6 @@ sub daily_transfer_amount {
     return $redis->hget($redis_hash, $redis_hash_key) // 0;
 }
 
-=head2 valid_to_anonymize
-
-Determines if the user is valid to anonymize or not.
-
-Returns 1 if the user is valid to anonymize
-Returns 0 otherwise
-
-=cut
-
-sub valid_to_anonymize {
-    my $self = shift;
-
-    my $result = BOM::Database::ClientDB->new({
-            broker_code => 'FOG',
-            operation   => 'collector',
-        }
-    )->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('SELECT users.ck_user_valid_to_anonymize(?)', undef, $self->id);
-        });
-
-    my @clients = $self->clients(
-        include_disabled   => 1,
-        include_duplicated => 1,
-    );
-
-    # filter out virtual clients
-    # The standard anonymization rules don't apply for clients with no real money accounts. They can be anonymized at any time.
-    my $real_clients = first { not $_->is_virtual } @clients;
-    $real_clients ? return $result->{ck_user_valid_to_anonymize} : return 1;
-}
-
 =head2 get_client_using_replica
 
 Return the BOM::User::Client object that will use the replica database

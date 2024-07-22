@@ -9,24 +9,23 @@ use Test::MockModule;
 use WebService::Async::Segment::Customer;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Context                     qw(request);
+use BOM::Test::Customer;
+use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::User;
 use BOM::Event::Process;
 
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'test1@bin.com',
-});
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
-my $email = $test_client->email;
-my $user  = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
+my $test_customer = BOM::Test::Customer->create(
     email_verified => 1,
-);
+    clients        => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+    ]);
 
-$user->add_client($test_client);
+my $test_client = $test_customer->get_client_object('CR');
 
 my (@identify_args, @track_args);
 my $segment_response = Future->done(1);
@@ -77,7 +76,7 @@ subtest 'app registered' => sub {
         lang             => 'ID'
     };
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{app_registered};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
 
@@ -102,7 +101,7 @@ subtest 'app registered' => sub {
     request($req);
     undef @track_args;
 
-    $result = $handler->($args)->get;
+    $result = $handler->($args, $service_contexts)->get;
     ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
     ok @track_args, 'Segment track is invoked';
@@ -127,7 +126,7 @@ subtest 'app updated' => sub {
         lang       => 'ID'
     };
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{app_updated};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
 
@@ -152,7 +151,7 @@ subtest 'app updated' => sub {
     request($req);
     undef @track_args;
 
-    $result = $handler->($args)->get;
+    $result = $handler->($args, $service_contexts)->get;
     ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
     ok @track_args, 'Segment track is invoked';
@@ -174,7 +173,7 @@ subtest 'app deleted' => sub {
         lang    => 'ID'
     };
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{app_deleted};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
 
@@ -199,7 +198,7 @@ subtest 'app deleted' => sub {
     request($req);
     undef @track_args;
 
-    $result = $handler->($args)->get;
+    $result = $handler->($args, $service_contexts)->get;
     ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
     ok @track_args, 'Segment track is invoked';

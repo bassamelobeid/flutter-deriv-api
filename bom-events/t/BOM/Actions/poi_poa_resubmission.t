@@ -7,11 +7,14 @@ use Test::MockModule;
 use Test::Deep;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use DataDog::DogStatsd::Helper;
 
 use BOM::User;
 use BOM::Platform::Context qw(request);
 use BOM::Event::Process;
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
@@ -30,19 +33,16 @@ my @emit_args;
 my $mock_service_config = Test::MockModule->new('BOM::Config::Services');
 $mock_service_config->mock(is_enabled => 0);
 
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-
-my $test_user = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
+my $test_customer = BOM::Test::Customer->create(
     email_verified => 1,
-);
-$test_user->add_client($test_client);
-$test_client->residence('co');
-$test_client->binary_user_id($test_user->id);
-$test_client->save;
+    residence      => 'co',
+    clients        => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+    ]);
+
+my $test_client = $test_customer->get_client_object('CR');
 
 my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
 my @metrics;
@@ -75,7 +75,7 @@ subtest 'notify poi resubmission' => sub {
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
 
-        my $result = $handler->($param);
+        my $result = $handler->($param, $service_contexts);
         ok !$result, 'Email not sent';
 
         my ($customer, %r_args) = @track_args;
@@ -107,7 +107,7 @@ subtest 'notify poi resubmission' => sub {
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
 
-        my $result = $handler->($param);
+        my $result = $handler->($param, $service_contexts);
         ok !$result, 'Email not sent';
 
         my ($customer, %r_args) = @track_args;
@@ -138,7 +138,7 @@ subtest 'notify poi resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -193,7 +193,7 @@ subtest 'notify poi resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -248,7 +248,7 @@ subtest 'notify poi resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -303,7 +303,7 @@ subtest 'notify poi resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -358,7 +358,7 @@ subtest 'notify poi resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -413,7 +413,7 @@ subtest 'notify poi resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -469,7 +469,7 @@ subtest 'notify poi resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -526,7 +526,7 @@ subtest 'notify poi resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -581,7 +581,7 @@ subtest 'notify poi resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -643,7 +643,7 @@ subtest 'notify poa resubmission' => sub {
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
 
-        my $result = $handler->($param);
+        my $result = $handler->($param, $service_contexts);
         ok !$result, 'Email not sent';
 
         my ($customer, %r_args) = @track_args;
@@ -675,7 +675,7 @@ subtest 'notify poa resubmission' => sub {
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
 
-        my $result = $handler->($param);
+        my $result = $handler->($param, $service_contexts);
         ok !$result, 'Email not sent';
 
         my ($customer, %r_args) = @track_args;
@@ -707,7 +707,7 @@ subtest 'notify poa resubmission' => sub {
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
 
-        my $result = $handler->($param);
+        my $result = $handler->($param, $service_contexts);
         ok !$result, 'Email not sent';
 
         my ($customer, %r_args) = @track_args;
@@ -738,7 +738,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -792,7 +792,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -846,7 +846,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -900,7 +900,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -955,7 +955,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -1009,7 +1009,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -1063,7 +1063,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -1117,7 +1117,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -1172,7 +1172,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -1227,7 +1227,7 @@ subtest 'notify poa resubmission' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;
@@ -1284,7 +1284,7 @@ subtest 'allow resubmission of both poi and poa' => sub {
     @metrics = ();
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-    my $result  = $handler->($param)->get;
+    my $result  = $handler->($param, $service_contexts)->get;
     ok $result, 'Success result';
 
     my ($customer, %r_args) = @track_args;
@@ -1336,11 +1336,16 @@ subtest 'allow resubmission of both poi and poa' => sub {
 subtest 'different Broker code' => sub {
 
     subtest 'MF account' => sub {
-        my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-        $test_client_mf->residence('es');
-        $test_client_mf->save();
+        my $test_customer_mf = BOM::Test::Customer->create(
+            email_verified => 1,
+            residence      => 'es',
+            clients        => [{
+                    name        => 'MF',
+                    broker_code => 'MF',
+                },
+            ]);
+
+        my $test_client_mf = $test_customer_mf->get_client_object('MF');
 
         my $req = BOM::Platform::Context::Request->new(
             brand_name => 'deriv',
@@ -1358,7 +1363,7 @@ subtest 'different Broker code' => sub {
         @metrics = ();
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{notify_resubmission_of_poi_poa_documents};
-        my $result  = $handler->($param)->get;
+        my $result  = $handler->($param, $service_contexts)->get;
         ok $result, 'Success result';
 
         my ($customer, %r_args) = @track_args;

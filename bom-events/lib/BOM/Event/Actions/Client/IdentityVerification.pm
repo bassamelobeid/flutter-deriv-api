@@ -116,7 +116,9 @@ Returns 1 on sucess or undef on error
 =cut
 
 async sub verify_identity {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my ($loginid) = @{$args}{qw/loginid/};
 
@@ -277,7 +279,9 @@ Returns 1 on sucess or undef on error
 =cut
 
 async sub verify_process {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my ($loginid, $status, $messages, $report, $provider_metadata, $response_body, $request_body) =
         @{$args}{qw/id status messages report provider response_body request_body/};
@@ -319,14 +323,18 @@ async sub verify_process {
             client   => $client,
             status   => $status,
             document => $document,
-        }) if $selfie;
+        },
+        $service_contexts
+    ) if $selfie;
 
     $document_file_id = await _upload_photo({
             photo    => $document_pic,
             client   => $client,
             status   => $status,
             document => $document,
-        }) if $document_pic;
+        },
+        $service_contexts
+    ) if $document_pic;
 
     # remove flag if status is not pending
     unless ($status eq 'pending' || $status eq 'deferred') {
@@ -341,18 +349,20 @@ async sub verify_process {
     my $pictures = [grep { $_ } ($document_file_id, $selfie_file_id)];
 
     await $callback->({
-        client              => $client,
-        document            => $document,
-        provider            => $provider,
-        report              => $report,
-        messages            => $messages,
-        status              => $status,
-        response_body       => $response_body,
-        request_body        => $request_body,
-        common_datadog_tags => \@common_datadog_tags,
-        pictures            => scalar @$pictures ? $pictures : undef,
-        errors              => _messages_to_hashref(@$messages),
-    });
+            client              => $client,
+            document            => $document,
+            provider            => $provider,
+            report              => $report,
+            messages            => $messages,
+            status              => $status,
+            response_body       => $response_body,
+            request_body        => $request_body,
+            common_datadog_tags => \@common_datadog_tags,
+            pictures            => scalar @$pictures ? $pictures : undef,
+            errors              => _messages_to_hashref(@$messages),
+        },
+        $service_contexts
+    );
 
     BOM::Platform::Event::Emitter::emit(
         'sync_mt5_accounts_status',
@@ -371,7 +381,9 @@ Verified Result Status for IDV, when the document was cleared
 =cut
 
 async sub idv_verified {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my ($client, $messages, $document, $provider, $report, $response_body, $request_body, $pictures) =
         @{$args}{qw/client messages document provider report response_body request_body pictures/};
@@ -389,7 +401,7 @@ async sub idv_verified {
     my $redis_events_write = _redis_events_write();
     await $redis_events_write->connect;
 
-    await BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write, 'idv');
+    await BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write, 'idv', $service_contexts);
 
     $idv_model->update_document_check({
             document_id => $document->{id},
@@ -413,7 +425,9 @@ Refuted Result Status for IDV, when the document was rejected
 =cut
 
 async sub idv_refuted {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my ($client, $document, $provider, $messages, $report, $request_body, $response_body, $pictures, $errors) =
         @{$args}{qw/client document provider messages report request_body response_body pictures errors/};
@@ -527,7 +541,9 @@ To check if a name or DOB mismatch has been resolved.
 =cut
 
 async sub idv_mismatch_lookback {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my ($client, $document, $report, $messages) = @{$args}{qw/client document report messages/};
 
@@ -548,11 +564,17 @@ async sub idv_mismatch_lookback {
     $messages = [grep { $_ ne 'DOB_MISMATCH' } $messages->@*]  unless $rules_result->errors->{DobMismatch};
 
     unless ($rules_result->has_failure) {
-        await idv_verified({$args->%*, messages => $messages});
+        await idv_verified({$args->%*, messages => $messages}, $service_contexts);
     } else {
         $client->propagate_clear_status('poi_name_mismatch') unless $rules_result->errors->{NameMismatch};
         $client->propagate_clear_status('poi_dob_mismatch')  unless $rules_result->errors->{DobMismatch};
-        await idv_refuted({$args->%*, messages => $messages, errors => $rules_result->errors});
+        await idv_refuted({
+                $args->%*,
+                messages => $messages,
+                errors   => $rules_result->errors
+            },
+            $service_contexts
+        );
     }
 
     BOM::Platform::Event::Emitter::emit(
@@ -750,7 +772,10 @@ Returns the file id of the photo uploaded to s3
 =cut
 
 async sub _upload_photo {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my ($photo, $client, $status, $document) =
         @{$data}{qw/photo client status document/};
 
@@ -854,10 +879,12 @@ async sub _upload_photo {
 
             if ($document_info) {
                 await BOM::Event::Services::Track::document_upload({
-                    client     => $client,
-                    loginid    => $client->loginid,
-                    properties => $document_info
-                });
+                        client     => $client,
+                        loginid    => $client->loginid,
+                        properties => $document_info
+                    },
+                    $service_contexts
+                );
             } else {
                 $log->errorf('Could not get document %s from database for client %s', $file_id, $client->loginid);
             }
@@ -955,7 +982,10 @@ Takes the following parameter as a HASH ref:
 =cut
 
 async sub send_idv_configuration {
-    my $args   = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $config = BOM::Platform::Utility::idv_configuration($args);
     BOM::Platform::Event::Emitter::emit('idv_configuration', $config);
     DataDog::DogStatsd::Helper::stats_inc('event.identity_verification.configuration_bundle_sent');
@@ -978,10 +1008,12 @@ The presence of this key is checked when assessing for the availability of the s
 =cut
 
 async sub disable_provider {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
     my ($provider) = @{$args}{qw/provider/};
 
-    die 'no provider' unless $provider;
+    die 'no provider'              unless $provider;
+    die "Missing service_contexts" unless $service_contexts;
 
     my $redis_events_write = _redis_events_write();
     await $redis_events_write->connect;
@@ -992,7 +1024,7 @@ async sub disable_provider {
 
     DataDog::DogStatsd::Helper::stats_inc('event.identity_verification.disabled_provider_' . $provider);
 
-    await send_idv_configuration();
+    await send_idv_configuration(undef, $service_contexts);
 
     return;
 }
@@ -1012,7 +1044,10 @@ The information stored in the redis key is deleted.
 =cut
 
 async sub enable_provider {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my ($provider) = @{$args}{qw/provider/};
 
     die 'no provider' unless $provider;
@@ -1026,7 +1061,7 @@ async sub enable_provider {
 
     DataDog::DogStatsd::Helper::stats_inc('event.identity_verification.enabled_provider_' . $provider);
 
-    await send_idv_configuration();
+    await send_idv_configuration(undef, $service_contexts);
 
     return;
 }

@@ -304,7 +304,7 @@ Process event passed by invoking corresponding method from action mapping
 =cut
 
 sub process {
-    my ($self, $event, $stream) = @_;
+    my ($self, $event, $stream, $service_contexts) = @_;
 
     # event is of form { type => action, details => {}, context => {} }
     my $event_type = $event->{type} // '<unknown>';
@@ -328,7 +328,7 @@ sub process {
     my $response = 0;
     try {
         $log->debugf("processing event %s from stream %s", $event_type, $stream);
-        $response = $self->actions->{$event_type}->($event->{details});
+        $response = $self->actions->{$event_type}->($event->{details}, $service_contexts);
         $response->retain if blessed($response) and $response->isa('Future');
     } catch ($e) {
         $log->errorf("An error occurred processing %s: %s", $event_type, $e);

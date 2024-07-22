@@ -7,6 +7,7 @@ use Test::MockModule;
 use Email::Address::UseXS;
 use BOM::Test;
 use BOM::Test::Email;
+use BOM::Test::Customer;
 use Test::Exception;
 use BOM::Config::Runtime;
 use BOM::User;
@@ -19,6 +20,8 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Utility                 qw(random_email_address);
 use JSON::MaybeUTF8                            qw(decode_json_utf8);
 use BOM::Event::Actions::Authentication;
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 subtest 'bulk_authentication' => sub {
     my (@lines, @clients, @users);
@@ -35,15 +38,16 @@ subtest 'bulk_authentication' => sub {
 
         # Add a CR client to the user
         $clients[$i] = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
+            broker_code    => 'CR',
+            binary_user_id => $users[$i]->id,
         });
         $users[$i]->add_client($clients[$i]);
         push @lines, [$clients[$i]->loginid];
     }
 
-    throws_ok { BOM::Event::Actions::Authentication::bulk_authentication() } qr/csv input file should exist/,
+    throws_ok { BOM::Event::Actions::Authentication::bulk_authentication(undef, $service_contexts) } qr/csv input file should exist/,
         'throw exception when csv input file is not provided';
-    throws_ok { BOM::Event::Actions::Authentication::bulk_authentication({'data' => \@lines}) }
+    throws_ok { BOM::Event::Actions::Authentication::bulk_authentication({'data' => \@lines}, $service_contexts) }
     qr/client_authentication or allow_poi_resubmission should exist/,
         'throw exception when client_authentication or allow_poi_resubmission is not provided';
     throws_ok {
@@ -53,20 +57,24 @@ subtest 'bulk_authentication' => sub {
                 'poi_reason'             => $poi_reason,
                 'client_authentication'  => $client_authentication,
                 'staff'                  => 'Sarah Aziziyan',
-            })
+            },
+            $service_contexts
+        )
     }
     qr/email to send results does not exist/, 'throw exception when email to send results t is not provided';
 
     mailbox_clear();
     my $result = BOM::Event::Actions::Authentication::bulk_authentication({
-        'data'                   => \@lines,
-        'allow_poi_resubmission' => $allow_poi_resubmission,
-        'poi_reason'             => $poi_reason,
-        'client_authentication'  => $client_authentication,
-        'staff'                  => 'Sarah Aziziyan',
-        'to_email'               => 'sarah@deriv.com',
-        'staff_department'       => 'Compliance',
-    });
+            'data'                   => \@lines,
+            'allow_poi_resubmission' => $allow_poi_resubmission,
+            'poi_reason'             => $poi_reason,
+            'client_authentication'  => $client_authentication,
+            'staff'                  => 'Sarah Aziziyan',
+            'to_email'               => 'sarah@deriv.com',
+            'staff_department'       => 'Compliance',
+        },
+        $service_contexts
+    );
     ok($result, 'Returns 1 after triggering authentication for users.');
 
     # It should send an notification email

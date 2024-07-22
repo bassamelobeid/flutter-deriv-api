@@ -50,19 +50,21 @@ sub get_user_object {
     my ($user_identifier, $correlation_id) = @_;
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::get_user_object not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to get_user_object not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     my $cache_key_main      = "$correlation_id:$user_identifier";
     my $binary_user_id      = _user_identifier_to_binary_user_id($user_identifier);
     my $cache_key_secondary = defined $binary_user_id ? "$correlation_id:$binary_user_id" : "$correlation_id:$user_identifier";
-    my $user                = $user_object_cache->get($cache_key_main) // $user_object_cache->get($cache_key_secondary);
+    my $cache_entry         = $user_object_cache->get($cache_key_main) // $user_object_cache->get($cache_key_secondary);
 
     # Invalidate the user if cache expired
-    $user = undef if (defined $user && tv_interval($user->{time}) > CACHE_OBJECT_EXPIRY);
+    $cache_entry = undef if (defined $cache_entry && tv_interval($cache_entry->{time}) > CACHE_OBJECT_EXPIRY);
+    # Invalidate the user if the number of clients has changed
+    $cache_entry = undef if (defined $cache_entry && $cache_entry->{loginids} != _get_loginid_count($binary_user_id));
 
     # If no user object is found in the cache, create a new one
-    unless (defined $user) {
+    unless (defined $cache_entry) {
         my $user_object;
         if (defined $binary_user_id) {
             $user_object = BOM::User->new(
@@ -76,14 +78,16 @@ sub get_user_object {
             );
         }
         die "UserNotFound|::|Could not find a user object for '$user_identifier'" unless defined $user_object;
-        $user = {
-            time   => [gettimeofday],
-            object => $user_object
+
+        $cache_entry = {
+            time     => [gettimeofday],
+            loginids => _get_loginid_count($binary_user_id),
+            object   => $user_object
         };
-        $user_object_cache->set($cache_key_main,      $user);
-        $user_object_cache->set($cache_key_secondary, $user);
+        $user_object_cache->set($cache_key_main,      $cache_entry);
+        $user_object_cache->set($cache_key_secondary, $cache_entry);
     }
-    return $user->{object};
+    return $cache_entry->{object};
 }
 
 =pod
@@ -116,7 +120,7 @@ sub flush_user_cache {
     my ($user_identifier, $correlation_id) = @_;
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::flush_user_cache not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to flush_user_cache not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     my $cache_key_main      = "$correlation_id:$user_identifier";
@@ -153,19 +157,21 @@ sub get_client_object {
     my ($user_identifier, $correlation_id) = @_;
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::get_client_object not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to get_client_object not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     my $cache_key_main      = "$correlation_id:$user_identifier";
     my $binary_user_id      = _user_identifier_to_binary_user_id($user_identifier);
     my $cache_key_secondary = defined $binary_user_id ? "$correlation_id:$binary_user_id" : "$correlation_id:$user_identifier";
 
-    my $client = $client_object_cache->get($cache_key_main) // $client_object_cache->get($cache_key_secondary);
+    my $cache_entry = $client_object_cache->get($cache_key_main) // $client_object_cache->get($cache_key_secondary);
 
     # Invalidate the user if cache expired
-    $client = undef if (defined $client && tv_interval($client->{time}) > CACHE_OBJECT_EXPIRY);
+    $cache_entry = undef if (defined $cache_entry && tv_interval($cache_entry->{time}) > CACHE_OBJECT_EXPIRY);
+    # Invalidate the user if the number of clients has changed
+    $cache_entry = undef if (defined $cache_entry && $cache_entry->{loginids} != _get_loginid_count($binary_user_id));
 
-    unless (defined $client) {
+    unless (defined $cache_entry) {
         my $user_object = get_user_object($user_identifier, $correlation_id);
         die "UserNotFound|::|Could not find a user object for '$user_identifier'" unless defined $user_object;
         my $client_object = $user_object->get_default_client(
@@ -173,14 +179,16 @@ sub get_client_object {
             include_disabled => 1
         );
         die "ClientNotFound|::|Could not find a default_client object for '$user_identifier'" unless defined $client_object;
-        $client = {
-            time   => [gettimeofday],
-            object => $client_object
+        $cache_entry = {
+            time     => [gettimeofday],
+            loginids => _get_loginid_count($binary_user_id),
+            object   => $client_object
         };
-        $client_object_cache->set($cache_key_main,      $client);
-        $client_object_cache->set($cache_key_secondary, $client);
+
+        $client_object_cache->set($cache_key_main,      $cache_entry);
+        $client_object_cache->set($cache_key_secondary, $cache_entry);
     }
-    return $client->{object};
+    return $cache_entry->{object};
 }
 
 =pod
@@ -207,7 +215,7 @@ sub flush_client_cache {
     my ($user_identifier, $correlation_id) = @_;
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::flush_client_cache not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to flush_client_cache not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     my $cache_key_main      = "$correlation_id:$user_identifier";
@@ -242,7 +250,7 @@ sub binary_user_id_to_uuid {
     my ($binary_user_id) = @_;
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::binary_user_id_to_uuid not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to binary_user_id_to_uuid not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     die "Could not convert id to UUID, input must be greater than 0"             if $binary_user_id <= 0;
@@ -288,7 +296,7 @@ sub uuid_to_binary_user_id {
     my ($uuid) = @_;
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::uuid_to_binary_user_id not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to uuid_to_binary_user_id not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     unless ($uuid =~ /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/) {
@@ -342,8 +350,7 @@ sub _user_identifier_to_binary_user_id {
     my ($user_identifier) = @_;
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::_user_identifier_to_binary_user_id not allowed outside of the BOM::Service namespace: "
-            . caller() . "\n";
+        die "Access denied!! Calls to _user_identifier_to_binary_user_id not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     my $binary_user_id;
@@ -364,4 +371,34 @@ sub _user_identifier_to_binary_user_id {
     return $binary_user_id;
 }
 
+=head2 _get_loginid_count
+
+Given a binary user ID, this method retrieves the count of login IDs associated with the user from the database.
+
+=head3 Arguments
+
+=over 4
+
+=item *
+
+C<$binary_user_id> - A binary representation of the user ID.
+
+=back
+
+=head3 Returns
+
+The number of login IDs associated with the user.
+
+=cut
+
+sub _get_loginid_count {
+    my $binary_user_id = shift;
+
+    my $loginids = BOM::User->dbic->run(
+        fixup => sub {
+            return $_->selectall_arrayref('select loginid from users.get_loginids(?)', {Slice => {}}, $binary_user_id);
+        });
+
+    return scalar @$loginids;
+}
 1;

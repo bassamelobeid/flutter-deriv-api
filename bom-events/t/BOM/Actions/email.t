@@ -9,6 +9,7 @@ use Test::Fatal;
 use Test::Deep;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::User;
 
 use BOM::Platform::Context qw(request localize);
@@ -47,21 +48,18 @@ $mock_brands->mock(
         return (grep { $_ eq $self->name } @enabled_brands);
     });
 
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
-$client->email('jw@deriv.com');
-$client->first_name('John');
-$client->last_name('Wick');
-$client->salutation('MR');
-$client->save;
-
-my $user = BOM::User->create(
-    email          => $client->email,
-    password       => "hello",
+my $test_customer = BOM::Test::Customer->create(
     email_verified => 1,
-)->add_client($client);
+    salutation     => 'MR',
+    first_name     => 'John',
+    last_name      => 'Wick',
+    clients        => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+    ]);
 
 subtest 'email events - risk disclaimer resubmission' => sub {
     my $req = BOM::Platform::Context::Request->new(
@@ -74,13 +72,16 @@ subtest 'email events - risk disclaimer resubmission' => sub {
     BOM::Event::Actions::Email::send_client_email_track_event({
             language   => 'ES',
             event      => 'risk_disclaimer_resubmission',
-            loginid    => $client->loginid,
+            loginid    => $test_customer->get_client_loginid('CR'),
             properties => {
                 title        => 'test title',
-                loginid      => $client->loginid,
-                salutation   => $client->salutation,
+                loginid      => $test_customer->get_client_loginid('CR'),
+                salutation   => $test_customer->get_client_object('CR')->salutation,
                 website_name => 'Deriv.com'
-            }})->get;
+            }
+        },
+        $service_contexts
+    )->get;
 
     my ($customer, %args) = @track_args;
 
@@ -114,7 +115,7 @@ subtest 'email event - unknown_login' => sub {
     BOM::Event::Actions::Email::send_client_email_track_event({
             language   => 'EN',
             event      => 'unknown_login',
-            loginid    => $client->loginid,
+            loginid    => $test_customer->get_client_loginid('CR'),
             properties => {
                 device                    => 'android',
                 app_name                  => 'my app',
@@ -129,7 +130,10 @@ subtest 'email event - unknown_login' => sub {
                         source       => $app_id,
                         language     => $req->language,
                         app_name     => 'deriv'
-                    })}})->get;
+                    })}
+        },
+        $service_contexts
+    )->get;
 
     my ($customer, %args) = @track_args;
 
@@ -138,8 +142,8 @@ subtest 'email event - unknown_login' => sub {
     cmp_deeply $args{properties},
         {
         brand                     => 'deriv',
-        loginid                   => $client->loginid,
-        email                     => $client->email,
+        loginid                   => $test_customer->get_client_loginid('CR'),
+        email                     => $test_customer->get_email(),
         lang                      => 'EN',
         device                    => 'android',
         lang                      => 'EN',

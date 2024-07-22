@@ -58,7 +58,10 @@ Returns a L<Future> which resolves to C<undef>
 =cut
 
 async sub affiliate_sync_initiated {
-    my ($data)        = @_;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $affiliate_id  = $data->{affiliate_id};
     my $deriv_loginid = $data->{deriv_loginid};
 
@@ -99,7 +102,7 @@ async sub affiliate_sync_initiated {
         };
 
         # Don't fire a new event if this is the last batch, process it right away instead. Untag flag is on last batch to archive the affiliate accounts
-        return await affiliate_loginids_sync({%$args, 'untag' => $data->{untag} // 0}) unless @loginids;
+        return await affiliate_loginids_sync({%$args, 'untag' => $data->{untag} // 0}, $service_contexts) unless @loginids;
         BOM::Platform::Event::Emitter::emit('affiliate_loginids_sync', $args);
     }
 
@@ -182,7 +185,10 @@ Returns a L<Future> which resolves to C<undef>
 =cut
 
 async sub affiliate_loginids_sync {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my ($affiliate_id, $loginids, $action, $client) = $data->@{qw/affiliate_id loginids action client/};
 
     stats_event(
@@ -244,7 +250,10 @@ Returns a L<Future> which resolves to C<undef>
 =cut
 
 async sub bulk_affiliate_loginids_sync {
-    my ($data)             = @_;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $action             = $data->{action};
     my $affiliate_loginids = $data->{affiliate_loginids};
 

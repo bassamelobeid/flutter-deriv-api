@@ -13,6 +13,7 @@ use Test::Fatal;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Email;
+use BOM::Test::Customer;
 use BOM::User;
 use BOM::Event::Process;
 use MIME::Base64;
@@ -27,24 +28,22 @@ use WebService::Async::Onfido::Document;
 use BOM::Platform::Redis;
 use Future;
 
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'test1@bin.com',
-});
-my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-    email       => 'vrtc1@bin.com',
-});
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
-my $email = $test_client->email;
-my $user  = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
+my $test_customer = BOM::Test::Customer->create(
     email_verified => 1,
-);
+    clients        => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+        {
+            name        => 'VRTC',
+            broker_code => 'VRTC',
+        },
+    ]);
+my $test_client = $test_customer->get_client_object('CR');
+my $vrtc_client = $test_customer->get_client_object('VRTC');
 
-$user->add_client($test_client);
-$user->add_client($vrtc_client);
 my $action_handler   = BOM::Event::Process->new(category => 'generic')->actions->{onfido_doc_ready_for_upload};
 my $onfido_mocker    = Test::MockModule->new('WebService::Async::Onfido');
 my $track_mocker     = Test::MockModule->new('BOM::Event::Services::Track');
@@ -88,12 +87,14 @@ subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
 
     my $upload_generator = sub {
         return $action_handler->({
-            type           => 'photo',
-            document_id    => 'dummy_doc_id',
-            client_loginid => $test_client->loginid,
-            applicant_id   => 'dummy_applicant_id',
-            file_type      => 'png',
-        });
+                type           => 'photo',
+                document_id    => 'dummy_doc_id',
+                client_loginid => $test_client->loginid,
+                applicant_id   => 'dummy_applicant_id',
+                file_type      => 'png',
+            },
+            $service_contexts
+        );
     };
 
     # Run it ten times to stress it a bit
@@ -159,7 +160,9 @@ subtest 'Onfido lifetime valid' => sub {
     $track_mocker->mock(
         'document_upload',
         sub {
-            my $args = shift;
+            my ($args, $service_contexts) = @_;
+
+            die "Missing service_contexts" unless $service_contexts;
 
             $document = $args->{properties};
 
@@ -182,7 +185,10 @@ subtest 'Onfido lifetime valid' => sub {
                     type            => $doc_type,
                     expiration_date => $expiration_date,
                     number          => $doc_id,
-                }});
+                }
+            },
+            $service_contexts
+        );
     };
     undef @emissions;
     $upload->('abcd', '2019-01-01', 'document', 'passport')->get;
@@ -190,18 +196,17 @@ subtest 'Onfido lifetime valid' => sub {
 
     my $process = BOM::Event::Process->new(category => 'track');
     $process->actions->{document_uploaded} = \&BOM::Event::Services::Track::document_upload;
-    $process->process($emissions[$#emissions])->get;
-
-    is $document->{expiration_date}, '2019-01-01', 'Expected expiration date';
+    isnt $process->process($emissions[$#emissions], 'Test Stream', $service_contexts)->get, 0,            'Successful event execution';
+    is $document->{expiration_date},                                                        '2019-01-01', 'Expected expiration date';
     ok !$document->{lifetime_valid}, 'No lifetime valid doc';
 
     $upload->('qwerty', '', 'document', 'passport')->get;
-    $process->process($emissions[$#emissions])->get;
+    isnt $process->process($emissions[$#emissions], 'Test Stream', $service_contexts)->get, 0, 'Successful event execution';
     ok !$document->{expiration_date}, 'Empty expiration date';
     ok $document->{lifetime_valid},   'Lifetime valid doc';
 
     $upload->('cucamonga', '', 'photo', 'selfie')->get;
-    $process->process($emissions[$#emissions])->get;
+    isnt $process->process($emissions[$#emissions], 'Test Stream', $service_contexts)->get, 0, 'Successful event execution';
     ok !$document->{expiration_date}, 'Empty expiration date';
     ok !$document->{lifetime_valid},  'Lifetime valid does not apply to selfie';
 
@@ -253,7 +258,10 @@ subtest '_get_document_details' => sub {
                     type            => $doc_type,
                     expiration_date => $expiration_date,
                     number          => $doc_id,
-                }});
+                }
+            },
+            $service_contexts
+        );
     };
     $onfido_mocker->mock(
         'download_document',
@@ -374,7 +382,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successful event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successful event execution';
 
                 ok $test_client->status->poi_name_mismatch, 'POI name mismatch is forced';
                 ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch is forced';
@@ -387,7 +397,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
 
                 ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
                 ok !$test_client->status->poi_dob_mismatch,  'POI dob mismatch not set';
@@ -416,7 +428,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
                 ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
                 ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch not set';
                 ok !$test_client->status->age_verification, 'Age verified not set';
@@ -432,7 +446,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
                 ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch set';
                 ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
                 ok !$test_client->status->age_verification, 'Age verified not set';
@@ -452,7 +468,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
                 ok $test_client->status->poi_dob_mismatch,   'POI dob mismatch set';
                 ok !$test_client->status->poi_name_mismatch, 'POI name mismatch cleared up';
                 ok !$test_client->status->age_verification,  'Age verified not set';
@@ -468,7 +486,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
                 ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch cleared up';
                 ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
                 ok !$test_client->status->age_verification, 'Age verified not set';
@@ -512,7 +532,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successful event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successful event execution';
 
                 ok $test_client->status->poi_name_mismatch, 'POI name mismatch is forced';
                 ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch is forced';
@@ -532,7 +554,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
 
                 ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
                 ok $test_client->status->poi_dob_mismatch,   'POI dob mismatch is set';
@@ -552,7 +576,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
 
                 ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
                 ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch not set';
@@ -572,7 +598,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
 
                 ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
                 ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch not set';
@@ -592,7 +620,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
 
                 ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
                 ok !$test_client->status->poi_dob_mismatch,  'POI dob mismatch not set';
@@ -622,7 +652,9 @@ subtest 'Check POI Rules' => sub {
                 ok !$action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
-                    })->get, 'Successfull event execution';
+                    },
+                    $service_contexts
+                )->get, 'Successfull event execution';
 
                 ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
                 ok !$test_client->status->poi_dob_mismatch,  'POI dob mismatch not set';
@@ -666,7 +698,9 @@ subtest 'Check POI Rules' => sub {
         ok !$action_handler->({
                 loginid  => $vrtc_client->loginid,
                 check_id => 'TEST'
-            })->get, 'Handled exception in event execution';
+            },
+            $service_contexts
+        )->get, 'Handled exception in event execution';
 
         cmp_deeply [@metrics],
             [
@@ -692,7 +726,9 @@ subtest 'Check POI Rules' => sub {
         ok !$action_handler->({
                 loginid  => $test_client->loginid,
                 check_id => 'TEST'
-            })->get, 'Handled exception in event execution';
+            },
+            $service_contexts
+        )->get, 'Handled exception in event execution';
 
         cmp_deeply [@metrics],
             [

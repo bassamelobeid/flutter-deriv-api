@@ -78,6 +78,7 @@ use BOM::Platform::Client::AntiFraud;
 use BOM::Platform::Utility;
 use BOM::Event::Actions::Client::IdentityVerification;
 use BOM::User::Script::AMLClientsUpdate;
+use BOM::Service;
 use BOM::Event::Actions::DynamicWorks;
 
 # this one shoud come after BOM::Platform::Email
@@ -282,7 +283,9 @@ information to process this client.
 =cut
 
 async sub document_upload {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     BOM::Config::Runtime->instance->app_config->check_for_update();
 
@@ -715,13 +718,15 @@ Resolves to C<undef>.
 =cut
 
 async sub poa_updated {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
 
     my $loginid = $args->{loginid}
         or die 'No client login ID supplied?';
 
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $best_issue_date    = $client->documents->best_poa_date('proof_of_address', 'best_issue_date');
     my $best_verified_date = $client->documents->best_poa_date('proof_of_address', 'best_verified_date');
@@ -770,13 +775,15 @@ Resolves to C<undef>.
 =cut
 
 async sub poi_updated {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
 
     my $loginid = $args->{loginid}
         or die 'No client login ID supplied?';
 
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     if (my $best_expiration_date = $client->documents->best_expiry_date()) {
         $client->user->dbic->run(
@@ -815,7 +822,10 @@ everything should be ready to do the verification step.
 =cut
 
 async sub ready_for_authentication {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $tags = [];
     my $client;
     my $res;
@@ -971,7 +981,7 @@ Some extra validation rules are applied such as: dob mismatch, name mismatch.
 =cut
 
 async sub client_verification {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
     my $brand = request->brand;
     my $client;
     my $redis_events_write;
@@ -979,6 +989,8 @@ async sub client_verification {
     my $check;
     my $db_check;
     my $check_completed;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     $log->debugf('Client verification with %s', $args);
     DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.dispatch');
@@ -1067,9 +1079,9 @@ async sub client_verification {
 
             my $documents_count = 0;
 
-            $documents_count += await _store_applicant_documents($client, $reported_documents, $duplicated_document);
+            $documents_count += await _store_applicant_documents($client, $reported_documents, $duplicated_document, $service_contexts);
 
-            $documents_count += await _store_applicant_selfie($applicant_id, $client, \@all_report);
+            $documents_count += await _store_applicant_selfie($applicant_id, $client, \@all_report, $service_contexts);
 
             DataDog::DogStatsd::Helper::stats_histogram('event.onfido.client_verification.reported_documents', $documents_count);
 
@@ -1155,7 +1167,7 @@ async sub client_verification {
                 } elsif ($duplicated_document || $client->status->poi_duplicated_documents) {
                     DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.dup_documents', {tags => [@common_datadog_tags]});
 
-                    BOM::Event::Actions::Common::handle_duplicated_documents($client, $duplicated_document, $duplicated_provider);
+                    BOM::Event::Actions::Common::handle_duplicated_documents($client, $duplicated_document, $duplicated_provider, $service_contexts);
                 }
                 # Extract all clear documents to check consistency between DOBs
                 elsif (my @valid_doc = grep { (defined $_->{properties}->{date_of_birth} and $_->result eq 'clear') } @reports) {
@@ -1174,12 +1186,14 @@ async sub client_verification {
                         # we first check if facial similarity is clear for LCs with the required flag active
                         if ($selfie_result eq 'clear' || !$client->is_face_similarity_required) {
                             await check_onfido_rules({
-                                loginid       => $client->loginid,
-                                check_id      => $check_id,
-                                datadog_tags  => \@common_datadog_tags,
-                                check_result  => $check->result,
-                                report_result => $document_report->result,
-                            });
+                                    loginid       => $client->loginid,
+                                    check_id      => $check_id,
+                                    datadog_tags  => \@common_datadog_tags,
+                                    check_result  => $check->result,
+                                    report_result => $document_report->result,
+                                },
+                                $service_contexts
+                            );
 
                             if ($client->status->selfie_pending) {
                                 push @common_datadog_tags, "result:selfie_verified";
@@ -1190,8 +1204,10 @@ async sub client_verification {
 
                             $client->{status} = undef;
 
-                            if ($age_verified =
-                                await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido'))
+                            if (
+                                $age_verified = await BOM::Event::Actions::Common::set_age_verification(
+                                    $client, 'Onfido', $redis_events_write, 'onfido', $service_contexts
+                                ))
                             {
                                 $client->propagate_status('selfie_verified', 'system', 'Selfie verified by Onfido') if $selfie_report;
                                 push @common_datadog_tags, "result:age_verified";
@@ -1546,7 +1562,7 @@ Returns the number of stored documents.
 =cut
 
 async sub _store_applicant_documents {
-    my ($client, $documents, $duplicated) = @_;
+    my ($client, $documents, $duplicated, $service_contexts) = @_;
     my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id);
     my $counter              = 0;
 
@@ -1577,7 +1593,9 @@ async sub _store_applicant_documents {
                     expiration_date => $expiration_date,
                     number          => $document_number,
                 },
-            });
+            },
+            $service_contexts
+        );
 
         $counter++;
     }
@@ -1606,7 +1624,7 @@ Returns the number of stored photos.
 =cut
 
 async sub _store_applicant_selfie {
-    my ($applicant_id, $client, $check_reports) = @_;
+    my ($applicant_id, $client, $check_reports, $service_contexts) = @_;
     my $onfido = _onfido();
     my $selfie_report;
 
@@ -1640,13 +1658,15 @@ async sub _store_applicant_selfie {
     BOM::User::Onfido::store_onfido_live_photo($photo, $applicant_id);
 
     await onfido_doc_ready_for_upload({
-        $selfie_report ? (final_status => _get_document_final_status($selfie_report->result)) : (),
-        type           => 'photo',
-        document_id    => $photo->id,
-        client_loginid => $client->loginid,
-        applicant_id   => $applicant_id,
-        file_type      => $photo->file_type,
-    });
+            $selfie_report ? (final_status => _get_document_final_status($selfie_report->result)) : (),
+            type           => 'photo',
+            document_id    => $photo->id,
+            client_loginid => $client->loginid,
+            applicant_id   => $applicant_id,
+            file_type      => $photo->file_type,
+        },
+        $service_contexts
+    );
 
     return 1;
 }
@@ -1664,7 +1684,10 @@ Returns a L<Future> which resolves to undef.
 =cut
 
 async sub poi_check_rules {
-    my ($args)  = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $loginid = $args->{loginid}                              or die 'No loginid supplied';
     my $client  = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
 
@@ -1683,9 +1706,9 @@ async sub poi_check_rules {
 
     #we pass full args, only login id is required, the rest is optional
 
-    await check_idv_rules($args) if $latest eq 'idv';
+    await check_idv_rules($args, $service_contexts) if $latest eq 'idv';
 
-    await check_onfido_rules($args) if $latest eq 'onfido';
+    await check_onfido_rules($args, $service_contexts) if $latest eq 'onfido';
 
     return undef;
 }
@@ -1719,7 +1742,10 @@ Returns a L<Future> which resolves to C<1> on success.
 =cut
 
 async sub check_idv_rules {
-    my ($args)  = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $loginid = $args->{loginid};
     my $client  = BOM::User::Client->new({loginid => $loginid});
     my $tags    = $args->{datadog_tags};
@@ -1743,15 +1769,17 @@ async sub check_idv_rules {
 
     if ($report_decoded) {
         await BOM::Event::Actions::Client::IdentityVerification::idv_mismatch_lookback({
-            client        => $client,
-            messages      => $messages,
-            document      => $idv_document,
-            report        => $report_decoded,
-            provider      => $provider,
-            pictures      => scalar @$pictures ? $pictures : undef,
-            response_body => $response_body,
-            request_body  => $request_body,
-        });
+                client        => $client,
+                messages      => $messages,
+                document      => $idv_document,
+                report        => $report_decoded,
+                provider      => $provider,
+                pictures      => scalar @$pictures ? $pictures : undef,
+                response_body => $response_body,
+                request_body  => $request_body,
+            },
+            $service_contexts
+        );
 
         if ($client->status->age_verification) {
             push @$tags, 'result:age_verified_corrected';
@@ -1810,7 +1838,10 @@ Returns a L<Future> which resolves to C<1> on success.
 =cut
 
 async sub check_onfido_rules {
-    my ($args)  = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $loginid = $args->{loginid};
     my $client  = BOM::User::Client->new({loginid => $loginid});
 
@@ -1872,7 +1903,8 @@ async sub check_onfido_rules {
                             $_->do('SELECT * FROM betonmarkets.set_onfido_doc_status_to_verified(?)', undef, $client->binary_user_id);
                         });
 
-                    if (await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido')) {
+                    if (await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido', $service_contexts))
+                    {
                         if ($tags) {
                             DataDog::DogStatsd::Helper::stats_inc(
                                 'event.onfido.client_verification.result',
@@ -1961,7 +1993,10 @@ Gets the client's documents from Onfido and upload to S3
 =cut
 
 async sub onfido_doc_ready_for_upload {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my ($type, $doc_id, $client_loginid, $applicant_id, $file_type, $document_info, $final_status, $dont_claim_ownership) =
         @{$data}{qw/type document_id client_loginid applicant_id file_type document_info final_status dont_claim_ownership/};
 
@@ -2143,7 +2178,9 @@ Sync the client details from our system with Onfido
 =cut
 
 async sub sync_onfido_details {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     BOM::Config::Runtime->instance->app_config->check_for_update();
     return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
@@ -2191,7 +2228,10 @@ Returns 1 if the client's selfie was succesfully retriggered.
 =cut
 
 async sub recheck_onfido_face_similarity {
-    my $data    = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $loginid = $data->{loginid}                              or die 'No loginid supplied';
     my $client  = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
     die "Virtual account should not meddle with Onfido" if $client->is_virtual;
@@ -2266,7 +2306,9 @@ request again for new address.
 =cut
 
 async sub verify_address {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = $args->{loginid}
         or die 'No client login ID supplied?';
@@ -2547,9 +2589,11 @@ This is handler for each B<account_closure> event emitted, when handled by the t
 =cut
 
 sub track_account_closure {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
 
-    return BOM::Event::Services::Track::account_closure($data);
+    die "Missing service_contexts" unless $service_contexts;
+
+    return BOM::Event::Services::Track::account_closure($data, $service_contexts);
 }
 
 =head2 account_reactivated
@@ -2559,19 +2603,29 @@ It's the handler for the event emitted on account reactivation, sending emails t
 =cut
 
 sub account_reactivated {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
 
-    my $client = BOM::User::Client->new({loginid => $data->{loginid}});
-    my $brand  = request->brand;
+    die "Missing service_contexts" unless $service_contexts;
+
+    my $client    = BOM::User::Client->new({loginid => $data->{loginid}});
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email)],
+    );
+    return 0 unless ($user_data->{status} eq 'ok');
+
+    my $brand = request->brand;
 
     BOM::Platform::Email::send_email({
             to            => $brand->emails('social_responsibility'),
             from          => $brand->emails('no-reply'),
-            subject       => $client->loginid . ' has been reactivated',
+            subject       => $data->{loginid} . ' has been reactivated',
             template_name => 'account_reactivated_sr',
             template_args => {
-                loginid => $client->loginid,
-                email   => $client->email,
+                loginid => $data->{loginid},
+                email   => $user_data->{attributes}{email},
                 reason  => $data->{closure_reason},
             },
             use_email_template    => 1,
@@ -2588,20 +2642,29 @@ This is handler for each B<account_reactivated> event emitted, when handled by t
 =cut
 
 sub track_account_reactivated {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
 
-    my $client = BOM::User::Client->new({loginid => $args->{loginid}});
-    my $brand  = request->brand;
+    my $client    = BOM::User::Client->new({loginid => $args->{loginid}});
+    my $brand     = request->brand;
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(first_name)],
+    );
+    return 0 unless ($user_data->{status} eq 'ok');
 
     return BOM::Event::Services::Track::account_reactivated({
-        loginid          => $client->loginid,
-        needs_poi        => $client->needs_poi_verification(),
-        profile_url      => $brand->profile_url({language => uc(request->language // 'en')}),
-        resp_trading_url => $brand->responsible_trading_url({language => uc(request->language // 'en')}),
-        live_chat_url    => $brand->live_chat_url({language => uc(request->language // 'en')}),
-        first_name       => $client->first_name,
-        new_campaign     => 1,
-    });
+            loginid          => $args->{loginid},
+            needs_poi        => $client->needs_poi_verification(),
+            profile_url      => $brand->profile_url({language => uc(request->language // 'en')}),
+            resp_trading_url => $brand->responsible_trading_url({language => uc(request->language // 'en')}),
+            live_chat_url    => $brand->live_chat_url({language => uc(request->language // 'en')}),
+            first_name       => $user_data->{attributes}{first_name},
+            new_campaign     => 1,
+        },
+        $service_contexts
+    );
 }
 
 =head2 authenticated_with_scans
@@ -2620,19 +2683,31 @@ Returns undef
 =cut
 
 sub authenticated_with_scans {
-    my ($args)          = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $client          = BOM::User::Client->new($args);
     my ($latest_poi_by) = $client->latest_poi_by({only_verified => 1});
+    my $user_data       = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email first_name)],
+    );
+    die "User-service returned error $user_data->{message}" unless ($user_data->{status} eq 'ok');
 
     return BOM::Event::Services::Track::authenticated_with_scans({
-        %$args,
-        live_chat_url => request->brand->live_chat_url,
-        contact_url   => request->brand->contact_url,
-        loginid       => $client->loginid,
-        email         => $client->email,
-        first_name    => $client->first_name,
-        latest_poi_by => $latest_poi_by,
-    });
+            %$args,
+            live_chat_url => request->brand->live_chat_url,
+            contact_url   => request->brand->contact_url,
+            loginid       => $client->loginid,
+            email         => $user_data->{attributes}{email},
+            first_name    => $user_data->{attributes}{first_name},
+            latest_poi_by => $latest_poi_by,
+        },
+        $service_contexts
+    );
 }
 
 async sub _send_CS_email_POA_uploaded {
@@ -2787,7 +2862,10 @@ NOTE: This is for MX-MLT-CR clients only (Last updated: Dec 22, 2021)
 =cut
 
 sub social_responsibility_check {
-    my $data  = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $brand = request->brand;
 
     my $loginid = $data->{loginid} or die "Missing loginid";
@@ -2914,7 +2992,9 @@ Checks if a client has become AML HIGH risk and apply the corresponding locks.
 =cut
 
 sub aml_high_risk_updated {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = $args->{loginid}
         or die 'No client login ID supplied';
@@ -3299,7 +3379,10 @@ are in page 16, in the following link: http://www.tynwald.org.im/business/opqp/s
 =cut
 
 sub qualifying_payment_check {
-    my $data  = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $brand = request->brand;
 
     my $loginid = $data->{loginid};
@@ -3586,7 +3669,9 @@ Event to handle deposit payment type.
 =cut
 
 async sub payment_deposit {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = $args->{loginid}
         or die 'No client login ID supplied?';
@@ -3662,9 +3747,11 @@ This is handler for each B<payment_deposit> event emitted, when handled by the t
 =cut
 
 sub track_payment_deposit {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
 
-    return BOM::Event::Services::Track::payment_deposit($args);
+    die "Missing service_contexts" unless $service_contexts;
+
+    return BOM::Event::Services::Track::payment_deposit($args, $service_contexts);
 }
 
 =head2 withdrawal_limit_reached
@@ -3674,7 +3761,10 @@ Sets 'needs_action' to a client
 =cut
 
 sub withdrawal_limit_reached {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $loginid = $args->{loginid} or die 'Client login ID was not given';
 
     my $client = BOM::User::Client->new({
@@ -3706,7 +3796,10 @@ Set or clear status on a client account
 =cut
 
 sub payops_event_update_account_status {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     # Special flags for the stuffs
     my $loginid = $args->{loginid} // die 'No loginid provided';
     my $status  = $args->{status}  // die 'No status provided';
@@ -3744,7 +3837,10 @@ Request proof of ownership (POO) from client
 =cut
 
 sub payops_event_request_poo {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     for my $required_arg (qw/trace_id loginid payment_service_provider/) {
         die "Required argument $required_arg is absent" unless defined $args->{$required_arg};
     }
@@ -3792,7 +3888,9 @@ Bulk assigns client promo codes uploaded in backoffice.
 =cut
 
 sub client_promo_codes_upload {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my ($email, $file, $data) = @$args{qw/email file data/};
     my $success = 0;
@@ -3920,32 +4018,32 @@ Sends an email when client is under investigation from Anti-fraud
 =cut
 
 async sub anti_fraud_investigation_email {
+    my ($args, $service_contexts) = @_;
 
-    my @args = @_;
-
-    my ($data) = @args;
-    my $loginid = $data->{loginid};
-
-    my $client = BOM::User::Client->new({loginid => $loginid})
-        or die 'Could not instantiate client for login ID ' . $loginid;
-
-    my $client_email    = $client->email;
+    die "Missing service_contexts" unless $service_contexts;
+    my $client = BOM::User::Client->new({loginid => $args->{loginid}});
+    die 'Could not instantiate client for login ID ' . $args->{loginid} unless $client;
     my $landing_company = $client->landing_company->short;
 
-    return unless await _antifraud_email_cooldown_completed($client_email, $landing_company);
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email first_name last_name)],
+    );
+    die 'User service error for login ID ' . $args->{loginid} unless ($user_data->{status} eq 'ok');
+
+    return unless await _antifraud_email_cooldown_completed($user_data->{attributes}{email}, $landing_company);
 
     BOM::Platform::Event::Emitter::emit(
         'under_antifraud_investigation',
         {
-            loginid    => $client->loginid,
+            loginid    => $args->{loginid},
             properties => {
-                client_first_name      => $client->first_name,
-                client_last_name       => $client->last_name,
+                client_first_name      => $user_data->{attributes}{first_name},
+                client_last_name       => $user_data->{attributes}{last_name},
                 client_landing_company => $landing_company,
-                email                  => $client_email
-            }
-
-        });
+                email                  => $user_data->{attributes}{email}}});
 
     return;
 
@@ -4003,13 +4101,21 @@ It can be called with the following parameters:
 =cut
 
 async sub signup {
-    my @args = @_;
+    my ($data, $service_contexts) = @_;
 
-    my ($data) = @args;
+    die "Missing service_contexts" unless $service_contexts;
+
     my $loginid = $data->{loginid};
+    my $client  = BOM::User::Client->new({loginid => $loginid});
+    die 'Could not instantiate client for login ID ' . $loginid unless $client;
 
-    my $client = BOM::User::Client->new({loginid => $loginid})
-        or die 'Could not instantiate client for login ID ' . $loginid;
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email first_name last_name)],
+    );
+    die 'User service error for login ID ' . $data->{loginid} unless ($user_data->{status} eq 'ok');
 
     my $emitting = 'verify_false_profile_info';
     try {
@@ -4023,12 +4129,8 @@ async sub signup {
         $log->warnf('Failed to emit %s event for loginid %s, while processing the signup event: %s', $emitting, $client->loginid, $error);
     };
 
-    await check_email_for_fraud($client);
+    await check_email_for_fraud($user_data->{attributes}{email});
     await check_duplicate_dob_phone($client);
-
-    await BOM::Event::Actions::DynamicWorks::link_user_to_dw_affiliate({
-        binary_user_id => $client->user->id,
-    });
     return 1;
 }
 
@@ -4039,9 +4141,11 @@ This is handler for each B<signup> event emitted, when handled by the track work
 =cut
 
 sub track_signup {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
 
-    return BOM::Event::Services::Track::signup($data);
+    die "Missing service_contexts" unless $service_contexts;
+
+    return BOM::Event::Services::Track::signup($data, $service_contexts);
 }
 
 =head2 check_email_for_fraud
@@ -4053,7 +4157,7 @@ In case fraud is detected, potential_fraud status will be set on suspicious acco
 =cut
 
 async sub check_email_for_fraud {
-    my ($client) = @_;
+    my ($email) = @_;
 
     try {
         return unless BOM::Config::Services->is_enabled('fraud_prevention');
@@ -4068,14 +4172,14 @@ async sub check_email_for_fraud {
         while ($retry--) {
             try {
                 $result = await _http()->POST(
-                    $url, encode_json_utf8({email => $client->email}),
+                    $url, encode_json_utf8({email => $email}),
                     content_type => 'application/json',
                     timeout      => 5,
                 );
                 last if $result;
             } catch ($err) {
                 if (blessed($err) and $err->isa("Future::Exception") and $err->category eq 'http') {
-                    $log->warnf("retrying -> $retry < http error occured while checking email for fraud: %s", $err->message);
+                    $log->warnf("retrying -> $retry < http error occurred while checking email for fraud: %s", $err->message);
                     sleep SLEEP_TIMER;
                 } else {
                     die $err;
@@ -4168,7 +4272,9 @@ Handles all cryptocurrency withdrawal issue.
 =cut
 
 sub handle_crypto_withdrawal {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = $args->{loginid} or die 'No client login ID supplied';
 
@@ -4206,8 +4312,9 @@ Send an email to clients after a successful withdrawal
 =cut
 
 sub crypto_withdrawal_email {
+    my ($args, $service_contexts) = @_;
 
-    my ($args) = @_;
+    die "Missing service_contexts" unless $service_contexts;
 
     my %event_mapper = (
         SENT => {
@@ -4229,19 +4336,21 @@ sub crypto_withdrawal_email {
     );
 
     return $event_mapper{$args->{transaction_status}}{event_name}({
-        loginid            => $args->{loginid},
-        transaction_hash   => $args->{transaction_hash},
-        transaction_url    => $args->{transaction_url},
-        transaction_status => $args->{transaction_status},
-        amount             => $args->{amount},
-        currency           => $args->{currency},
-        reference_no       => $args->{reference_no},
-        live_chat_url      => request->brand->live_chat_url,
-        title              => $event_mapper{$args->{transaction_status}}{title},
-        is_priority        => $args->{is_priority},
-        fee_paid           => $args->{fee_paid},
-        requested_amount   => $args->{requested_amount},
-    });
+            loginid            => $args->{loginid},
+            transaction_hash   => $args->{transaction_hash},
+            transaction_url    => $args->{transaction_url},
+            transaction_status => $args->{transaction_status},
+            amount             => $args->{amount},
+            currency           => $args->{currency},
+            reference_no       => $args->{reference_no},
+            live_chat_url      => request->brand->live_chat_url,
+            title              => $event_mapper{$args->{transaction_status}}{title},
+            is_priority        => $args->{is_priority},
+            fee_paid           => $args->{fee_paid},
+            requested_amount   => $args->{requested_amount},
+        },
+        $service_contexts
+    );
 }
 
 =head2 crypto_deposit_email
@@ -4267,8 +4376,9 @@ Send an email to clients upon a pending crypto deposit
 =cut
 
 sub crypto_deposit_email {
+    my ($args, $service_contexts) = @_;
 
-    my ($args) = @_;
+    die "Missing service_contexts" unless $service_contexts;
 
     my %event_mapper = (
         PENDING => {
@@ -4282,15 +4392,17 @@ sub crypto_deposit_email {
     );
 
     return $event_mapper{$args->{transaction_status}}{event_name}({
-        loginid            => $args->{loginid},
-        amount             => $args->{amount},
-        currency           => $args->{currency},
-        live_chat_url      => request->brand->live_chat_url,
-        title              => $event_mapper{$args->{transaction_status}}{title},
-        transaction_hash   => $args->{transaction_hash},
-        transaction_status => $args->{transaction_status},
-        transaction_url    => $args->{transaction_url},
-    });
+            loginid            => $args->{loginid},
+            amount             => $args->{amount},
+            currency           => $args->{currency},
+            live_chat_url      => request->brand->live_chat_url,
+            title              => $event_mapper{$args->{transaction_status}}{title},
+            transaction_hash   => $args->{transaction_hash},
+            transaction_status => $args->{transaction_status},
+            transaction_url    => $args->{transaction_url},
+        },
+        $service_contexts
+    );
 }
 
 =head2 crypto_withdrawal_rejected_email_v2
@@ -4318,7 +4430,9 @@ Handles sending event to trigger email from customer io and send required event 
 =cut
 
 sub crypto_withdrawal_rejected_email_v2 {
-    my ($params) = @_;
+    my ($params, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $prefrd_lang;
     try {
@@ -4350,20 +4464,22 @@ sub crypto_withdrawal_rejected_email_v2 {
     }
     my $fiat_account_currency = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($params->{loginid}) // 'fiat';
     return BOM::Event::Services::Track::crypto_withdrawal_rejected_email_v2({
-        loginid          => $params->{loginid},
-        reject_code      => $reject_code,
-        reject_remark    => $reject_reason,
-        meta_data        => $meta_data,
-        amount           => $params->{amount},
-        currency         => $params->{currency},
-        title            => localize('Your [_1] withdrawal is declined', $params->{currency}),
-        live_chat_url    => $brand->live_chat_url($url_params),
-        reference_no     => $params->{reference_no},
-        fiat_account     => $fiat_account_currency,
-        is_priority      => $params->{is_priority},
-        fee_paid         => $params->{fee_paid},
-        requested_amount => $params->{requested_amount},
-    });
+            loginid          => $params->{loginid},
+            reject_code      => $reject_code,
+            reject_remark    => $reject_reason,
+            meta_data        => $meta_data,
+            amount           => $params->{amount},
+            currency         => $params->{currency},
+            title            => localize('Your [_1] withdrawal is declined', $params->{currency}),
+            live_chat_url    => $brand->live_chat_url($url_params),
+            reference_no     => $params->{reference_no},
+            fiat_account     => $fiat_account_currency,
+            is_priority      => $params->{is_priority},
+            fee_paid         => $params->{fee_paid},
+            requested_amount => $params->{requested_amount},
+        },
+        $service_contexts
+    );
 }
 
 =head2 _save_request_context
@@ -4480,7 +4596,10 @@ Returns, undef.
 =cut
 
 async sub shared_payment_method_found {
-    my ($args)          = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $client_loginid  = $args->{client_loginid} or die 'No client login ID specified';
     my $shared_loginids = $args->{shared_loginid} or die 'No shared client login ID specified';
     my $payment_method  = $args->{payment_method} or die 'No payment method specified';
@@ -4522,7 +4641,7 @@ async sub shared_payment_method_found {
         $shared_client->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found')
             unless $shared_client->status->age_verification;
 
-        _send_shared_payment_method_email($shared_client) unless $sent_user_email{$shared_client->binary_user_id}++;
+        _send_shared_payment_method_email($shared_client, $service_contexts) unless $sent_user_email{$shared_client->binary_user_id}++;
     }
 
     return;
@@ -4595,9 +4714,16 @@ Returns, undef.
 =cut
 
 sub _send_shared_payment_method_email {
-    my $client            = shift;
-    my $client_first_name = $client->first_name;
-    my $client_last_name  = $client->last_name;
+    my $client           = shift;
+    my $service_contexts = shift;
+
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email first_name last_name)],
+    );
+    return unless ($user_data->{status} eq 'ok');
 
     # Each client may come from a different brand
     # this switches the template accordingly
@@ -4613,9 +4739,9 @@ sub _send_shared_payment_method_email {
         {
             loginid    => $client->loginid,
             properties => {
-                client_first_name   => $client_first_name,
-                client_last_name    => $client_last_name,
-                email               => $client->email,
+                client_first_name   => $user_data->{attributes}{first_name},
+                client_last_name    => $user_data->{attributes}{last_name},
+                email               => $user_data->{attributes}{email},
                 ask_poi             => !$client->status->age_verification,
                 authentication_url  => $brand->authentication_url($params),
                 payment_methods_url => $brand->payment_methods_url($params),
@@ -4634,7 +4760,9 @@ withdrawal_locked is applied and an email sent to client.
 =cut
 
 sub check_name_changes_after_first_deposit {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = $args->{loginid};
 
@@ -4642,8 +4770,17 @@ sub check_name_changes_after_first_deposit {
     my $change_threshold = 0.6;    # withdrawl lock is applied when name changes exceed this
 
     my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
+    die "Client not found for $loginid" unless $client;
     return 1 if $client->status->age_verification || $client->fully_authenticated;
     return 1 if $client->status->withdrawal_locked;
+
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email)],
+    );
+    die "User service failure getting email for $loginid, $user_data->{message}" unless ($user_data->{status} eq 'ok');
 
     my $changes = $client->db->dbic->run(
         fixup => sub {
@@ -4681,7 +4818,7 @@ sub check_name_changes_after_first_deposit {
             account_with_false_info_locked => {
                 loginid    => $loginid,
                 properties => {
-                    email              => $client->email,
+                    email              => $user_data->{attributes}{email},
                     authentication_url => $brand->authentication_url,
                     profile_url        => $brand->profile_url,
                     is_name_change     => 1,
@@ -4719,7 +4856,9 @@ Add an affiliated client to commission database.
 my $aff;
 
 sub link_affiliate_client {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my ($myaffiliate_token, $loginid, $binary_user_id, $platform) = @{$args}{'token', 'loginid', 'binary_user_id', 'platform'};
 
@@ -4806,12 +4945,15 @@ It can be called with the following parameters:
 =cut
 
 sub account_verification {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     return BOM::Event::Services::Track::track_event(
-        anonymous  => 1,
-        event      => 'account_verification',
-        properties => $args,
+        anonymous        => 1,
+        event            => 'account_verification',
+        properties       => $args,
+        service_contexts => $service_contexts
     );
 }
 
@@ -4829,12 +4971,15 @@ It can be called with the following parameters:
 =cut
 
 sub account_opening_new {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     return BOM::Event::Services::Track::track_event(
-        anonymous  => 1,
-        event      => 'account_opening_new',
-        properties => $args,
+        anonymous        => 1,
+        event            => 'account_opening_new',
+        properties       => $args,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -4847,11 +4992,15 @@ We will have anonymous since we wont have the login id available for this flow a
 =cut
 
 sub self_tagging_affiliates {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     return BOM::Event::Services::Track::track_event(
-        event      => 'self_tagging_affiliates',
-        anonymous  => 1,
-        properties => $args->{properties},
+        event            => 'self_tagging_affiliates',
+        anonymous        => 1,
+        properties       => $args->{properties},
+        service_contexts => $service_contexts,
     );
 }
 
@@ -4948,8 +5097,11 @@ for my $func_name (
 {
     no strict 'refs';    # allow symbol table manipulation
     *{__PACKAGE__ . '::' . $func_name} = sub {
-        my ($args) = @_;
-        return &{"BOM::Event::Services::Track::$func_name"}($args);
+        my ($args, $service_contexts) = @_;
+
+        die "Missing service_contexts" unless $service_contexts;
+
+        return &{"BOM::Event::Services::Track::$func_name"}($args, $service_contexts);
     }
 }
 
@@ -5031,11 +5183,15 @@ for my $func_name (
 {
     no strict 'refs';    # allow symbol table manipulation
     *{__PACKAGE__ . '::' . $func_name} = sub {
-        my ($args) = @_;
+        my ($args, $service_contexts) = @_;
+
+        die "Missing service_contexts" unless $service_contexts;
+
         return BOM::Event::Services::Track::track_event(
-            event      => $func_name,
-            loginid    => $args->{loginid},
-            properties => $args->{properties},
+            event            => $func_name,
+            loginid          => $args->{loginid},
+            properties       => $args->{properties},
+            service_contexts => $service_contexts,
         );
     }
 }
@@ -5056,7 +5212,9 @@ Takes the following named parameters
 =cut
 
 sub derivx_account_deactivated {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $user    = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
     my $loginid = eval { [$user->bom_loginids()]->[0] }            or die "User $args->{email} doesn't have any accounts";
@@ -5065,7 +5223,10 @@ sub derivx_account_deactivated {
             loginid    => $loginid,
             email      => $args->{email},
             first_name => $args->{first_name},
-            account    => $args->{account}});
+            account    => $args->{account}
+        },
+        $service_contexts
+    );
 }
 
 =head2 bulk_client_status_update
@@ -5084,8 +5245,11 @@ properties argument
 =cut
 
 async sub bulk_client_status_update {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
     my $loginids = $args->{loginids};
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my (@invalid_logins, @message, $status_op_summaries, $summary, $p2p_approved);
     my $properties = $args->{properties};
     my ($operation, $client_status_type, $status_checked, $reason, $clerk, $action, $req_params, $status_code, $user_groups) =
@@ -5192,7 +5356,7 @@ async sub bulk_client_status_update {
             if ($client->_p2p_advertiser_cached) {
                 delete $client->{_p2p_advertiser_cached};
                 if ($p2p_approved ne $client->_p2p_advertiser_cached->{is_approved}) {
-                    BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid});
+                    BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid}, $service_contexts);
                 }
             }
             $status_op_summaries = BOM::Platform::Utility::status_op_processor(
@@ -5283,7 +5447,7 @@ Takes a hashref with the following named parameters
 =cut
 
 async sub payops_event_email {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
 
     my $subject = delete $args->{subject};
     my $loginid = delete $args->{loginid}
@@ -5293,32 +5457,39 @@ async sub payops_event_email {
 
     my $client = BOM::User::Client->new({loginid => $loginid});
     die 'No client here' unless $client;
-    my $template      = delete $args->{template};
-    my $contents      = delete $args->{contents};
-    my $properties    = $args->{properties} // $args;
-    my $phone_number  = $client->phone;
-    my $language      = uc($client->user->preferred_language // 'en');
-    my $email_consent = $client->user->email_consent;
 
-    my $recipient = $client->email;
-    die 'No client email found' unless $recipient;
-    my $country = $client->residence;
-    die 'No residence country found' unless $country;
+    die "Missing service_contexts" unless $service_contexts;
+
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email email_consent phone preferred_language residence)],
+    );
+    die "User service failure getting details for $client->binary_user_id" unless $user_data->{status} eq 'ok';
+
+    my $template   = delete $args->{template};
+    my $contents   = delete $args->{contents};
+    my $properties = $args->{properties} // $args;
+
+    die 'No client email found'      unless $user_data->{attributes}{email};
+    die 'No residence country found' unless $user_data->{attributes}{residence};
 
     return BOM::Event::Services::Track::track_event(
         event      => $event_name,
         properties => {
             $properties->%*,
             subject        => $subject,
-            email          => $recipient,
-            phone          => $phone_number,
-            country        => $country,
-            language       => $language,
-            email_consent  => $email_consent,
+            email          => $user_data->{attributes}{email},
+            phone          => $user_data->{attributes}{phone},
+            country        => $user_data->{attributes}{residence},
+            language       => $user_data->{attributes}{preferred_language} // 'en',
+            email_consent  => $user_data->{attributes}{email_consent},
             contents       => $contents,
             email_template => $template,
         },
-        loginid => $loginid
+        loginid          => $loginid,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -5340,12 +5511,14 @@ Takes a hashref with the following named parameters
 =cut
 
 sub notify_resubmission_of_poi_poa_documents {
-    my ($args)     = @_;
+    my ($args, $service_contexts) = @_;
+
     my $loginid    = $args->{loginid};
     my $poi_reason = $args->{poi_reason};
     my $poa_reason = $args->{poa_reason};
 
-    die 'No client loginid found' unless $loginid;
+    die 'No client loginid found'  unless $loginid;
+    die "Missing service_contexts" unless $service_contexts;
 
     return unless ($poi_reason or $poa_reason);
 
@@ -5425,7 +5598,8 @@ sub notify_resubmission_of_poi_poa_documents {
             title        => $email_title,
             is_eu        => $client->landing_company->is_eu,
         },
-        loginid => $client->loginid
+        loginid          => $client->loginid,
+        service_contexts => $service_contexts,
     );
 }
 
@@ -5452,7 +5626,10 @@ Returns C<undef>
 =cut
 
 sub underage_client_detected {
-    my $args = shift // {};
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+    die "Missing args"             unless $args;
 
     my $provider = $args->{provider} or die 'provider is mandatory';
 
@@ -5491,7 +5668,10 @@ Returns C<undef>
 =cut
 
 async sub poi_claim_ownership {
-    my $args = shift // {};
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+    die "Missing args"             unless $args;
 
     my $loginid = $args->{loginid} or die 'loginid is mandatory';
 
@@ -5537,7 +5717,8 @@ async sub poi_claim_ownership {
     $document_hashref->{binary_user_id} = $owner;
 
     # owner should match current user
-    BOM::Event::Actions::Common::handle_duplicated_documents($client, $document_hashref, $origin) if $owner ne $client->binary_user_id;
+    BOM::Event::Actions::Common::handle_duplicated_documents($client, $document_hashref, $origin, $service_contexts)
+        if $owner ne $client->binary_user_id;
 
     return undef;
 }
@@ -5561,7 +5742,11 @@ Returns a L<Future> which resolves to C<undef>
 =cut
 
 async sub onfido_check_completed {
-    my $args     = shift // {};
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+    die "Missing args"             unless $args;
+
     my $check_id = $args->{check_id} or die 'No Onfido Check provided';
 
     DataDog::DogStatsd::Helper::stats_inc('event.onfido.pdf.dispatch');

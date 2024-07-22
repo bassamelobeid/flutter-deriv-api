@@ -9,6 +9,7 @@ use Test::Deep;
 use Test::Fatal;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+use BOM::Test::Customer;
 
 use BOM::Event::Actions::Client;
 use BOM::Event::Services;
@@ -21,6 +22,8 @@ use WebService::Async::Onfido;
 my $loop;
 my $handler;
 my $services;
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 BEGIN {
     # Enable watchdog
@@ -85,7 +88,9 @@ subtest 'POA updated' => sub {
     my $exception = exception {
         BOM::Event::Actions::Client::poa_updated({
                 loginid => undef,
-            })->get;
+            },
+            $service_contexts
+        )->get;
     };
 
     ok $exception =~ /No client login ID supplied/, 'Expected exception if no loginid is supplied';
@@ -93,7 +98,9 @@ subtest 'POA updated' => sub {
     $exception = exception {
         BOM::Event::Actions::Client::poa_updated({
                 loginid => 'CR0',
-            })->get;
+            },
+            $service_contexts
+        )->get;
     };
 
     ok $exception =~ /Could not instantiate client for login ID/, 'Expected exception when bogus loginid is supplied';
@@ -101,7 +108,9 @@ subtest 'POA updated' => sub {
     $emissions = {};
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply grab_poa_dates($user), [], 'Undef date would be a delete operation';
     cmp_deeply $emissions,
@@ -120,7 +129,9 @@ subtest 'POA updated' => sub {
 
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply grab_poa_dates($user),
         [{
@@ -147,7 +158,9 @@ subtest 'POA updated' => sub {
 
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply grab_poa_dates($user),
         [{
@@ -173,7 +186,9 @@ subtest 'POA updated' => sub {
 
     BOM::Event::Actions::Client::poa_updated({
             loginid => $client->loginid,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply grab_poa_dates($user), [], 'Delete operation';
     cmp_deeply $emissions,
@@ -217,16 +232,17 @@ subtest 'recheck onfido face_similarity' => sub {
     $handler = BOM::Event::Process->new(category => 'generic')->actions->{recheck_onfido_face_similarity};
     my $call_args = {};
 
-    like exception { $handler->($call_args)->get }, qr/No loginid supplied/, 'Expected exception for empty args';
+    like exception { $handler->($call_args, $service_contexts)->get }, qr/No loginid supplied/, 'Expected exception for empty args';
 
     $call_args->{loginid} = 'CR0';
-    like exception { $handler->($call_args)->get }, qr/Client not found:/, 'Expected exception when bogus loginid is given';
+    like exception { $handler->($call_args, $service_contexts)->get }, qr/Client not found:/, 'Expected exception when bogus loginid is given';
 
     $call_args->{loginid} = $test_virtual->loginid;
-    like exception { $handler->($call_args)->get }, qr/Virtual account should not meddle with Onfido/, 'Expected exception for virtual client';
+    like exception { $handler->($call_args, $service_contexts)->get }, qr/Virtual account should not meddle with Onfido/,
+        'Expected exception for virtual client';
 
     $call_args->{loginid} = $test_client->loginid;
-    like exception { $handler->($call_args)->get }, qr/No applicant found/, 'Expected exception for empty applicant';
+    like exception { $handler->($call_args, $service_contexts)->get }, qr/No applicant found/, 'Expected exception for empty applicant';
 
     my $onfido       = BOM::Event::Actions::Client::_onfido();
     my $applicant_id = 'test1';
@@ -248,7 +264,7 @@ subtest 'recheck onfido face_similarity' => sub {
             push @doggy_bag, shift;
         });
 
-    is $handler->($call_args)->get, 0, 'No previous selfie uploaded by this client';
+    is $handler->($call_args, $service_contexts)->get, 0, 'No previous selfie uploaded by this client';
 
     cmp_deeply [@doggy_bag], ['events.recheck_onfido_face_similarity.fail_no_selfie'], 'Expected dog bag';
 
@@ -295,7 +311,7 @@ subtest 'recheck onfido face_similarity' => sub {
                 }};
         });
 
-    is $handler->($call_args)->get, 0, 'Selfie already verified';
+    is $handler->($call_args, $service_contexts)->get, 0, 'Selfie already verified';
 
     cmp_deeply [@doggy_bag], ['events.recheck_onfido_face_similarity.fail_selfie_already_checked'], 'Expected dog bag';
 
@@ -370,7 +386,7 @@ subtest 'recheck onfido face_similarity' => sub {
 
     $document_type = 'passport';
     $emissions     = {};
-    is $handler->($call_args)->get, 1, 'Selfie retriggered successfully';
+    is $handler->($call_args, $service_contexts)->get, 1, 'Selfie retriggered successfully';
     ok $test_client->status->selfie_pending, 'Selfie status pending recheck';
     cmp_deeply $emissions,
         {
@@ -385,7 +401,7 @@ subtest 'recheck onfido face_similarity' => sub {
 
     $document_type = 'national_id';
     $emissions     = {};
-    is $handler->($call_args)->get, 1, 'Selfie retriggered successfully';
+    is $handler->($call_args, $service_contexts)->get, 1, 'Selfie retriggered successfully';
     ok $test_client->status->selfie_pending, 'Selfie status pending recheck';
     cmp_deeply $emissions,
         {
@@ -400,7 +416,7 @@ subtest 'recheck onfido face_similarity' => sub {
 
     $document_type = 'driving_licence';
     $emissions     = {};
-    is $handler->($call_args)->get, 1, 'Selfie retriggered successfully';
+    is $handler->($call_args, $service_contexts)->get, 1, 'Selfie retriggered successfully';
     ok $test_client->status->selfie_pending, 'Selfie status pending recheck';
     cmp_deeply $emissions,
         {
@@ -468,7 +484,9 @@ subtest 'POI updated' => sub {
     my $exception = exception {
         BOM::Event::Actions::Client::poi_updated({
                 loginid => undef,
-            })->get;
+            },
+            $service_contexts
+        )->get;
     };
 
     ok $exception =~ /No client login ID supplied/, 'Expected exception if no loginid is supplied';
@@ -476,7 +494,9 @@ subtest 'POI updated' => sub {
     $exception = exception {
         BOM::Event::Actions::Client::poi_updated({
                 loginid => 'CR0',
-            })->get;
+            },
+            $service_contexts
+        )->get;
     };
 
     ok $exception =~ /Could not instantiate client for login ID/, 'Expected exception when bogus loginid is supplied';
@@ -484,7 +504,9 @@ subtest 'POI updated' => sub {
     $emissions = {};
     BOM::Event::Actions::Client::poi_updated({
             loginid => $client->loginid,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply $emissions,
         {
@@ -501,7 +523,9 @@ subtest 'POI updated' => sub {
     $emissions            = {};
     BOM::Event::Actions::Client::poi_updated({
             loginid => $client->loginid,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply $emissions,
         {
@@ -525,7 +549,9 @@ subtest 'POI updated' => sub {
     $emissions            = {};
     BOM::Event::Actions::Client::poi_updated({
             loginid => $client->loginid,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply $emissions,
         {
@@ -549,7 +575,9 @@ subtest 'POI updated' => sub {
     $emissions            = {};
     BOM::Event::Actions::Client::poi_updated({
             loginid => $client->loginid,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply $emissions,
         {
@@ -568,7 +596,7 @@ subtest 'POI updated' => sub {
 subtest 'underage_client_detected' => sub {
     my $args      = {};
     my $exception = exception {
-        BOM::Event::Actions::Client::underage_client_detected($args);
+        BOM::Event::Actions::Client::underage_client_detected($args, $service_contexts);
     };
 
     ok $exception =~ /provider is mandatory/, 'Provider is mandatory to this event';
@@ -576,7 +604,7 @@ subtest 'underage_client_detected' => sub {
     $args->{provider} = 'qa';
 
     $exception = exception {
-        BOM::Event::Actions::Client::underage_client_detected($args);
+        BOM::Event::Actions::Client::underage_client_detected($args, $service_contexts);
     };
 
     ok $exception =~ /No client login ID supplied/, 'loginid is mandatory to this event';
@@ -584,7 +612,7 @@ subtest 'underage_client_detected' => sub {
     $args->{loginid} = 'CR0';
 
     $exception = exception {
-        BOM::Event::Actions::Client::underage_client_detected($args);
+        BOM::Event::Actions::Client::underage_client_detected($args, $service_contexts);
     };
 
     ok $exception =~ /Could not instantiate client for login ID/, 'legit loginid is mandatory to this event';
@@ -615,7 +643,7 @@ subtest 'underage_client_detected' => sub {
         $provider        = undef;
         $client_proc     = undef;
         $from_proc       = undef;
-        BOM::Event::Actions::Client::underage_client_detected($args);
+        BOM::Event::Actions::Client::underage_client_detected($args, $service_contexts);
     };
 
     ok !$exception, 'No exception';
@@ -629,7 +657,7 @@ subtest 'underage_client_detected' => sub {
         $client_proc          = undef;
         $from_proc            = undef;
         $args->{from_loginid} = $from->loginid;
-        BOM::Event::Actions::Client::underage_client_detected($args);
+        BOM::Event::Actions::Client::underage_client_detected($args, $service_contexts);
     };
 
     ok !$exception, 'No exception';
@@ -654,7 +682,8 @@ subtest 'POI claim ownership' => sub {
     $common_mock->mock(
         'handle_duplicated_documents',
         sub {
-            push @common_hits, @_;
+            # Don't push the service_contexts
+            push @common_hits,, @_[0 .. $#_ - 1];
 
             return undef;
         });
@@ -666,7 +695,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits    = ();
         @common_hits = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     ok $exception =~ /loginid is mandatory/, 'loginid arg is mandatory for this event';
@@ -678,7 +707,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits        = ();
         @common_hits     = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     ok $exception =~ /file_id is mandatory/, 'file_id arg is mandatory for this event';
@@ -690,7 +719,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits        = ();
         @common_hits     = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     ok $exception =~ /origin is mandatory/, 'origin arg is mandatory for this event';
@@ -702,7 +731,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits       = ();
         @common_hits    = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     ok $exception =~ /could not find client with loginid=CR0/, 'legit loginid should be passed to this event';
@@ -729,27 +758,23 @@ subtest 'POI claim ownership' => sub {
         @dog_hits        = ();
         @common_hits     = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     ok $exception =~ /could not find document with id=-1/, 'legit file_id should be passed to this event';
     cmp_deeply [@dog_hits],    [], 'Did not hit the dog';
     cmp_deeply [@common_hits], [], 'Did not hit common';
 
-    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    my $user2 = BOM::User->create(
-        email          => 'dup+user2@test.com',
-        password       => 'secreto',
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
         email_consent  => 1,
-    );
-
-    $user2->add_client($client2);
-    $client2->binary_user_id($user2->id);
-    $client2->save;
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $client2 = $test_customer->get_client_object('CR');
+    my $user2   = $client2->user;
 
     my $upload_info = start_document_upload({
             document_type     => 'passport',
@@ -777,7 +802,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits        = ();
         @common_hits     = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
 
         $client_mock->unmock_all;
     };
@@ -800,7 +825,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits        = ();
         @common_hits     = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
     cmp_deeply [@dog_hits],    ['event.poi_claim_ownership.undefined_values'], 'Expected dog hits';
     cmp_deeply [@common_hits], [],                                             'Did not hit common';
@@ -830,7 +855,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits        = ();
         @common_hits     = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     cmp_deeply [@dog_hits], [], 'Did not hit the dog';
@@ -858,7 +883,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits    = ();
         @common_hits = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     cmp_deeply [@dog_hits], [], 'Did not hit the dog';
@@ -886,7 +911,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits    = ();
         @common_hits = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     cmp_deeply [@dog_hits], [], 'Did not hit the dog';
@@ -903,7 +928,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits    = ();
         @common_hits = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     cmp_deeply [@dog_hits], [], 'Did not hit the dog';
@@ -921,7 +946,7 @@ subtest 'POI claim ownership' => sub {
         @dog_hits    = ();
         @common_hits = ();
 
-        BOM::Event::Actions::Client::poi_claim_ownership($args)->get;
+        BOM::Event::Actions::Client::poi_claim_ownership($args, $service_contexts)->get;
     };
 
     cmp_deeply [@dog_hits], [], 'Did not hit the dog';
@@ -962,7 +987,10 @@ subtest 'timeout simulations' => sub {
             'DOCUMENT_AUTHENTICATION_STREAM',
             {
                 type    => 'client_verification',
-                details => {wait => 0.2}})->get;
+                details => {wait => 0.2}
+            },
+            $service_contexts
+        )->get;
 
         $log->contains_ok(qr/CR9X/, 'Loginid did get logged');
     };
@@ -988,7 +1016,10 @@ subtest 'onfido api rate limit simulation' => sub {
         'DOCUMENT_AUTHENTICATION_STREAM',
         {
             type    => 'client_verification',
-            details => {check_url => '/v3.4/checks/mycheckid'}})->get;
+            details => {check_url => '/v3.4/checks/mycheckid'}
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply [@doggy_bag], ['event.onfido.client_verification.dispatch', 'onfido.api.rate_limit'], 'Expected dog bag';
 
@@ -1095,7 +1126,7 @@ subtest 'onfido check completed' => sub {
         @updated_checks = ();
         @dog_bag        = ();
         @emissions      = ();
-        $exception      = exception { $handler->($args)->get };
+        $exception      = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], [], 'empty check updates';
         cmp_deeply [@dog_bag],        [], 'empty dog bag';
@@ -1118,7 +1149,7 @@ subtest 'onfido check completed' => sub {
 
         $onfido_future    = Future->fail('404', http => HTTP::Response->new(404, 'Not Found'));
         $args->{check_id} = 'bad-id';
-        $exception        = exception { $handler->($args)->get };
+        $exception        = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], ['bad-id' => 'failed'], 'inexistent id should fail the check on the spot';
         cmp_deeply [@dog_bag],
@@ -1143,7 +1174,7 @@ subtest 'onfido check completed' => sub {
 
         $onfido_future    = Future->fail('500', http => HTTP::Response->new(500, 'Internal Server Error'));
         $args->{check_id} = 'good-id';
-        $exception        = exception { $handler->($args)->get };
+        $exception        = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], [], 'no updated checks';
         cmp_deeply [@dog_bag],
@@ -1168,7 +1199,7 @@ subtest 'onfido check completed' => sub {
 
         $onfido_future    = Future->fail('429', http => HTTP::Response->new(429, 'Too Many Requests'));
         $args->{check_id} = 'good-id';
-        $exception        = exception { $handler->($args)->get };
+        $exception        = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], [], 'no updated checks';
         cmp_deeply [@dog_bag],
@@ -1198,7 +1229,7 @@ subtest 'onfido check completed' => sub {
 
         $onfido_future    = Future->done('PDF');
         $args->{check_id} = 'good-id';
-        $exception        = exception { $handler->($args)->get };
+        $exception        = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], [], 'no updated checks';
         cmp_deeply [@dog_bag], ['event.onfido.pdf.dispatch', 'event.onfido.pdf.s3_error', 'event.onfido.pdf.finish_with_error' => re('\d+(\.\d+)?')],
@@ -1229,7 +1260,7 @@ subtest 'onfido check completed' => sub {
         $s3_future     = Future->fail('upload failed...');
 
         $args->{check_id} = 'good-id';
-        $exception = exception { $handler->($args)->get };
+        $exception = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], [], 'no updated checks';
         cmp_deeply [@dog_bag], ['event.onfido.pdf.dispatch', 'event.onfido.pdf.s3_error', 'event.onfido.pdf.finish_with_error' => re('\d+(\.\d+)?')],
@@ -1260,7 +1291,7 @@ subtest 'onfido check completed' => sub {
         $s3_future     = Future->done('test.pdf');
 
         $args->{check_id} = 'good-id';
-        $exception = exception { $handler->($args)->get };
+        $exception = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], ['good-id'                                              => 'completed'],       'completed checks';
         cmp_deeply [@dog_bag],        ['event.onfido.pdf.dispatch', 'event.onfido.pdf.finish' => re('\d+(\.\d+)?')], 'expected dog calls';
@@ -1294,7 +1325,7 @@ subtest 'onfido check completed' => sub {
         $args->{check_id}       = 'good-id';
         $args->{queue_size_key} = 'SOME-RANDOM-KEY';
 
-        $exception = exception { $handler->($args)->get };
+        $exception = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], ['good-id'                                              => 'completed'],       'completed checks';
         cmp_deeply [@dog_bag],        ['event.onfido.pdf.dispatch', 'event.onfido.pdf.finish' => re('\d+(\.\d+)?')], 'expected dog calls';
@@ -1329,7 +1360,7 @@ subtest 'onfido check completed' => sub {
         $args->{check_id}       = 'good-id';
         $args->{queue_size_key} = 'SOME-RANDOM-KEY';
 
-        $exception = exception { $handler->($args)->get };
+        $exception = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], ['good-id' => 'completed'], 'completed checks';
         cmp_deeply [@dog_bag],
@@ -1366,7 +1397,7 @@ subtest 'onfido check completed' => sub {
         $args->{check_id}       = 'good-id';
         $args->{queue_size_key} = 'SOME-RANDOM-KEY';
 
-        $exception = exception { $handler->($args)->get };
+        $exception = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], ['good-id' => 'completed'], 'completed checks';
         cmp_deeply [@dog_bag],
@@ -1403,7 +1434,7 @@ subtest 'onfido check completed' => sub {
         $args->{check_id}       = 'good-id';
         $args->{queue_size_key} = 'SOME-RANDOM-KEY';
 
-        $exception = exception { $handler->($args)->get };
+        $exception = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], ['good-id' => 'completed'], 'completed checks';
         cmp_deeply [@dog_bag],
@@ -1452,7 +1483,7 @@ subtest 'onfido check completed' => sub {
         $args->{check_id}       = 'good-id';
         $args->{queue_size_key} = 'SOME-RANDOM-KEY';
 
-        $exception = exception { $handler->($args)->get };
+        $exception = exception { $handler->($args, $service_contexts)->get };
 
         cmp_deeply [@updated_checks], [],                                                     'no completed checks';
         cmp_deeply [@dog_bag],        ['event.onfido.pdf.dispatch', 'event.onfido.pdf.busy'], 'expected dog calls';
@@ -1474,7 +1505,7 @@ subtest 'onfido check completed' => sub {
             @redis_set      = ();
 
             delete $args->{queue_size_key};
-            $exception = exception { $handler->($args)->get };
+            $exception = exception { $handler->($args, $service_contexts)->get };
 
             cmp_deeply [@updated_checks], ['good-id'                                              => 'completed'],       'completed checks';
             cmp_deeply [@dog_bag],        ['event.onfido.pdf.dispatch', 'event.onfido.pdf.finish' => re('\d+(\.\d+)?')], 'expected dog calls';

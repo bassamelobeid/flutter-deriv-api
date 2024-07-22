@@ -54,7 +54,9 @@ Returns an integer whereby 1 represent email has been sent, and 0 means otherwis
 =cut
 
 sub email_statement {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = $data->{loginid};
 
@@ -66,12 +68,15 @@ sub email_statement {
 
     $data->{client} = $client;
 
-    my $res = _send_email_statement($data);
+    my $res = _send_email_statement($data . $service_contexts);
     return $res->{status_code};
 }
 
 sub _send_email_statement {
-    my $params          = shift;
+    my ($params, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $client          = $params->{client};
     my $send_to_support = $params->{send_to_support_team} // 0;
 
@@ -91,6 +96,18 @@ sub _send_email_statement {
             );
         });
 
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email first_name last_name)],
+    );
+    if ($user_data->{status} ne 'ok') {
+        $log->warn("User service failure $user_data->{message}");
+        return {status_code => 0};
+    }
+    $user_data = $user_data->{attributes};
+
     # gather template data
     my $account = $client->account;
     my $company = $client->landing_company;
@@ -108,7 +125,7 @@ sub _send_email_statement {
             payment_agent   => $transactions->{payment_agent},
             is_mf_client    => ($company->short eq 'maltainvest') ? 1                                                                : 0,
             estimated_value => $account                           ? formatnumber('price', $account->currency_code, $estimated_value) : '',
-            name            => $client->first_name . ' ' . $client->last_name,
+            name            => $user_data->{first_name} . ' ' . $user_data->{last_name},
             account_number  => $client->loginid,
             classification  => $client->status->professional ? 'Professional'          : 'Retail',
             currency        => $account                      ? $account->currency_code : 'No Currency Selected',
@@ -132,9 +149,9 @@ sub _send_email_statement {
     my $email_subject =
         $params->{email_subject} ? $params->{email_subject} : 'Statement from ' . $date_from->date_ddmmmyy() . ' to ' . $date_to->date_ddmmmyy();
 
-    my $email_status = Email::Stuffer->from($support_email)->to($client->email)->subject($email_subject)->html_body($html)->send();
+    my $email_status = Email::Stuffer->from($support_email)->to($user_data->{email})->subject($email_subject)->html_body($html)->send();
     unless ($email_status) {
-        $log->warn('failed to send statement to ' . $client->email);
+        $log->warn('failed to send statement to ' . $user_data->{email});
         return {status_code => 0};
     }
 

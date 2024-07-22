@@ -5070,26 +5070,6 @@ SQL
     }
 }
 
-=head2 anonymize_associated_user_return_list_of_siblings
-
-Anonymize the associated user for this client and returns a list of siblings loginids
-
-=head2 Usage Caution
-
-**NOTE:** Be careful to use this function, it clears the client associated user data from all databases and it is irreversible action.
-
-=cut
-
-sub anonymize_associated_user_return_list_of_siblings {
-    my $self = shift;
-
-    # Get list of loginids for a userid
-    return BOM::Database::UserDB::rose_db()->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref("SELECT * FROM users.user_anonymization(?)", {Slice => {}}, $self->loginid);
-        })->@*;
-}
-
 =head2 get_all_comments
 
 Returns a list of comments for a given client, including all siblings (from all brokers, including virtuals).

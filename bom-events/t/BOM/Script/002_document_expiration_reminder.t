@@ -8,6 +8,7 @@ use Test::Exception;
 
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Event::Actions::Client;
 use BOM::User;
 use BOM::Platform::Context qw(request);
@@ -32,11 +33,9 @@ $emitter_mock->mock(
         return undef;
     });
 
-my $user = BOM::User->create(
-    email          => 'someuser@binary.com',
-    password       => 'heyyou!',
+my $test_customer = BOM::Test::Customer->create(
     email_verified => 1,
-);
+    clients        => []);
 
 my $look_ahead        = +BOM::Event::Script::DocumentExpirationReminder::DOCUMENT_EXPIRATION_REMINDER_LOOK_AHEAD;
 my $expected_lookback = +BOM::Event::Script::DocumentExpirationReminder::DOCUMENT_EXPIRATION_LOOK_BACK_DAYS;
@@ -340,7 +339,7 @@ subtest 'document expiring soon reminder' => sub {
 
             $emissions = [];
 
-            $expiring_users = [{binary_user_id => $user->id, expiration_date => $soon_boundary->date_yyyymmdd}];
+            $expiring_users = [{binary_user_id => $test_customer->get_user_id(), expiration_date => $soon_boundary->date_yyyymmdd}];
 
             $fetch_calls = 0;
 
@@ -352,7 +351,7 @@ subtest 'document expiring soon reminder' => sub {
 
             cmp_deeply $notify_calls,
                 +{
-                $user->id => 1,
+                $test_customer->get_user_id() => 1,
                 },
                 'Notify call';
 
@@ -363,18 +362,15 @@ subtest 'document expiring soon reminder' => sub {
             $expected_expiration_at = Date::Utility->new->plus_time_interval($look_ahead . 'd');
 
             my $user_mock = Test::MockModule->new('BOM::User');
-            my @real_loginids;
             $user_mock->mock(
-                'bom_real_loginids',
+                'get_default_client',
                 sub {
-                    return @real_loginids;
+                    return undef;
                 });
-
-            @real_loginids = ('CR0');
 
             $emissions = [];
 
-            $expiring_users = [{binary_user_id => $user->id, expiration_date => $soon_boundary->date_yyyymmdd}];
+            $expiring_users = [{binary_user_id => $test_customer->get_user_id(), expiration_date => $soon_boundary->date_yyyymmdd}];
 
             $fetch_calls = 0;
 
@@ -386,7 +382,7 @@ subtest 'document expiring soon reminder' => sub {
 
             cmp_deeply $notify_calls,
                 +{
-                $user->id => 1,
+                $test_customer->get_user_id() => 1,
                 },
                 'Notify call';
 
@@ -398,16 +394,15 @@ subtest 'document expiring soon reminder' => sub {
         subtest 'having legit loginid' => sub {
             $expected_expiration_at = Date::Utility->new->plus_time_interval($look_ahead . 'd');
 
-            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code    => 'CR',
-                email          => $user->email,
-                binary_user_id => $user->id,
-            });
-            $user->add_client($client);
+            # Add a client to the customer so we have a legit loginid to work with
+            my $client = $test_customer->create_client(
+                name        => 'CR',
+                broker_code => 'CR'
+            );
 
             $emissions = [];
 
-            $expiring_users = [{binary_user_id => $user->id, expiration_date => $soon_boundary->date_yyyymmdd}];
+            $expiring_users = [{binary_user_id => $test_customer->get_user_id(), expiration_date => $soon_boundary->date_yyyymmdd}];
 
             $fetch_calls = 0;
 
@@ -419,7 +414,7 @@ subtest 'document expiring soon reminder' => sub {
 
             cmp_deeply $notify_calls,
                 +{
-                $user->id => 1,
+                $test_customer->get_user_id() => 1,
                 },
                 'Notify call';
 
@@ -431,13 +426,13 @@ subtest 'document expiring soon reminder' => sub {
                             expiration_date    => re('\d+'),
                             authentication_url => request->brand->authentication_url,
                             live_chat_url      => request->brand->live_chat_url,
-                            email              => $client->email,
+                            email              => $test_customer->get_email(),
                         }}}
                 ],
                 'Expected emissions';
 
             ok $reminder->notify_locked({
-                    binary_user_id => $user->id,
+                    binary_user_id => $test_customer->get_user_id(),
                 })->get, 'User is locked';
         };
 
@@ -446,7 +441,7 @@ subtest 'document expiring soon reminder' => sub {
 
             $emissions = [];
 
-            $expiring_users = [{binary_user_id => $user->id, expiration_date => $soon_boundary->date_yyyymmdd}];
+            $expiring_users = [{binary_user_id => $test_customer->get_user_id(), expiration_date => $soon_boundary->date_yyyymmdd}];
 
             $fetch_calls = 0;
 
@@ -458,14 +453,14 @@ subtest 'document expiring soon reminder' => sub {
 
             cmp_deeply $notify_calls,
                 +{
-                $user->id => 1,
+                $test_customer->get_user_id() => 1,
                 },
                 'Notify call';
 
             cmp_bag $emissions, [], 'Expected emissions';
 
             ok $reminder->notify_locked({
-                    binary_user_id => $user->id,
+                    binary_user_id => $test_customer->get_user_id(),
                 })->get, 'User is locked';
         };
     };
@@ -486,7 +481,7 @@ subtest 'document expiring today' => sub {
 
     isa_ok $reminder, 'BOM::Event::Script::DocumentExpirationReminder', 'Expected instance of script';
 
-    $reminder->redis->del(+BOM::Event::Script::DocumentExpirationReminder::DOCUMENT_EXPIRATION_REMINDER_LOCK . $user->id)->get;
+    $reminder->redis->del(+BOM::Event::Script::DocumentExpirationReminder::DOCUMENT_EXPIRATION_REMINDER_LOCK . $test_customer->get_user_id())->get;
 
     subtest 'empty list' => sub {
         $emissions = [];
@@ -675,16 +670,17 @@ subtest 'document expiring today' => sub {
             $expected_expiration_at = Date::Utility->new;
             my $user_mock = Test::MockModule->new('BOM::User');
             $user_mock->mock(
-                'bom_real_loginids',
+                'get_default_client',
                 sub {
-                    return ();
+                    return undef;
                 });
 
             $emissions = [];
 
             $update_notified_at = 0;
 
-            $expiring_users = [{binary_user_id => $user->id, expiration_date => Date::Utility->new($now_boundary->date_yyyymmdd)}];
+            $expiring_users =
+                [{binary_user_id => $test_customer->get_user_id(), expiration_date => Date::Utility->new($now_boundary->date_yyyymmdd)}];
 
             $fetch_calls = 0;
 
@@ -696,7 +692,7 @@ subtest 'document expiring today' => sub {
 
             cmp_deeply $notify_calls,
                 +{
-                $user->id => 1,
+                $test_customer->get_user_id() => 1,
                 },
                 'Notify call';
 
@@ -710,20 +706,18 @@ subtest 'document expiring today' => sub {
         subtest 'having dubious loginid' => sub {
             $expected_expiration_at = Date::Utility->new;
             my $user_mock = Test::MockModule->new('BOM::User');
-            my @real_loginids;
             $user_mock->mock(
-                'bom_real_loginids',
+                'get_default_client',
                 sub {
-                    return @real_loginids;
+                    return undef;
                 });
-
-            @real_loginids = ('CR0');
 
             $emissions = [];
 
             $update_notified_at = 0;
 
-            $expiring_users = [{binary_user_id => $user->id, expiration_date => Date::Utility->new($now_boundary->date_yyyymmdd)}];
+            $expiring_users =
+                [{binary_user_id => $test_customer->get_user_id(), expiration_date => Date::Utility->new($now_boundary->date_yyyymmdd)}];
 
             $fetch_calls = 0;
 
@@ -735,7 +729,7 @@ subtest 'document expiring today' => sub {
 
             cmp_deeply $notify_calls,
                 +{
-                $user->id => 1,
+                $test_customer->get_user_id() => 1,
                 },
                 'Notify call';
 
@@ -748,14 +742,14 @@ subtest 'document expiring today' => sub {
 
         subtest 'having legit loginid' => sub {
             $expected_expiration_at = Date::Utility->new;
-            my ($loginid) = $user->bom_real_loginids;
-            my $client = BOM::User::Client->new({loginid => $loginid});
+            my $client = $test_customer->get_client_object('CR');
 
             $emissions = [];
 
             $update_notified_at = 0;
 
-            $expiring_users = [{binary_user_id => $user->id, expiration_date => Date::Utility->new($now_boundary->date_yyyymmdd)}];
+            $expiring_users =
+                [{binary_user_id => $test_customer->get_user_id(), expiration_date => Date::Utility->new($now_boundary->date_yyyymmdd)}];
 
             $fetch_calls = 0;
 
@@ -767,18 +761,18 @@ subtest 'document expiring today' => sub {
 
             cmp_deeply $notify_calls,
                 +{
-                $user->id => 1,
+                $test_customer->get_user_id() => 1,
                 },
                 'Notify call';
 
             cmp_bag $emissions,
                 [{
                     document_expiring_today => {
-                        loginid    => $loginid,
+                        loginid    => $test_customer->get_client_loginid('CR'),
                         properties => {
                             authentication_url => request->brand->authentication_url,
                             live_chat_url      => request->brand->live_chat_url,
-                            email              => $client->email,
+                            email              => $test_customer->get_email(),
                         }}}
                 ],
                 'Expected emissions';
@@ -786,7 +780,7 @@ subtest 'document expiring today' => sub {
             ok $update_notified_at, 'notification stamp updated';
 
             ok $reminder->notify_locked({
-                    binary_user_id => $user->id,
+                    binary_user_id => $test_customer->get_user_id(),
                 })->get, 'User is locked';
         };
 
@@ -794,7 +788,8 @@ subtest 'document expiring today' => sub {
             $expected_expiration_at = Date::Utility->new;
             $emissions              = [];
 
-            $expiring_users = [{binary_user_id => $user->id, expiration_date => Date::Utility->new($now_boundary->date_yyyymmdd)}];
+            $expiring_users =
+                [{binary_user_id => $test_customer->get_user_id(), expiration_date => Date::Utility->new($now_boundary->date_yyyymmdd)}];
 
             $update_notified_at = 0;
 
@@ -808,14 +803,14 @@ subtest 'document expiring today' => sub {
 
             cmp_deeply $notify_calls,
                 +{
-                $user->id => 1,
+                $test_customer->get_user_id() => 1,
                 },
                 'Notify call';
 
             cmp_bag $emissions, [], 'Expected emissions';
 
             ok $reminder->notify_locked({
-                    binary_user_id => $user->id,
+                    binary_user_id => $test_customer->get_user_id(),
                 })->get, 'User is locked';
 
             ok !$update_notified_at, 'notification not updated';

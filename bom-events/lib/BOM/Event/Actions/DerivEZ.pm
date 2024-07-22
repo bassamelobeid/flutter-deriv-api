@@ -43,19 +43,23 @@ Takes the following named parameters
 =cut
 
 sub derivez_inactive_notification {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $user    = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
     my $loginid = eval { [$user->bom_loginids()]->[0] }            or die "User $args->{email} doesn't have any accounts";
 
     my $futures = fmap_void {
         BOM::Event::Services::Track::derivez_inactive_notification({
-            loginid      => $loginid,
-            email        => $args->{email},
-            name         => $args->{name},
-            accounts     => $args->{accounts}->{$_},
-            closure_date => Date::Utility->new->plus_time_interval($_ . "d")->epoch,
-        });
+                loginid      => $loginid,
+                email        => $args->{email},
+                name         => $args->{name},
+                accounts     => $args->{accounts}->{$_},
+                closure_date => Date::Utility->new->plus_time_interval($_ . "d")->epoch,
+            },
+            $service_contexts
+        );
     }
     foreach => [sort { $a <=> $b } keys $args->{accounts}->%*];
 
@@ -80,7 +84,9 @@ Takes the following named parameters
 =cut
 
 sub derivez_inactive_account_closed {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $user    = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
     my $loginid = eval { [$user->bom_loginids()]->[0] }            or die "User $args->{email} doesn't have any accounts";
@@ -89,7 +95,10 @@ sub derivez_inactive_account_closed {
             loginid          => $loginid,
             name             => $args->{derivez_accounts}->[0]->{name},
             derivez_accounts => $args->{derivez_accounts},
-            live_chat_url    => request->brand->live_chat_url({language => request->language})});
+            live_chat_url    => request->brand->live_chat_url({language => request->language})
+        },
+        $service_contexts
+    );
 
 }
 

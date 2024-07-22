@@ -10,6 +10,7 @@ use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client                  qw( create_client );
 use BOM::Test::Email;
+use BOM::Test::Customer;
 
 use BOM::User::Client;
 use BOM::User::Password;
@@ -18,31 +19,22 @@ use BOM::Config::Redis;
 
 use BOM::Event::Actions::Client;
 
-my $email    = 'abc' . rand . '@binary.com';
-my $hash_pwd = BOM::User::Password::hashpw('test');
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
-my $user = BOM::User->create(
-    email          => $email,
-    password       => $hash_pwd,
+my $test_customer = BOM::Test::Customer->create(
     email_verified => 1,
-);
-
-my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MLT',
-    email          => $email,
     residence      => 'hr',
-    binary_user_id => $user->id
-});
-
-my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'MX',
-    email          => $email,
-    residence      => 'hr',
-    binary_user_id => $user->id
-});
-
-$user->add_client($client_mx);
-$user->add_client($client_mlt);
+    clients        => [{
+            name        => 'MLT',
+            broker_code => 'MLT',
+        },
+        {
+            name        => 'MX',
+            broker_code => 'MX',
+        },
+    ]);
+my $client_mx  = $test_customer->get_client_object('MX');
+my $client_mlt = $test_customer->get_client_object('MLT');
 
 #mock BOM::User::Client object
 my $mock_client = Test::MockModule->new('BOM::User::Client');
@@ -57,10 +49,10 @@ my ($msg, $reg);
 
 subtest 'Generic tests' => sub {
 
-    throws_ok { BOM::Event::Actions::Client::social_responsibility_check({loginid => 'CR5', attribute => 'test'}) } qr/Invalid/,
+    throws_ok { BOM::Event::Actions::Client::social_responsibility_check({loginid => 'CR5', attribute => 'test'}, $service_contexts) } qr/Invalid/,
         'correct exception wrong loginid';
 
-    throws_ok { BOM::Event::Actions::Client::social_responsibility_check() } qr/Missing/, 'correct exception missing loginid';
+    throws_ok { BOM::Event::Actions::Client::social_responsibility_check(undef, $service_contexts) } qr/Missing/, 'correct exception missing loginid';
 
 };
 
@@ -81,13 +73,17 @@ subtest "Increment change in client's values" => sub {
             $redis->set($client_mlt->loginid . ":sr_check:$attribute", $redis_value);
 
             BOM::Event::Actions::Client::social_responsibility_check({
-                loginid   => $client_mlt->loginid,
-                attribute => $attribute
-            });
+                    loginid   => $client_mlt->loginid,
+                    attribute => $attribute
+                },
+                $service_contexts
+            );
             BOM::Event::Actions::Client::social_responsibility_check({
-                loginid   => $client_mx->loginid,
-                attribute => $attribute
-            });
+                    loginid   => $client_mx->loginid,
+                    attribute => $attribute
+                },
+                $service_contexts
+            );
 
             if ($redis_value >= 1500) {
 
@@ -147,9 +143,11 @@ subtest 'FA missing' => sub {
         $redis->set($client_mx->loginid . ':sr_check:net_deposits', '750');
 
         BOM::Event::Actions::Client::social_responsibility_check({
-            loginid   => $client_mx->loginid,
-            attribute => $attribute
-        });
+                loginid   => $client_mx->loginid,
+                attribute => $attribute
+            },
+            $service_contexts
+        );
 
         #check keys removed correctly
         is $redis->get($client_mx->loginid . ":sr_check:$attribute"), undef, "redis threshold value '$attribute' removed correctly for MX client";
@@ -174,9 +172,11 @@ subtest 'FA missing' => sub {
 
         #sr check
         BOM::Event::Actions::Client::social_responsibility_check({
-            loginid   => $client_mx->loginid,
-            attribute => $attribute
-        });
+                loginid   => $client_mx->loginid,
+                attribute => $attribute
+            },
+            $service_contexts
+        );
 
         #check unwelcome status NOT set
         ok !$client_mx->status->unwelcome, "MX client's status is NOT set to unwelcome after FA is filled";
@@ -212,9 +212,11 @@ subtest 'FA exists' => sub {
             #check for MX client
             mailbox_clear();
             BOM::Event::Actions::Client::social_responsibility_check({
-                loginid   => $client_mx->loginid,
-                attribute => $attribute
-            });
+                    loginid   => $client_mx->loginid,
+                    attribute => $attribute
+                },
+                $service_contexts
+            );
             ok !$client_mx->status->unwelcome, "MX client's status is NOT set to unwelcome";
             #test email was sent succefully
             #need to escape '$' sign else regex like() is not working as it should
@@ -228,9 +230,11 @@ subtest 'FA exists' => sub {
             #check for MLT client
             mailbox_clear();
             BOM::Event::Actions::Client::social_responsibility_check({
-                loginid   => $client_mlt->loginid,
-                attribute => $attribute
-            });
+                    loginid   => $client_mlt->loginid,
+                    attribute => $attribute
+                },
+                $service_contexts
+            );
             ok !$client_mlt->status->unwelcome, "MLT client's status is NOT set to unwelcome";
             #test email was sent succefully
             $msg = mailbox_search(subject => qr/Social Responsibility Check required \($attribute\)/);
@@ -262,9 +266,11 @@ subtest 'FA exists' => sub {
                 #check for MX client
                 mailbox_clear();
                 BOM::Event::Actions::Client::social_responsibility_check({
-                    loginid   => $client_mx->loginid,
-                    attribute => $attribute
-                });
+                        loginid   => $client_mx->loginid,
+                        attribute => $attribute
+                    },
+                    $service_contexts
+                );
                 ok !$client_mx->status->unwelcome, "MX client's status is NOT set to unwelcome for FA: $fa_net_income";
                 #test email was sent succefully
                 #need to escape '$' sign else regex like() is not working as it should
@@ -276,9 +282,11 @@ subtest 'FA exists' => sub {
                 #check for MLT client
                 mailbox_clear();
                 BOM::Event::Actions::Client::social_responsibility_check({
-                    loginid   => $client_mlt->loginid,
-                    attribute => $attribute
-                });
+                        loginid   => $client_mlt->loginid,
+                        attribute => $attribute
+                    },
+                    $service_contexts
+                );
                 ok !$client_mlt->status->unwelcome, "MLT client's status is NOT set to unwelcome for FA: $fa_net_income";
                 #test email was sent succefully
                 #need to escape '$' sign else regex like() is not working as it should

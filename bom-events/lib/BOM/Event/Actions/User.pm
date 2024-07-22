@@ -45,9 +45,7 @@ It can be called with the following parameters:
 =cut
 
 sub login {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::login(@args);
+    return BOM::Event::Services::Track::login(@_);
 }
 
 =head2 profile_change
@@ -66,7 +64,9 @@ It can be called with the following parameters:
 =cut
 
 sub profile_change {
-    my $params = shift;
+    my ($params, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = $params->{loginid};
 
@@ -127,9 +127,7 @@ This is handler for each B<profile_change> event emitted, when handled by track 
 =cut
 
 sub track_profile_change {
-    my $data = shift;
-
-    return BOM::Event::Services::Track::profile_change($data);
+    return BOM::Event::Services::Track::profile_change(@_);
 }
 
 =head2 verify_false_profile_info
@@ -152,7 +150,9 @@ It's called with following named arguments:
 =cut
 
 sub verify_false_profile_info {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = $args->{loginid};
     my $client  = BOM::User::Client->new({loginid => $loginid}) or die 'Could not instantiate client for login ID ' . $loginid;
@@ -204,11 +204,19 @@ sub verify_false_profile_info {
         $just_locked = 1;
     }
 
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email)],
+    );
+    die "User-service read failed: $user_data->{message}" unless ($user_data->{status} eq 'ok');
+
     BOM::Platform::Event::Emitter::emit(
         account_with_false_info_locked => {
             loginid    => $loginid,
             properties => {
-                email              => $client->email,
+                email              => $user_data->{attributes}{email},
                 authentication_url => $brand->authentication_url,
                 profile_url        => $brand->profile_url,
             }}) if $just_locked && !$sibling_locked_for_false_info;

@@ -31,7 +31,9 @@ Arguments:
 =cut
 
 async sub wallet_migration_started {
-    my $params = shift;
+    my ($params, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     try {
         my $user      = BOM::User->new(id => $params->{user_id});

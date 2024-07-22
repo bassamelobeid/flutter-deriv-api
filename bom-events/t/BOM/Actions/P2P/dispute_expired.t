@@ -11,9 +11,12 @@ use BOM::Platform::Context qw(request);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Customer;
 use Date::Utility;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 subtest 'Event processing return value' => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
@@ -34,7 +37,8 @@ subtest 'Event processing return value' => sub {
             broker_code => undef,
             order_id    => $order->{id},
             timestamp   => 1600000000,
-        }
+        },
+        $service_contexts
         ),
         'Not processed due to lack of broker code';
 
@@ -42,7 +46,8 @@ subtest 'Event processing return value' => sub {
             broker_code => 'CR',
             order_id    => undef,
             timestamp   => 1600000000,
-        }
+        },
+        $service_contexts
         ),
         'Not processed due to lack of an order id';
 
@@ -54,7 +59,8 @@ subtest 'Event processing return value' => sub {
             broker_code => $client->broker_code,
             order_id    => $order->{id},
             timestamp   => 1600000000,
-        }
+        },
+        $service_contexts
         ),
         'Not processed due to status changed';
 
@@ -86,7 +92,8 @@ subtest 'Event processing return value' => sub {
                 broker_code => $client->broker_code,
                 order_id    => $order_id,
                 timestamp   => 1600000000,
-            }
+            },
+            $service_contexts
             ),
             'The order has been processed';
 

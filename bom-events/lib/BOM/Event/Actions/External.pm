@@ -53,8 +53,7 @@ Takes the following parameter as a HASH ref:
 =cut
 
 async sub send_idv_configuration {
-    my $args = shift;
-    BOM::Event::Actions::Client::IdentityVerification::send_idv_configuration($args);
+    BOM::Event::Actions::Client::IdentityVerification::send_idv_configuration(@_);
 }
 
 =head2 idv_configuration_disable_provider
@@ -72,8 +71,7 @@ Calls IdentityVerification::disable_provider.
 =cut
 
 async sub idv_configuration_disable_provider {
-    my $args = shift;
-    await BOM::Event::Actions::Client::IdentityVerification::disable_provider($args);
+    await BOM::Event::Actions::Client::IdentityVerification::disable_provider(@_);
 }
 
 =head2 idv_configuration_enable_provider
@@ -91,8 +89,7 @@ Calls IdentityVerification::enable_provider.
 =cut
 
 async sub idv_configuration_enable_provider {
-    my $args = shift;
-    await BOM::Event::Actions::Client::IdentityVerification::enable_provider($args);
+    await BOM::Event::Actions::Client::IdentityVerification::enable_provider(@_);
 }
 
 1;

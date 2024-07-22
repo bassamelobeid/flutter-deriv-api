@@ -7,13 +7,14 @@ use Test::More;
 use Test::MockModule;
 
 use BOM::Event::Actions::CryptoCashier;
+use BOM::Test::Customer;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 use constant {REDIS_WITHDRAWAL_ESTIMATED_FEE_NAMESPACE => "CRYPTOCASHIER::ESTIMATIONS::FEE::"};
 my $mocked_crypto_cashier = Test::MockModule->new('BOM::Event::Actions::CryptoCashier');
 my $mocked_redis          = Test::MockModule->new('RedisDB');
 my $mocked_event_emitter  = Test::MockModule->new('BOM::Platform::Event::Emitter');
-
+my $service_contexts      = BOM::Test::Customer::get_service_contexts();
 subtest 'crypto_cashier_transaction_updated' => sub {
     subtest "Exists handler for the recevied event - Withdrawal Sent" => sub {
         my $txn_info = {
@@ -60,7 +61,7 @@ subtest 'crypto_cashier_transaction_updated' => sub {
         );
 
         #case when send_client_email is not defined
-        BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated($txn_info);
+        BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated($txn_info, $service_contexts);
         is_deeply $p_txn_info,     $expected_txn_info,     'Correct txn_info parameter';
         is_deeply $p_txn_metadata, $expected_txn_metadata, 'Correct txn_metadata parameter';
         is $redis_key, $expected_redis_key, 'Correct Redis channel key';
@@ -73,7 +74,7 @@ subtest 'crypto_cashier_transaction_updated' => sub {
             send_client_email => $send_client_email,
         };
         $p_txn_info = undef;
-        BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated($txn_info);
+        BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated($txn_info, $service_contexts);
         is_deeply $message,    $expected_redis_message, 'Correct published message';
         is_deeply $p_txn_info, undef,                   'Correct response';            #because handler/s not being called as send_client_email = 0
 
@@ -410,7 +411,7 @@ subtest 'withdrawal_estimated_fee_updated' => sub {
         },
     );
 
-    BOM::Event::Actions::CryptoCashier::withdrawal_estimated_fee_updated($fee_info_cp);
+    BOM::Event::Actions::CryptoCashier::withdrawal_estimated_fee_updated($fee_info_cp, $service_contexts);
     is $redis_key, $expected_redis_key, 'Correct Redis channel key';
     is_deeply $message, $expected_fee_info, 'Correct published message';
 

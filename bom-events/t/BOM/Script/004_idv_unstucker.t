@@ -9,6 +9,7 @@ use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Event::Script::IDVUnstucker;
 use BOM::Database::UserDB;
 use BOM::User;
@@ -71,42 +72,42 @@ subtest 'empty IDV documents' => sub {
     cmp_deeply $log->msgs, [], 'No logs';
 };
 
-my ($doc1, $cli1, $u1);
-my ($doc2, $cli2, $u2);
-my ($doc3, $cli3, $u3);
-my ($doc4, $cli4, $u4);
-my ($doc5, $cli5, $u5);
+my ($doc1, $cli1);
+my ($doc2, $cli2);
+my ($doc3, $cli3);
+my ($doc4, $cli4);
+my ($doc5, $cli5);
 
 subtest 'add some documents outside the window' => sub {
-    ($doc1, $cli1, $u1) = idv_document({
+    ($doc1, $cli1) = idv_document({
         email           => 'newdoc1@test.com',
         issuing_country => 'br',
         number          => '111.111.111-1',
         type            => 'cpf',
     });
 
-    ($doc2, $cli2, $u2) = idv_document({
+    ($doc2, $cli2) = idv_document({
         email           => 'newdoc2@test.com',
         issuing_country => 'br',
         number          => '111.111.111-2',
         type            => 'cpf',
     });
 
-    ($doc3, $cli3, $u3) = idv_document({
+    ($doc3, $cli3) = idv_document({
         email           => 'newdoc3@test.com',
         issuing_country => 'br',
         number          => '111.111.111-3',
         type            => 'cpf',
     });
 
-    ($doc4, $cli4, $u4) = idv_document({
+    ($doc4, $cli4) = idv_document({
         email           => 'newdoc4@test.com',
         issuing_country => 'ar',
         number          => '23456789',
         type            => 'dni',
     });
 
-    ($doc5, $cli5, $u5) = idv_document({
+    ($doc5, $cli5) = idv_document({
         email           => 'newdoc5@test.com',
         issuing_country => 'ar',
         number          => '12345678',
@@ -122,11 +123,11 @@ subtest 'add some documents outside the window' => sub {
     @dog_bag   = ();
     $log->clear;
 
-    my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->user->id);
-    my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->user->id);
-    my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->user->id);
-    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->user->id);
-    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->user->id);
+    my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->binary_user_id);
+    my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->binary_user_id);
+    my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->binary_user_id);
+    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->binary_user_id);
+    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->binary_user_id);
 
     ok $idv_model1->get_standby_document, 'There is a standby document for client 1';
     ok $idv_model2->get_standby_document, 'There is a standby document for client 2';
@@ -160,11 +161,11 @@ subtest 'u1 to unstuck, u3 too old' => sub {
     @dog_bag   = ();
     $log->clear;
 
-    my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->user->id);
-    my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->user->id);
-    my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->user->id);
-    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->user->id);
-    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->user->id);
+    my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->binary_user_id);
+    my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->binary_user_id);
+    my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->binary_user_id);
+    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->binary_user_id);
+    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->binary_user_id);
 
     ok $idv_model1->get_standby_document, 'There is a standby document for client 1';
     ok $idv_model2->get_standby_document, 'There is a standby document for client 2';
@@ -205,11 +206,11 @@ subtest 'u1 should not retrigger this soon' => sub {
     @dog_bag   = ();
     $log->clear;
 
-    my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->user->id);
-    my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->user->id);
-    my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->user->id);
-    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->user->id);
-    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->user->id);
+    my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->binary_user_id);
+    my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->binary_user_id);
+    my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->binary_user_id);
+    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->binary_user_id);
+    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->binary_user_id);
 
     ok $idv_model1->get_standby_document,  'There is a standby document for client 1';
     ok $idv_model2->get_standby_document,  'There is a standby document for client 2';
@@ -243,11 +244,11 @@ subtest 'deferred documents are also taken care for' => sub {
     @dog_bag   = ();
     $log->clear;
 
-    my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->user->id);
-    my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->user->id);
-    my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->user->id);
-    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->user->id);
-    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->user->id);
+    my $idv_model1 = BOM::User::IdentityVerification->new(user_id => $cli1->binary_user_id);
+    my $idv_model2 = BOM::User::IdentityVerification->new(user_id => $cli2->binary_user_id);
+    my $idv_model3 = BOM::User::IdentityVerification->new(user_id => $cli3->binary_user_id);
+    my $idv_model4 = BOM::User::IdentityVerification->new(user_id => $cli4->binary_user_id);
+    my $idv_model5 = BOM::User::IdentityVerification->new(user_id => $cli5->binary_user_id);
 
     ok $idv_model1->get_standby_document,  'There is a standby document for client 1';
     ok $idv_model2->get_standby_document,  'There is a standby document for client 2';
@@ -303,26 +304,20 @@ sub set_status {
 sub idv_document {
     my $args = shift;
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $args->{email},
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified => 1,
         residence      => 'co',
         place_of_birth => 'co',
         citizen        => 'co',
-    });
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $user = BOM::User->create(
-        email          => $client->email,
-        password       => "hello",
-        email_verified => 1,
-    );
+    my $client = $test_customer->get_client_object('CR');
 
-    $user->add_client($client);
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $client->save;
-
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
 
     my $idv_document = {
         issuing_country => $args->{issuing_country},
@@ -340,7 +335,7 @@ sub idv_document {
         request_body => '{}',
     });
 
-    return ($document, $client, $user);
+    return ($document, $client);
 }
 
 done_testing();

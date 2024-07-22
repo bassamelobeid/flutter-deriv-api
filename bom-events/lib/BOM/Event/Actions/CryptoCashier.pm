@@ -88,7 +88,10 @@ The transaction data contains the following:
 =cut
 
 sub crypto_cashier_transaction_updated {
-    my $txn_info = shift;
+
+    my ($txn_info, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $tx_metadata       = delete $txn_info->{metadata};
     my $loginid           = $tx_metadata->{loginid};
@@ -242,7 +245,10 @@ The fee_info data contains the following:
 =cut
 
 sub withdrawal_estimated_fee_updated {
-    my ($fee_info)    = shift;
+    my ($fee_info, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $redis         = BOM::Config::Redis->redis_transaction_write();
     my $currency_code = delete $fee_info->{currency_code};
     my $redis_key     = REDIS_WITHDRAWAL_ESTIMATED_FEE_NAMESPACE . $currency_code;

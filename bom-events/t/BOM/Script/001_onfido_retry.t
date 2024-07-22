@@ -8,6 +8,7 @@ use Test::Exception;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Test::Script::OnfidoMock;
 use BOM::Event::Actions::Client;
 use BOM::User::Onfido;
@@ -17,30 +18,34 @@ use WebService::Async::Onfido::Check;
 
 my $onfido = BOM::Event::Actions::Client::_onfido();
 
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => 'test1@bin.com',
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+
+my $test_customer = BOM::Test::Customer->create(
     residence      => 'co',
     place_of_birth => 'co',
     citizen        => 'co',
-});
+    clients        => [{
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        },
+    ]);
 
-my $user = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
-    email_verified => 1,
+my $user_data = BOM::Service::user(
+    context => $service_contexts->{user},
+    command => 'get_all_attributes',
+    user_id => $test_customer->get_user_id(),
 );
-
-$user->add_client($test_client);
-$test_client->binary_user_id($user->id);
-$test_client->save;
+die "User-service read failure for " . $test_customer->get_user_id() . ": $user_data->{message}" unless $user_data->{status} eq 'ok';
+$user_data = $user_data->{attributes};
 
 my $applicant = $onfido->applicant_create(
     first_name => 'Mary',
     last_name  => 'Jane',
     dob        => '1999-02-02',
 )->get;
-lives_ok { BOM::User::Onfido::store_onfido_applicant($applicant, $test_client->binary_user_id); } 'storing onfido applicant should pass';
+
+lives_ok { BOM::User::Onfido::store_onfido_applicant($applicant, $test_customer->get_user_id()); } 'storing onfido applicant should pass';
 
 my $doc1 = $onfido->document_upload(
     applicant_id    => $applicant->id,
@@ -60,9 +65,9 @@ my $doc2 = $onfido->document_upload(
     side            => 'front',
 )->get;
 
-lives_ok { BOM::User::Onfido::store_onfido_document($doc1, $applicant->id, $test_client->place_of_birth, $doc1->type, $doc1->side); }
+lives_ok { BOM::User::Onfido::store_onfido_document($doc1, $applicant->id, $user_data->{place_of_birth}, $doc1->type, $doc1->side); }
 'Storing onfido document 1 should pass';
-lives_ok { BOM::User::Onfido::store_onfido_document($doc2, $applicant->id, $test_client->place_of_birth, $doc2->type, $doc2->side); }
+lives_ok { BOM::User::Onfido::store_onfido_document($doc2, $applicant->id, $user_data->{place_of_birth}, $doc2->type, $doc2->side); }
 'Storing onfido document 2 should pass';
 
 my $onfido_mock  = Test::MockModule->new('BOM::User::Onfido');

@@ -85,7 +85,9 @@ Takes one of the following named parameters in a hashref:
 =cut
 
 sub advertiser_updated {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $advertiser_loginid = $data->{client} ? $data->{client}->loginid : $data->{client_loginid};
 
@@ -131,7 +133,10 @@ publish the newest status to advertiser and order channels.
 =cut
 
 sub advertiser_online_status {
-    my $data               = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $advertiser_loginid = $data->{client_loginid};
     my $client             = BOM::User::Client->new({loginid => $advertiser_loginid});
     my $advertiser         = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
@@ -139,7 +144,7 @@ sub advertiser_online_status {
 
     return 0 unless $advertiser_loginid or $advertiser_id;
 
-    advertiser_updated({client => $client});
+    advertiser_updated({client => $client}, $service_contexts);
 
     _publish_orders_to_channels({
         loginid           => $advertiser_loginid,
@@ -170,7 +175,10 @@ Takes the following named parameters:
 =cut
 
 sub settings_updated {
-    my $data                 = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $redis                = BOM::Config::Redis->redis_p2p_write();
     my @countries            = map { lc((split /::/, $_)[2]) } $redis->pubsub('channels', "NOTIFY::P2P_SETTINGS::*")->@*;
     my $app_config           = BOM::Config::Runtime->instance->app_config;
@@ -196,9 +204,11 @@ An advert has been created.
 =cut
 
 sub advert_created {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
 
-    return BOM::Event::Services::Track::p2p_advert_created($data);
+    die "Missing service_contexts" unless $service_contexts;
+
+    return BOM::Event::Services::Track::p2p_advert_created($data, $service_contexts);
 }
 
 =head2 advert_updated
@@ -223,7 +233,10 @@ It returns a Future object.
 =cut
 
 sub order_created {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my @args = qw(client_loginid order_id);
 
     if (grep { !$data->{$_} } @args) {
@@ -235,7 +248,7 @@ sub order_created {
 
     # Currently we have the same processing for this events
     # but maybe in future we will want to separete them
-    return order_updated($data);
+    return order_updated($data, $service_contexts);
 }
 
 =head2 order_updated
@@ -247,7 +260,10 @@ It returns a Future object.
 =cut
 
 async sub order_updated {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my @args = qw(client_loginid order_id);
 
     if (grep { !$data->{$_} } @args) {
@@ -313,7 +329,10 @@ Returns, C<1> on success, C<0> otherwise.
 =cut
 
 sub dispute_expired {
-    my $data        = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $order_id    = $data->{order_id};
     my $broker_code = $data->{broker_code};
     my $timestamp   = $data->{timestamp};
@@ -386,7 +405,9 @@ Returns, C<1> on success, C<0> otherwise.
 =cut
 
 sub order_expired {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     if ($data->{expiry_started}) {
         stats_timing('p2p.order.expiry.delay', (1000 * Time::HiRes::tv_interval($data->{expiry_started})));
@@ -455,7 +476,10 @@ Return, the database insert result or false on exception.
 =cut
 
 sub chat_received {
-    my $data      = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my @values    = @{$data}{qw(message_id created_at user_id channel type message url)};
     my $collector = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
 
@@ -491,7 +515,10 @@ Returns C<1> on success, dies otherwise.
 =cut
 
 sub archived_ad {
-    my $data    = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $loginid = $data->{advertiser_loginid}                   || die 'Missing advertiser loginid';
     my $client  = BOM::User::Client->new({loginid => $loginid}) || die 'Client not found';
     my $ads     = $data->{archived_ads} // [];
@@ -502,9 +529,11 @@ sub archived_ad {
     $_->{effective_rate} = p2p_rate_rounding($_->{effective_rate}, display => 1) foreach @deactivated_ads;
 
     return BOM::Event::Services::Track::p2p_archived_ad({
-        client  => $client,
-        adverts => \@deactivated_ads,
-    });
+            client  => $client,
+            adverts => \@deactivated_ads,
+        },
+        $service_contexts
+    );
 }
 
 =head2 p2p_adverts_updated
@@ -522,7 +551,10 @@ Publish p2p_advert_info updates to subscribers.
 =cut
 
 sub p2p_adverts_updated {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my ($channels, $advertiser_id) = @$data{qw/channels advertiser_id/};
 
     my $redis = BOM::Config::Redis->redis_p2p_write;
@@ -573,12 +605,14 @@ becomes age verified.
 =cut
 
 sub p2p_advertiser_approval_changed {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $client = $data->{client} // BOM::User::Client->new({loginid => $data->{client_loginid}});
 
     # to push FE notification when advertiser becomes approved/unapproved via db trigger
-    advertiser_updated({client => $client});
+    advertiser_updated({client => $client}, $service_contexts);
 
     return unless ($client->status->reason('allow_document_upload') // '') eq 'P2P_ADVERTISER_CREATED';
     return unless $client->_p2p_advertiser_cached and $client->_p2p_advertiser_cached->{is_approved};
@@ -591,17 +625,25 @@ sub p2p_advertiser_approval_changed {
     };
     my $tt = Template->new(ABSOLUTE => 1);
 
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email first_name)],
+    );
+    die "User-service read failed: $user_data->{message}" unless ($user_data->{status} eq 'ok');
+
     try {
         $tt->process(BOM::Event::Actions::Common::TEMPLATE_PREFIX_PATH() . 'age_verified_p2p.html.tt', $data_tt, \my $html);
 
         die "Template error: @{[$tt->error]}" if $tt->error;
         send_email({
                 from          => $brand->emails('no-reply'),
-                to            => $client->email,
+                to            => $user_data->{attributes}{email},
                 subject       => localize('You can now use Deriv P2P'),
                 message       => [$html],
                 template_args => {
-                    name  => $client->first_name,
+                    name  => $user_data->{attributes}{first_name},
                     title => localize('You can now use Deriv P2P'),
                 },
                 use_email_template    => 1,
@@ -630,7 +672,10 @@ If that advert has active orders, updated order info is sent to order creator if
 =cut
 
 sub p2p_advert_orders_updated {
-    my $data   = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $client = BOM::User::Client->new({loginid => $data->{client_loginid}});
     my $orders = $client->_p2p_orders(
         advert_id => $data->{advert_id},
@@ -654,7 +699,10 @@ It returns a Future object.
 =cut
 
 sub order_chat_create {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my @args = qw(client_loginid order_id);
 
     if (grep { !$data->{$_} } @args) {
@@ -682,8 +730,11 @@ An order has been manually cancelled or expired without paying.
 =cut
 
 sub advertiser_cancel_at_fault {
-    my $data = shift;
-    return BOM::Event::Services::Track::p2p_advertiser_cancel_at_fault($data);
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
+    return BOM::Event::Services::Track::p2p_advertiser_cancel_at_fault($data, $service_contexts);
 }
 
 =head2 advertiser_temp_banned
@@ -693,8 +744,11 @@ An advertiser has temporarily banned for too many manual cancels or creating too
 =cut
 
 sub advertiser_temp_banned {
-    my $data = shift;
-    return BOM::Event::Services::Track::p2p_advertiser_temp_banned($data);
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
+    return BOM::Event::Services::Track::p2p_advertiser_temp_banned($data, $service_contexts);
 }
 
 =head2 update_local_currencies
@@ -753,7 +807,9 @@ It returns a Future object.
 =cut
 
 sub track_p2p_order_event {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my ($loginid, $order, $order_details, $order_event, $parties) = $args->@{qw(loginid order order_details order_event parties)};
 
@@ -776,8 +832,9 @@ sub track_p2p_order_event {
     return Future->done(1) unless ($method);
 
     return $method->(
-        order   => $order_details,
-        parties => $parties,
+        order            => $order_details,
+        parties          => $parties,
+        service_contexts => $service_contexts,
     );
 }
 

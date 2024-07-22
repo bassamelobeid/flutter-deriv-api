@@ -43,7 +43,7 @@ sub get_attributes {
     my $parameters  = [];
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::get_attributes not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to get_attributes not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     die "Attribute parameters must be an array reference" unless ref $attributes eq "ARRAY";
@@ -54,12 +54,15 @@ sub get_attributes {
         $parameters = BOM::Service::User::Attributes::get_requested_attributes($attributes);
     }
 
+    my $user   = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+
     if (keys %$parameters) {
         for my $attribute (keys %$parameters) {
             my $attribute_handler = $parameters->{$attribute};
             # Execute the handler for the attribute
             $return_data{$attribute} =
-                $attribute_handler->{get_handler}->($request, $attribute_handler->{remap} // $attribute, $attribute_handler->{type});
+                $attribute_handler->{get_handler}->($request, $attribute_handler->{remap} // $attribute, $attribute_handler->{type}, $user, $client);
         }
     } else {
         die "No valid attributes found";
@@ -87,8 +90,8 @@ This subroutine retrieves specific client data based on the attribute and type p
 =cut
 
 sub get_client_data {
-    my ($request, $attribute, $type) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $user, $client) = @_;
+
     if ($type eq 'string') {
         return trim($client->$attribute);
     } elsif ($type eq 'string-nullable') {
@@ -117,8 +120,8 @@ This subroutine retrieves specific user data based on the attribute and type pro
 =cut
 
 sub get_user_data {
-    my ($request, $attribute, $type) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $user, $client) = @_;
+
     if ($type eq 'string') {
         return trim($user->{$attribute});
     } elsif ($type eq 'string-nullable') {
@@ -147,8 +150,7 @@ This subroutine retrieves the version of the terms and conditions that the user 
 =cut
 
 sub get_accepted_tnc_version {
-    my ($request, $attribute, $type) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $user, $client) = @_;
 
     return $user->dbic->run(
         fixup => sub {
@@ -172,8 +174,7 @@ This subroutine retrieves the financial assessment of a client. It first gets th
 =cut
 
 sub get_financial_assessment {
-    my ($request, $attribute, $type) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $user, $client) = @_;
     return BOM::User::FinancialAssessment::decode_fa($client->financial_assessment);
 }
 
@@ -192,8 +193,7 @@ This subroutine retrieves the feature flags of a user. It first gets the user ob
 =cut
 
 sub get_feature_flags {
-    my ($request, $attribute, $type) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $user, $client) = @_;
 
     my $result = $user->dbic->run(
         fixup => sub {
@@ -223,8 +223,8 @@ This subroutine retrieves the immutable attributes of a client. It first gets th
 =cut
 
 sub get_immutable_attributes {
-    my ($request, $attribute, $type) = @_;
-    my $client                  = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $user, $client) = @_;
+
     my @client_immutable_fields = $client->immutable_fields();
 
     # We need to be a little thoughtful here as the front-end takes these seriously however the
@@ -266,8 +266,8 @@ This subroutine retrieves the UUID of a user. It first gets the user object usin
 =cut
 
 sub get_user_uuid {
-    my ($request, $attribute, $type) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $user, $client) = @_;
+
     return BOM::Service::Helpers::binary_user_id_to_uuid($user->id);
 }
 
@@ -286,8 +286,8 @@ This subroutine retrieves the ID of a user. It first gets the user object using 
 =cut
 
 sub get_user_id {
-    my ($request, $attribute, $type) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $user, $client) = @_;
+
     return $user->id;
 }
 
@@ -306,8 +306,27 @@ This subroutine retrieves full name of the user, its a concatenation of salutati
 =cut
 
 sub get_full_name {
-    my ($request, $attribute, $type) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $user, $client) = @_;
+
     return $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
 }
+
+=head2 get_not_supported
+
+This subroutine is used when an attempt is made to get an attribute that does not read. It immediately throws an error stating that setting of the attribute is not supported.
+
+=over 4
+
+=item * Input: None
+
+=item * Return: Does not return a value. Instead, it throws an error.
+
+=back
+
+=cut
+
+sub get_not_supported {
+    die "Getting of this attributed is not supported";
+}
+
 1;

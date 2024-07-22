@@ -13,6 +13,7 @@ use Log::Any::Test;
 use Log::Any                                   qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Event::Actions::MT5;
 use Test::MockModule;
 use BOM::User;
@@ -27,8 +28,9 @@ use BOM::Config::Runtime;
 use Clone 'clone';
 use Deriv::TradingPlatform::MT5::UserRights qw(get_value);
 
-my $brand = Brands->new(name => 'deriv');
-my ($app_id) = $brand->whitelist_apps->%*;
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+my $brand            = Brands->new(name => 'deriv');
+my ($app_id)         = $brand->whitelist_apps->%*;
 
 my (@identify_args, @track_args, @transactional_args);
 my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
@@ -49,16 +51,16 @@ $mock_brands->mock(
         return (grep { $_ eq $self->name } @enabled_brands);
     });
 
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-my $user = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
+my $test_customer = BOM::Test::Customer->create(
     email_verified => 1,
-);
-$user->add_client($test_client);
-$user->add_loginid('MT1000');
+    clients        => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+    ]);
+$test_customer->add_loginid('MT', 'MT1000');
+
+my $test_client = $test_customer->get_client_object('CR');
 
 my $mocked_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
 $mocked_mt5->mock('update_user', sub { Future->done({}) });
@@ -99,7 +101,7 @@ my $mocked_mt5_async           = Test::MockModule->new('BOM::MT5::User::Async');
 
 subtest 'test unrecoverable error' => sub {
     $mocked_mt5->mock('get_user', sub { Future->done({error => 'Not found'}) });
-    is(BOM::Event::Actions::MT5::sync_info({loginid => $test_client->loginid}), 0, 'return 0 because there is error');
+    is(BOM::Event::Actions::MT5::sync_info({loginid => $test_client->loginid}, $service_contexts), 0, 'return 0 because there is error');
     ok(!@emitter_args, 'no new event emitted');
     like($datadog_args[0], qr/unrecoverable_error/, 'call datadog for this error');
 };
@@ -112,7 +114,7 @@ subtest 'test non unrecoverable  error', sub {
     # It is impossible to try 10+ times; It need only a number that big enough
     for (1 .. 10) {
         @emitter_args = ();
-        is(BOM::Event::Actions::MT5::sync_info($cached_args), 0, 'return 0 because there is error');
+        is(BOM::Event::Actions::MT5::sync_info($cached_args, $service_contexts), 0, 'return 0 because there is error');
         $count++;
         last unless (@emitter_args);
         ok(@emitter_args, 'new event emitted');
@@ -130,7 +132,7 @@ subtest 'no error' => sub {
     @datadog_args = ();
     $mocked_mt5->mock('get_user', sub { Future->done({}) });
     @emitter_args = ();
-    is(BOM::Event::Actions::MT5::sync_info({loginid => $test_client->loginid}), 1, 'return 1 because there is no error');
+    is(BOM::Event::Actions::MT5::sync_info({loginid => $test_client->loginid}, $service_contexts), 1, 'return 1 because there is no error');
     ok(!@datadog_args, 'no datadog called');
     ok(!@emitter_args, 'no event emitted');
 };
@@ -143,18 +145,12 @@ subtest 'mt5 track event' => sub {
     );
     request($req);
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test@bin.com',
-    });
-
-    my $user = BOM::User->create(
-        email          => $test_client->email,
-        password       => "hello",
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
-    $user->add_client($test_client);
-    $user->add_loginid('MTR90000');
+        clients        => [{name => 'CR', broker_code => 'CR'}]);
+    $test_customer->add_loginid('MTR', 'MTR90000');
+
+    my $test_client = $test_customer->get_client_object('CR');
 
     subtest 'mt5 signup track' => sub {
         my $args = {
@@ -173,12 +169,16 @@ subtest 'mt5 track event' => sub {
         undef @emitter_args;
 
         my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
-        my $result         = $action_handler->($args);
+        my $result         = $action_handler->($args, $service_contexts);
         ok $result, 'Success mt5 new account result';
         BOM::Event::Process->new(category => 'track')->process({
                 type    => $emitter_args[0],
                 details => $emitter_args[1],
-                context => $emitter_args[2]})->get;
+                context => $emitter_args[2]
+            },
+            'Test Stream',
+            $service_contexts
+        )->get;
 
         is scalar @track_args, 1;
         my ($customer, %args) = $track_args[0]->@*;
@@ -201,7 +201,7 @@ subtest 'mt5 track event' => sub {
                 mt5_group              => 'real\\p02_ts02\\synthetic\\svg_std_usd',
                 mt5_loginid            => 'MTR90000',
                 sub_account_type       => 'financial',
-                client_first_name      => $test_client->first_name,
+                client_first_name      => $test_customer->get_first_name(),
                 type_label             => ucfirst $type_label,
                 mt5_integer_id         => '90000',
                 brand                  => 'deriv',
@@ -221,7 +221,7 @@ subtest 'mt5 track event' => sub {
         undef @track_args;
 
         $args->{mt5_login_id} = '';
-        like exception { $action_handler->($args); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        like exception { $action_handler->($args, $service_contexts); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
         is scalar @track_args,    0, 'Track is not triggered';
         is scalar @identify_args, 0, 'Identify is not triggered';
     };
@@ -245,12 +245,16 @@ subtest 'mt5 track event' => sub {
         undef @transactional_args;
 
         my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
-        my $result         = $action_handler->($args);
+        my $result         = $action_handler->($args, $service_contexts);
         ok $result, 'Success mt5 new account result';
         BOM::Event::Process->new(category => 'track')->process({
                 type    => $emitter_args[0],
                 details => $emitter_args[1],
-                context => $emitter_args[2]})->get;
+                context => $emitter_args[2]
+            },
+            'Test Stream',
+            $service_contexts
+        )->get;
 
         is scalar @track_args, 1;
         my ($customer, %args) = $track_args[0]->@*;
@@ -265,7 +269,7 @@ subtest 'mt5 track event' => sub {
             mt5_group              => 'real\\p02_ts02\\synthetic\\svg_std_usd',
             mt5_loginid            => 'MTR90000',
             sub_account_type       => 'financial',
-            client_first_name      => $test_client->first_name,
+            client_first_name      => $test_customer->get_first_name(),
             type_label             => ucfirst $type_label,
             mt5_integer_id         => '90000',
             brand                  => 'deriv',
@@ -300,7 +304,7 @@ subtest 'mt5 track event' => sub {
         undef @track_args;
 
         $args->{mt5_login_id} = '';
-        like exception { $action_handler->($args); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        like exception { $action_handler->($args, $service_contexts); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
         is scalar @track_args,    0, 'Track is not triggered';
         is scalar @identify_args, 0, 'Identify is not triggered';
         BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
@@ -325,12 +329,16 @@ subtest 'mt5 track event' => sub {
         undef @transactional_args;
 
         my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
-        my $result         = $action_handler->($args);
+        my $result         = $action_handler->($args, $service_contexts);
         ok $result, 'Success mt5 new account result';
         BOM::Event::Process->new(category => 'track')->process({
                 type    => $emitter_args[0],
                 details => $emitter_args[1],
-                context => $emitter_args[2]})->get;
+                context => $emitter_args[2]
+            },
+            'Test Stream',
+            $service_contexts
+        )->get;
 
         is scalar @track_args, 1;
         my ($customer, %args) = $track_args[0]->@*;
@@ -345,7 +353,7 @@ subtest 'mt5 track event' => sub {
             mt5_group              => 'demo\\p01_ts03\\financial\\svg_std_usd\\03',
             mt5_loginid            => 'MTR90000',
             sub_account_type       => 'financial',
-            client_first_name      => $test_client->first_name,
+            client_first_name      => $test_customer->get_first_name(),
             type_label             => ucfirst $type_label,
             mt5_integer_id         => '90000',
             brand                  => 'deriv',
@@ -380,7 +388,7 @@ subtest 'mt5 track event' => sub {
         undef @track_args;
 
         $args->{mt5_login_id} = '';
-        like exception { $action_handler->($args); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        like exception { $action_handler->($args, $service_contexts); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
         is scalar @track_args,    0, 'Track is not triggered';
         is scalar @identify_args, 0, 'Identify is not triggered';
         BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
@@ -405,12 +413,16 @@ subtest 'mt5 track event' => sub {
         undef @transactional_args;
 
         my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
-        my $result         = $action_handler->($args);
+        my $result         = $action_handler->($args, $service_contexts);
         ok $result, 'Success mt5 new account result';
         BOM::Event::Process->new(category => 'track')->process({
                 type    => $emitter_args[0],
                 details => $emitter_args[1],
-                context => $emitter_args[2]})->get;
+                context => $emitter_args[2]
+            },
+            'Test Stream',
+            $service_contexts
+        )->get;
 
         is scalar @track_args, 1;
         my ($customer, %args) = $track_args[0]->@*;
@@ -425,7 +437,7 @@ subtest 'mt5 track event' => sub {
             mt5_group              => 'real\\p01_ts01\\financial\\bvi_std_usd',
             mt5_loginid            => 'MTR90000',
             sub_account_type       => 'financial',
-            client_first_name      => $test_client->first_name,
+            client_first_name      => $test_customer->get_first_name(),
             type_label             => ucfirst $type_label,
             mt5_integer_id         => '90000',
             brand                  => 'deriv',
@@ -460,7 +472,7 @@ subtest 'mt5 track event' => sub {
         undef @track_args;
 
         $args->{mt5_login_id} = '';
-        like exception { $action_handler->($args); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        like exception { $action_handler->($args, $service_contexts); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
         is scalar @track_args,    0, 'Track is not triggered';
         is scalar @identify_args, 0, 'Identify is not triggered';
         BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
@@ -483,12 +495,16 @@ subtest 'mt5 track event' => sub {
         undef @emitter_args;
 
         my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
-        my $result         = $action_handler->($args);
+        my $result         = $action_handler->($args, $service_contexts);
         ok $result, 'Success mt5 new account result';
         BOM::Event::Process->new(category => 'track')->process({
                 type    => $emitter_args[0],
                 details => $emitter_args[1],
-                context => $emitter_args[2]})->get;
+                context => $emitter_args[2]
+            },
+            'Test Stream',
+            $service_contexts
+        )->get;
 
         is scalar @track_args, 1;
         my ($customer, %args) = $track_args[0]->@*;
@@ -511,7 +527,7 @@ subtest 'mt5 track event' => sub {
                 mt5_group              => 'real\\p02_ts02\\synthetic\\seychelles_ib_usd',
                 mt5_loginid            => 'MTR90000',
                 sub_account_type       => 'financial',
-                client_first_name      => $test_client->first_name,
+                client_first_name      => $test_customer->get_first_name(),
                 type_label             => ucfirst $type_label,
                 mt5_integer_id         => '90000',
                 brand                  => 'deriv',
@@ -531,7 +547,8 @@ subtest 'mt5 track event' => sub {
         undef @track_args;
 
         $args->{mt5_login_id} = '';
-        like exception { $action_handler->($args)->get; }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        like exception { $action_handler->($args, $service_contexts)->get; }, qr/mt5 loginid is required/,
+            'correct exception when mt5 loginid is missing';
         is scalar @track_args,    0, 'Track is not triggered';
         is scalar @identify_args, 0, 'Identify is not triggered';
     };
@@ -544,12 +561,13 @@ subtest 'mt5 track event' => sub {
 
         my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{mt5_password_changed};
 
-        like exception { $action_handler->($args)->get; }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        like exception { $action_handler->($args, $service_contexts)->get; }, qr/mt5 loginid is required/,
+            'correct exception when mt5 loginid is missing';
         is scalar @track_args,    0, 'Track is not triggered';
         is scalar @identify_args, 0, 'Identify is not triggered';
 
         $args->{mt5_loginid} = 'MT90000';
-        my $result = $action_handler->($args)->get;
+        my $result = $action_handler->($args, $service_contexts)->get;
         ok $result, 'Success mt5 password change result';
 
         is scalar @track_args, 1;
@@ -577,13 +595,13 @@ subtest 'mt5 track event' => sub {
 
         my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{mt5_change_color};
 
-        like exception { $action_handler->($args)->get; }, qr/Loginid is required/, 'correct exception when loginid is missing';
+        like exception { $action_handler->($args, $service_contexts)->get; }, qr/Loginid is required/, 'correct exception when loginid is missing';
 
         $args->{loginid} = 'MTD90000';
         $args->{color}   = 16711680;
 
         my $response =
-            index($action_handler->($args)->{failure}[0], 'Ignoring color change on demo account');
+            index($action_handler->($args, $service_contexts)->{failure}[0], 'Ignoring color change on demo account');
 
         is $response, 0, 'correct exception when passed a demo MT5 account';
 
@@ -593,21 +611,21 @@ subtest 'mt5 track event' => sub {
         $mocked_mt5->mock('get_user', sub { Future->fail({code => "NotFound"}) });
         $mocked_user->mock('new', sub { bless {id => 1}, 'BOM::User' });
 
-        $response =
-            index($action_handler->($args)->{failure}[0], 'Account MT90000 not found among the active accounts, changed the status to archived');
+        $response = index($action_handler->($args, $service_contexts)->{failure}[0],
+            'Account MT90000 not found among the active accounts, changed the status to archived');
 
         is $response, 0, 'correct exception when MT5 account is not found';
 
         $mocked_mt5->mock('get_user',    sub { Future->done({login => "MT90000", email => 'test123@test.com'}) });
         $mocked_mt5->mock('update_user', sub { Future->done({login => "MT90000", color => 123}) });
 
-        like exception { $action_handler->($args)->get; }, qr/Could not change client MT90000 color to 16711680/,
+        like exception { $action_handler->($args, $service_contexts)->get; }, qr/Could not change client MT90000 color to 16711680/,
             'correct exception when failed to update color field';
 
         $mocked_mt5->mock('update_user', sub { Future->done({login => "MT90000", color => 16711680}) });
 
         $mocked_user->mock('id', sub { 1 })->mock('bom_real_loginids', sub { ('CR90000', 'CR90001') });
-        my $result = $action_handler->($args)->get;
+        my $result = $action_handler->($args, $service_contexts)->get;
         ok $result, 'Success mt5 color change result';
 
         $mocked_mt5->unmock('get_user');
@@ -632,7 +650,7 @@ subtest 'mt5 track event' => sub {
                 return Future->done({login => "MT90000", color => 123});
             });
 
-        like exception { $action_handler->($args)->get; }, qr/Could not change client MTR90000 color to 16711680/,
+        like exception { $action_handler->($args, $service_contexts)->get; }, qr/Could not change client MTR90000 color to 16711680/,
             'correct exception when failed to update color field';
 
         is $update_user_rights, 'deleted', 'MT5 User Rights key removed';
@@ -640,7 +658,7 @@ subtest 'mt5 track event' => sub {
         $mocked_mt5->unmock('get_user');
     };
 
-    subtest 'mt5 store tranactions' => sub {
+    subtest 'mt5 store transactions' => sub {
         my $args = {
             loginid         => $test_client->loginid,
             'group'         => 'real\p01_ts04\synthetic\vanuatu_std_usd',
@@ -652,14 +670,14 @@ subtest 'mt5 track event' => sub {
 
         mailbox_clear();
         my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{store_mt5_transaction};
-        my $result         = $action_handler->($args);
+        my $result         = $action_handler->($args, $service_contexts);
         ok $result, 'Success mt5 store transactions result';
         my $msg = mailbox_search(subject => qr/VN - International currency transfers reporting obligation/);
         ok !$msg, 'no email was sent';
 
         $args->{amount_in_USD} = 7800;
         $action_handler        = BOM::Event::Process->new(category => 'generic')->actions->{store_mt5_transaction};
-        $result                = $action_handler->($args);
+        $result                = $action_handler->($args, $service_contexts);
         ok $result, 'Success mt5 store transactions result';
         $msg = mailbox_search(subject => qr/VN - International currency transfers reporting obligation/);
         cmp_deeply(
@@ -705,14 +723,14 @@ subtest 'sanctions' => sub {
     };
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
-    is $action_handler->($args), 1, 'Success mt5 new account result';
+    is $action_handler->($args, $service_contexts), 1, 'Success mt5 new account result';
 
     is scalar @sanct_args, 0, 'sanctions are not included in signup actions';
 
     $lc_actions = {signup => [qw(sanctions)]};
-    is $action_handler->($args), 1,                                  'Success mt5 new account result';
-    is scalar @sanct_args,       5,                                  'sanction check is called, because it is included in signup actions';
-    is ref($sanct_args[0]),      'BOM::Platform::Client::Sanctions', 'Sanctions object type is correct';
+    is $action_handler->($args, $service_contexts), 1, 'Success mt5 new account result';
+    is scalar @sanct_args,                          5, 'sanction check is called, because it is included in signup actions';
+    is ref($sanct_args[0]),                         'BOM::Platform::Client::Sanctions', 'Sanctions object type is correct';
     ok $sanct_args[0]->recheck_authenticated_clients, 'recheck for authenticated clients is enabled';
     shift @sanct_args;
     is_deeply \@sanct_args,
@@ -761,12 +779,12 @@ subtest 'mt5 inactive notification' => sub {
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{mt5_inactive_notification};
 
-    like exception { $action_handler->($args)->get; }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
+    like exception { $action_handler->($args, $service_contexts)->get; }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
     is scalar @track_args,    0, 'Track is not triggered';
     is scalar @identify_args, 0, 'Identify is not triggered';
 
     $args->{email} = $test_client->{email};
-    my $result = $action_handler->($args)->get;
+    my $result = $action_handler->($args, $service_contexts)->get;
     ok $result, 'Success event result';
 
     is scalar @track_args, 2, 'Track is called twice';
@@ -855,13 +873,13 @@ subtest 'mt5 inactive account closed' => sub {
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{mt5_inactive_account_closed};
 
-    like exception { $action_handler->($args) }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
+    like exception { $action_handler->($args, $service_contexts) }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
 
     undef @identify_args;
     undef @track_args;
 
     $args->{email} = $test_client->{email};
-    my $result = $action_handler->($args)->get;
+    my $result = $action_handler->($args, $service_contexts)->get;
     ok $result, 'Success event result';
 
     my (undef, %tracked) = $track_args[0]->@*;
@@ -913,12 +931,12 @@ subtest 'mt5 inactive account closed - transactional email' => sub {
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{mt5_inactive_account_closed};
 
-    like exception { $action_handler->($args) }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
+    like exception { $action_handler->($args, $service_contexts) }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
     undef @transactional_args;
     undef @track_args;
 
     $args->{email} = $test_client->{email};
-    my $result = $action_handler->($args)->get;
+    my $result = $action_handler->($args, $service_contexts)->get;
     ok $result, 'Success event result';
 
     my (undef, %tracked) = $track_args[0]->@*;
@@ -966,7 +984,7 @@ subtest 'mt5 account closure report' => sub {
     mailbox_clear();
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_inactive_account_closure_report};
-    $action_handler->($args);
+    $action_handler->($args, $service_contexts);
 
     my $email = mailbox_search(
         email   => 'i-payments@deriv.com',
@@ -1051,9 +1069,10 @@ subtest 'mt5 deriv auto rescind' => sub {
     );
     request($req);
 
+    my $email                    = 'testrescind@test.com';
     my $auto_rescind_test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
-        email       => 'testrescind@test.com',
+        email       => $email,
     });
 
     my $sample_mt5_user = {
@@ -1063,7 +1082,7 @@ subtest 'mt5 deriv auto rescind' => sub {
         city          => "Cyber",
         company       => "",
         country       => "Indonesia",
-        email         => $auto_rescind_test_client->email,
+        email         => $email,
         group         => "real\\p01_ts03\\synthetic\\svg_std_usd\\03",
         leverage      => 500,
         login         => "MTR10000",
@@ -1076,7 +1095,7 @@ subtest 'mt5 deriv auto rescind' => sub {
     };
 
     my $sample_bom_user = {
-        email              => $auto_rescind_test_client->email,
+        email              => $email,
         preferred_language => 'en'
     };
 
@@ -1085,7 +1104,7 @@ subtest 'mt5 deriv auto rescind' => sub {
     };
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_deriv_auto_rescind};
-    my $action_get     = sub { $action_handler->(shift)->get };
+    my $action_get     = sub { $action_handler->(shift, $service_contexts)->get };
 
     my %mt5_event_mock = (
         convert_currency => sub {
@@ -2009,7 +2028,7 @@ subtest 'link myaffiliate token to mt5' => sub {
         'link_myaff_token_to_mt5',
         sub {
             $args = shift;
-            return $mocked_actions->original('link_myaff_token_to_mt5')->($args);
+            return $mocked_actions->original('link_myaff_token_to_mt5')->($args, $service_contexts);
         });
 
     $mocked_actions->mock(
@@ -2020,7 +2039,11 @@ subtest 'link myaffiliate token to mt5' => sub {
 
     $process_result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
             type    => 'link_myaff_token_to_mt5',
-            details => {}});
+            details => {}
+        },
+        'TestStream',
+        $service_contexts
+    );
 
     like($process_result->{failure}[0], qr/Unable to connect to MyAffiliate to parse token/, "Correct expected error message");
     $mocked_actions->unmock_all();
@@ -2031,7 +2054,7 @@ subtest 'link myaffiliate token to mt5' => sub {
         'link_myaff_token_to_mt5',
         sub {
             $args = shift;
-            return $mocked_actions->original('link_myaff_token_to_mt5')->($args);
+            return $mocked_actions->original('link_myaff_token_to_mt5')->($args, $service_contexts);
         });
 
     $mocked_myaffiliates->mock(
@@ -2045,7 +2068,11 @@ subtest 'link myaffiliate token to mt5' => sub {
             type    => 'link_myaff_token_to_mt5',
             details => {
                 myaffiliates_token => 'dummy_token',
-            }});
+            }
+        },
+        'TestStream',
+        $service_contexts
+    );
 
     like($process_result->{failure}[0], qr/Unable to get MyAffiliate user 123 from token dummy_token/, "Correct expected error message");
 
@@ -2064,7 +2091,11 @@ subtest 'link myaffiliate token to mt5' => sub {
             type    => 'link_myaff_token_to_mt5',
             details => {
                 myaffiliates_token => 'dummy_token',
-            }});
+            }
+        },
+        'TestStream',
+        $service_contexts
+    );
 
     like($process_result->{failure}[0], qr/Unable to map token dummy_token to an affiliate/, "Correct expected error message");
 
@@ -2098,7 +2129,11 @@ subtest 'link myaffiliate token to mt5' => sub {
             type    => 'link_myaff_token_to_mt5',
             details => {
                 myaffiliates_token => 'dummy_token',
-            }});
+            }
+        },
+        'TestStream',
+        $service_contexts
+    );
 
     like($process_result->{failure}[0], qr/User variable is not defined for 123 from token dummy_token/, "Correct expected error message");
 
@@ -2111,7 +2146,7 @@ subtest 'link myaffiliate token to mt5' => sub {
         'link_myaff_token_to_mt5',
         sub {
             $args = shift;
-            return $mocked_actions->original('link_myaff_token_to_mt5')->($args);
+            return $mocked_actions->original('link_myaff_token_to_mt5')->($args, $service_contexts);
         });
 
     $mocked_actions->mock(
@@ -2161,7 +2196,11 @@ subtest 'link myaffiliate token to mt5' => sub {
                 client_mt5_login   => 'MTR123456',
                 broker_code        => 'dummy',
                 myaffiliates_token => 'dummy_token',
-            }});
+            }
+        },
+        'TestStream',
+        $service_contexts
+    );
 
     like($process_result->{result}[0], qr/Successfully linked client MTR123456 to affiliate 123/, "The success message is returned correctly");
 
@@ -2174,7 +2213,7 @@ subtest 'link myaffiliate token to mt5' => sub {
         'link_myaff_token_to_mt5',
         sub {
             $args = shift;
-            return $mocked_actions->original('link_myaff_token_to_mt5')->($args);
+            return $mocked_actions->original('link_myaff_token_to_mt5')->($args, $service_contexts);
         });
 
     $mocked_actions->mock(
@@ -2203,7 +2242,11 @@ subtest 'link myaffiliate token to mt5' => sub {
             type    => 'link_myaff_token_to_mt5',
             details => {
                 client_mt5_login => 'MTR123456',
-            }});
+            }
+        },
+        'TestStream',
+        $service_contexts
+    );
 
     $log->contains_ok(qr/An error occured while retrieving user 'MTR123456' from MT5 : \{error => \"Not found\"\}/, "Correct expected error message");
     is($process_result->{result}[0], 1, "Correct returned value");
@@ -2340,7 +2383,7 @@ subtest 'sync mt5 accounts status' => sub {
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{sync_mt5_accounts_status};
-    my $action_get     = sub { $action_handler->(shift)->get->get };
+    my $action_get     = sub { $action_handler->(shift, $service_contexts)->get->get };
 
     my %bom_user_mock = (
         new => sub {
@@ -3446,7 +3489,8 @@ subtest 'mt5 archive restore sync' => sub {
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_archive_restore_sync};
 
-    like exception { $action_handler->($args)->get; }, qr/Must provide list of MT5 loginids/, 'correct exception when MT5 id list is missing';
+    like exception { $action_handler->($args, $service_contexts)->get; }, qr/Must provide list of MT5 loginids/,
+        'correct exception when MT5 id list is missing';
 
     $args->{mt5_accounts} = ['MTR90000'];
 
@@ -3454,7 +3498,7 @@ subtest 'mt5 archive restore sync' => sub {
     $mocked_user->mock('new',              sub { bless {}, 'BOM::User' });
     $mocked_user->mock('get_mt5_loginids', ('MTR90000'));
 
-    my $result = $action_handler->($args)->get;
+    my $result = $action_handler->($args, $service_contexts)->get;
     ok $result, 'Success mt5 archive restore sync result';
 
     $mocked_mt5->unmock_all;
@@ -3477,12 +3521,13 @@ subtest 'sync_mt5_accounts_status' => sub {
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{sync_mt5_accounts_status};
 
-    like exception { $action_handler->($args)->get; }, qr/Must provide client_loginid/, 'correct exception when user has no client id provided';
+    like exception { $action_handler->($args, $service_contexts)->get; }, qr/Must provide client_loginid/,
+        'correct exception when user has no client id provided';
 
     $args->{client_loginid} = 'CR101';
     $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{sync_mt5_accounts_status};
 
-    like exception { $action_handler->($args)->get; }, qr/Client not found/, 'correct exception when invalid client id provided';
+    like exception { $action_handler->($args, $service_contexts)->get; }, qr/Client not found/, 'correct exception when invalid client id provided';
 
     $user->add_client($client);
     $client->binary_user_id($user->id);
@@ -3492,7 +3537,7 @@ subtest 'sync_mt5_accounts_status' => sub {
 
     $args->{client_loginid} = $client->loginid;
 
-    my $result = $action_handler->($args)->get->get;    # async sub returns explicit Future->done !!
+    my $result = $action_handler->($args, $service_contexts)->get->get;    # async sub returns explicit Future->done !!
 
     cmp_deeply $result,
         {
@@ -3526,7 +3571,7 @@ subtest 'sync_mt5_accounts_status' => sub {
         },
     };
 
-    $result = $action_handler->($args)->get->get;
+    $result = $action_handler->($args, $service_contexts)->get->get;
 
     cmp_deeply $result,
         {
@@ -3575,7 +3620,7 @@ subtest 'sync_mt5_accounts_status' => sub {
         },
     };
 
-    $result = $action_handler->($args)->get->get;
+    $result = $action_handler->($args, $service_contexts)->get->get;
 
     cmp_deeply $result,
         {
@@ -3650,7 +3695,7 @@ subtest 'sync_mt5_accounts_status' => sub {
                 },
             };
 
-            $result = $action_handler->($args)->get->get;
+            $result = $action_handler->($args, $service_contexts)->get->get;
 
             my $str_status = $status // 'undef';
 
@@ -3705,7 +3750,7 @@ subtest 'sync_mt5_accounts_status' => sub {
 
                 my $str_status = $status // 'undef';
 
-                $result = $action_handler->($args)->get->get;
+                $result = $action_handler->($args, $service_contexts)->get->get;
 
                 cmp_deeply $result,
                     {
@@ -3760,7 +3805,7 @@ subtest 'sync_mt5_accounts_status' => sub {
 
                 my $str_status = $status // 'undef';
 
-                $result = $action_handler->($args)->get->get;
+                $result = $action_handler->($args, $service_contexts)->get->get;
 
                 cmp_deeply $result,
                     {
@@ -3814,7 +3859,7 @@ subtest 'sync_mt5_accounts_status' => sub {
 
             my $str_status = $status // 'undef';
 
-            $result = $action_handler->($args)->get->get;
+            $result = $action_handler->($args, $service_contexts)->get->get;
 
             cmp_deeply $result,
                 {
@@ -3865,10 +3910,11 @@ subtest 'mt5_archive_accounts' => sub {
     subtest 'Not found' => sub {
 
         $mocked_actions->mock('_get_mt5_account', sub { undef });
-        like exception { $action_handler->($args)->get; }, qr/Must provide list of MT5 loginids/, 'correct exception when loginids are missing';
+        like exception { $action_handler->($args, $service_contexts)->get; }, qr/Must provide list of MT5 loginids/,
+            'correct exception when loginids are missing';
 
         $args   = {loginids => ['MTR90000']};
-        $result = $action_handler->($args)->get;
+        $result = $action_handler->($args, $service_contexts)->get;
         ok $result, 'Successful request';
 
         # Account not found, missing from users.loginid table
@@ -3896,7 +3942,7 @@ subtest 'mt5_archive_accounts' => sub {
         $emissions = [];
         $args      = {loginids => ['MTR90000']};
 
-        $result = $action_handler->($args)->get;
+        $result = $action_handler->($args, $service_contexts)->get;
         ok $result, 'Success mt5 archive request';
 
         cmp_deeply $emissions,
@@ -3938,7 +3984,7 @@ subtest 'mt5_archive_accounts' => sub {
         $emissions = [];
         $args      = {loginids => ['MTR90000', 'MTR90001']};
 
-        $result = $action_handler->($args)->get;
+        $result = $action_handler->($args, $service_contexts)->get;
         ok $result, 'Success mt5 archive request';
 
         cmp_deeply $emissions, [{
@@ -3989,9 +4035,8 @@ subtest 'mt5_archive_accounts' => sub {
         $mocked_actions->mock('_archive_mt5_account', async sub { return 1; });
 
         $emissions = [];
-        $result    = $action_handler->($args)->get;
+        $result    = $action_handler->($args, $service_contexts)->get;
         ok $result, 'Success mt5 archive request';
-
         cmp_deeply $emissions, [{
                 'send_email' => {
                     'to'      => 'x-trading-ops@deriv.com',
@@ -4000,7 +4045,7 @@ subtest 'mt5_archive_accounts' => sub {
                         '<p>MT5 Archival request result</p>
     <table border=1><tr><th>Loginid</th><th>Status</th><th>Group</th><th>Comment</th></tr>',
                         '<tr><td>MTR90000</td><td>Archived</td><td>real\\p01_ts02\\some_bvi_group</td><td>Archived successfully, account had zero balance</td></tr>',
-                        '<tr><td>MTR90001</td><td>Archived</td><td>real\\p01_ts02\\some_vanuatu_group</td><td>[2023-07-25T09:38:48.819049Z] Transfer from MT5 login: MTR90001 to binary account CR10000 USD 100</td></tr>',
+                        '<tr><td>MTR90001</td><td>Archived</td><td>real\\p01_ts02\\some_vanuatu_group</td><td>[2023-07-25T09:38:48.819049Z] Transfer from MT5 login: MTR90001 to binary account CR10001 USD 100</td></tr>',
                         '</table>'
                     ],
                     'email_content_is_html' => 1,
@@ -4061,7 +4106,9 @@ subtest 'mt5_archive_accounts' => sub {
         $emissions = [];
         $result    = $action_handler->({
                 loginids => [$mt5_loginid],
-            })->get;
+            },
+            $service_contexts
+        )->get;
         ok $result, 'Success mt5 archive request';
 
         is $test_wallet->account->balance, '100.00', 'Wallet balance is 100';
@@ -4145,7 +4192,7 @@ subtest 'mt5_svg_migration_requested' => sub {
     $mocked_mt5_async->mock('get_open_positions_count', sub { return Future->done({total => 0}); });
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_svg_migration_requested};
-    my $action_get     = sub { $action_handler->(shift)->get->get };
+    my $action_get     = sub { $action_handler->(shift, $service_contexts)->get->get };
 
     subtest 'Params check error' => sub {
         my $args = {
@@ -4647,7 +4694,7 @@ subtest 'mt5_archive_accounts' => sub {
     };
 
     $time_mock->mock('now', sub { Time::Moment->from_string('2023-10-23T14:33:32.579880Z'); });
-    my $result = $action_handler->($args)->get;
+    my $result = $action_handler->($args, $service_contexts)->get;
 
     cmp_deeply $email_params, [
         'send_email',
@@ -4739,20 +4786,37 @@ subtest 'mt5_deposit_retry function' => sub {
     $mock_mt5->mock('deal_get_batch', sub { return Future->done($async_deal_get_batch_response); });
 
     # Call mt5_deposit_retry function and test if transaction already exists
-    my $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({type => 'mt5_deposit_retry', details => $parameters})->get;
+    my $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+            type    => 'mt5_deposit_retry',
+            details => $parameters
+        },
+        'TestStream',
+        $service_contexts
+    )->get;
     is($result->get, 'Transaction already exist in mt5', 'Transaction already exists test');
 
     # Test for a non-existent transaction id
     my $non_existing_transaction_id_parameters = clone $parameters;
     $non_existing_transaction_id_parameters->{transaction_id} = 999999;
-    $result = BOM::Event::Process->new(category => 'mt5_retryable')
-        ->process({type => 'mt5_deposit_retry', details => $non_existing_transaction_id_parameters});
+    $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+            type    => 'mt5_deposit_retry',
+            details => $non_existing_transaction_id_parameters
+        },
+        'TestStream',
+        $service_contexts
+    );
     like($result->failure, qr/Cannot find transaction id: 999999/, 'Transaction not found test');
 
     # Test for a demo deposit
     my $demo_parameters = clone $parameters;
     $demo_parameters->{server} = 'demo_p01_ts03';
-    $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({type => 'mt5_deposit_retry', details => $demo_parameters});
+    $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+            type    => 'mt5_deposit_retry',
+            details => $demo_parameters
+        },
+        'TestStream',
+        $service_contexts
+    );
     like($result->failure, qr/Do not need to try demo deposit/, 'Demo deposit test');
 
     subtest 'skip deposit retry if deal_get_batch fail' => sub {
@@ -4769,7 +4833,13 @@ subtest 'mt5_deposit_retry function' => sub {
                     content => '{"message":"Not found","code":"13","error":"ERR_NOTFOUND"}'
                 };
             });
-        $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({type => 'mt5_deposit_retry', details => $parameters});
+        $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+                type    => 'mt5_deposit_retry',
+                details => $parameters
+            },
+            'TestStream',
+            $service_contexts
+        );
         isa_ok $result, 'Future';
         is $result->failure->{code}, 'NotFound', 'skip deposit retry attempt if deal_get_batch got NotFound error';
 
@@ -4781,7 +4851,13 @@ subtest 'mt5_deposit_retry function' => sub {
                     content => 'Timed out while waiting for socket to become ready for reading'
                 };
             });
-        $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({type => 'mt5_deposit_retry', details => $parameters});
+        $result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+                type    => 'mt5_deposit_retry',
+                details => $parameters
+            },
+            'TestStream',
+            $service_contexts
+        );
         isa_ok $result, 'Future';
         is $result->failure->{code}, 'NonSuccessResponse', 'skip deposit retry attempt if deal_get_batch got Connection timeout error';
 

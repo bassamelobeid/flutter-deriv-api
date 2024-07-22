@@ -83,18 +83,20 @@ Returns B<1> on success.
 =cut
 
 async sub anonymize_client {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginid = $args->{loginid};
     return undef unless $loginid;
 
     my ($success, $error);
-    my $result = await _anonymize($loginid);
+    my $result = await _anonymize($loginid, $service_contexts);
     $result eq 'successful' ? $success->{$loginid} = $result : ($error->{$loginid} = ERROR_MESSAGE_MAPPING->{$result});
 
     _send_anonymization_report($error, $success);
 
-    return 1;
+    return $result eq 'successful' ? 1 : undef;
 }
 
 =head2 bulk_anonymization
@@ -117,7 +119,9 @@ Returns 1 on success.
 =cut
 
 async sub bulk_anonymization {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $loginids_list = $args->{data};
     return undef unless $loginids_list;
@@ -145,7 +149,9 @@ Returns **1** on success.
 =cut
 
 async sub anonymize_clients {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $data = $args->{data};
     return undef unless $data;
@@ -157,7 +163,7 @@ async sub anonymize_clients {
 
     my $start_time = Time::HiRes::time;
     foreach my $loginid (@loginids) {
-        my $result = await _anonymize($loginid);
+        my $result = await _anonymize($loginid, $service_contexts);
 
         if ($result eq 'successful') {
             $success->{$loginid} = $result;
@@ -181,6 +187,10 @@ This event is emitted by the auto-anonymization cronjob.
 =cut
 
 async sub auto_anonymize_candidates {
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $collector_db = BOM::Database::ClientDB->new({
             broker_code => 'FOG',
             operation   => 'collector',
@@ -228,7 +238,9 @@ async sub auto_anonymize_candidates {
     return await bulk_anonymization({
             data  => \@data,
             title => 'Auto Anonymization'
-        }) if scalar @data;
+        },
+        $service_contexts
+    ) if scalar @data;
 
     return 1;
 }
@@ -372,16 +384,23 @@ Possible error_codes for now are:
 =cut
 
 async sub _anonymize {
-    my $loginid = shift;
-    my ($user, @clients_hashref);
+    my ($loginid, $service_contexts) = @_;
+    my @clients_hashref;
     my @mt5_activeids;
     my @mt5_inactiveids;
     try {
+
         my $client = BOM::User::Client->new({loginid => $loginid});
         return "clientNotFound" unless ($client);
-        $user = $client->user;
-        return "userNotFound" unless $user;
-        return "userAlreadyAnonymized" if $user->email =~ /\@deleted\.binary\.user$/;
+        my $user = $client->user;
+
+        my $response = BOM::Service::user(
+            context => $service_contexts->{user},
+            command => 'anonymize_status',
+            user_id => $client->binary_user_id,
+        );
+        return "userNotFound" unless $response->{status} eq 'ok';
+        return "userAlreadyAnonymized" if $response->{anonymize_status};
 
         my @mt_logins = sort $user->get_mt5_loginids(include_all_status => 1);
 
@@ -397,7 +416,7 @@ async sub _anonymize {
                             my $mt5_archived_account = await BOM::MT5::User::Async::get_user_archive($mt5_account);
                             push @mt5_inactiveids, $mt5_account if $mt5_archived_account;
                         } catch ($e) {
-                            $log->errorf("Error occured while retrieving user from get_user_archive api call'%s' from MT5 : %s", $mt5_account, $e);
+                            $log->errorf("Error occurred while retrieving user from get_user_archive api call'%s' from MT5 : %s", $mt5_account, $e);
                         }
                     }
                 }
@@ -406,7 +425,13 @@ async sub _anonymize {
 
         return "activeClient" if @mt5_activeids;
 
-        return "activeClient" unless ($user->valid_to_anonymize);
+        $response = BOM::Service::user(
+            context => $service_contexts->{user},
+            command => 'anonymize_allowed',
+            user_id => $client->binary_user_id,
+        );
+        return "userNotFound" unless $response->{status} eq 'ok';
+        return "activeClient" unless $response->{anonymize_allowed};
 
         # Delete data on close io
         return "closeIOError" unless BOM::Platform::CloseIO->new(user => $user)->anonymize_user();
@@ -472,7 +497,14 @@ async sub _anonymize {
             await _df_anonymize($redis, $cli);
         }
 
-        return "userNotFound" unless $client->anonymize_associated_user_return_list_of_siblings();
+        # Anonymize user data
+        $response = BOM::Service::user(
+            context => $service_contexts->{user},
+            command => 'anonymize_user',
+            user_id => $client->binary_user_id,
+        );
+        return "userNotFound" unless $response->{status} eq 'ok';
+
     } catch ($error) {
         exception_logged();
         $log->errorf('Anonymization failed: %s', $error);
@@ -527,7 +559,10 @@ Returns B<1>.
 =cut
 
 async sub df_anonymization_done {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $bulk = [];
 
     for my $loginid (keys $args->%*) {

@@ -32,6 +32,7 @@ use curry;
 use Future::Utils qw(fmap0);
 use List::Util    qw( any first );
 use BOM::Config;
+use UUID::Tiny;
 
 use constant REQUESTS_PER_CYCLE => 5000;
 
@@ -403,12 +404,23 @@ async sub stream_process_loop {
                 $decoded_data->{details}->{retry_last} = 1;
             }
 
+            # Build the context for any needed service access, ideally at some point the correlation_id
+            # will be passed in from the event itself rather than randomly generating it. When/if it does
+            # we're ready and waiting
+            my $service_contexts = {
+                user => {
+                    correlation_id => UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4),
+                    auth_token     => "Unused but required to be present",
+                    environment    => hostname() . ' ' . 'BOM::Events::QueueHandler ' . $$,
+                },
+            };
+
             try {
                 # NOTE : At this point it is not guaranteed that
                 # an event will be processed at most once since a
                 # job can be successful but not acknowledged,
                 # thus keeping it 'pending'
-                my $response = await $self->process_job($stream, $decoded_data);
+                my $response = await $self->process_job($stream, $decoded_data, $service_contexts);
 
                 if (blessed($response) && $response->isa('Future')) {
                     die $response->failure if $response->failure;
@@ -558,8 +570,20 @@ async sub queue_process_loop {
             exception_logged();
         }
 
+        # Build the context for any needed service access, ideally at some point the correlation_id
+        # will be passed in from the event itself rather than randomly generating it. When/if it does
+        # we're ready and waiting
+        my $service_contexts = {
+            user => {
+                correlation_id => UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4),
+                ,
+                auth_token  => "Unused but required to be present",
+                environment => hostname() . ' ' . 'BOM::Events::QueueHandler ' . $$,
+            },
+        };
+
         # redis message will be undef in case of timeout occurred
-        await $self->process_job($queue_name, $decoded_data);
+        await $self->process_job($queue_name, $decoded_data, $service_contexts);
     }
 }
 
@@ -621,7 +645,7 @@ Returns a L<FUTURE>
 =cut
 
 async sub process_job {
-    my ($self, $stream, $event_data) = @_;
+    my ($self, $stream, $event_data, $service_contexts) = @_;
 
     try {
         # A handler might be a sync sub or an async sub
@@ -632,7 +656,7 @@ async sub process_job {
         # for Future->wrap to work. Note that the actual stack element which Perl complains about
         # is just the class name (the string 'Future') - this would likely need some quality time with gdb
         # to dissect fully.
-        my $res      = $self->job_processor->process($event_data, $stream);
+        my $res      = $self->job_processor->process($event_data, $stream, $service_contexts);
         my $f        = Future->wrap($res);
         my $job_time = $self->maximum_job_time;
 

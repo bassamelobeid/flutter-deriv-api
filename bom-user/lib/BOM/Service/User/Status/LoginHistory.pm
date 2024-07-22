@@ -35,7 +35,7 @@ sub get_login_history {
     my ($request) = @_;
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::get_login_history not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to get_login_history not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     my $user_id         = $request->{user_id};
@@ -79,7 +79,7 @@ sub add_login_history {
     my ($request, $attribute, $value) = @_;
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::set_login_history not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to set_login_history not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});

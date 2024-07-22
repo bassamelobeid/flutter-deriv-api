@@ -39,7 +39,10 @@ Handles requests triggered form the sideoffce to set client account status
 =cut
 
 sub execute_set_status {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $status = $args->{status} // die 'Need a status';
 
     my $client = BOM::User::Client->new({loginid => $args->{loginid}})
@@ -71,7 +74,10 @@ Handles requests triggered form the sideoffce to remove client account status
 =cut
 
 sub execute_remove_status {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my $client = BOM::User::Client->new({loginid => $args->{loginid}})
         or die 'Could not instantiate client for login ID ' . $args->{loginid};
     try {

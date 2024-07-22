@@ -11,6 +11,7 @@ use BOM::Test;
 use Date::Utility;
 use Time::Moment;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Test::Helper::Client;
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
@@ -18,6 +19,8 @@ use BOM::Test::Helper::P2P;
 use BOM::Event::Process;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 subtest 'move funds back (order type sell)' => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
@@ -42,7 +45,8 @@ subtest 'move funds back (order type sell)' => sub {
     ok BOM::Event::Actions::P2P::timeout_refund({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
-        }
+        },
+        $service_contexts
         ),
         'Event was successful';
 
@@ -78,7 +82,8 @@ subtest 'move funds back (order type buy)' => sub {
     ok BOM::Event::Actions::P2P::timeout_refund({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
-        }
+        },
+        $service_contexts
         ),
         'Event was successful';
 
@@ -115,7 +120,8 @@ subtest 'failing the refund' => sub {
     ok !BOM::Event::Actions::P2P::timeout_refund({
             client_loginid => $client->loginid,
             order_id       => $order->{id} * -1,
-        }
+        },
+        $service_contexts
         ),
         'Event was unsuccessful due to invalid order id';
 
@@ -124,7 +130,8 @@ subtest 'failing the refund' => sub {
     ok !BOM::Event::Actions::P2P::timeout_refund({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
-        }
+        },
+        $service_contexts
         ),
         'Event was unsuccessful due to invalid status for refund';
 
@@ -134,7 +141,8 @@ subtest 'failing the refund' => sub {
     ok !BOM::Event::Actions::P2P::timeout_refund({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
-        }
+        },
+        $service_contexts
         ),
         'Event was unsuccessful due to time threshold not reached';
 
@@ -162,7 +170,7 @@ subtest 'segment tracking' => sub {
         'track_p2p_order_event',
         sub {
             $track_args = shift;
-            return $p2p_mock->original('track_p2p_order_event')->($track_args);
+            return $p2p_mock->original('track_p2p_order_event')->($track_args, $service_contexts);
         });
 
     $track_mock->mock(
@@ -203,7 +211,8 @@ subtest 'segment tracking' => sub {
     ok BOM::Event::Actions::P2P::timeout_refund({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
-        }
+        },
+        $service_contexts
         ),
         'Event was successful';
 
@@ -247,13 +256,19 @@ subtest 'segment tracking' => sub {
     );
 
     # Call order updated event
-    ok BOM::Event::Actions::P2P::order_updated($update_expected->{p2p_order_updated})->get, 'Order updated event was successful';
+    ok BOM::Event::Actions::P2P::order_updated($update_expected->{p2p_order_updated}, $service_contexts)->get, 'Order updated event was successful';
     is scalar @emitted_events, 5, 'track event emitted';
 
     my $event   = $emitted_events[$#emitted_events];
     my $process = BOM::Event::Process->new(category => 'track');
     $process->actions->{p2p_order_updated_handled} = \&BOM::Event::Actions::P2P::track_p2p_order_event;
-    $process->process({type => $event->[0], details => $event->[1]})->get;
+    $process->process({
+            type    => $event->[0],
+            details => $event->[1]
+        },
+        'Test Stream',
+        $service_contexts
+    )->get;
 
     # Check whether track_p2p_order_event has the correct arguments
     is $track_args->{order_event}, 'timeout_refund', 'The order event is correct';

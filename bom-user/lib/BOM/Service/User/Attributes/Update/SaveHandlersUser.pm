@@ -42,8 +42,7 @@ This subroutine saves the email_verified field for a user. It first retrieves th
 =cut
 
 sub save_user_email_verified {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
     _update_email_fields($user, email_verified => $user->{email_verified});
 }
 
@@ -62,12 +61,10 @@ This subroutine saves the email consent field for a user. It first retrieves the
 =cut
 
 sub save_user_email_consent {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
     _update_email_fields($user, email_consent => $user->{email_consent});
 
     # If the email_consent has changed and is false
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
     if (!$user->{email_consent}) {
         # After update notify customer io
         my $data_subscription = {
@@ -95,8 +92,7 @@ After updating the email, it retrieves the client object using the same user_id 
 =cut
 
 sub save_user_email {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
 
     _update_email_fields($user, email => lc $user->{email});
     my $oauth   = BOM::Database::Model::OAuth->new;
@@ -134,8 +130,7 @@ This subroutine updates the DX trading password of a user. It first retrieves th
 =cut
 
 sub save_user_dx_trading_password {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
     BOM::Service::User::Transitional::Password::update_dx_trading_password($user, $user->{dx_trading_password});
 }
 
@@ -154,8 +149,7 @@ This subroutine updates the trading password of a user. It first retrieves the u
 =cut
 
 sub save_user_trading_password {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
     BOM::Service::User::Transitional::Password::update_trading_password($user, $user->{trading_password});
 }
 
@@ -176,13 +170,19 @@ Note: This function currently needs to pull in the functionality of 'BOM::User::
 =cut
 
 sub save_user_totp_fields {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    BOM::Service::User::Transitional::TotpFields::update_totp_fields(
-        $user,
-        is_totp_enabled => $user->is_totp_enabled,
-        secret_key      => $user->secret_key
-    );
+    my ($request, $user, $client) = @_;
+
+    my ($new_is_totp_enabled, $secret_key) = $user->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select * from users.update_totp_fields(?, ?, ?)', undef, $user->{id}, $user->{is_totp_enabled}, $user->{secret_key});
+        });
+    $user->{is_totp_enabled} = $new_is_totp_enabled;
+    $user->{secret_key}      = $secret_key;
+
+    # revoke tokens if 2FA is updated
+    my $oauth = BOM::Database::Model::OAuth->new;
+    $oauth->revoke_tokens_by_loignid_and_ua_fingerprint($_, $request->{attributes}{ua_fingerprint}) for ($user->bom_loginids);
+    $oauth->revoke_refresh_tokens_by_user_id($user->id);
 }
 
 =head2 save_user_has_social_signup
@@ -200,8 +200,7 @@ This subroutine updates the social signup status of a user. It first retrieves t
 =cut
 
 sub save_user_has_social_signup {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
 
     BOM::Service::User::Transitional::SocialSignup::update_has_social_signup($user, $user->{has_social_signup});
 
@@ -232,10 +231,9 @@ Finally, it revokes all tokens associated with the user's loginids and refresh t
 =cut
 
 sub save_user_password {
-    my ($request) = @_;
-    my $user      = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    my $reason    = $request->{flags}->{password_update_reason};
-    my $log       = $reason eq 'reset_password' ? 'Password has been reset' : 'Password has been changed';
+    my ($request, $user, $client) = @_;
+    my $reason = $request->{flags}->{password_update_reason};
+    my $log    = $reason eq 'reset_password' ? 'Password has been reset' : 'Password has been changed';
 
     $user->{password} = $user->dbic->run(
         fixup => sub {
@@ -264,8 +262,7 @@ This subroutine updates the preferred language of a user. It first retrieves the
 =cut
 
 sub save_user_preferred_language {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
 
     $user->{preferred_language} = $user->dbic->run(
         fixup => sub {
@@ -288,8 +285,7 @@ This subroutine updates the phone_number_verification setting of a user. It firs
 =cut
 
 sub save_user_phone_number_verified {
-    my ($request) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
 
     $user->dbic(operation => 'write')->run(
         fixup => sub {
@@ -313,8 +309,7 @@ This subroutine updates the feature_flags setting of a user. It first retrieves 
 =cut
 
 sub save_user_feature_flags {
-    my ($request)     = @_;
-    my $user          = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
     my $feature_flags = $request->{attributes}{feature_flag};
 
     foreach my $feature_name (keys $feature_flags->%*) {

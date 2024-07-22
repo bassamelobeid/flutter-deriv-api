@@ -9,13 +9,15 @@ use Test::MockModule;
 use BOM::Config;
 use BOM::Event::Actions::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Test::Email;
 use BOM::Config::Runtime;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::User::PaymentRecord;
 use Digest::SHA qw/sha256_hex/;
 
-my $app_config = BOM::Config::Runtime->instance->app_config;
+my $app_config       = BOM::Config::Runtime->instance->app_config;
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $mock_segment = Test::MockModule->new('WebService::Async::Segment::Customer');
 $mock_segment->redefine(
@@ -23,40 +25,44 @@ $mock_segment->redefine(
         return Future->done(1);
     });
 
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'test1@bin.com',
-});
-
-my $user = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
+my $test_customer = BOM::Test::Customer->create(
     email_verified => 1,
-);
-
-$user->add_client($test_client);
+    clients        => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+    ]);
 
 subtest 'record_user_payment_accounts' => sub {
     subtest 'records written' => sub {
-        my $pr = BOM::User::PaymentRecord->new(user_id => $test_client->binary_user_id);
+        my $pr = BOM::User::PaymentRecord->new(user_id => $test_customer->get_user_id());
 
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'X',
                 payment_type       => 'CreditCard',
                 account_identifier => sha256_hex('0x01'),
-                loginid            => $test_client->{loginid}})->get;
+                loginid            => $test_customer->get_client_loginid('CR')
+            },
+            $service_contexts
+        )->get;
 
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'Y',
                 payment_type       => 'CreditCard',
                 account_identifier => sha256_hex('0x02'),
-                loginid            => $test_client->{loginid}})->get;
+                loginid            => $test_customer->get_client_loginid('CR')
+            },
+            $service_contexts
+        )->get;
 
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'Z',
                 payment_type       => 'CreditCard',
                 account_identifier => sha256_hex('0x03'),
-                loginid            => $test_client->{loginid}})->get;
+                loginid            => $test_customer->get_client_loginid('CR')
+            },
+            $service_contexts
+        )->get;
 
         my $records = $pr->get_raw_payments(30);
 

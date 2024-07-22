@@ -7,6 +7,7 @@ use Test::Exception;
 use Test::MockModule;
 use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Test::Email;
 use BOM::User;
 use BOM::Event::Actions::MyAffiliate;
@@ -15,40 +16,42 @@ use BOM::User::Password;
 use Future::AsyncAwait;
 use Clone qw(clone);
 
-my $email    = 'abc' . rand . '@binary.com';
-my $hash_pwd = BOM::User::Password::hashpw('test');
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
-my $ib_user = BOM::User->create(
-    email    => "ib-$email",
-    password => $hash_pwd,
-);
+my $ib_customer = BOM::Test::Customer->create(
+    clients => [{
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        },
+    ]);
+my $ib_client = $ib_customer->get_client_object('CR');
 
-my $ib_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $ib_user->id
-});
+my $test_customer = BOM::Test::Customer->create(
+    email_verified => 1,
+    salutation     => 'MR',
+    first_name     => 'John',
+    last_name      => 'Wick',
+    clients        => [{
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        },
+    ]);
+my $test_client = $test_customer->get_client_object('CR');
 
-my $user = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd,
-);
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user->id
-});
-
-$test_client->set_default_account('USD');
-
-$email = 'abc' . rand . '@binary.com';
-my $user_deriv = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd,
-);
-my $test_client_deriv = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    binary_user_id => $user_deriv->id
-});
-$test_client_deriv->set_default_account('USD');
+my $test_customer_deriv = BOM::Test::Customer->create(
+    email_verified => 1,
+    salutation     => 'MR',
+    first_name     => 'John',
+    last_name      => 'Wick',
+    clients        => [{
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        },
+    ]);
+my $test_client_deriv = $test_customer_deriv->get_client_object('CR');
 
 my $mock_myaffiliate = Test::MockModule->new('BOM::MyAffiliates');
 my $mock_client      = Test::MockModule->new('BOM::User::Client');
@@ -149,9 +152,11 @@ subtest "affiliate_sync_initiated" => sub {
         BOM::Event::Actions::MyAffiliate::affiliate_sync_initiated({
                 affiliate_id => $affiliate_id,
                 mt5_login    => undef,
-                email        => $test_client->email,
+                email        => $test_customer->get_email(),
                 action       => 'sync',
-            })->get;
+            },
+            $service_contexts
+        )->get;
     }
     "affiliate_sync_initiated no exception";
 
@@ -162,7 +167,7 @@ subtest "affiliate_sync_initiated" => sub {
         cmp_deeply $data,
             {
             affiliate_id => $affiliate_id,
-            email        => $test_client->email,
+            email        => $test_customer->get_email(),
             loginids     => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
             action       => 'sync',
             client       => undef,
@@ -174,7 +179,7 @@ subtest "affiliate_sync_initiated" => sub {
     cmp_deeply $last_batch_data,
         {
         affiliate_id => $affiliate_id,
-        email        => $test_client->email,
+        email        => $test_customer->get_email(),
         loginids     => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
         action       => 'sync',
         client       => undef,
@@ -212,18 +217,20 @@ subtest "affiliate_sync_initiated" => sub {
             BOM::Event::Actions::MyAffiliate::affiliate_sync_initiated({
                     affiliate_id  => $affiliate_id,
                     deriv_loginid => $ib_client->loginid,
-                    email         => $test_client->email,
+                    email         => $test_customer->get_email(),
                     action        => 'clear',
                     untag         => 1,
-                })->get;
+                },
+                $service_contexts
+            )->get;
         }
         "affiliate_sync_initiated no exception";
 
         cmp_deeply $emission, {}, 'No additional event emitted';
-        is $last_batch_data->{action},       'clear',             'Correct action';
-        is $last_batch_data->{untag},        1,                   'Correct untag';
-        is $last_batch_data->{affiliate_id}, $affiliate_id,       'Correct affiliate_id';
-        is $last_batch_data->{email},        $test_client->email, 'Correct email';
+        is $last_batch_data->{action},       'clear',                     'Correct action';
+        is $last_batch_data->{untag},        1,                           'Correct untag';
+        is $last_batch_data->{affiliate_id}, $affiliate_id,               'Correct affiliate_id';
+        is $last_batch_data->{email},        $test_customer->get_email(), 'Correct email';
         cmp_deeply $last_batch_data->{loginids}, [map { $_->{CLIENT_ID} } $customers->@*], 'Correct loginids';
         ok $last_batch_data->{client}, 'Client is found';
 
@@ -252,7 +259,9 @@ subtest "affiliate_loginids_sync" => sub {
                 email        => 'some_compliance@email.com',
                 login_ids    => [map { $_->{CLIENT_ID} } $customers->@*],
                 action       => 'sync',
-            })->get;
+            },
+            $service_contexts
+        )->get;
     }
     "affiliate_loginids_sync no exception";
 

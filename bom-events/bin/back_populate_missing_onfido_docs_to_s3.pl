@@ -278,10 +278,19 @@ async sub _sync_onfido_bo_document {
                 loginid => $client->loginid,
                 file_id => $file_id
             );
+            my $service_contexts = {
+                user => {
+                    'correlation_id' => 'script',
+                    'auth_token'     => 'not needed currently',
+                    'environment'    => 'back_populate_missing_onfido_docs_to_s3',
+                }};
+
             await BOM::Event::Services::Track::document_upload({
-                loginid    => $client->loginid,
-                properties => $document_info
-            });
+                    loginid    => $client->loginid,
+                    properties => $document_info
+                },
+                $service_contexts
+            );
         } catch ($error) {
             $log->errorf("Error in updating db for %s : %s", $client->loginid, $error);
         };

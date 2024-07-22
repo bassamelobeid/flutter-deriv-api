@@ -11,6 +11,7 @@ use BOM::User::Password;
 use BOM::Platform::Token::API;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::RPC::QueueClient;
+use BOM::Test::Customer;
 use Email::Stuffer::TestLinks;
 
 my $rpc_ct;
@@ -21,27 +22,17 @@ my $params = {
     args     => {},
 };
 my $method = ('account_security');
-my ($email, $client_cr, $user, $token);
+my ($client_cr, $token);
 
 subtest 'Initialization' => sub {
     lives_ok {
         $rpc_ct = BOM::Test::RPC::QueueClient->new();
 
-        $email = 'dummy@binary.com';
-        $user  = BOM::User->create(
-            email          => $email,
-            password       => BOM::User::Password::hashpw('a1b2c3D4'),
-            email_verified => 1
-        );
-        $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code    => 'CR',
-            binary_user_id => $user->id,
-            email          => $email
-        });
-        $user->add_client($client_cr);
-
-        $token = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
-
+        my $test_customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            clients        => [{name => 'CR', broker_code => 'CR'},]);
+        $client_cr = $test_customer->get_client_object('CR');
+        $token     = $test_customer->get_client_token('CR');
     }
     'Initial RPC Client and other parameters';
 

@@ -16,25 +16,14 @@ use Encode;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Email;
+use BOM::Test::Customer;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::User;
 use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::Event::Process;
 
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'test1@bin.com',
-});
-
-my $email = $test_client->email;
-my $user  = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
-    email_verified => 1,
-);
-
-$user->add_client($test_client);
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my (@identify_args, @track_args);
 my $segment_response = Future->fail(1);
@@ -70,6 +59,19 @@ $mock_brands->mock(
     });
 
 subtest 'login event' => sub {
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+            {
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            }]);
+    my $test_client    = $test_customer->get_client_object('CR');
+    my $virtual_client = $test_customer->get_client_object('VRTC');
+
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{login};
     my $req            = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -79,11 +81,6 @@ subtest 'login event' => sub {
     undef @identify_args;
     undef @track_args;
 
-    my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => $email
-    });
-    $user->add_client($virtual_client);
     $segment_response = Future->done(1);
     my $new_signin_activity = 0;
 
@@ -98,7 +95,7 @@ subtest 'login event' => sub {
             app_name            => 'it will be overwritten by request->app->{name}',
         }};
 
-    my $result = $action_handler->($args)->get;
+    my $result = $action_handler->($args, $service_contexts)->get;
     ok $result, 'Success track result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
@@ -140,14 +137,14 @@ subtest 'login event' => sub {
 
     $test_client->set_default_account('EUR');
 
-    ok $action_handler->($args)->get, 'successful login track after setting currency';
+    ok $action_handler->($args, $service_contexts)->get, 'successful login track after setting currency';
     ($customer, %args) = @track_args;
     test_segment_customer($customer, $test_client, 'EUR', $virtual_client->date_joined);
 
     undef @identify_args;
     undef @track_args;
     $args->{loginid} = $virtual_client->loginid;
-    ok $action_handler->($args)->get, 'login triggered with virtual loginid';
+    ok $action_handler->($args, $service_contexts)->get, 'login triggered with virtual loginid';
 
     ($customer, %args) = @identify_args;
     test_segment_customer($customer, $virtual_client, 'EUR', $virtual_client->date_joined);
@@ -174,7 +171,7 @@ subtest 'login event' => sub {
     $new_signin_activity = 1 if $args->{properties}->{browser} ne $new_signin_activity_args->{properties}->{browser};
     $new_signin_activity_args->{properties}->{new_signin_activity} = $new_signin_activity;
     undef @track_args;
-    $result = $action_handler->($new_signin_activity_args)->get;
+    $result = $action_handler->($new_signin_activity_args, $service_contexts)->get;
     ok $result, 'Success track result';
     ($customer, %args) = @track_args;
     is_deeply \%args,
@@ -218,7 +215,7 @@ subtest 'login event' => sub {
         );
         request($req);
 
-        $result = $action_handler->($args)->get;
+        $result = $action_handler->($args, $service_contexts)->get;
         ok $result, 'Success track result';
         ($customer, %args) = @track_args;
         ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
@@ -249,31 +246,26 @@ subtest 'login event' => sub {
 };
 
 subtest 'user profile change event' => sub {
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{profile_change};
-    my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => 'test3@bin.com',
-    });
-    my $user = BOM::User->create(
-        email          => $virtual_client->email,
-        password       => "hello",
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
-    $user->add_client($virtual_client);
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test3@bin.com',
-    });
+        city           => 'Ambon',
+        phone          => '+15417541233',
+        address_state  => 'BAL',
+        address_line_1 => 'street 1',
+        citizen        => 'af',
+        place_of_birth => 'af',
+        residence      => 'af',
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+            {
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            }]);
+    my $test_client = $test_customer->get_client_object('CR');
 
-    $user->add_client($test_client);
-    $test_client->city('Ambon');
-    $test_client->phone('+15417541233');
-    $test_client->address_state('BAL');
-    $test_client->address_line_1('street 1');
-    $test_client->citizen('af');
-    $test_client->place_of_birth('af');
-    $test_client->residence('af');
-    $test_client->save();
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{profile_change};
 
     my $args = {
         loginid    => $test_client->loginid,
@@ -290,11 +282,30 @@ subtest 'user profile change event' => sub {
             },
         }};
     undef @emit_args;
-    my $result = $action_handler->($args);
+    my $result = $action_handler->($args, $service_contexts);
     ok $result,     'Success profile_change result';
     ok !@emit_args, 'No event is emitted';
 
     subtest 'apply sanctions on profile change' => sub {
+        my $test_customer = BOM::Test::Customer->create(
+            email_verified => 1,
+            city           => 'Cuidad del Este',
+            phone          => '+15417541233',
+            address_state  => 'Acre',
+            address_line_1 => 'some street',
+            citizen        => 'br',
+            place_of_birth => 'br',
+            residence      => 'br',
+            clients        => [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+                {
+                    name        => 'VRTC',
+                    broker_code => 'VRTC',
+                }]);
+        my $test_client = $test_customer->get_client_object('CR');
+
         my $sanctions_mock = Test::MockModule->new('BOM::Platform::Client::Sanctions');
         my $validate_mock  = Test::MockModule->new('Data::Validate::Sanctions');
         my %sanctions_args;
@@ -310,26 +321,6 @@ subtest 'user profile change event' => sub {
                 return $sanctions_mock->original('check')->(($self, %sanctions_args));
             });
 
-        my $user = BOM::User->create(
-            email          => 'silly@ness.com',
-            password       => "Coconut9009",
-            email_verified => 1,
-        );
-
-        my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            email       => 'silly@ness.com',
-        });
-
-        $user->add_client($test_client);
-        $test_client->city('Ciudad del Este');
-        $test_client->phone('+15417541233');
-        $test_client->address_state('Acre');
-        $test_client->address_line_1('some street');
-        $test_client->citizen('br');
-        $test_client->place_of_birth('br');
-        $test_client->residence('br');
-        $test_client->save();
         my $test_loginid = $test_client->loginid;
 
         # Sanctions shouldn't be called for address_line_1 updates
@@ -343,7 +334,7 @@ subtest 'user profile change event' => sub {
                     },
                 }};
             undef @emit_args;
-            my $result = $action_handler->($args);
+            my $result = $action_handler->($args, $service_contexts);
             ok $result, 'Success profile_change result';
             is scalar keys %sanctions_args, 0, 'Sanctions not triggered for address_line_1 update';
 
@@ -368,7 +359,7 @@ subtest 'user profile change event' => sub {
                     },
                 }};
 
-            $result = $action_handler->($args);
+            $result = $action_handler->($args, $service_contexts);
             ok $result, 'Success profile_change result';
             cmp_deeply \%sanctions_args,
                 {
@@ -416,7 +407,7 @@ subtest 'user profile change event' => sub {
                     },
                 }};
 
-            $result = $action_handler->($args);
+            $result = $action_handler->($args, $service_contexts);
             ok $result, 'Success profile_change result';
             cmp_deeply \%sanctions_args,
                 {
@@ -452,7 +443,7 @@ subtest 'user profile change event' => sub {
                     },
                 }};
 
-            $result = $action_handler->($args);
+            $result = $action_handler->($args, $service_contexts);
             ok $result, 'Success profile_change result';
             my $msg = mailbox_search(subject => qr/$test_loginid possible match in sanctions list - Triggered by profile update/);
             ok $msg, 'Sanctions email sent';
@@ -480,13 +471,13 @@ subtest 'user profile change event' => sub {
                 },
             }};
 
-        $action_handler->($args);
+        $action_handler->($args, $service_contexts);
         is $update_status_called, 0, 'update_status_after_auth_fa is not called when name is updated';
 
         for my $field (qw/tax_residence tax_identification_number mifir_id/) {
             $args->{properties}->{updated_fields} = {$field => 1};
             $update_status_called = 0;
-            $action_handler->($args);
+            $action_handler->($args, $service_contexts);
             is $update_status_called, 1, "update_status_after_auth_fa is called  when $field is updated";
         }
 
@@ -495,26 +486,23 @@ subtest 'user profile change event' => sub {
 };
 
 subtest 'update locks when client is set to high risk' => sub {
-    my $client_aml_risk = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    my $high_risk_user = BOM::User->create(
-        email          => 'riskclient@deriv.com',
-        password       => "hello",
+    my $high_risk_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
-
-    $high_risk_user->add_client($client_aml_risk);
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $client_aml_risk = $high_risk_customer->get_client_object('CR');
 
     my $args = {
         loginid => $client_aml_risk->loginid,
     };
 
-    throws_ok { BOM::Event::Actions::Client::aml_high_risk_updated({loginid => undef}) }
+    throws_ok { BOM::Event::Actions::Client::aml_high_risk_updated({loginid => undef}, $service_contexts) }
     qr/No client login ID supplied/, 'Missing client id';
 
-    throws_ok { BOM::Event::Actions::Client::aml_high_risk_updated({loginid => "CR0"}) }
+    throws_ok { BOM::Event::Actions::Client::aml_high_risk_updated({loginid => "CR0"}, $service_contexts) }
     qr/Could not instantiate client for current login ID/, 'Invalid client id';
 
     is($client_aml_risk->aml_risk_classification, 'low', "aml risk is low");
@@ -524,7 +512,7 @@ subtest 'update locks when client is set to high risk' => sub {
 
     is($client_aml_risk->aml_risk_classification, 'high', 'aml risk is high');
 
-    BOM::Event::Actions::Client::aml_high_risk_updated($args);
+    BOM::Event::Actions::Client::aml_high_risk_updated($args, $service_contexts);
 
     is $client_aml_risk->status->withdrawal_locked->{reason},     'Pending authentication or FA', 'lock applied on high risk';
     is $client_aml_risk->status->allow_document_upload->{reason}, 'BECOME_HIGH_RISK',             'allow document upload on high risk';
@@ -533,30 +521,26 @@ subtest 'update locks when client is set to high risk' => sub {
 
 subtest 'user profile change event track' => sub {
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{profile_change};
-    my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => 'test4@bin.com',
-    });
-    my $user = BOM::User->create(
-        email          => $virtual_client->email,
-        password       => "hello",
-        email_verified => 1,
-    );
-    $user->add_client($virtual_client);
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test4@bin.com',
-    });
 
-    $user->add_client($test_client);
-    $test_client->city('Ambon');
-    $test_client->phone('+15417541233');
-    $test_client->address_state('BAL');
-    $test_client->address_line_1('street 1');
-    $test_client->citizen('af');
-    $test_client->place_of_birth('af');
-    $test_client->residence('af');
-    $test_client->save();
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        city           => 'Ambon',
+        phone          => '+15417541233',
+        address_state  => 'BAL',
+        address_line_1 => 'street 1',
+        citizen        => 'af',
+        place_of_birth => 'af',
+        residence      => 'af',
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+            {
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            }]);
+    my $test_client    = $test_customer->get_client_object('CR');
+    my $virtual_client = $test_customer->get_client_object('VRTC');
 
     my $args = {
         loginid    => $test_client->loginid,
@@ -576,7 +560,7 @@ subtest 'user profile change event track' => sub {
     undef @track_args;
     undef @emit_args;
     my $segment_response = Future->done(1);
-    my $result           = $action_handler->($args)->get;
+    my $result           = $action_handler->($args, $service_contexts)->get;
     ok $result, 'Success profile_change result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined, 'labuan,svg');
@@ -632,22 +616,36 @@ subtest 'false profile info' => sub {
 
     my $event_handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_false_profile_info};
 
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
-    });
-
-    my $test_user = BOM::User->create(
-        email          => 'false_profile@deriv.com',
-        password       => "hello",
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+            {
+                name        => 'MLT',
+                broker_code => 'MLT',
+            },
+        ]);
+    my $client_cr  = $test_customer->get_client_object('CR');
+    my $client_mlt = $test_customer->get_client_object('MLT');
 
-    $test_user->add_client($client_cr);
-    $test_user->add_client($client_mlt);
+    # my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    #     broker_code => 'CR',
+    # });
+    #
+    # my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    #     broker_code => 'MLT',
+    # });
+    #
+    # my $test_user = BOM::User->create(
+    #     email          => 'false_profile@deriv.com',
+    #     password       => "hello",
+    #     email_verified => 1,
+    # );
+    #
+    # $test_user->add_client($client_cr);
+    # $test_user->add_client($client_mlt);
 
     my $emitted;
     my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -734,12 +732,12 @@ subtest 'false profile info' => sub {
         $args = {
             loginid             => $client_cr->loginid,
             $test_case->{field} => $test_case->{value}};
-        $event_handler->($args);
+        $event_handler->($args, $service_contexts);
         test_fake_name($test_case, $client_cr,  $emitted, $brand);
         test_fake_name($test_case, $client_mlt, $emitted, $brand);
 
-        $_->status->clear_cashier_locked for $test_user->clients;
-        $_->status->clear_unwelcome      for $test_user->clients;
+        $_->status->clear_cashier_locked for $test_customer->get_all_client_objects();
+        $_->status->clear_unwelcome      for $test_customer->get_all_client_objects();
         undef $emitted;
     }
 
@@ -756,9 +754,9 @@ subtest 'false profile info' => sub {
         $args = {
             loginid             => $client_cr->loginid,
             $test_case->{field} => $test_case->{value}};
-        $event_handler->($args);
+        $event_handler->($args, $service_contexts);
         test_fake_name($test_case, $client_cr, $emitted, $brand);
-        $_->status->clear_unwelcome for $test_user->clients;
+        $_->status->clear_unwelcome for $test_customer->get_all_client_objects();
         undef $emitted;
         BOM::Config::Runtime->instance->app_config->compliance->fake_names->accepted_consonant_names($original_values);
 
@@ -774,7 +772,7 @@ subtest 'false profile info' => sub {
         $args = {
             loginid             => $client_cr->loginid,
             $test_case->{field} => $test_case->{value}};
-        $event_handler->($args);
+        $event_handler->($args, $service_contexts);
         test_fake_name($test_case, $client_cr, $emitted, $brand);
 
         BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns(['ALI%']);
@@ -789,9 +787,9 @@ subtest 'false profile info' => sub {
             $args = {
                 loginid             => $client_cr->loginid,
                 $test_case->{field} => $test_case->{value}};
-            $event_handler->($args);
+            $event_handler->($args, $service_contexts);
             test_fake_name($test_case, $client_cr, $emitted, $brand);
-            $_->status->clear_unwelcome for $test_user->clients;
+            $_->status->clear_unwelcome for $test_customer->get_all_client_objects();
             undef $emitted;
         }
 
@@ -806,9 +804,9 @@ subtest 'false profile info' => sub {
         $args = {
             loginid             => $client_cr->loginid,
             $test_case->{field} => $test_case->{value}};
-        $event_handler->($args);
+        $event_handler->($args, $service_contexts);
         test_fake_name($test_case, $client_cr, $emitted, $brand);
-        $_->status->clear_unwelcome for $test_user->clients;
+        $_->status->clear_unwelcome for $test_customer->get_all_client_objects();
         undef $emitted;
 
         for my $name (qw/Rä%dïò _Rä%dïò Rä%dïò_ __Rä%dïò__/) {
@@ -822,13 +820,13 @@ subtest 'false profile info' => sub {
             $args = {
                 loginid             => $client_cr->loginid,
                 $test_case->{field} => $test_case->{value}};
-            $event_handler->($args);
+            $event_handler->($args, $service_contexts);
             test_fake_name($test_case, $client_cr, $emitted, $brand);
-            $_->status->clear_unwelcome for $test_user->clients;
+            $_->status->clear_unwelcome for $test_customer->get_all_client_objects();
             undef $emitted;
         }
 
-        $_->status->clear_unwelcome for $test_user->clients;
+        $_->status->clear_unwelcome for $test_customer->get_all_client_objects();
         undef $emitted;
 
         BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns($original_values);
@@ -844,7 +842,7 @@ subtest 'false profile info' => sub {
             first_name => 'BBBBBB',
             last_name  => 'DDDDDD'
         };
-        $event_handler->($args);
+        $event_handler->($args, $service_contexts);
         test_fake_name({
                 result     => 0,
                 value      => 'BBBBBB',
@@ -858,7 +856,7 @@ subtest 'false profile info' => sub {
 
         # if account has deposits, the account will be cashier-locked
         $mock_client->mock(has_deposits => sub { return 1 });
-        $event_handler->($args);
+        $event_handler->($args, $service_contexts);
         test_fake_name({
                 result     => 'fake',
                 value      => 'BBBBBB',
@@ -870,13 +868,13 @@ subtest 'false profile info' => sub {
             $client_cr,
             $emitted, $brand
         );
-        $_->status->clear_cashier_locked for $test_user->clients;
+        $_->status->clear_cashier_locked for $test_customer->get_all_client_objects();
         undef $emitted;
         $mock_client->unmock('has_deposits');
 
         # Sibling is locked with a dummy reason -> email will be sent
         $client_cr->status->upsert('unwelcome', 'system', 'dummy reason');
-        $event_handler->($args);
+        $event_handler->($args, $service_contexts);
         undef $client_cr->{status};
         is $client_cr->status->reason('unwelcome'), 'dummy reason', 'CR unwelcome is not changed';
         ok !$client_cr->status->cashier_locked, 'CR client is not cashier-locked';
@@ -890,12 +888,12 @@ subtest 'false profile info' => sub {
             $client_mlt,
             $emitted, $brand
         );
-        $_->status->clear_unwelcome for $test_user->clients;
+        $_->status->clear_unwelcome for $test_customer->get_all_client_objects();
         undef $emitted;
 
         # Sibling is locked with false-name reason -> no email is sent
         $client_cr->status->upsert('unwelcome', 'system', 'fake profile info - pending POI');
-        $event_handler->($args);
+        $event_handler->($args, $service_contexts);
         ok !$client_cr->status->cashier_locked, 'CR client is not cashier-locked';
         test_fake_name({
                 result     => 'fake',
@@ -907,7 +905,7 @@ subtest 'false profile info' => sub {
             $client_mlt,
             $emitted, $brand
         );
-        $_->status->clear_unwelcome for $test_user->clients;
+        $_->status->clear_unwelcome for $test_customer->get_all_client_objects();
         undef $emitted;
 
         $mock_client->unmock_all;
@@ -926,6 +924,14 @@ sub test_fake_name {
     my $loginid = $client->loginid;
     undef $client->{status};
 
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $client->binary_user_id,
+    );
+    ok $user_data->{status} eq 'ok', "user data retrieved successfully - $test_case->{label} - $loginid";
+    $user_data = $user_data->{attributes};
+
     my $status = $test_case->{status} // 'unwelcome';
     if ($test_case->{result}) {
         ok $reason{$test_case->{result}}, "Test result is <$test_case->{result}> - $test_case->{label} -$loginid";
@@ -941,7 +947,7 @@ sub test_fake_name {
         is exists($emails->{account_with_false_info_locked}), 1, 'correct event emmited for email';
         is_deeply $emails->{account_with_false_info_locked}->{properties},
             {
-            email              => $client->email,
+            email              => $user_data->{email},
             authentication_url => $brand->authentication_url,
             profile_url        => $brand->profile_url,
             },
@@ -955,17 +961,25 @@ sub test_segment_customer {
     my ($customer, $test_client, $currencies, $created_at, $available_landing_companies) = @_;
     $available_landing_companies //= 'labuan,svg';
 
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_client->binary_user_id,
+    );
+    ok $user_data->{status} eq 'ok', "user data retrieved successfully";
+    $user_data = $user_data->{attributes};
+
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
-    my ($year, $month, $day) = split('-', $test_client->date_of_birth);
+    my ($year, $month, $day) = split('-', $user_data->{date_of_birth});
 
     is_deeply $customer->traits,
         {
-        'salutation' => $test_client->salutation,
-        'email'      => $test_client->email,
-        'first_name' => $test_client->first_name,
-        'last_name'  => $test_client->last_name,
-        'birthday'   => $test_client->date_of_birth,
+        'salutation' => $user_data->{salutation},
+        'email'      => $user_data->{email},
+        'first_name' => $user_data->{first_name},
+        'last_name'  => $user_data->{last_name},
+        'birthday'   => $user_data->{date_of_birth},
         'age'        => (
             Time::Moment->new(
                 year  => $year,
@@ -973,22 +987,22 @@ sub test_segment_customer {
                 day   => $day
             )->delta_years(Time::Moment->now_utc)
         ),
-        'phone'      => $test_client->phone,
+        'phone'      => $user_data->{phone},
         'created_at' => Date::Utility->new($created_at)->datetime_iso8601,
         'address'    => {
-            street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
-            town        => $test_client->address_city,
-            state       => BOM::Platform::Locale::get_state_by_id($test_client->state, $test_client->residence) // '',
-            postal_code => $test_client->address_postcode,
-            country     => Locale::Country::code2country($test_client->residence),
+            street      => $user_data->{address_line_1} . " " . $user_data->{address_line_2},
+            town        => $user_data->{address_city},
+            state       => BOM::Platform::Locale::get_state_by_id($user_data->{address_state}, $user_data->{residence}) // '',
+            postal_code => $user_data->{address_postcode},
+            country     => Locale::Country::code2country($user_data->{residence}),
         },
         'currencies'                => $currencies,
-        'country'                   => Locale::Country::code2country($test_client->residence),
-        mt5_loginids                => join(',', sort($user->get_mt5_loginids)),
+        'country'                   => Locale::Country::code2country($user_data->{residence}),
+        mt5_loginids                => join(',', sort($test_client->user->get_mt5_loginids)),
         landing_companies           => 'svg',
         available_landing_companies => $available_landing_companies,
         provider                    => 'email',
-        unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
+        unsubscribed                => $user_data->{email_consent} ? 'false' : 'true',
         },
         'Customer traits are set correctly';
 }

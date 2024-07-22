@@ -6,11 +6,14 @@ use BOM::Event::Actions::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Customer;
 use BOM::Config::Runtime;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->transaction_verification_countries([]);
@@ -29,9 +32,11 @@ subtest pending_order_expiry => sub {
     BOM::Test::Helper::P2P::expire_order($client, $order->{id});
 
     BOM::Event::Actions::P2P::order_expired({
-        client_loginid => $client->loginid,
-        order_id       => $order->{id},
-    });
+            client_loginid => $client->loginid,
+            order_id       => $order->{id},
+        },
+        $service_contexts
+    );
 
     my $update_order = $client->p2p_order_info(id => $order->{id});
     is $update_order->{status}, 'refunded', "Got expected status";
@@ -54,9 +59,11 @@ subtest client_confirmed_order_expiry => sub {
     BOM::Test::Helper::P2P::expire_order($client, $order->{id});
 
     BOM::Event::Actions::P2P::order_expired({
-        client_loginid => $client->loginid,
-        order_id       => $order->{id},
-    });
+            client_loginid => $client->loginid,
+            order_id       => $order->{id},
+        },
+        $service_contexts
+    );
 
     my $update_order = $client->p2p_order_info(id => $order->{id});
     is $update_order->{status}, 'timed-out', "Got expected status";
@@ -80,9 +87,11 @@ for my $test_status (qw(completed cancelled refunded timed-out blocked)) {
         BOM::Test::Helper::P2P::expire_order($client, $order->{id});
 
         BOM::Event::Actions::P2P::order_expired({
-            client_loginid => $client->loginid,
-            order_id       => $order->{id},
-        });
+                client_loginid => $client->loginid,
+                order_id       => $order->{id},
+            },
+            $service_contexts
+        );
 
         my $update_order = $client->p2p_order_info(id => $order->{id});
         is $update_order->{status}, $test_status, "Got expected status";

@@ -62,7 +62,9 @@ Returns 1 if email has been sent, otherwise 0
 =cut
 
 sub send_email_generic {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $status_code = process_send_email($args);
 
@@ -98,7 +100,9 @@ Note: Client's details ("traits") is already recorded in customer.io, don't send
 =cut
 
 sub send_client_email_track_event {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     local $BOM::Platform::Context::current_request = request();
     if (my $language = delete $args->{language}) {
@@ -118,9 +122,10 @@ sub send_client_email_track_event {
     }
 
     return BOM::Event::Services::Track::track_event(
-        event      => $args->{event},
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
+        event            => $args->{event},
+        loginid          => $args->{loginid},
+        properties       => $args->{properties},
+        service_contexts => $service_contexts,
     );
 }
 

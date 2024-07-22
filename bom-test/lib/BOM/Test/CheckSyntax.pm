@@ -39,7 +39,7 @@ our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
 our %bom_repo_to_module = (
-    'regentmarkets/bom-user'           => ['BOM::User', 'BOM::TradingPlatform', 'BOM::MT5'],
+    'regentmarkets/bom-user'           => ['BOM::User', 'BOM::TradingPlatform', 'BOM::MT5', 'BOM::Service'],
     'regentmarkets/bom-config'         => 'BOM::Config',
     'regentmarkets/bom-rules'          => 'BOM::Rules',
     'regentmarkets/bom-market'         => 'BOM::Market',

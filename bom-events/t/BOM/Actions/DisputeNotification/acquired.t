@@ -9,6 +9,7 @@ use Log::Any qw($log);
 
 use Email::Address::UseXS;
 use BOM::Test::Email;
+use BOM::Test::Customer;
 
 use BOM::Event::Process;
 my %payloads = (
@@ -81,7 +82,8 @@ my $unsupported_acquired_event = {
     },
 };
 
-my $mocked_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+my $mocked_datadog   = Test::MockModule->new('DataDog::DogStatsd::Helper');
 my @datadog_args;
 $mocked_datadog->redefine('stats_inc', sub { @datadog_args = @_ });
 
@@ -93,7 +95,7 @@ subtest 'Acquired sent events' => sub {
         BOM::Test::Email::mailbox_clear();
         @emails_sent = BOM::Test::Email::email_list();
         is scalar @emails_sent, 0, 'Intially no e-mail was sent';
-        $action_handler->($payloads{$event});
+        $action_handler->($payloads{$event}, $service_contexts);
 
         @emails_sent = BOM::Test::Email::email_list();
 
@@ -109,7 +111,7 @@ subtest 'Unsupported provider' => sub {
     @emails_sent = BOM::Test::Email::email_list();
     is scalar @emails_sent, 0, 'Intially no e-mail was sent';
 
-    $action_handler->($unsupported_provider);
+    $action_handler->($unsupported_provider, $service_contexts);
     is $datadog_args[0], "event.dispute_notification.unsupported_provider.acquire_clearly_wrong", 'Stats for unsuppoted provider are increased';
 
     @emails_sent = BOM::Test::Email::email_list();
@@ -125,7 +127,7 @@ subtest 'Unsupported acquired event' => sub {
     @emails_sent = BOM::Test::Email::email_list();
     is scalar @emails_sent, 0, 'Intially no e-mail was sent';
 
-    lives_ok { $action_handler->($unsupported_acquired_event) } "Sub don't dies on unsupported event";
+    lives_ok { $action_handler->($unsupported_acquired_event, $service_contexts) } "Sub don't dies on unsupported event";
 
     is $datadog_args[0], "event.dispute_notification.acquired.unsupported." . $unsupported_acquired_event->{data}->{event},
         'Stat for acquired.com unsupported event is increased';

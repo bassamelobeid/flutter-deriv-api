@@ -79,8 +79,11 @@ Sync user information to MT5
 =cut
 
 sub sync_info {
-    my $data = shift;
-    return undef unless $data->{loginid};
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+    return undef                   unless $data->{loginid};
+
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
     return 1 if $client->is_virtual;
 
@@ -134,12 +137,16 @@ sub sync_info {
 }
 
 sub redis_record_mt5_transfer {
-    my $input_data = shift;
-    my $redis      = BOM::Config::Redis::redis_mt5_user_write();
-    my $loginid    = $input_data->{loginid};
-    my $mt5_id     = $input_data->{mt5_id};
-    my $group      = $input_data->{group};
-    my $redis_key  = 'MT5_TRANSFER_' . (uc $input_data->{action}) . '::' . $mt5_id;
+    my ($input_data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+    return undef                   unless $input_data->{loginid};
+
+    my $redis     = BOM::Config::Redis::redis_mt5_user_write();
+    my $loginid   = $input_data->{loginid};
+    my $mt5_id    = $input_data->{mt5_id};
+    my $group     = $input_data->{group};
+    my $redis_key = 'MT5_TRANSFER_' . (uc $input_data->{action}) . '::' . $mt5_id;
 
     # check if the mt5 id exists in redis
     if ($redis->get($redis_key)) {
@@ -206,7 +213,9 @@ have not
 =cut
 
 sub new_mt5_signup {
-    my $data   = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
     return unless $client;
 
@@ -281,13 +290,15 @@ Takes the following parameters:
 =cut
 
 async sub mt5_change_color {
-    my $args        = shift;
+    my ($args, $service_contexts) = @_;
+
     my $mt5_loginid = $args->{loginid};
     my $color       = $args->{color};
 
     die 'Loginid is required' unless $mt5_loginid;
     die 'Color is required'   unless defined $color;
     die 'Ignoring color change on demo account' if $mt5_loginid =~ /MTD/;
+    die "Missing service_contexts" unless $service_contexts;
 
     my $user_detail;
     my $user = BOM::User->new(loginid => $mt5_loginid);
@@ -318,10 +329,12 @@ async sub mt5_change_color {
     my ($deriv_loginid) = $user->bom_real_loginids;
 
     return BOM::Event::Services::Track::mt5_change_color({
-        loginid     => $deriv_loginid,
-        mt5_loginid => $mt5_loginid,
-        color       => $color
-    });
+            loginid     => $deriv_loginid,
+            mt5_loginid => $mt5_loginid,
+            color       => $color
+        },
+        $service_contexts
+    );
 }
 
 =head2 sort_login_ids_by_transaction
@@ -365,11 +378,12 @@ It can be called with the following parameters:
 =cut
 
 sub mt5_password_changed {
-    my ($args) = @_;
+    my ($args, $service_contexts) = @_;
 
-    die 'mt5 loginid is required' unless $args->{mt5_loginid};
+    die 'mt5 loginid is required'  unless $args->{mt5_loginid};
+    die "Missing service_contexts" unless $service_contexts;
 
-    return BOM::Event::Services::Track::mt5_password_changed($args);
+    return BOM::Event::Services::Track::mt5_password_changed($args, $service_contexts);
 }
 
 =head2 mt5_inactive_notification
@@ -405,7 +419,9 @@ Takes the following named parameters
 =cut
 
 sub mt5_inactive_notification {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $user    = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
     my $loginid = eval { [$user->bom_loginids()]->[0] }            or die "User $args->{email} doesn't have any accounts";
@@ -419,12 +435,14 @@ sub mt5_inactive_notification {
 
     my $futures = fmap_void {
         BOM::Event::Services::Track::mt5_inactive_notification({
-            loginid      => $loginid,
-            email        => $args->{email},
-            name         => $args->{name},
-            accounts     => $args->{accounts}->{$_},
-            closure_date => $today->plus_days($_)->epoch,
-        });
+                loginid      => $loginid,
+                email        => $args->{email},
+                name         => $args->{name},
+                accounts     => $args->{accounts}->{$_},
+                closure_date => $today->plus_days($_)->epoch,
+            },
+            $service_contexts
+        );
     }
     foreach => [sort { $a <=> $b } keys $args->{accounts}->%*];
 
@@ -449,7 +467,9 @@ Takes the following named parameters
 =cut
 
 sub mt5_inactive_account_closed {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $user    = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
     my $loginid = eval { [$user->bom_loginids()]->[0] }            or die "User $args->{email} doesn't have any accounts";
@@ -458,7 +478,10 @@ sub mt5_inactive_account_closed {
             loginid       => $loginid,
             name          => $args->{mt5_accounts}->[0]->{name},
             mt5_accounts  => $args->{mt5_accounts},
-            live_chat_url => request->brand->live_chat_url({language => request->language})});
+            live_chat_url => request->brand->live_chat_url({language => request->language})
+        },
+        $service_contexts
+    );
 
 }
 
@@ -475,11 +498,12 @@ Sends email to Compliance, Customer Service and Payments team about account clos
 =cut
 
 sub mt5_inactive_account_closure_report {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+    return                         unless $args->{reports} and $args->{reports}->@*;
 
     my $brand = request()->brand;
-
-    return unless $args->{reports} and $args->{reports}->@*;
 
     my $csv = path('/tmp/report.csv');
     # cleans the file
@@ -526,8 +550,9 @@ Function for linking MyAffiliate token to MT5
 =cut
 
 async sub link_myaff_token_to_mt5 {
+    my ($args, $service_contexts) = @_;
 
-    my $args = shift;
+    die "Missing service_contexts" unless $service_contexts;
 
     my ($client_loginid, $client_mt5_login, $myaffiliates_token, $server) = @{$args}{qw/client_loginid client_mt5_login myaffiliates_token server/};
 
@@ -705,7 +730,9 @@ The probability of users creating a new MT5 account after the archival process i
 =cut
 
 sub mt5_archived_account_reset_trading_password {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $user = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
 
@@ -767,7 +794,10 @@ Disabled account are considered if override status flag is true, in which it wil
 =cut
 
 async sub mt5_deriv_auto_rescind {
-    my $args                   = shift;
+    my ($args, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
+
     my @mt5_accounts           = @{delete $args->{mt5_accounts}};
     my $override_status        = delete $args->{override_status};
     my $custom_transfer_amount = delete $args->{custom_transfer_amount};
@@ -1496,10 +1526,11 @@ Update the loginid.status in users DB.
 =cut
 
 sub update_loginid_status {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
 
     die 'Must provide loginid'        unless $args->{loginid};
     die 'Must provide binary_user_id' unless $args->{binary_user_id};
+    die "Missing service_contexts"    unless $service_contexts;
 
     try {
         my $user_db = BOM::Database::UserDB::rose_db();
@@ -1527,8 +1558,10 @@ Update the loginid.status of mt5 accounts in users DB based on POI and POA.
 =cut
 
 async sub sync_mt5_accounts_status {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
     die 'Must provide client_loginid' unless $args->{client_loginid};
+    die "Missing service_contexts"    unless $service_contexts;
     my $client                        = BOM::User::Client->new({loginid => $args->{client_loginid}}) // die 'Client not found';
     my $user                          = $client->user                                                // die 'User not found';
     my $kyc_status_config             = BOM::Config::TradingPlatform::KycStatus->new();
@@ -1626,10 +1659,11 @@ Update the loginid.status in users DB from archived to null. Restore of MT5 acco
 =cut
 
 async sub mt5_archive_restore_sync {
-    my $args         = shift;
+    my ($args, $service_contexts) = @_;
     my @mt5_accounts = @{$args->{mt5_accounts} // []};
 
     die 'Must provide list of MT5 loginids' unless $args->{mt5_accounts};
+    die "Missing service_contexts"          unless $service_contexts;
 
     my $process_mt5_success = {};
     my $process_mt5_fail    = {};
@@ -1821,9 +1855,11 @@ Archives MT5 Accounts
 =cut
 
 async sub mt5_archive_accounts {
-    my $args     = shift;
+    my ($args, $service_contexts) = @_;
+
     my $loginids = $args->{loginids};
     die 'Must provide list of MT5 loginids' unless $loginids and @$loginids;
+    die "Missing service_contexts"          unless $service_contexts;
 
     my $email_title = $args->{email_title};
     my $email_to    = $args->{email_to};
@@ -2065,7 +2101,9 @@ Retry attempt for mt5 deposit
 =cut
 
 async sub mt5_deposit_retry {
-    my ($parameters) = @_;
+    my ($parameters, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     # Set up the parameters from redis stream
     my ($from_login_id, $destination_mt5_account, $amount, $mt5_comment, $server, $transaction_id, $datetime_start, $retry_last) =
@@ -2230,7 +2268,8 @@ Placeholder
 =cut
 
 async sub mt5_svg_migration_requested {
-    my $args = shift;
+    my ($args, $service_contexts) = @_;
+
     my ($client_loginid, $market_type, $jurisdiction, $logins) = @{$args}{qw/client_loginid market_type jurisdiction logins/};
     my $client = BOM::User::Client->new({loginid => $client_loginid});
 
@@ -2238,6 +2277,7 @@ async sub mt5_svg_migration_requested {
     die 'Need to provide market_type argument'  unless $market_type;
     die 'Need to provide jurisdiction argument' unless $jurisdiction;
     die 'Need to provide logins argument'       unless defined $logins;
+    die "Missing service_contexts"              unless $service_contexts;
 
     @$logins = grep { not $_->{error} } @$logins;
 

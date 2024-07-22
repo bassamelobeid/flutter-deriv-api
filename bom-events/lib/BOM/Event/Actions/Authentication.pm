@@ -50,7 +50,8 @@ Returns B<1> on success.
 =cut
 
 sub bulk_authentication {
-    my $args                   = shift;
+    my ($args, $service_contexts) = @_;
+
     my $data                   = $args->{data};
     my $client_authentication  = $args->{client_authentication};
     my $allow_poi_resubmission = $args->{allow_poi_resubmission};
@@ -61,6 +62,7 @@ sub bulk_authentication {
     my $comment                = $args->{comment};
     my $staff_ip               = $args->{staff_ip};
 
+    die "Missing service_contexts"                                     unless $service_contexts;
     die "csv input file should exist"                                  unless $data;
     die "client_authentication or allow_poi_resubmission should exist" unless $client_authentication || $allow_poi_resubmission;
     die "email to send results does not exist"                         unless $to_email;

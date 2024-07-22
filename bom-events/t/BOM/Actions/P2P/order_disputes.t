@@ -12,11 +12,14 @@ use Time::Moment;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Config::Runtime;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->dispute_response_time(6);
@@ -129,10 +132,12 @@ subtest 'Order disputes' => sub {
                     client_loginid => $parties{$scenario->{disputer}}->loginid,
                     order_id       => $order->{id},
                     order_event    => 'dispute',
-                })->get;
+                },
+                $service_contexts
+            )->get;
 
             is scalar @emissions, 1, 'event emitted';
-            BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
+            BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions], 'Test Stream', $service_contexts)->get;
             my %common_args = (
                 disputer              => $scenario->{disputer},
                 dispute_reason        => $scenario->{reason},
@@ -205,13 +210,15 @@ subtest 'Dispute resolution' => sub {
                         client_loginid => $client->loginid,
                         order_id       => $order->{id},
                         order_event    => $event,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
 
                 # Get fresh order data
                 $order = $advertiser->p2p_order_info(id => $order->{id});
 
                 is scalar @emissions, 1, 'event emitted';
-                BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
+                BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions], 'Test Stream', $service_contexts)->get;
 
                 # Check whether the track_events are called
                 is scalar @track_event_args, 2,                  'Two track_event fired';

@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::Test::Helper::Client;
+use BOM::Test::Customer;
 use BOM::User;
 use BOM::Config;
 use BOM::Rules::Engine;
@@ -53,17 +54,16 @@ sub create_advertiser {
     $param{is_approved}           //= 1;
     $param{client_details}{email} //= 'p2p_' . (++$client_num) . '@binary.com';
 
-    my $user = BOM::User->create(
-        email    => $param{client_details}{email},
-        password => 'test'
-    );
-
-    $param{client_details}{binary_user_id} = $user->id;
-    my $client = BOM::Test::Helper::Client::create_client(undef, undef, $param{client_details});
-
-    $user->add_client($client);
-
-    $client->account($param{currency});
+    my $test_customer = BOM::Test::Customer->create(
+        email => $param{client_details}{email},
+        %{$param{client_details}},
+        clients => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => $param{currency},
+            },
+        ]);
+    my $client = $test_customer->get_client_object('CR');
 
     if ($param{balance}) {
         BOM::Test::Helper::Client::top_up($client, $client->currency, $param{balance});

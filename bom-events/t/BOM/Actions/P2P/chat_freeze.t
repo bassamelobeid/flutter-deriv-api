@@ -6,10 +6,13 @@ use Test::MockModule;
 use Test::MockObject;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 
 use BOM::Event::Actions::P2P;
 use BOM::Event::Process;
 use WebService::SendBird;
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my @emissions;
@@ -67,7 +70,9 @@ for my $status (sort keys %tests) {
                 client_loginid => $client->loginid,
                 order_id       => $order->{id}
             },
-        }
+        },
+        'Test Stream',
+        $service_contexts,
         ),
         is $frozen, $tests{$status}, "expected freeze for $status";
     is $emissions[0]->{event}, 'p2p_order_updated_handled', "event emitted $status";

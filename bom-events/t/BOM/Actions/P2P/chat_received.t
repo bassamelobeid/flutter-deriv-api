@@ -7,9 +7,11 @@ use BOM::Event::Actions::P2P;
 
 use BOM::Test;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Database::ClientDB;
 
-my $collector = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+my $collector        = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
 
 subtest chat_received => sub {
     my @payloads = ({
@@ -33,7 +35,7 @@ subtest chat_received => sub {
 
     foreach my $payload (@payloads) {
         subtest 'chat_type_' . $payload->{type} => sub {
-            my $result = BOM::Event::Actions::P2P::chat_received($payload);
+            my $result = BOM::Event::Actions::P2P::chat_received($payload, $service_contexts);
             ok $result, 'The chat has been received';
 
             my $row = $collector->run(

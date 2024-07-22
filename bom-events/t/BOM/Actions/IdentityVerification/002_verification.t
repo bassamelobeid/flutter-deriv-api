@@ -18,6 +18,7 @@ use BOM::Config::Redis;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+use BOM::Test::Customer;
 
 use BOM::User::IdentityVerification;
 use BOM::Platform::Event::Emitter;
@@ -27,7 +28,8 @@ use BOM::Database::UserDB;
 
 use constant IDV_LOCK_PENDING => 'IDV::LOCK::PENDING::';
 
-my $emitter_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+my $emitter_mock     = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my @emissions;
 my $emit_exception;
 $emitter_mock->mock(
@@ -86,22 +88,7 @@ $idv_mock->mock(
         return $idv_mock->original('encode_json_text')->(@_);
     });
 
-# Initiate test client
-my $email = 'testw@binary.com';
-my $user  = BOM::User->create(
-    email          => $email,
-    password       => "pwd",
-    email_verified => 1,
-);
-
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'CR',
-    email          => $email,
-    binary_user_id => $user->id,
-});
-$user->add_client($client);
-
-my ($verification_status, $personal_info_status, $personal_info, $args) = undef;
+my ($verification_status, $personal_info_status, $personal_info) = undef;
 my $updates = 0;
 
 my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
@@ -138,13 +125,39 @@ $mock_config_service->mock(
         return $mock_config_service->original('is_enabled')->(@_);
     });
 
-my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
-
 my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 my $idv_proc_handler  = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
 
 subtest 'verify identity, data is verified' => sub {
-    $args = {
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_city     => 'fake',
+        address_postcode => '12345900',
+        residence        => 'ar',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1988-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
+    );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
+
+    my $client = $test_customer->get_client_object('CR');
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
+
+    my $args = {
         loginid => $client->loginid,
     };
 
@@ -160,17 +173,7 @@ subtest 'verify identity, data is verified' => sub {
     $idv_model->add_document($document);
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_city('fake');
-    $client->address_postcode('12345900');
-    $client->residence('ar');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     $client->status->set('poi_name_mismatch');
     $client->status->clear_age_verification;
@@ -184,7 +187,7 @@ subtest 'verify identity, data is verified' => sub {
 
     @emissions = ();
 
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -207,7 +210,9 @@ subtest 'verify identity, data is verified' => sub {
                 },
                 $personal_info->%*,
             },
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     cmp_deeply($encoding, $expected_json_usage, 'Expected JSON usage');
 
@@ -215,17 +220,17 @@ subtest 'verify identity, data is verified' => sub {
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $document,
             }
@@ -238,43 +243,51 @@ subtest 'verify identity, data is verified' => sub {
                     live_chat_url => $live_chat_url,
                     contact_url   => $contact_url,
                     poi_url       => $poi_url,
-                    email         => $client->email,
-                    name          => $client->first_name
-                }}
+                    email         => $user_data->{email},
+                    name          => $user_data->{first_name}}}
         },
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a verified request';
 
     is $updates, 2, 'update document triggered twice correctly';
 
-    ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is removed correctly';
-    ok $client->status->age_verification,   'age verified correctly';
+    ok !$test_customer->get_client_object('CR')->status->poi_name_mismatch, 'poi_name_mismatch is removed correctly';
+    ok $test_customer->get_client_object('CR')->status->age_verification,   'age verified correctly';
 
     is $mock_idv_status, 'verified', 'verify_identity returns `verified` status';
 };
 
 subtest 'address verified' => sub {
-    my $email = 'testzaig@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd",
-        email_verified => 1,
-    );
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_city     => 'fake',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1988-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
+    );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
+
+    my $client = $test_customer->get_client_object('CR');
 
     my $args = {
         loginid => $client->loginid,
@@ -296,15 +309,6 @@ subtest 'address verified' => sub {
 
     my $idv_document = $idv_model->get_standby_document;
 
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
-
     $client->status->set('unwelcome',         'test', 'test');
     $client->status->set('poi_name_mismatch', 'test', 'test');
     $client->status->clear_age_verification;
@@ -317,7 +321,7 @@ subtest 'address verified' => sub {
     };
 
     @emissions = ();
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -331,24 +335,26 @@ subtest 'address verified' => sub {
             response_body => {},
             request_body  => {},
             report        => {},
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     cmp_deeply($encoding, $expected_json_usage, 'Expected JSON usage');
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $document,
             }
@@ -361,14 +367,13 @@ subtest 'address verified' => sub {
                     live_chat_url => $live_chat_url,
                     contact_url   => $contact_url,
                     poi_url       => $poi_url,
-                    email         => $client->email,
-                    name          => $client->first_name
-                }}
+                    email         => $user_data->{email},
+                    name          => $user_data->{first_name}}}
         },
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for an address verified request';
@@ -390,28 +395,35 @@ subtest 'address verified' => sub {
 };
 
 subtest 'verify_process - apply side effects' => sub {
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1988-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
+    );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
+
+    my $client = $test_customer->get_client_object('CR');
+
     my $idv_proc_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
     $encoding = {};
 
-    my $email = 'test_verify_process@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
-
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
     my $document = {
         issuing_country => 'br',
@@ -419,15 +431,6 @@ subtest 'verify_process - apply side effects' => sub {
         type            => 'cpf'
     };
     $idv_model->add_document($document);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
 
     $client->status->set('unwelcome',         'test', 'test');
     $client->status->set('poi_name_mismatch', 'test', 'test');
@@ -448,7 +451,9 @@ subtest 'verify_process - apply side effects' => sub {
                 response_body => {},
                 request_body  => {},
                 report        => {},
-            })->get, 'the IDV response processed without error';
+            },
+            $service_contexts
+        )->get, 'the IDV response processed without error';
     };
 
     ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
@@ -475,7 +480,9 @@ subtest 'verify_process - apply side effects' => sub {
             response_body => {},
             request_body  => {},
             report        => {},
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     my $expected_json = +{$expected_json_usage->%*};
     delete $expected_json->{encode_json_utf8};    # the encode is only done at the http request, this test does not hit that event.
@@ -489,14 +496,13 @@ subtest 'verify_process - apply side effects' => sub {
                     live_chat_url => $live_chat_url,
                     contact_url   => $contact_url,
                     poi_url       => $poi_url,
-                    email         => $client->email,
-                    name          => $client->first_name
-                }}
+                    email         => $user_data->{email},
+                    name          => $user_data->{first_name}}}
         },
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for an IDV verify process';
@@ -512,26 +518,33 @@ subtest 'verify_process - apply side effects' => sub {
 };
 
 subtest 'testing failed status' => sub {
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1988-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
+    );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
+
+    my $client = $test_customer->get_client_object('CR');
+
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
     $encoding = {};
-
-    my $email = 'test_verify_failed@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
 
     my $args = {
         loginid => $client->loginid,
@@ -550,18 +563,9 @@ subtest 'testing failed status' => sub {
     my $redis = BOM::Config::Redis::redis_events();
     $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
-
     @emissions = ();
 
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -578,7 +582,9 @@ subtest 'testing failed status' => sub {
             response_body => {},
             request_body  => {},
             id            => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     my $document = $idv_model->get_last_updated_document;
     cmp_deeply($encoding, $expected_json_failed, 'Expected JSON usage');
@@ -586,17 +592,17 @@ subtest 'testing failed status' => sub {
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             }
@@ -604,7 +610,7 @@ subtest 'testing failed status' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a failed IDV request';
@@ -626,30 +632,23 @@ subtest 'testing failed status' => sub {
 };
 
 subtest 'testing the exceptions verify_identity' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
-    my $email             = 'test_exceptions_id@binary.com';
-    my $user              = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    my $client = $test_customer->get_client_object('CR');
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
     my $args = {
         loginid => 'CR0',
     };
     my $error = exception {
-        $idv_event_handler->($args)->get;
+        $idv_event_handler->($args, $service_contexts)->get;
     };
 
     ok $error=~ /Could not initiate client for loginid: CR0/, 'expected exception caught bad login id here';
@@ -659,53 +658,44 @@ subtest 'testing the exceptions verify_identity' => sub {
     };
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     $error = exception {
-        $idv_event_handler->($args)->get;
+        $idv_event_handler->($args, $service_contexts)->get;
     };
     ok $error=~ /No standby document found, IDV request skipped./, 'expected exception caught no documents added';
 
     my $idv_model_mock = Test::MockModule->new('BOM::User::IdentityVerification');
 
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 0);
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 0);
 
     $error = exception {
-        $idv_event_handler->($args)->get;
+        $idv_event_handler->($args, $service_contexts)->get;
     };
 
     ok $error=~ /No submissions left, IDV request has ignored for loginid/, 'expected exception caught no submissions';
 
     $idv_model_mock->unmock_all();
-
 };
 
 subtest 'testing the exceptions verify_process' => sub {
-    my $idv_proc_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
-    my $email            = 'test_exceptions@binary.com';
-    my $user             = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
+    my $test_customer = BOM::Test::Customer->create(
         email_verified => 1,
-    );
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $client = $test_customer->get_client_object('CR');
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $idv_proc_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
 
     my $args = {
         id => 'CR0',
     };
 
     my $error = exception {
-        $idv_proc_handler->($args)->get;
+        $idv_proc_handler->($args, $service_contexts)->get;
     };
 
     ok $error=~ /No status received./, 'expected exception caught no status added';
@@ -713,7 +703,7 @@ subtest 'testing the exceptions verify_process' => sub {
     $args->{status} = 'verified';
 
     $error = exception {
-        $idv_proc_handler->($args)->get;
+        $idv_proc_handler->($args, $service_contexts)->get;
     };
 
     ok $error=~ /Could not initiate client for loginid: CR0/, 'expected exception caught';
@@ -721,14 +711,14 @@ subtest 'testing the exceptions verify_process' => sub {
     $args->{id} = $client->loginid;
 
     $error = exception {
-        $idv_proc_handler->($args)->get;
+        $idv_proc_handler->($args, $service_contexts)->get;
     };
     ok $error=~ /No standby document found, IDV request skipped./, 'expected exception caught no documents added';
 
     my $idv_model_mock = Test::MockModule->new('BOM::User::IdentityVerification');
 
     $error = exception {
-        $idv_proc_handler->($args)->get;
+        $idv_proc_handler->($args, $service_contexts)->get;
     };
 
     ok $error=~ /No standby document found, IDV request skipped/, 'expected exception caught (does not check for submission left)';
@@ -738,31 +728,38 @@ subtest 'testing the exceptions verify_process' => sub {
 };
 
 subtest 'testing refuted status' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1988-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $email = 'test_verify_refuted@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
     );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    my $client = $test_customer->get_client_object('CR');
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
     my $args = {
         loginid => $client->loginid,
     };
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
 
     my $idv_document = {
@@ -775,18 +772,9 @@ subtest 'testing refuted status' => sub {
     my $redis = BOM::Config::Redis::redis_events();
     $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
-
     @emissions = ();
 
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -800,23 +788,25 @@ subtest 'testing refuted status' => sub {
             id            => $client->loginid,
             response_body => {},
             request_body  => {},
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             }
@@ -833,7 +823,7 @@ subtest 'testing refuted status' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted IDV request';
@@ -857,31 +847,38 @@ subtest 'testing refuted status' => sub {
 };
 
 subtest 'testing unavailable status' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1988-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $email = 'test_verify_unavailable@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
     );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    my $client = $test_customer->get_client_object('CR');
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
     my $args = {
         loginid => $client->loginid,
     };
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
 
     my $idv_document = {
@@ -893,19 +890,10 @@ subtest 'testing unavailable status' => sub {
     $idv_model->add_document($idv_document);
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     @emissions = ();
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -919,24 +907,26 @@ subtest 'testing unavailable status' => sub {
             id            => $client->loginid,
             response_body => {},
             request_body  => {},
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     my $document = $idv_model->get_last_updated_document;
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             }
@@ -944,7 +934,7 @@ subtest 'testing unavailable status' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a failed IDV request';
@@ -966,31 +956,38 @@ subtest 'testing unavailable status' => sub {
 };
 
 subtest 'testing refuted status and underage in messages' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => Date::Utility->new()->minus_years(17)->date_yyyymmdd,
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $email = 'test_verify_pass+underage_message@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
     );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    my $client = $test_customer->get_client_object('CR');
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
     my $args = {
         loginid => $client->loginid,
     };
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
 
     my $idv_document = {
@@ -1001,21 +998,11 @@ subtest 'testing refuted status and underage in messages' => sub {
     $idv_model->add_document($idv_document);
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    my $underage_date = Date::Utility->new()->minus_years(17)->date_yyyymmdd;
-    $client->date_of_birth($underage_date);
-    $client->save();
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     @emissions = ();
 
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -1027,29 +1014,31 @@ subtest 'testing refuted status and underage in messages' => sub {
             },
             report => {
                 full_name => "John Doe",
-                birthdate => $underage_date
+                birthdate => $user_data->{date_of_birth},
             },
             response_body => {},
             request_body  => {},
             id            => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     ok $client->status->disabled, 'Client status properly disabled due to underage';
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             }
@@ -1073,7 +1062,7 @@ subtest 'testing refuted status and underage in messages' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted underage IDV request';
@@ -1098,31 +1087,38 @@ subtest 'testing refuted status and underage in messages' => sub {
 };
 
 subtest 'testing refuted status and expired' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '2005-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $email = 'test_verify_refuted+expired@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
     );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    my $client = $test_customer->get_client_object('CR');
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
     my $args = {
         loginid => $client->loginid,
     };
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
     my $current_submissions = $idv_model->submissions_left;
 
@@ -1134,22 +1130,13 @@ subtest 'testing refuted status and expired' => sub {
     $idv_model->add_document($idv_document);
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('2005-02-12');
-    $client->save();
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     @emissions = ();
 
     $client->status->set('age_verification', 'staff', 'age verified manually');
 
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -1167,24 +1154,26 @@ subtest 'testing refuted status and expired' => sub {
             response_body => {},
             request_body  => {},
             id            => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     ok !$client->status->age_verification, 'age verification was cleared';
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             }
@@ -1201,7 +1190,7 @@ subtest 'testing refuted status and expired' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted + expired IDV request';
@@ -1228,29 +1217,36 @@ subtest 'testing refuted status and expired' => sub {
 };
 
 subtest 'testing refuted status and dob mismatch' => sub {
-    my $email = 'test_verify_refuted+dobmismatch@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1996-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
     );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $client = $test_customer->get_client_object('CR');
 
     my $args = {
         loginid => $client->loginid,
     };
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
     my $current_submissions = $idv_model->submissions_left;
 
@@ -1262,22 +1258,13 @@ subtest 'testing refuted status and dob mismatch' => sub {
     $idv_model->add_document($idv_document);
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1996-02-12');
-    $client->save();
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     @emissions = ();
 
     $client->status->set('age_verification', 'staff', 'age verified manually');
 
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -1294,24 +1281,26 @@ subtest 'testing refuted status and dob mismatch' => sub {
             response_body => {},
             request_body  => {},
             id            => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     ok !$client->status->age_verification, 'age verification was cleared';
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             }
@@ -1328,7 +1317,7 @@ subtest 'testing refuted status and dob mismatch' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted + dob mismatch IDV request';
@@ -1355,31 +1344,38 @@ subtest 'testing refuted status and dob mismatch' => sub {
 };
 
 subtest 'testing refuted status and name mismatch' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1996-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $email = 'test_verify_refuted+namemismatch@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
     );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    my $client = $test_customer->get_client_object('CR');
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
     my $args = {
         loginid => $client->loginid,
     };
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
     my $current_submissions = $idv_model->submissions_left;
 
@@ -1391,20 +1387,11 @@ subtest 'testing refuted status and name mismatch' => sub {
     $idv_model->add_document($idv_document);
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1996-02-12');
-    $client->save();
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     @emissions = ();
 
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -1420,24 +1407,26 @@ subtest 'testing refuted status and name mismatch' => sub {
             response_body => {},
             request_body  => {},
             id            => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     ok $client->status->poi_name_mismatch, 'POI name mismatch status applied properly';
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             }
@@ -1454,7 +1443,7 @@ subtest 'testing refuted status and name mismatch' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted + name mismatch IDV request';
@@ -1483,31 +1472,38 @@ subtest 'testing refuted status and name mismatch' => sub {
 subtest 'pictures collected from IDV' => sub {
     for my $what (qw/selfie document/) {
         subtest "testing $what being sent as paramter - refuted" => sub {
-            my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+            my $test_customer = BOM::Test::Customer->create(
+                email_verified   => 1,
+                address_line_1   => 'Fake St 123',
+                address_line_2   => 'apartamento 22',
+                address_postcode => '12345900',
+                residence        => 'br',
+                first_name       => 'John',
+                last_name        => 'Doe',
+                date_of_birth    => '1996-02-12',
+                clients          => [{
+                        name        => 'CR',
+                        broker_code => 'CR',
+                    },
+                ]);
 
-            my $email = "test_refuted_photo$what\@binary.com";
-            my $user  = BOM::User->create(
-                email          => $email,
-                password       => "pwd123",
-                email_verified => 1,
+            my $user_data = BOM::Service::user(
+                context => $service_contexts->{user},
+                command => 'get_all_attributes',
+                user_id => $test_customer->get_user_id(),
             );
+            ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+            $user_data = $user_data->{attributes};
 
-            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code    => 'CR',
-                email          => $email,
-                binary_user_id => $user->id,
-            });
+            my $client = $test_customer->get_client_object('CR');
 
-            $client->user($user);
-            $client->binary_user_id($user->id);
-            $user->add_client($client);
-            $client->save;
+            my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
             my $args = {
                 loginid => $client->loginid,
             };
 
-            my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+            my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
             $updates = 0;
 
             my $idv_document = {
@@ -1518,7 +1514,7 @@ subtest 'pictures collected from IDV' => sub {
             $idv_model->add_document($idv_document);
 
             my $redis = BOM::Config::Redis::redis_events();
-            $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+            $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
             my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
             my $track_args;
@@ -1537,18 +1533,9 @@ subtest 'pictures collected from IDV' => sub {
                     return Future->done(1);
                 });
 
-            $client->address_line_1('Fake St 123');
-            $client->address_line_2('apartamento 22');
-            $client->address_postcode('12345900');
-            $client->residence('br');
-            $client->first_name('John');
-            $client->last_name('Doe');
-            $client->date_of_birth('1996-02-12');
-            $client->save();
-
             @emissions = ();
 
-            ok $idv_event_handler->($args)->get, 'the event processed without error';
+            ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
             # a verify process is dispatched!
             ok $idv_proc_handler->({
@@ -1565,7 +1552,9 @@ subtest 'pictures collected from IDV' => sub {
                     response_body => {},
                     request_body  => {},
                     id            => $client->loginid,
-                })->get, 'the IDV response processed without error';
+                },
+                $service_contexts
+            )->get, 'the IDV response processed without error';
 
             my $document = $idv_model->get_last_updated_document;
 
@@ -1615,17 +1604,17 @@ subtest 'pictures collected from IDV' => sub {
                 [{
                     idv_verification => {
                         address => {
-                            postcode  => $client->address_postcode,
-                            city      => $client->address_city,
-                            residence => $client->residence,
-                            line_1    => $client->address_line_1,
-                            line_2    => $client->address_line_2,
+                            postcode  => $user_data->{address_postcode},
+                            city      => $user_data->{address_city},
+                            residence => $user_data->{residence},
+                            line_1    => $user_data->{address_line_1},
+                            line_2    => $user_data->{address_line_2},
                         },
                         profile => {
-                            first_name => $client->first_name,
+                            first_name => $user_data->{first_name},
                             id         => $client->loginid,
-                            birthdate  => $client->date_of_birth,
-                            last_name  => $client->last_name
+                            birthdate  => $user_data->{date_of_birth},
+                            last_name  => $user_data->{last_name}
                         },
                         document => $idv_document,
                     }
@@ -1642,7 +1631,7 @@ subtest 'pictures collected from IDV' => sub {
                 {
                     sync_mt5_accounts_status => {
                         client_loginid => $client->loginid,
-                        binary_user_id => $client->binary_user_id,
+                        binary_user_id => $test_customer->get_user_id(),
                     }}
                 ],
                 'Expected emissions for a refuted + name mismatch IDV request';
@@ -1655,32 +1644,39 @@ subtest 'pictures collected from IDV' => sub {
             is $doc->{issuing_country}, 'br',       'issuing country is correctly populated';
         };
 
-        subtest "testing $what being sent as paramter - verified" => sub {
-            my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+        subtest "testing $what being sent as parameter - verified" => sub {
+            my $test_customer = BOM::Test::Customer->create(
+                email_verified   => 1,
+                address_line_1   => 'Fake St 123',
+                address_line_2   => 'apartamento 22',
+                address_postcode => '12345900',
+                residence        => 'br',
+                first_name       => 'John',
+                last_name        => 'Doe',
+                date_of_birth    => '1996-02-12',
+                clients          => [{
+                        name        => 'CR',
+                        broker_code => 'CR',
+                    },
+                ]);
 
-            my $email = "test_verify_photo$what\@binary.com";
-            my $user  = BOM::User->create(
-                email          => $email,
-                password       => "pwd123",
-                email_verified => 1,
+            my $user_data = BOM::Service::user(
+                context => $service_contexts->{user},
+                command => 'get_all_attributes',
+                user_id => $test_customer->get_user_id(),
             );
+            ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+            $user_data = $user_data->{attributes};
 
-            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code    => 'CR',
-                email          => $email,
-                binary_user_id => $user->id,
-            });
+            my $client = $test_customer->get_client_object('CR');
 
-            $client->user($user);
-            $client->binary_user_id($user->id);
-            $user->add_client($client);
-            $client->save;
+            my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
             my $args = {
                 loginid => $client->loginid,
             };
 
-            my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+            my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
             $updates = 0;
 
             my $idv_document = {
@@ -1691,7 +1687,7 @@ subtest 'pictures collected from IDV' => sub {
             $idv_model->add_document($idv_document);
 
             my $redis = BOM::Config::Redis::redis_events();
-            $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+            $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
             my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
             my $track_args;
@@ -1710,18 +1706,9 @@ subtest 'pictures collected from IDV' => sub {
                     return Future->done(1);
                 });
 
-            $client->address_line_1('Fake St 123');
-            $client->address_line_2('apartamento 22');
-            $client->address_postcode('12345900');
-            $client->residence('br');
-            $client->first_name('John');
-            $client->last_name('Doe');
-            $client->date_of_birth('1996-02-12');
-            $client->save();
-
             @emissions = ();
 
-            ok $idv_event_handler->($args)->get, 'the event processed without error';
+            ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
             # a verify process is dispatched!
             ok $idv_proc_handler->({
@@ -1738,7 +1725,9 @@ subtest 'pictures collected from IDV' => sub {
                     response_body => {},
                     request_body  => {},
                     id            => $client->loginid,
-                })->get, 'the IDV response processed without error';
+                },
+                $service_contexts
+            )->get, 'the IDV response processed without error';
 
             my $document = $idv_model->get_last_updated_document;
 
@@ -1787,17 +1776,17 @@ subtest 'pictures collected from IDV' => sub {
                 [{
                     idv_verification => {
                         address => {
-                            postcode  => $client->address_postcode,
-                            city      => $client->address_city,
-                            residence => $client->residence,
-                            line_1    => $client->address_line_1,
-                            line_2    => $client->address_line_2,
+                            postcode  => $user_data->{address_postcode},
+                            city      => $user_data->{address_city},
+                            residence => $user_data->{residence},
+                            line_1    => $user_data->{address_line_1},
+                            line_2    => $user_data->{address_line_2},
                         },
                         profile => {
-                            first_name => $client->first_name,
+                            first_name => $user_data->{first_name},
                             id         => $client->loginid,
-                            birthdate  => $client->date_of_birth,
-                            last_name  => $client->last_name
+                            birthdate  => $user_data->{date_of_birth},
+                            last_name  => $user_data->{last_name}
                         },
                         document => $idv_document,
                     }
@@ -1810,19 +1799,18 @@ subtest 'pictures collected from IDV' => sub {
                             live_chat_url => $live_chat_url,
                             contact_url   => $contact_url,
                             poi_url       => $poi_url,
-                            email         => $client->email,
-                            name          => $client->first_name
-                        }}
+                            email         => $user_data->{email},
+                            name          => $user_data->{first_name}}}
                 },
                 {
                     sync_mt5_accounts_status => {
                         client_loginid => $client->loginid,
-                        binary_user_id => $client->binary_user_id,
+                        binary_user_id => $test_customer->get_user_id(),
                     }}
                 ],
                 'Expected emissions for a verified IDV request';
 
-            $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+            $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
             $idv_document = {
                 issuing_country => 'br',
                 number          => '123.456.789-34',
@@ -1831,23 +1819,23 @@ subtest 'pictures collected from IDV' => sub {
             $idv_model->add_document($idv_document);
 
             @emissions = ();
-            ok $idv_event_handler->($args)->get, 'the event processed without error';
+            ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
             cmp_deeply [@emissions],
                 [{
                     idv_verification => {
                         address => {
-                            postcode  => $client->address_postcode,
-                            city      => $client->address_city,
-                            residence => $client->residence,
-                            line_1    => $client->address_line_1,
-                            line_2    => $client->address_line_2,
+                            postcode  => $user_data->{address_postcode},
+                            city      => $user_data->{address_city},
+                            residence => $user_data->{residence},
+                            line_1    => $user_data->{address_line_1},
+                            line_2    => $user_data->{address_line_2},
                         },
                         profile => {
-                            first_name => $client->first_name,
+                            first_name => $user_data->{first_name},
                             id         => $client->loginid,
-                            birthdate  => $client->date_of_birth,
-                            last_name  => $client->last_name
+                            birthdate  => $user_data->{date_of_birth},
+                            last_name  => $user_data->{last_name}
                         },
                         document => $idv_document,
                     }}
@@ -1872,31 +1860,38 @@ subtest 'pictures collected from IDV' => sub {
     }
 
     subtest "selfie & document are provided" => sub {
-        my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+        my $test_customer = BOM::Test::Customer->create(
+            email_verified   => 1,
+            address_line_1   => 'Fake St 123',
+            address_line_2   => 'apartamento 22',
+            address_postcode => '12345900',
+            residence        => 'br',
+            first_name       => 'John',
+            last_name        => 'Doe',
+            date_of_birth    => '1996-02-12',
+            clients          => [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+            ]);
 
-        my $email = "test_verify_photoboth\@binary.com";
-        my $user  = BOM::User->create(
-            email          => $email,
-            password       => "pwd123",
-            email_verified => 1,
+        my $user_data = BOM::Service::user(
+            context => $service_contexts->{user},
+            command => 'get_all_attributes',
+            user_id => $test_customer->get_user_id(),
         );
+        ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+        $user_data = $user_data->{attributes};
 
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code    => 'CR',
-            email          => $email,
-            binary_user_id => $user->id,
-        });
+        my $client = $test_customer->get_client_object('CR');
 
-        $client->user($user);
-        $client->binary_user_id($user->id);
-        $user->add_client($client);
-        $client->save;
+        my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
         my $args = {
             loginid => $client->loginid,
         };
 
-        my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+        my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
         $updates = 0;
 
         my $idv_document = {
@@ -1907,7 +1902,7 @@ subtest 'pictures collected from IDV' => sub {
         $idv_model->add_document($idv_document);
 
         my $redis = BOM::Config::Redis::redis_events();
-        $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+        $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
         my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
         my $track_args          = [];
@@ -1926,18 +1921,9 @@ subtest 'pictures collected from IDV' => sub {
                 return Future->done(1);
             });
 
-        $client->address_line_1('Fake St 123');
-        $client->address_line_2('apartamento 22');
-        $client->address_postcode('12345900');
-        $client->residence('br');
-        $client->first_name('John');
-        $client->last_name('Doe');
-        $client->date_of_birth('1996-02-12');
-        $client->save();
-
         @emissions = ();
 
-        ok $idv_event_handler->($args)->get, 'the event processed without error';
+        ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
         # a verify process is dispatched!
         ok $idv_proc_handler->({
@@ -1955,7 +1941,9 @@ subtest 'pictures collected from IDV' => sub {
                 response_body => {},
                 request_body  => {},
                 id            => $client->loginid,
-            })->get, 'the IDV response processed without error';
+            },
+            $service_contexts
+        )->get, 'the IDV response processed without error';
 
         my $document = $idv_model->get_last_updated_document;
 
@@ -2015,17 +2003,17 @@ subtest 'pictures collected from IDV' => sub {
             [{
                 idv_verification => {
                     address => {
-                        postcode  => $client->address_postcode,
-                        city      => $client->address_city,
-                        residence => $client->residence,
-                        line_1    => $client->address_line_1,
-                        line_2    => $client->address_line_2,
+                        postcode  => $user_data->{address_postcode},
+                        city      => $user_data->{address_city},
+                        residence => $user_data->{residence},
+                        line_1    => $user_data->{address_line_1},
+                        line_2    => $user_data->{address_line_2},
                     },
                     profile => {
-                        first_name => $client->first_name,
+                        first_name => $user_data->{first_name},
                         id         => $client->loginid,
-                        birthdate  => $client->date_of_birth,
-                        last_name  => $client->last_name
+                        birthdate  => $user_data->{date_of_birth},
+                        last_name  => $user_data->{last_name}
                     },
                     document => $idv_document,
                 }
@@ -2038,19 +2026,18 @@ subtest 'pictures collected from IDV' => sub {
                         live_chat_url => $live_chat_url,
                         contact_url   => $contact_url,
                         poi_url       => $poi_url,
-                        email         => $client->email,
-                        name          => $client->first_name
-                    }}
+                        email         => $user_data->{email},
+                        name          => $user_data->{first_name}}}
             },
             {
                 sync_mt5_accounts_status => {
                     client_loginid => $client->loginid,
-                    binary_user_id => $client->binary_user_id,
+                    binary_user_id => $test_customer->get_user_id(),
                 }}
             ],
             'Expected emissions for a verified IDV request';
 
-        $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+        $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
         $idv_document = {
             issuing_country => 'br',
             number          => '123.456.789-34',
@@ -2059,23 +2046,23 @@ subtest 'pictures collected from IDV' => sub {
         $idv_model->add_document($idv_document);
 
         @emissions = ();
-        ok $idv_event_handler->($args)->get, 'the event processed without error';
+        ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
         cmp_deeply [@emissions],
             [{
                 idv_verification => {
                     address => {
-                        postcode  => $client->address_postcode,
-                        city      => $client->address_city,
-                        residence => $client->residence,
-                        line_1    => $client->address_line_1,
-                        line_2    => $client->address_line_2,
+                        postcode  => $user_data->{address_postcode},
+                        city      => $user_data->{address_city},
+                        residence => $user_data->{residence},
+                        line_1    => $user_data->{address_line_1},
+                        line_2    => $user_data->{address_line_2},
                     },
                     profile => {
-                        first_name => $client->first_name,
+                        first_name => $user_data->{first_name},
                         id         => $client->loginid,
-                        birthdate  => $client->date_of_birth,
-                        last_name  => $client->last_name
+                        birthdate  => $user_data->{date_of_birth},
+                        last_name  => $user_data->{last_name}
                     },
                     document => $idv_document,
                 }}
@@ -2112,25 +2099,24 @@ subtest 'pictures collected from IDV' => sub {
 };
 
 subtest 'testing callback status' => sub {
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1988-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+
+    my $client = $test_customer->get_client_object('CR');
+
     my $idv_proc_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
-
-    my $email = 'test_callback_status@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
 
     my $args = {
         id       => $client->loginid,
@@ -2143,7 +2129,7 @@ subtest 'testing callback status' => sub {
         message  => [],
     };
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
     my $idv_document = {
         issuing_country => 'br',
@@ -2151,15 +2137,6 @@ subtest 'testing callback status' => sub {
         type            => 'cpf'
     };
     $idv_model->add_document($idv_document);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
 
     my $exception = exception {
         ok $idv_proc_handler->({
@@ -2169,7 +2146,9 @@ subtest 'testing callback status' => sub {
                 response_body => {},
                 request_body  => {},
                 report        => {},
-            })->get, 'the IDV response processed without error';
+            },
+            $service_contexts
+        )->get, 'the IDV response processed without error';
     };
 
     ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
@@ -2185,13 +2164,13 @@ subtest 'testing callback status' => sub {
     });
 
     @emissions = ();
-    ok $idv_proc_handler->($args)->get, 'the event processed without error';
+    ok $idv_proc_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     cmp_deeply [@emissions],
         [{
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions after callback';
@@ -2215,25 +2194,32 @@ subtest 'testing callback status' => sub {
 };
 
 subtest 'testing unexpected error' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1988-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $email = 'test_verify_unexpected_error@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
     );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    my $client = $test_customer->get_client_object('CR');
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
     my $args = {
         loginid => $client->loginid,
@@ -2241,7 +2227,7 @@ subtest 'testing unexpected error' => sub {
 
     my $redis = BOM::Config::Redis::redis_events();
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
     my $idv_document = {
         issuing_country => 'br',
@@ -2250,37 +2236,28 @@ subtest 'testing unexpected error' => sub {
     };
     $idv_model->add_document($idv_document);
 
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1988-02-12');
-    $client->save();
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     $emit_exception = 'fatal failure';
     @emissions      = ();
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
     $emit_exception = undef;
 
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             },
@@ -2309,31 +2286,25 @@ subtest 'testing unexpected error' => sub {
 };
 
 subtest 'integration test - webhook' => sub {
-    my $email = 'integrates+webhook+idv@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Street',
+        address_postcode => '123',
+        residence        => 'ar',
+        first_name       => 'dev',
+        last_name        => 'test',
+        date_of_birth    => '1990-01-01',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
-
-    my $args = {
-        loginid => $client->loginid,
-    };
+    my $client = $test_customer->get_client_object('CR');
 
     my $redis = BOM::Config::Redis::redis_events();
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
     $idv_model->add_document({
         issuing_country => 'ar',
@@ -2341,15 +2312,7 @@ subtest 'integration test - webhook' => sub {
         type            => 'dni'
     });
 
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Street');
-    $client->address_postcode('123');
-    $client->residence('ar');
-    $client->first_name('dev');
-    $client->last_name('test');
-    $client->date_of_birth('1990-01-01');
-    $client->save();
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
     my @doggy_bag;
@@ -2407,7 +2370,9 @@ subtest 'integration test - webhook' => sub {
                     response_body => {},
                     request_body  => {},
                     report        => {},
-                })->get, 'the IDV response processed without error';
+                },
+                $service_contexts
+            )->get, 'the IDV response processed without error';
         };
 
         ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
@@ -2431,7 +2396,7 @@ subtest 'integration test - webhook' => sub {
                 headers => {'x-request-id' => '1234'}});
 
         # a verify process is dispatched!
-        ok $idv_proc_handler->($idv_response)->get, 'the IDV response processed without error';
+        ok $idv_proc_handler->($idv_response, $service_contexts)->get, 'the IDV response processed without error';
 
         cmp_deeply [@emissions],
             [{
@@ -2454,7 +2419,7 @@ subtest 'integration test - webhook' => sub {
             {
                 sync_mt5_accounts_status => {
                     client_loginid => $client->loginid,
-                    binary_user_id => $client->binary_user_id,
+                    binary_user_id => $test_customer->get_user_id(),
                 }}
             ],
             'Expected emissions for a refuted IDV webhook request';
@@ -2495,32 +2460,39 @@ subtest 'testing _detect_mime_type' => sub {
 
 };
 
-subtest 'testing photo being sent as paramter - undef file type' => sub {
-    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+subtest 'testing photo being sent as parameter - undef file type' => sub {
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1996-02-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
-    my $email = 'test_verify_photo_unfef_file_type@binary.com';
-    my $user  = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
     );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
+    my $client = $test_customer->get_client_object('CR');
 
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
     my $args = {
         loginid => $client->loginid,
     };
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
 
     my $idv_document = {
@@ -2531,7 +2503,7 @@ subtest 'testing photo being sent as paramter - undef file type' => sub {
     $idv_model->add_document($idv_document);
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     my $services_track_mock = Test::MockModule->new('BOM::Event::Services::Track');
     my $track_args;
@@ -2550,18 +2522,9 @@ subtest 'testing photo being sent as paramter - undef file type' => sub {
             return Future->done(1);
         });
 
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1996-02-12');
-    $client->save();
-
     @emissions = ();
 
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -2576,23 +2539,25 @@ subtest 'testing photo being sent as paramter - undef file type' => sub {
                 photo     => "Not Available",
             },
             id => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             }
@@ -2605,14 +2570,13 @@ subtest 'testing photo being sent as paramter - undef file type' => sub {
                     live_chat_url => $live_chat_url,
                     contact_url   => $contact_url,
                     poi_url       => $poi_url,
-                    email         => $client->email,
-                    name          => $client->first_name
-                }}
+                    email         => $user_data->{email},
+                    name          => $user_data->{first_name}}}
         },
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a verified request';
@@ -2649,34 +2613,40 @@ subtest 'testing photo being sent as paramter - undef file type' => sub {
 };
 
 subtest 'testing pending status (QA Provider special case)' => sub {
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'br',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1997-03-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
+    );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
+
+    my $client = $test_customer->get_client_object('CR');
+
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
     my $mock_qa           = Test::MockModule->new('BOM::Config');
     $mock_qa->mock('on_qa' => 1);
-
-    my $email = 'test_verify_pending@binary.com';
-
-    my $user = BOM::User->create(
-        email          => $email,
-        password       => "pwd123",
-        email_verified => 1,
-    );
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-
-    $client->user($user);
-    $client->binary_user_id($user->id);
-    $user->add_client($client);
-    $client->save;
 
     my $args = {
         loginid => $client->loginid,
     };
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
 
     my $idv_document = {
@@ -2687,20 +2657,11 @@ subtest 'testing pending status (QA Provider special case)' => sub {
     $idv_model->add_document($idv_document);
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-
-    $client->address_line_1('Fake St 123');
-    $client->address_line_2('apartamento 22');
-    $client->address_postcode('12345900');
-    $client->residence('br');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1997-03-12');
-    $client->save();
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
     @emissions = ();
 
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -2719,23 +2680,25 @@ subtest 'testing pending status (QA Provider special case)' => sub {
                 birthdate => "1997-03-12",
             },
             id => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     cmp_deeply [@emissions],
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $idv_document,
             }
@@ -2743,7 +2706,7 @@ subtest 'testing pending status (QA Provider special case)' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a pending request';
@@ -2771,6 +2734,31 @@ subtest 'testing pending status (QA Provider special case)' => sub {
 };
 
 subtest 'IDV lookback' => sub {
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        address_line_1   => 'Fake St 123',
+        address_line_2   => 'apartamento 22',
+        address_postcode => '12345900',
+        residence        => 'ar',
+        first_name       => 'John',
+        last_name        => 'Doe',
+        date_of_birth    => '1997-03-12',
+        clients          => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
+    );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
+
+    my $client = $test_customer->get_client_object('CR');
+
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{poi_check_rules};
 
     my $client_mock = Test::MockModule->new('BOM::User::Client');
@@ -2801,7 +2789,7 @@ subtest 'IDV lookback' => sub {
             return Future->done;
         });
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
     $updates = 0;
 
     my $document = {
@@ -2816,15 +2804,10 @@ subtest 'IDV lookback' => sub {
     };
 
     @emissions = ();
-    $client->residence('ar');
-    $client->first_name('John');
-    $client->last_name('Doe');
-    $client->date_of_birth('1997-03-12');
-    $client->save();
 
     my $redis = BOM::Config::Redis::redis_events();
-    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
-    ok $idv_event_handler->($args)->get, 'the event processed without error';
+    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
+    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
     # a verify process is dispatched!
     ok $idv_proc_handler->({
@@ -2838,7 +2821,9 @@ subtest 'IDV lookback' => sub {
 
             },
             id => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     $client = BOM::User::Client->new({loginid => $client->loginid});
 
@@ -2850,17 +2835,17 @@ subtest 'IDV lookback' => sub {
         [{
             idv_verification => {
                 address => {
-                    postcode  => $client->address_postcode,
-                    city      => $client->address_city,
-                    residence => $client->residence,
-                    line_1    => $client->address_line_1,
-                    line_2    => $client->address_line_2,
+                    postcode  => $user_data->{address_postcode},
+                    city      => $user_data->{address_city},
+                    residence => $user_data->{residence},
+                    line_1    => $user_data->{address_line_1},
+                    line_2    => $user_data->{address_line_2},
                 },
                 profile => {
-                    first_name => $client->first_name,
+                    first_name => $user_data->{first_name},
                     id         => $client->loginid,
-                    birthdate  => $client->date_of_birth,
-                    last_name  => $client->last_name
+                    birthdate  => $user_data->{date_of_birth},
+                    last_name  => $user_data->{last_name}
                 },
                 document => $document,
             }
@@ -2877,7 +2862,7 @@ subtest 'IDV lookback' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted IDV request';
@@ -2887,7 +2872,9 @@ subtest 'IDV lookback' => sub {
 
     ok !$action_handler->({
             loginid => $client->loginid,
-        })->get, 'POI check rules attempted';
+        },
+        $service_contexts
+    )->get, 'POI check rules attempted';
 
     ok !$lookbackCalled, 'lookback was not called';
 
@@ -2908,7 +2895,9 @@ subtest 'IDV lookback' => sub {
                 response_body => {},
                 request_body  => {},
                 report        => {},
-            })->get, 'the IDV response processed without error';
+            },
+            $service_contexts
+        )->get, 'the IDV response processed without error';
     };
 
     ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
@@ -2932,11 +2921,15 @@ subtest 'IDV lookback' => sub {
             },
             report => {birthdate => '1989-10-10'},
             id     => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     ok !$action_handler->({
             loginid => $client->loginid,
-        })->get, 'POI check rules attempted';
+        },
+        $service_contexts
+    )->get, 'POI check rules attempted';
 
     ok !$lookbackCalled, 'lookback was not called';
 
@@ -2953,7 +2946,7 @@ subtest 'IDV lookback' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted IDV lookback';
@@ -2975,7 +2968,9 @@ subtest 'IDV lookback' => sub {
                 response_body => {},
                 request_body  => {},
                 report        => {},
-            })->get, 'the IDV response processed without error';
+            },
+            $service_contexts
+        )->get, 'the IDV response processed without error';
     };
 
     ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
@@ -3000,11 +2995,15 @@ subtest 'IDV lookback' => sub {
             },
             report => {full_name => 'The Chosen One'},
             id     => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     ok !$action_handler->({
             loginid => $client->loginid,
-        })->get, 'POI check rules attempted';
+        },
+        $service_contexts
+    )->get, 'POI check rules attempted';
 
     ok !$lookbackCalled, 'lookback was not called';
 
@@ -3021,7 +3020,7 @@ subtest 'IDV lookback' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted IDV callback';
@@ -3042,7 +3041,9 @@ subtest 'IDV lookback' => sub {
                 response_body => {},
                 request_body  => {},
                 report        => {},
-            })->get, 'the IDV response processed without error';
+            },
+            $service_contexts
+        )->get, 'the IDV response processed without error';
     };
 
     ok $exception =~ qr/No document check found/, 'exception thrown: no check found';
@@ -3072,11 +3073,15 @@ subtest 'IDV lookback' => sub {
             request_body  => {request  => 'set'},
             response_body => {response => 'get'},
             id            => $client->loginid,
-        })->get, 'the IDV response processed without error';
+        },
+        $service_contexts
+    )->get, 'the IDV response processed without error';
 
     ok !$action_handler->({
             loginid => $client->loginid,
-        })->get, 'POI check rules attempted';
+        },
+        $service_contexts
+    )->get, 'POI check rules attempted';
 
     ok $lookbackCalled, 'lookback was called';
 
@@ -3119,7 +3124,7 @@ subtest 'IDV lookback' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted IDV callback';
@@ -3136,7 +3141,9 @@ subtest 'IDV lookback' => sub {
 
     ok !$action_handler->({
             loginid => $client->loginid,
-        })->get, 'POI check rules attempted';
+        },
+        $service_contexts
+    )->get, 'POI check rules attempted';
 
     $client = BOM::User::Client->new({loginid => $client->loginid});
 
@@ -3189,20 +3196,30 @@ subtest 'IDV lookback' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted IDV callback';
 
+    my $update = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'update_attributes_force',
+        user_id    => $test_customer->get_user_id(),
+        attributes => {
+            date_of_birth => '1989-10-10',
+        },
+    );
+    ok $update->{status} eq 'ok', 'user data updated successfully';
+
     # make dob mismatch go away
     @emissions = ();
     @doggy_bag = ();
-    $client->date_of_birth('1989-10-10');
-    $client->save;
 
     ok !$action_handler->({
             loginid => $client->loginid,
-        })->get, 'POI check rules attempted';
+        },
+        $service_contexts
+    )->get, 'POI check rules attempted';
 
     $client = BOM::User::Client->new({loginid => $client->loginid});
     ok $client->status->poi_name_mismatch, 'still on name mismatch';
@@ -3253,15 +3270,30 @@ subtest 'IDV lookback' => sub {
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a refuted IDV callback';
 
     # fix name mismatch
-    $client->first_name('The Chosen');
-    $client->last_name('one');
-    $client->save;
+    $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'update_attributes_force',
+        user_id    => $test_customer->get_user_id(),
+        attributes => {
+            first_name => 'The Chosen',
+            last_name  => 'One',
+        },
+    );
+    ok $user_data->{status} eq 'ok', 'user data updated successfully';
+
+    $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
+    );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
     # case where client tries to fix mismatch of a doc already owned
     @doggy_bag = ();
@@ -3275,7 +3307,9 @@ subtest 'IDV lookback' => sub {
 
     ok !$action_handler->({
             loginid => $client->loginid,
-        })->get, 'POI check rules attempted';
+        },
+        $service_contexts
+    )->get, 'POI check rules attempted';
 
     $client = BOM::User::Client->new({loginid => $client->loginid});
     ok !$client->status->poi_name_mismatch, 'name mismatch has gone away';
@@ -3338,7 +3372,9 @@ subtest 'IDV lookback' => sub {
     @emissions = ();
     ok !$action_handler->({
             loginid => $client->loginid,
-        })->get, 'POI check rules attempted';
+        },
+        $service_contexts
+    )->get, 'POI check rules attempted';
 
     $client = BOM::User::Client->new({loginid => $client->loginid});
     ok !$client->status->poi_name_mismatch, 'name mismatch has gone away';
@@ -3383,14 +3419,13 @@ subtest 'IDV lookback' => sub {
                     live_chat_url => $live_chat_url,
                     contact_url   => $contact_url,
                     poi_url       => $poi_url,
-                    email         => $client->email,
-                    name          => $client->first_name
-                }}
+                    email         => $user_data->{email},
+                    name          => $user_data->{first_name}}}
         },
         {
             sync_mt5_accounts_status => {
                 client_loginid => $client->loginid,
-                binary_user_id => $client->binary_user_id,
+                binary_user_id => $test_customer->get_user_id(),
             }}
         ],
         'Expected emissions for a verified IDV callback';
@@ -3509,31 +3544,39 @@ subtest 'protect the json encode test' => sub {
                 subtest "status $status" => sub {
                     $c++;
 
-                    my $email = $c . $status . 'protecting_the_json_encode@test.com';
-                    my $user  = BOM::User->create(
-                        email          => $email,
-                        password       => "pwd123",
-                        email_verified => 1,
+                    my $test_customer = BOM::Test::Customer->create(
+                        email_verified   => 1,
+                        address_line_1   => 'Fake St 123',
+                        address_line_2   => 'apartamento 22',
+                        address_postcode => '12345900',
+                        residence        => 'ar',
+                        first_name       => 'John',
+                        last_name        => 'Doe',
+                        date_of_birth    => '1997-03-12',
+                        clients          => [{
+                                name        => 'CR',
+                                broker_code => 'CR',
+                            },
+                        ]);
+
+                    my $user_data = BOM::Service::user(
+                        context => $service_contexts->{user},
+                        command => 'get_all_attributes',
+                        user_id => $test_customer->get_user_id(),
                     );
+                    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+                    $user_data = $user_data->{attributes};
 
-                    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                        broker_code    => 'CR',
-                        email          => $email,
-                        binary_user_id => $user->id,
-                    });
+                    my $client = $test_customer->get_client_object('CR');
 
-                    $client->user($user);
-                    $client->binary_user_id($user->id);
-                    $user->add_client($client);
-                    $client->save;
-                    $args = {
+                    my $args = {
                         loginid => $client->loginid,
                     };
 
                     $updates  = 0;
                     $encoding = {};
 
-                    my $idv_model    = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+                    my $idv_model    = BOM::User::IdentityVerification->new(user_id => $test_customer->get_user_id());
                     my $idv_document = {
                         issuing_country => 'ke',
                         number          => '123450' . $c,
@@ -3543,11 +3586,11 @@ subtest 'protect the json encode test' => sub {
                     $idv_model->add_document($idv_document);
 
                     my $redis = BOM::Config::Redis::redis_events();
-                    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+                    $redis->set(IDV_LOCK_PENDING . $test_customer->get_user_id(), 1);
 
                     @emissions = ();
 
-                    ok $idv_event_handler->($args)->get, 'the event processed without error';
+                    ok $idv_event_handler->($args, $service_contexts)->get, 'the event processed without error';
 
                     # a verify process is dispatched!
                     ok $idv_proc_handler->({
@@ -3558,22 +3601,24 @@ subtest 'protect the json encode test' => sub {
                             },
                             $test->{hash}->%*,
                             id => $client->loginid,
-                        })->get, 'the IDV response processed without error';
+                        },
+                        $service_contexts
+                    )->get, 'the IDV response processed without error';
 
                     my @expected = ({
                             idv_verification => {
                                 address => {
-                                    postcode  => $client->address_postcode,
-                                    city      => $client->address_city,
-                                    residence => $client->residence,
-                                    line_1    => $client->address_line_1,
-                                    line_2    => $client->address_line_2,
+                                    postcode  => $user_data->{address_postcode},
+                                    city      => $user_data->{address_city},
+                                    residence => $user_data->{residence},
+                                    line_1    => $user_data->{address_line_1},
+                                    line_2    => $user_data->{address_line_2},
                                 },
                                 profile => {
-                                    first_name => $client->first_name,
+                                    first_name => $user_data->{first_name},
                                     id         => $client->loginid,
-                                    birthdate  => $client->date_of_birth,
-                                    last_name  => $client->last_name
+                                    birthdate  => $user_data->{date_of_birth},
+                                    last_name  => $user_data->{last_name}
                                 },
                                 document => $idv_document,
                             }});
@@ -3587,9 +3632,8 @@ subtest 'protect the json encode test' => sub {
                                 live_chat_url => $live_chat_url,
                                 contact_url   => $contact_url,
                                 poi_url       => $poi_url,
-                                email         => $client->email,
-                                name          => $client->first_name
-                            }}}
+                                email         => $user_data->{email},
+                                name          => $user_data->{first_name}}}}
                         if $status eq 'verified';
 
                     push @expected,
@@ -3607,7 +3651,7 @@ subtest 'protect the json encode test' => sub {
                         {
                         sync_mt5_accounts_status => {
                             client_loginid => $client->loginid,
-                            binary_user_id => $client->binary_user_id,
+                            binary_user_id => $test_customer->get_user_id(),
                         }};
 
                     cmp_deeply [@emissions], [@expected], "Expected emissions for a $status IDV callback";

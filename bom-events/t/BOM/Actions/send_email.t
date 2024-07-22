@@ -17,6 +17,8 @@ use BOM::Platform::Context qw(request);
 
 use BOM::Event::Actions::Email;
 
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+
 my $customer = BOM::Test::Customer->create(
     salutation     => 'MR',
     email_verified => 1,
@@ -84,14 +86,17 @@ subtest 'send_email with request context language (default)' => sub {
             properties => {
                 prop1 => 'hello',
                 prop2 => 'world',
-            }})->get;
+            }
+        },
+        $service_contexts
+    )->get;
 
     is $track_event_properties->{lang}, 'EN', "track event properties has the request context language";
 };
 
 subtest 'send_email with user preferred language' => sub {
     my $response = BOM::Service::user(
-        context    => $customer->get_user_service_context(),
+        context    => $service_contexts->{user},
         command    => 'update_attributes',
         user_id    => $customer->get_user_id(),
         attributes => {preferred_language => 'RU'});
@@ -110,7 +115,10 @@ subtest 'send_email with user preferred language' => sub {
             properties => {
                 prop1 => 'hello',
                 prop2 => 'world',
-            }})->get;
+            }
+        },
+        $service_contexts
+    )->get;
 
     is $track_event_properties->{lang}, 'RU', "track event properties has the user preferred language";
 };
@@ -130,7 +138,10 @@ subtest 'send_email with explicit language' => sub {
             properties => {
                 prop1 => 'hello',
                 prop2 => 'world',
-            }})->get;
+            }
+        },
+        $service_contexts
+    )->get;
 
     is $track_event_properties->{lang}, 'ES', "track event properties has the explicitly set language";
 };

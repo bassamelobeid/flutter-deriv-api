@@ -12,6 +12,7 @@ use Future;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::Test::Script::OnfidoMock;
 use BOM::Config::Runtime;
 use BOM::Event::Services;
@@ -170,32 +171,25 @@ subtest 'Onfido retriggering' => sub {
         });
 
     subtest 'no documents' => sub {
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code    => 'CR',
-            email          => 'no+documents+retry@bin.com',
+        my $test_customer = BOM::Test::Customer->create(
+            email_verified => 1,
             residence      => 'co',
             place_of_birth => 'co',
             citizen        => 'co',
-        });
-
-        my $user = BOM::User->create(
-            email          => $client->email,
-            password       => "hello",
-            email_verified => 1,
-        );
-
-        $user->add_client($client);
-        $client->binary_user_id($user->id);
-        $client->save;
+            clients        => [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+            ]);
 
         @doggy_bag = ();
         $documents = undef;
-        $script->process($user->id)->get;
+        $script->process($test_customer->get_user_id())->get;
 
         cmp_deeply [@doggy_bag],
             [
-            'onfido.suspended.retry',        {tags => ['binary_user_id:' . $user->id]},
-            'onfido.suspended.no_documents', {tags => ['binary_user_id:' . $user->id]},
+            'onfido.suspended.retry',        {tags => ['binary_user_id:' . $test_customer->get_user_id()]},
+            'onfido.suspended.no_documents', {tags => ['binary_user_id:' . $test_customer->get_user_id()]},
             ],
             'expected doggy bag when no documents';
     };
@@ -210,23 +204,16 @@ subtest 'Onfido retriggering' => sub {
                 return Future->done;
             });
 
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code    => 'CR',
-            email          => 'applicant+suspended@test.com',
+        my $test_customer = BOM::Test::Customer->create(
+            email_verified => 1,
             residence      => 'co',
             place_of_birth => 'co',
             citizen        => 'co',
-        });
-
-        my $user = BOM::User->create(
-            email          => $client->email,
-            password       => "hello",
-            email_verified => 1,
-        );
-
-        $user->add_client($client);
-        $client->binary_user_id($user->id);
-        $client->save;
+            clients        => [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+            ]);
 
         @doggy_bag = ();
         $documents = {
@@ -256,12 +243,12 @@ subtest 'Onfido retriggering' => sub {
                 return Future->done(bless {}, 'WebService::Async::Onfido::Applicant');
             });
         $onfido_s3_acrobatics = undef;
-        $script->process($user->id)->get;
+        $script->process($test_customer->get_user_id())->get;
         is $onfido_s3_acrobatics, undef, 'No acrobatics made';
         cmp_deeply [@doggy_bag],
             [
-            'onfido.suspended.retry',        {tags => ['binary_user_id:' . $user->id]},
-            'onfido.suspended.no_applicant', {tags => ['binary_user_id:' . $user->id]},
+            'onfido.suspended.retry',        {tags => ['binary_user_id:' . $test_customer->get_user_id()]},
+            'onfido.suspended.no_applicant', {tags => ['binary_user_id:' . $test_customer->get_user_id()]},
             ],
             'expected doggy bag (no applicant)';
         $onfido_mock->unmock_all;
@@ -269,30 +256,30 @@ subtest 'Onfido retriggering' => sub {
         # create that applicant
         @doggy_bag            = ();
         $onfido_s3_acrobatics = undef;
-        $script->process($user->id)->get;
+        $script->process($test_customer->get_user_id())->get;
         is $onfido_s3_acrobatics, 1, 'Acrobatics made';
 
-        my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
+        my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($test_customer->get_user_id());
         my $applicant_id   = $applicant_data->{id};
 
         cmp_deeply [@doggy_bag],
             [
-            'onfido.suspended.retry', {tags => ['binary_user_id:' . $user->id]},
+            'onfido.suspended.retry', {tags => ['binary_user_id:' . $test_customer->get_user_id()]},
             'onfido.api.hit', 'onfido.suspended.processed',
-            {tags => ['binary_user_id:' . $user->id, 'applicant:' . $applicant_id]},
+            {tags => ['binary_user_id:' . $test_customer->get_user_id(), 'applicant:' . $applicant_id]},
             ],
             'expected doggy bag (applicant created)';
 
         # make sure the applicant does not get recreated
         @doggy_bag            = ();
         $onfido_s3_acrobatics = undef;
-        $script->process($user->id)->get;
+        $script->process($test_customer->get_user_id())->get;
         is $onfido_s3_acrobatics, 1, 'Acrobatics made';
 
         cmp_deeply [@doggy_bag],
             [
-            'onfido.suspended.retry',     {tags => ['binary_user_id:' . $user->id]},
-            'onfido.suspended.processed', {tags => ['binary_user_id:' . $user->id, 'applicant:' . $applicant_id]},
+            'onfido.suspended.retry',     {tags => ['binary_user_id:' . $test_customer->get_user_id()]},
+            'onfido.suspended.processed', {tags => ['binary_user_id:' . $test_customer->get_user_id(), 'applicant:' . $applicant_id]},
             ],
             'expected doggy bag (existing applicant)';
 
@@ -316,23 +303,18 @@ subtest 'Onfido retriggering' => sub {
                 return Future->done('RAW:' . $file_name);
             });
 
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code    => 'CR',
-            email          => 'accrobatics+retry+suspended@test.com',
+        my $test_customer = BOM::Test::Customer->create(
+            email_verified => 1,
             residence      => 'co',
             place_of_birth => 'co',
             citizen        => 'co',
-        });
+            clients        => [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+            ]);
 
-        my $user = BOM::User->create(
-            email          => $client->email,
-            password       => "hello",
-            email_verified => 1,
-        );
-
-        $user->add_client($client);
-        $client->binary_user_id($user->id);
-        $client->save;
+        my $client = $test_customer->get_client_object('CR');
 
         @doggy_bag = ();
         $documents = {
@@ -362,20 +344,21 @@ subtest 'Onfido retriggering' => sub {
 
         @emissions = ();
         @doggy_bag = ();
-        $script->process($user->id)->get;
+        $script->process($test_customer->get_user_id())->get;
 
-        my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
+        my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($test_customer->get_user_id());
         my $applicant_id   = $applicant_data->{id};
 
         cmp_deeply [@doggy_bag],
             [
-            'onfido.suspended.retry', {tags => ['binary_user_id:' . $user->id]},
-            'onfido.api.hit', 'onfido.api.hit', 'onfido.api.hit', 'onfido.api.hit',
-            'onfido.suspended.processed', {tags => ['binary_user_id:' . $user->id, 'applicant:' . $applicant_id]},
+            'onfido.suspended.retry', {tags => ['binary_user_id:' . $test_customer->get_user_id()]},
+            'onfido.api.hit', 'onfido.api.hit',
+            'onfido.api.hit', 'onfido.api.hit',
+            'onfido.suspended.processed', {tags => ['binary_user_id:' . $test_customer->get_user_id(), 'applicant:' . $applicant_id]},
             ],
             'expected doggy bag for a well done acrobacy';
 
-        my ($onfido_selfie_db) = values BOM::User::Onfido::get_onfido_live_photo($user->id, $applicant_id)->%*;
+        my ($onfido_selfie_db) = values BOM::User::Onfido::get_onfido_live_photo($test_customer->get_user_id(), $applicant_id)->%*;
 
         is $onfido_selfie_db->{file_name}, 'CR1.selfie_with_id.1_photo.jpg',             'expected selfie file name';
         is $onfido_selfie_db->{file_size}, 4 + length('CR1.selfie_with_id.1_photo.jpg'), 'expected file size';
@@ -385,7 +368,7 @@ subtest 'Onfido retriggering' => sub {
             my ($id) = $_->{file_name} =~ /\.(\d+)_/;
             $_->{file_id} = $id;
             $_;
-        } values BOM::User::Onfido::get_onfido_document($user->id, $applicant_id)->%*;
+        } values BOM::User::Onfido::get_onfido_document($test_customer->get_user_id(), $applicant_id)->%*;
         is $onfido_document_1->{file_name}, 'CR1.driving_licence.3_back.jpg',              'expected document file name';
         is $onfido_document_1->{file_size}, 4 + length('CR1.driving_licence.3_back.jpg'),  'expected file size';
         is $onfido_document_2->{file_name}, 'CR1.driving_licence.2_front.jpg',             'expected document file name';

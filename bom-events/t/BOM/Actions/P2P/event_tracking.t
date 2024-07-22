@@ -7,6 +7,7 @@ use Date::Utility;
 use Time::Moment;
 
 use BOM::Test::Helper::P2P;
+use BOM::Test::Customer;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -18,7 +19,8 @@ use BOM::Service;
 use Brands;
 
 my (@identify_args, @track_args, @transactional_args, @emissions);
-my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
 
 my $brand    = Brands->new->name;
 my ($app_id) = Brands->new->whitelist_apps->%*;
@@ -79,18 +81,19 @@ subtest 'p2p order event validation' => sub {
     undef @identify_args;
     undef @track_args;
 
-    is $handler->({})->get,   0, 'retruns zero on error';
-    is scalar @identify_args, 0, 'Segment identify is not called';
-    is scalar @track_args,    0, 'Segment track is not called';
+    is $handler->({}, $service_contexts)->get, 0, 'returns zero on error';
+    is scalar @identify_args,                  0, 'Segment identify is not called';
+    is scalar @track_args,                     0, 'Segment track is not called';
 
     undef @emissions;
     $handler->({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
-        })->get;
+        },
+        $service_contexts
+    )->get;
     is scalar @emissions, 1, 'event emitted';
-
-    BOM::Event::Process->new(category => 'track')->process($emissions[0])->get;
+    BOM::Event::Process->new(category => 'track')->process($emissions[0], 'Test Stream', $service_contexts)->get;
     is scalar @identify_args, 0, 'Segment identify is not called - order_type is missing';
     is scalar @track_args,    0, 'Segment track is not called- order_type is missing';
 };
@@ -118,10 +121,11 @@ subtest 'p2p order created' => sub {
     $handler->({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
-        })->get;
+        },
+        $service_contexts
+    )->get;
     is scalar @emissions, 1, 'event emitted';
-
-    BOM::Event::Process->new(category => 'track')->process($emissions[0])->get;
+    BOM::Event::Process->new(category => 'track')->process($emissions[0], 'Test Stream', $service_contexts)->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -190,10 +194,12 @@ subtest 'p2p order created transactional' => sub {
     $handler->({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
-        })->get;
+        },
+        $service_contexts
+    )->get;
     is scalar @emissions, 1, 'event emitted';
 
-    BOM::Event::Process->new(category => 'track')->process($emissions[0])->get;
+    BOM::Event::Process->new(category => 'track')->process($emissions[0], 'Test Stream', $service_contexts)->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -223,10 +229,12 @@ subtest 'p2p order confirmed by buyer' => sub {
             client_loginid => $client->loginid,
             order_id       => $order->{id},
             order_event    => 'confirmed',
-        })->get;
+        },
+        $service_contexts
+    )->get;
     is scalar @emissions, 1, 'event emitted';
 
-    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions], undef, $service_contexts)->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -295,10 +303,12 @@ subtest 'p2p order confirmed by seller' => sub {
             client_loginid => $advertiser->loginid,
             order_id       => $order->{id},
             order_event    => 'confirmed',
-        })->get;
+        },
+        $service_contexts
+    )->get;
     is scalar @emissions, 1, 'events emitted';
 
-    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions], undef, $service_contexts)->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -364,11 +374,13 @@ subtest 'p2p order cancelled' => sub {
             client_loginid => $client->loginid,
             order_id       => $order->{id},
             order_event    => 'cancelled',
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     is scalar @emissions, 1, 'events emitted';
 
-    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions], undef, $service_contexts)->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -445,10 +457,12 @@ subtest 'pending order expired' => sub {
             client_loginid => $advertiser->loginid,
             order_id       => $order->{id},
             order_event    => 'expired',
-        })->get;
+        },
+        $service_contexts
+    )->get;
     is scalar @emissions, 1, 'events emitted';
 
-    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions], undef, $service_contexts)->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -512,10 +526,12 @@ subtest 'confirmed order expired' => sub {
             client_loginid => $advertiser->loginid,
             order_id       => $order->{id},
             order_event    => 'expired',
-        })->get;
+        },
+        $service_contexts
+    )->get;
     is scalar @emissions, 1, 'event emitted';
 
-    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions], undef, $service_contexts)->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -559,7 +575,7 @@ subtest 'p2p_advert_created' => sub {
     my $event_args;
     $mock_events->mock(
         'emit' => sub {
-            if ($_[0] eq 'p2p_advert_created') { $event_args = $_[1]; $handler->($event_args)->get; }
+            if ($_[0] eq 'p2p_advert_created') { $event_args = $_[1]; $handler->($event_args, $service_contexts)->get; }
         });
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
@@ -580,7 +596,7 @@ subtest 'p2p_advert_created transactional' => sub {
     undef @transactional_args;
     $mock_events->mock(
         'emit' => sub {
-            if ($_[0] eq 'p2p_advert_created') { my $event_args = $_[1]; $handler->($event_args)->get; }
+            if ($_[0] eq 'p2p_advert_created') { my $event_args = $_[1]; $handler->($event_args, $service_contexts)->get; }
         });
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
     ok @track_args,         'track event sent';
@@ -598,7 +614,7 @@ subtest 'p2p_advertiser_cancel_at_fault' => sub {
         order_id          => 123,
         cancels_remaining => 2
     );
-    $handler->(\%args)->get;
+    $handler->(\%args, $service_contexts)->get;
 
     cmp_deeply $track_args[1]->{properties},
         {
@@ -620,7 +636,7 @@ subtest 'p2p_advertiser_temp_banned' => sub {
         block_end_date => '2030-01-01',
         block_end_time => '23:59',
     );
-    $handler->(\%args)->get;
+    $handler->(\%args, $service_contexts)->get;
 
     cmp_deeply $track_args[1]->{properties},
         {
@@ -647,7 +663,7 @@ subtest 'phone_number_verification' => sub {
             broker_code      => 'MF',
         },
     );
-    $handler->(\%args)->get;
+    $handler->(\%args, $service_contexts)->get;
 
     cmp_deeply $track_args[1]->{properties},
         {

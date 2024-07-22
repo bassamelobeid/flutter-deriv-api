@@ -15,6 +15,7 @@ use Format::Util::Numbers                      qw(financialrounding formatnumber
 use Log::Any                                   qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+use BOM::Test::Customer;
 
 use BOM::Test::Email;
 use BOM::Database::UserDB;
@@ -111,32 +112,29 @@ $onfido_doc->mock(
     sub {
         return 'BRA';
     });
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$test_client->set_default_account('USD');
 
-my $test_sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$test_sibling->set_default_account('LTC');
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
-my $test_user = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
-    email_verified => 1,
-);
-$test_user->add_client($test_client);
-$test_user->add_client($test_sibling);
-$test_client->place_of_birth('co');
-$test_client->binary_user_id($test_user->id);
-$test_client->save;
-$test_sibling->binary_user_id($test_user->id);
-$test_sibling->save;
+my $test_customer = BOM::Test::Customer->create(
+    place_of_birth => 'co',
+    clients        => [{
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        },
+        {
+            name            => 'CR_SIBLING',
+            broker_code     => 'CR',
+            default_account => 'LTC',
+        },
+    ]);
+
+my $test_client  = $test_customer->get_client_object('CR');
+my $test_sibling = $test_customer->get_client_object('CR_SIBLING');
 
 mailbox_clear();
 
-BOM::Event::Actions::Common::_email_client_age_verified($test_client);
+BOM::Event::Actions::Common::_email_client_age_verified($test_client, $service_contexts);
 
 is_deeply \@emit_args,
     [
@@ -147,8 +145,8 @@ is_deeply \@emit_args,
             contact_url   => 'https://deriv.com/en/contact-us',
             poi_url       => 'https://app.deriv.com/account/proof-of-identity?lang=en',
             live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
-            email         => $test_client->email,
-            name          => $test_client->first_name,
+            email         => $test_customer->get_email(),
+            name          => $test_customer->get_first_name(),
             website_name  => 'Deriv.com'
         }}
     ],
@@ -158,27 +156,18 @@ undef @emit_args;
 
 $test_client->status->set('age_verification');
 
-BOM::Event::Actions::Common::_email_client_age_verified($test_client);
+BOM::Event::Actions::Common::_email_client_age_verified($test_client, $service_contexts);
 
 is scalar @emit_args, 0, "Didn't send email when already age verified";
 undef @emit_args;
 
-my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MLT',
-});
+my $customer_mx = BOM::Test::Customer->create(clients => [{name => 'MLT', broker_code => 'MLT'}]);
 
-BOM::Event::Actions::Common::_email_client_age_verified($test_client_mx);
-
+BOM::Event::Actions::Common::_email_client_age_verified($customer_mx->get_client_object('MLT'), $service_contexts);
 is scalar @emit_args, 0, "No email for non CR account";
 undef @emit_args;
 
-my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-BOM::Event::Actions::Client::authenticated_with_scans({loginid => $test_client_cr->loginid})->get;
-
-my $msg = mailbox_search(subject => qr/Your address and identity have been verified successfully/);
-
+my $msg;
 my $args = {
     document_type     => 'proofaddress',
     document_format   => 'PNG',
@@ -186,7 +175,6 @@ my $args = {
     expiration_date   => undef,
     expected_checksum => '12345',
     page_type         => undef,
-
 };
 
 sub start_document_upload {
@@ -230,7 +218,10 @@ subtest 'document_upload' => sub {
 
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
-                file_id => $upload_info->{file_id}})->get;
+                file_id => $upload_info->{file_id}
+            },
+            $service_contexts
+        )->get;
 
         my $applicant = BOM::Database::UserDB::rose_db()->dbic->run(
             fixup => sub {
@@ -274,7 +265,10 @@ subtest 'document_upload' => sub {
 
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
-                file_id => $upload_info->{file_id}})->get;
+                file_id => $upload_info->{file_id}
+            },
+            $service_contexts
+        )->get;
 
         my $pending_key = BOM::User::Client::POA_RESUBMITTED_PREFIX . $test_client->binary_user_id;
         my $redis       = $services->redis_events_write();
@@ -295,7 +289,10 @@ subtest 'document_upload' => sub {
 
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
-                file_id => $upload_info->{file_id}})->get;
+                file_id => $upload_info->{file_id}
+            },
+            $service_contexts
+        )->get;
 
         ok $redis->get($pending_key), 'redis key for pending resubmitted doc was set (p2p)';
         $redis->del($pending_key);
@@ -306,7 +303,10 @@ subtest 'document_upload' => sub {
         # case for non-regulated mt5 acc created
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
-                file_id => $upload_info->{file_id}})->get;
+                file_id => $upload_info->{file_id}
+            },
+            $service_contexts
+        )->get;
 
         $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
         ok !$email, 'Client does not have a regulated MT5 account';
@@ -324,7 +324,10 @@ subtest 'document_upload' => sub {
         ok !$redis->get(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get, 'email not locked down';
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
-                file_id => $upload_info->{file_id}})->get;
+                file_id => $upload_info->{file_id}
+            },
+            $service_contexts
+        )->get;
 
         $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
         ok $email, 'An email has been sent';
@@ -335,7 +338,10 @@ subtest 'document_upload' => sub {
 
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
-                file_id => $upload_info->{file_id}})->get;
+                file_id => $upload_info->{file_id}
+            },
+            $service_contexts
+        )->get;
 
         $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
         ok !$email, 'Email is locked';
@@ -470,7 +476,10 @@ subtest 'document_upload' => sub {
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => $by_staff,
                             loginid                    => $test_client_alter->loginid,
-                            file_id                    => $upload_info_alter->{file_id}})->get;
+                            file_id                    => $upload_info_alter->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     cmp_deeply [@metrics],
                         [
@@ -505,7 +514,10 @@ subtest 'document_upload' => sub {
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => $by_staff,
                             loginid                    => $test_client_alter->loginid,
-                            file_id                    => $upload_info_alter->{file_id}})->get;
+                            file_id                    => $upload_info_alter->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     my $email = mailbox_search(subject => qr/Manual age verification needed for/);
 
@@ -635,7 +647,10 @@ subtest 'document_upload' => sub {
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => $by_staff,
                             loginid                    => $test_client->loginid,
-                            file_id                    => $upload_info->{file_id}})->get;
+                            file_id                    => $upload_info->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     cmp_deeply + {@metrics},
                         +{
@@ -715,7 +730,10 @@ subtest 'document_upload' => sub {
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => 1,
                             loginid                    => $test_client->loginid,
-                            file_id                    => $new_doc->{file_id}})->get;
+                            file_id                    => $new_doc->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     ok !$redis->get($pending_resubmission)->get, 'No resubmission flag set - expired + resubmission from staff';
 
@@ -725,7 +743,10 @@ subtest 'document_upload' => sub {
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => 0,
                             loginid                    => $test_client->loginid,
-                            file_id                    => $new_doc->{file_id}})->get;
+                            file_id                    => $new_doc->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     ok $redis->get($pending_resubmission)->get, 'Resubmission flag set - expired + resubmission from client';
 
@@ -735,7 +756,10 @@ subtest 'document_upload' => sub {
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => 0,
                             loginid                    => $test_client->loginid,
-                            file_id                    => $new_doc->{file_id}})->get;
+                            file_id                    => $new_doc->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     ok $redis->get(+BOM::Event::Actions::Client::MT5_REGULATED_DOCUMENT_UPLOAD_LOCK . $test_client->user->id)->get,
                         'email got a lock';
@@ -745,7 +769,10 @@ subtest 'document_upload' => sub {
 
                     BOM::Event::Actions::Client::document_upload({
                             loginid => $test_client->loginid,
-                            file_id => $new_doc->{file_id}})->get;
+                            file_id => $new_doc->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
                     ok !$email, 'Email is locked';
@@ -793,7 +820,10 @@ subtest 'document_upload' => sub {
 
                     BOM::Event::Actions::Client::document_upload({
                             loginid => $test_client->loginid,
-                            file_id => $new_doc->{file_id}})->get;
+                            file_id => $new_doc->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
 
@@ -821,7 +851,10 @@ subtest 'document_upload' => sub {
 
                     BOM::Event::Actions::Client::document_upload({
                             loginid => $test_client->loginid,
-                            file_id => $new_doc->{file_id}})->get;
+                            file_id => $new_doc->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     $email = mailbox_search(subject => qr/Document Upload from a client with MT5 regulated account/);
                     ok !$email, 'Email not sent';
@@ -852,7 +885,7 @@ subtest 'document_upload' => sub {
                     reason        => undef,
                 },
                 {
-                    title         => 'POI but uploaded by stafff',
+                    title         => 'POI but uploaded by staff',
                     document_type => 'passport',
                     by_staff      => 1,
                     email         => 0,
@@ -905,7 +938,10 @@ subtest 'document_upload' => sub {
                     BOM::Event::Actions::Client::document_upload({
                             uploaded_manually_by_staff => $by_staff,
                             loginid                    => $test_client->loginid,
-                            file_id                    => $upload_info->{file_id}})->get;
+                            file_id                    => $upload_info->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     my $email = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
                     if ($email_sent) {
@@ -982,7 +1018,10 @@ subtest 'document_upload' => sub {
 
                     BOM::Event::Actions::Client::document_upload({
                             loginid => $test_client->loginid,
-                            file_id => $upload_info->{file_id}})->get;
+                            file_id => $upload_info->{file_id}
+                        },
+                        $service_contexts
+                    )->get;
 
                     $onfido_supported ? ok $upload_onfido_docs, 'The Onfido upload sub was called' : ok !$upload_onfido_docs,
                         'The Onfido upload sub was not called';
@@ -1007,9 +1046,8 @@ subtest 'document_upload' => sub {
             undef @track_args;
             undef @transactional_args;
 
-            my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'CR',
-            });
+            my $customer    = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+            my $test_client = $customer->get_client_object('CR');
 
             my $args = {
                 loginid    => $test_client->loginid,
@@ -1027,7 +1065,7 @@ subtest 'document_upload' => sub {
 
             BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
             my $handler = BOM::Event::Process->new(category => 'track')->actions->{reset_password_request};
-            my $result  = $handler->($args)->get;
+            my $result  = $handler->($args, $service_contexts)->get;
             ok $result, 'Success result';
             is scalar @track_args, 7, 'Track event is triggered';
             ok @transactional_args, 'CIO transactional is invoked';
@@ -1044,9 +1082,8 @@ subtest 'document_upload' => sub {
             undef @identify_args;
             undef @track_args;
 
-            my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'CR',
-            });
+            my $customer    = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+            my $test_client = $customer->get_client_object('CR');
 
             my $args = {
                 loginid    => $test_client->loginid,
@@ -1056,7 +1093,7 @@ subtest 'document_upload' => sub {
                 }};
 
             my $handler = BOM::Event::Process->new(category => 'track')->actions->{reset_password_confirmation};
-            my $result  = $handler->($args)->get;
+            my $result  = $handler->($args, $service_contexts)->get;
 
             ok $result, 'Success result';
             is scalar @track_args, 7, 'Track event is triggered';
@@ -1071,7 +1108,10 @@ subtest 'document_upload' => sub {
 
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
-                file_id => $upload_info->{file_id}})->get;
+                file_id => $upload_info->{file_id}
+            },
+            $service_contexts
+        )->get;
 
         my $email = mailbox_search(subject => qr/Manual age verification needed for/);
         ok !$email, 'Since is an Onfido document, no email is sent to CS';
@@ -1115,7 +1155,10 @@ subtest 'document_upload' => sub {
 
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
-                file_id => $upload_info->{file_id}})->get;
+                file_id => $upload_info->{file_id}
+            },
+            $service_contexts
+        )->get;
 
         $applicant = BOM::Database::UserDB::rose_db()->dbic->run(
             fixup => sub {
@@ -1199,7 +1242,10 @@ subtest 'test bulk client status update' => sub {
                 status_code           => "disabled",
                 status_op             => "add",
                 untrusted_action_type => "disabledlogins",
-            }})->get;
+            }
+        },
+        $service_contexts
+    )->get;
     delete $test_client3->{_p2p_advertiser_cached};
     is $test_client3->_p2p_advertiser_cached->{is_approved}, 0, 'p2p approval state is changed to 0';
 
@@ -1237,7 +1283,10 @@ $test_client_mf->db->dbic->run(
 
 BOM::Event::Actions::Client::document_upload({
         loginid => $test_client_mf->loginid,
-        file_id => $upload_info_mf->{file_id}})->get;
+        file_id => $upload_info_mf->{file_id}
+    },
+    $service_contexts
+)->get;
 
 my $applicant_mf = BOM::Database::UserDB::rose_db()->dbic->run(
     fixup => sub {
@@ -1330,7 +1379,9 @@ for my $client ($test_client, $test_client_mf) {
                     BOM::Event::Actions::Client::ready_for_authentication({
                             loginid   => $client->loginid,
                             documents => $doc_ids,
-                        })->get;
+                        },
+                        $service_contexts
+                    )->get;
 
                     cmp_deeply [@metrics],
                         [
@@ -1347,7 +1398,9 @@ for my $client ($test_client, $test_client_mf) {
                         loginid      => $client->loginid,
                         applicant_id => $applicant_id,
                         documents    => $doc_ids,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
 
                 cmp_deeply [@metrics],
                     [
@@ -1428,10 +1481,12 @@ for my $client ($test_client, $test_client_mf) {
                 my $generator = sub {
                     $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $consecutive_cli->binary_user_id)->get;
                     my $f = BOM::Event::Actions::Client::ready_for_authentication({
-                        loginid      => $consecutive_cli->loginid,
-                        applicant_id => $consecutive_applicant->id,
-                        documents    => $consecutive_doc_ids,
-                    });
+                            loginid      => $consecutive_cli->loginid,
+                            applicant_id => $consecutive_applicant->id,
+                            documents    => $consecutive_doc_ids,
+                        },
+                        $service_contexts
+                    );
                     return $f;
                 };
 
@@ -1518,7 +1573,9 @@ for my $client ($test_client, $test_client_mf) {
                         loginid      => $client->loginid,
                         applicant_id => $applicant->id,
                         documents    => $doc_ids,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
 
                 cmp_deeply [@metrics],
                     [
@@ -1540,7 +1597,9 @@ for my $client ($test_client, $test_client_mf) {
                         loginid      => $client->loginid,
                         applicant_id => $applicant->id,
                         documents    => $doc_ids,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
 
                 cmp_deeply [@metrics],
                     [
@@ -1562,7 +1621,9 @@ for my $client ($test_client, $test_client_mf) {
                         loginid      => $client->loginid,
                         applicant_id => $applicant->id,
                         documents    => $doc_ids,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
 
                 cmp_deeply [@metrics],
                     [
@@ -1584,7 +1645,9 @@ for my $client ($test_client, $test_client_mf) {
                         loginid      => $client->loginid,
                         applicant_id => $applicant->id,
                         documents    => $doc_ids,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
 
                 cmp_deeply [@metrics],
                     [
@@ -1606,7 +1669,9 @@ for my $client ($test_client, $test_client_mf) {
                         loginid      => $client->loginid,
                         applicant_id => $applicant->id,
                         documents    => $doc_ids,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
 
                 cmp_deeply [@metrics],
                     [
@@ -1774,7 +1839,7 @@ for my $client ($test_client, $test_client_mf) {
 
                 my $redis = BOM::Config::Redis::redis_events();
                 $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1);
-                BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+                BOM::Event::Actions::Client::client_verification({check_url => $check_href}, $service_contexts)->get;
                 ok !BOM::User::Onfido::pending_request($client->binary_user_id), 'pending flag is gone';
 
                 cmp_deeply $dd_bag, {
@@ -1836,7 +1901,7 @@ for my $client ($test_client, $test_client_mf) {
                 $log->clear();
                 my $redis = BOM::Config::Redis::redis_events();
                 $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1);
-                BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+                BOM::Event::Actions::Client::client_verification({check_url => $check_href}, $service_contexts)->get;
                 ok !BOM::User::Onfido::pending_request($client->binary_user_id), 'pending flag is gone';
 
                 cmp_deeply + {@metrics},
@@ -1872,7 +1937,7 @@ for my $client ($test_client, $test_client_mf) {
                 $log->clear();
                 my $redis = BOM::Config::Redis::redis_events();
                 $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1);
-                BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+                BOM::Event::Actions::Client::client_verification({check_url => $check_href}, $service_contexts)->get;
                 ok !BOM::User::Onfido::pending_request($client->binary_user_id), 'pending flag is gone';
 
                 cmp_deeply + {@metrics},
@@ -1910,7 +1975,7 @@ for my $client ($test_client, $test_client_mf) {
                 $log->clear();
                 my $redis = BOM::Config::Redis::redis_events();
                 $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1);
-                BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+                BOM::Event::Actions::Client::client_verification({check_url => $check_href}, $service_contexts)->get;
                 ok !BOM::User::Onfido::pending_request($client->binary_user_id), 'pending flag is gone';
 
                 cmp_deeply + {@metrics},
@@ -1984,7 +2049,9 @@ for my $client ($test_client, $test_client_mf) {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
                         check_url => $check_href,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
                 cmp_deeply + {@metrics},
                     +{
                     'onfido.api.hit'                                => undef,
@@ -2119,7 +2186,9 @@ for my $client ($test_client, $test_client_mf) {
 
                     BOM::Event::Actions::Client::client_verification({
                             check_url => $check_href,
-                        })->get;
+                        },
+                        $service_contexts
+                    )->get;
                     cmp_deeply + {@metrics}, +{
                         'onfido.api.hit'                            => undef,
                         'event.onfido.client_verification.dispatch' => undef,
@@ -2233,7 +2302,9 @@ for my $client ($test_client, $test_client_mf) {
 
                         BOM::Event::Actions::Client::client_verification({
                                 check_url => $check_href,
-                            })->get;
+                            },
+                            $service_contexts
+                        )->get;
                         cmp_deeply + {@metrics}, +{
                             'onfido.api.hit'                            => undef,
                             'event.onfido.client_verification.dispatch' => undef,
@@ -2348,7 +2419,9 @@ for my $client ($test_client, $test_client_mf) {
                             $onfido_report_filters = undef;
                             BOM::Event::Actions::Client::client_verification({
                                     check_url => $check_href,
-                                })->get;
+                                },
+                                $service_contexts
+                            )->get;
                             $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $check->{applicant_id}, $check->{id});
                             is $db_check->{status}, 'complete', 'check has been completed';
 
@@ -2425,7 +2498,9 @@ for my $client ($test_client, $test_client_mf) {
                     @metrics = ();
                     BOM::Event::Actions::Client::client_verification({
                             check_url => $check_href,
-                        })->get;
+                        },
+                        $service_contexts
+                    )->get;
                     cmp_deeply + {@metrics},
                         +{
                         'onfido.api.hit'                                => undef,
@@ -2465,7 +2540,9 @@ for my $client ($test_client, $test_client_mf) {
                     @metrics = ();
                     BOM::Event::Actions::Client::client_verification({
                             check_url => $check_href,
-                        })->get;
+                        },
+                        $service_contexts
+                    )->get;
                     cmp_deeply + {@metrics},
                         +{
                         'onfido.api.hit'                                => undef,
@@ -2495,25 +2572,6 @@ for my $client ($test_client, $test_client_mf) {
 $check_href = $check_hash->{svg};
 
 subtest 'handle no loginid passed' => sub {
-    my $test_client_fail = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $test_client_fail->email('test_fail@deriv.com');
-    $test_client_fail->first_name('bad');
-    $test_client_fail->last_name('bunny');
-    $test_client_fail->salutation('MR');
-    $test_client_fail->save;
-
-    my $test_user_fail = BOM::User->create(
-        email          => $test_client_fail->email,
-        password       => "1234",
-        email_verified => 1,
-    )->add_client($test_client_fail);
-
-    $test_client_fail->binary_user_id($test_user_fail->id);
-    $test_client_fail->user($test_user_fail);
-    $test_client_fail->save;
-
     my $onfido            = BOM::Event::Actions::Client::_onfido();
     my $applicant_id      = 'newapplicant-fail';
     my $onfido_async_mock = Test::MockModule->new(ref($onfido));
@@ -2562,7 +2620,9 @@ subtest 'handle no loginid passed' => sub {
 
     BOM::Event::Actions::Client::client_verification({
             check_url => $check_href,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     $log->contains_ok(qr/Failed to process Onfido verification for NOLOGINID/, 'expected log found');
 
@@ -2610,7 +2670,9 @@ subtest "Uninitialized date of birth" => sub {
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
-            })->get;
+            },
+            $service_contexts
+        )->get;
         cmp_deeply + {@metrics},
             +{
             'onfido.api.hit'                                => undef,
@@ -2790,7 +2852,9 @@ subtest 'Dup documents coming from Onfido' => sub {
         mailbox_clear();
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         cmp_deeply + {@metrics},
             +{
@@ -2867,7 +2931,9 @@ subtest 'Dup documents coming from Onfido' => sub {
             mailbox_clear();
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
 
             cmp_deeply + {@metrics},
                 +{
@@ -2980,7 +3046,9 @@ subtest 'Dup documents coming from Onfido' => sub {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
 
             cmp_deeply + {@metrics},
                 +{
@@ -3097,7 +3165,9 @@ subtest 'Dup documents coming from Onfido' => sub {
 
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
 
             cmp_deeply + {@metrics},
                 +{
@@ -3177,7 +3247,9 @@ subtest 'Dup documents coming from Onfido' => sub {
 
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
 
             cmp_deeply + {@metrics}, +{
                 'event.onfido.client_verification.dispatch' => undef,
@@ -3250,7 +3322,9 @@ subtest "time from ready to verified" => sub {
         BOM::Event::Actions::Client::ready_for_authentication({
                 loginid      => $test_client->loginid,
                 applicant_id => $applicant_id,
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         cmp_deeply [@metrics],
             [
@@ -3304,7 +3378,9 @@ subtest "time from ready to verified" => sub {
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         cmp_deeply [@metrics],
             [
@@ -3374,7 +3450,9 @@ subtest "document upload request context" => sub {
         BOM::Event::Actions::Client::ready_for_authentication({
                 loginid      => $test_client->loginid,
                 applicant_id => $applicant_id,
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         cmp_deeply [@metrics],
             [
@@ -3419,7 +3497,9 @@ subtest "document upload request context" => sub {
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         cmp_deeply [@metrics],
             [
@@ -3465,7 +3545,9 @@ subtest "document upload request context" => sub {
         $log->clear;
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         cmp_deeply + {@metrics},
             +{
@@ -3506,29 +3588,31 @@ subtest 'client_verification after upload document himself' => sub {
             return 1;
         });
 
-    my $dbic         = BOM::Database::UserDB::rose_db()->dbic;
-    my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        email       => 'test2@binary.com',
-        broker_code => 'CR',
-    });
-    my $test_user2 = BOM::User->create(
-        email          => $test_client2->email,
-        password       => "hello",
-        email_verified => 1,
-    );
-    $test_user2->add_client($test_client2);
-    $test_client2->place_of_birth('br');
-    $test_client2->binary_user_id($test_user2->id);
-    $test_client2->save;
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    my $customer_cr = BOM::Test::Customer->create(
+        place_of_birth => 'br',
+        clients        => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+            {
+                name            => 'CR_SIBLING',
+                broker_code     => 'CR',
+                default_account => 'LTC',
+            },
+        ]);
+
     my $redis_write = $services->redis_events_write();
     $redis_write->connect->get;
-    $redis_write->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $test_client2->user_id)->get;
+    $redis_write->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $customer_cr->get_user_id())->get;
 
     my $applicant2 = $onfido->applicant_create(
         title      => 'Mr',
-        first_name => $test_client2->first_name,
-        last_name  => $test_client2->last_name,
-        email      => $test_client2->email,
+        first_name => $customer_cr->get_first_name(),
+        last_name  => $customer_cr->get_last_name(),
+        email      => $customer_cr->get_email(),
         dob        => '1980-01-22',
         country    => 'GBR',
         address    => {
@@ -3545,8 +3629,7 @@ subtest 'client_verification after upload document himself' => sub {
             $_->do(
                 'select users.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
                 undef, $applicant2->id, Date::Utility->new($applicant2->created_at)->datetime_yyyymmdd_hhmmss,
-                $applicant2->href, $test_client2->user_id
-            );
+                $applicant2->href, $customer_cr->get_user_id());
         });
 
     my $doc = $onfido->document_upload(
@@ -3567,7 +3650,7 @@ subtest 'client_verification after upload document himself' => sub {
     my $existing_onfido_docs = $dbic->run(
         fixup => sub {
             my $result = $_->prepare('select * from users.get_onfido_documents(?::BIGINT, ?::TEXT)');
-            $result->execute($test_client2->binary_user_id, $applicant_id2);
+            $result->execute($customer_cr->get_user_id(), $applicant_id2);
             return $result->fetchall_hashref('id');
         });
 
@@ -3576,10 +3659,12 @@ subtest 'client_verification after upload document himself' => sub {
     lives_ok {
         @metrics = ();
         BOM::Event::Actions::Client::ready_for_authentication({
-                loginid      => $test_client2->loginid,
+                loginid      => $customer_cr->get_client_loginid('CR'),
                 applicant_id => $applicant_id2,
                 documents    => [$doc->id],
-            })->get;
+            },
+            $service_contexts
+        )->get;
         cmp_deeply [@metrics],
             [
             'event.onfido.ready_for_authentication.dispatch' => {tags => ['country:BRA']},
@@ -3613,10 +3698,12 @@ subtest 'client_verification after upload document himself' => sub {
                     issuing_country => 'py',
                 },
                 document_id    => $doc->id,
-                client_loginid => $test_client2->loginid,
+                client_loginid => $customer_cr->get_client_loginid('CR'),
                 applicant_id   => $applicant_id2,
                 file_type      => $doc->file_type,
-            })->get;
+            },
+            $service_contexts
+        )->get;
     }
     "onfido_doc_ready_for_upload no exception";
 
@@ -3627,7 +3714,7 @@ subtest 'client_verification after upload document himself' => sub {
     my $document_file = $clientdb->db->dbic->run(
         fixup => sub {
             my $sth = $_->prepare('select * from betonmarkets.client_authentication_document where client_loginid=? and document_type=?');
-            $sth->execute($test_client2->loginid, 'photo');
+            $sth->execute($customer_cr->get_client_loginid('CR'), 'photo');
             return $sth->fetchall_arrayref({})->[0];
         });
 
@@ -3649,10 +3736,12 @@ subtest 'client_verification after upload document himself' => sub {
         BOM::Event::Actions::Client::onfido_doc_ready_for_upload({
                 type           => 'photo',
                 document_id    => $doc->id,
-                client_loginid => $test_client2->loginid,
+                client_loginid => $customer_cr->get_client_loginid('CR'),
                 applicant_id   => $applicant_id2,
                 file_type      => $doc->file_type,
-            })->get;
+            },
+            $service_contexts
+        )->get;
     }
     "onfido_doc_ready_for_upload no exception";
 
@@ -3665,7 +3754,7 @@ subtest 'sync_onfido_details' => sub {
     is($test_client->first_name, $applicant->{first_name}, 'the information is same at first');
     $test_client->first_name('Firstname');
     $test_client->save;
-    BOM::Event::Actions::Client::sync_onfido_details({loginid => $test_client->loginid})->get;
+    BOM::Event::Actions::Client::sync_onfido_details({loginid => $test_client->loginid}, $service_contexts)->get;
     $applicant = $onfido->applicant_get(applicant_id => $applicant_id)->get;
     is($applicant->{first_name}, 'Firstname', 'now the name is same again');
 
@@ -3674,13 +3763,14 @@ subtest 'sync_onfido_details' => sub {
         my $handler   = BOM::Event::Process->new(category => 'generic')->actions->{sync_onfido_details};
         my $call_args = {};
 
-        like exception { $handler->($call_args)->get }, qr/No loginid supplied/, 'Expected exception for empty args';
+        like exception { $handler->($call_args, $service_contexts)->get }, qr/No loginid supplied/, 'Expected exception for empty args';
 
         $call_args->{loginid} = 'CR0';
-        like exception { $handler->($call_args)->get }, qr/Client not found:/, 'Expected exception when bogus loginid is given';
+        like exception { $handler->($call_args, $service_contexts)->get }, qr/Client not found:/, 'Expected exception when bogus loginid is given';
 
         $call_args->{loginid} = $vrtc_client->loginid;
-        like exception { $handler->($call_args)->get }, qr/Virtual account should not meddle with Onfido/, 'Expected exception for virtual client';
+        like exception { $handler->($call_args, $service_contexts)->get }, qr/Virtual account should not meddle with Onfido/,
+            'Expected exception for virtual client';
 
         $call_args->{loginid} = $test_client->loginid;
 
@@ -3692,14 +3782,14 @@ subtest 'sync_onfido_details' => sub {
                 Future->fail('429', http => $response);
             });
 
-        $handler->($call_args)->get;
+        $handler->($call_args, $service_contexts)->get;
         my $loginid = $test_client->loginid;
         $log->contains_ok(qr/Failed to update details in Onfido for $loginid : 429/, 'Expected fail message logged');
 
         $onfido_mocker->unmock_all;
 
         $call_args->{loginid} = $test_client->loginid;
-        is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+        is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
 
     };
 
@@ -3708,9 +3798,17 @@ subtest 'sync_onfido_details' => sub {
 subtest 'signup event for track worker' => sub {
 
     # Data sent for virtual signup should be loginid, country and landing company. Other values are not defined for virtual
+    my $user2 = BOM::User->create(
+        email          => 'test2@bin.com',
+        password       => "hello",
+        email_verified => 1,
+        email_consent  => 1,
+    );
+
     my $virtual_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email            => $user2->email,
+        binary_user_id   => $user2->id,
         broker_code      => 'VRTC',
-        email            => 'test2@bin.com',
         first_name       => '',
         last_name        => '',
         date_of_birth    => undef,
@@ -3721,15 +3819,6 @@ subtest 'signup event for track worker' => sub {
         address_state    => '',
         address_postcode => '',
     });
-    my $email = $virtual_client2->email;
-
-    my $user2 = BOM::User->create(
-        email          => $virtual_client2->email,
-        password       => "hello",
-        email_verified => 1,
-        email_consent  => 1,
-    );
-
     $user2->add_client($virtual_client2);
 
     my $req = BOM::Platform::Context::Request->new(
@@ -3755,9 +3844,8 @@ subtest 'signup event for track worker' => sub {
             }}};
     $virtual_client2->set_default_account('USD');
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{signup};
-    my $result  = $handler->($vr_args)->get;
+    my $result  = $handler->($vr_args, $service_contexts)->get;
     ok $result, 'Success result';
-
     my ($customer, %args) = @identify_args;
     is_deeply \%args,
         {
@@ -3768,6 +3856,16 @@ subtest 'signup event for track worker' => sub {
         }
         },
         'context is properly set for signup';
+
+    my $vc2_user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $virtual_client2->binary_user_id,
+        attributes => [qw(date_joined residence first_name)],
+    );
+    die "User-service read failure for " . $virtual_client2->binary_user_id . ": $vc2_user_data->{message}" unless $vc2_user_data->{status} eq 'ok';
+    $vc2_user_data = $vc2_user_data->{attributes};
+
     ($customer, %args) = @track_args;
     is_deeply \%args,
         {
@@ -3783,16 +3881,16 @@ subtest 'signup event for track worker' => sub {
             subtype         => 'virtual',
             currency        => $virtual_client2->currency,
             landing_company => $virtual_client2->landing_company->short,
-            country         => Locale::Country::code2country($virtual_client2->residence),
-            date_joined     => $virtual_client2->date_joined,
-            first_name      => $virtual_client2->first_name,
+            country         => Locale::Country::code2country($vc2_user_data->{residence}),
+            date_joined     => $vc2_user_data->{date_joined},
+            first_name      => $vc2_user_data->{first_name},
             provider        => 'email',
             address         => {
                 street      => ' ',
                 town        => '',
                 state       => '',
                 postal_code => '',
-                country     => Locale::Country::code2country($virtual_client2->residence),
+                country     => Locale::Country::code2country($vc2_user_data->{residence}),
             },
             brand         => 'deriv',
             email_consent => 1,
@@ -3803,11 +3901,12 @@ subtest 'signup event for track worker' => sub {
         }
         },
         'properties is properly set for virtual account signup';
-    test_segment_customer($customer, $virtual_client2, '', $virtual_client2->date_joined, 'virtual', 'labuan,svg');
+    test_segment_customer($customer, $virtual_client2, '', $vc2_user_data->{date_joined}, 'virtual', 'labuan,svg');
 
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test2@bin.com',
+        broker_code    => 'CR',
+        email          => $user2->email,
+        binary_user_id => $user2->id,
     });
     my $real_args = {
         loginid    => $test_client2->loginid,
@@ -3819,12 +3918,23 @@ subtest 'signup event for track worker' => sub {
     undef @identify_args;
     undef @track_args;
 
-    $result = $handler->($real_args)->get;
+    $result = $handler->($real_args, $service_contexts)->get;
 
     ok $result, 'Success signup result';
-    ($customer, %args) = @identify_args;
-    test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined, 'svg', 'labuan,svg');
 
+    my $tc2_user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $test_client2->binary_user_id,
+        attributes => [
+            qw(date_joined date_of_birth residence first_name last_name phone address_line_1 address_line_2 address_city address_state address_postcode)
+        ],
+    );
+    die "User-service read failure for " . $test_client2->binary_user_id . ": $tc2_user_data->{message}" unless $tc2_user_data->{status} eq 'ok';
+    $tc2_user_data = $tc2_user_data->{attributes};
+
+    ($customer, %args) = @identify_args;
+    test_segment_customer($customer, $test_client2, '', $tc2_user_data->{date_joined}, 'svg', 'labuan,svg');
     is_deeply \%args,
         {
         'context' => {
@@ -3836,9 +3946,9 @@ subtest 'signup event for track worker' => sub {
         'identify context is properly set for signup';
 
     ($customer, %args) = @track_args;
-    test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined, 'svg', 'labuan,svg');
+    test_segment_customer($customer, $test_client2, '', $tc2_user_data->{date_joined}, 'svg', 'labuan,svg');
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
-    my ($year, $month, $day) = split('-', $test_client2->date_of_birth);
+    my ($year, $month, $day) = split('-', $tc2_user_data->{date_of_birth});
     is_deeply \%args, {
         context => {
             active => 1,
@@ -3849,11 +3959,11 @@ subtest 'signup event for track worker' => sub {
         properties => {
             # currency => is not set yet
             loginid         => $test_client2->loginid,
-            date_joined     => $test_client2->date_joined,
-            first_name      => $test_client2->first_name,
-            last_name       => $test_client2->last_name,
-            phone           => $test_client2->phone,
-            country         => Locale::Country::code2country($test_client2->residence),
+            date_joined     => $tc2_user_data->{date_joined},
+            first_name      => $tc2_user_data->{first_name},
+            last_name       => $tc2_user_data->{last_name},
+            phone           => $tc2_user_data->{phone},
+            country         => Locale::Country::code2country($tc2_user_data->{residence}),
             landing_company => $test_client2->landing_company->short,
             age             => (
                 Time::Moment->new(
@@ -3863,11 +3973,11 @@ subtest 'signup event for track worker' => sub {
                 )->delta_years(Time::Moment->now_utc)
             ),
             'address' => {
-                street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
-                town        => $test_client->address_city,
-                state       => BOM::Platform::Locale::get_state_by_id($test_client->state, $test_client->residence) // '',
-                postal_code => $test_client->address_postcode,
-                country     => Locale::Country::code2country($test_client->residence),
+                street      => $tc2_user_data->{address_line_1} . " " . $tc2_user_data->{address_line_2},
+                town        => $tc2_user_data->{address_city},
+                state       => BOM::Platform::Locale::get_state_by_id($tc2_user_data->{address_state}, $tc2_user_data->{residence}) // '',
+                postal_code => $test_client->{address_postcode},
+                country     => Locale::Country::code2country($tc2_user_data->{residence}),
             },
             type          => 'real',
             provider      => 'email',
@@ -3880,17 +3990,17 @@ subtest 'signup event for track worker' => sub {
 
     $test_client2->set_default_account('EUR');
 
-    ok $handler->($real_args)->get, 'successful signup track after setting currency';
+    ok $handler->($real_args, $service_contexts)->get, 'successful signup track after setting currency';
 
     ($customer, %args) = @track_args;
-    test_segment_customer($customer, $test_client2, 'EUR', $virtual_client2->date_joined, 'svg', 'labuan,svg');
+    test_segment_customer($customer, $test_client2, 'EUR', $tc2_user_data->{date_joined}, 'svg', 'labuan,svg');
 };
 
 subtest 'signup event' => sub {
     # Data sent for virtual signup should be loginid, country and landing company. Other values are not defined for virtual
-    my $virtual_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code      => 'VRTC',
-        email            => 'test23@bin.com',
+    my $customer_vr = BOM::Test::Customer->create(
+        email_verified   => 1,
+        email_consent    => 1,
         first_name       => '',
         last_name        => '',
         date_of_birth    => undef,
@@ -3900,17 +4010,12 @@ subtest 'signup event' => sub {
         address_city     => '',
         address_state    => '',
         address_postcode => '',
-    });
-    my $email = $virtual_client2->email;
-
-    my $user2 = BOM::User->create(
-        email          => $virtual_client2->email,
-        password       => "hello",
-        email_verified => 1,
-        email_consent  => 1,
-    );
-
-    $user2->add_client($virtual_client2);
+        clients          => [{
+                name            => 'VRTC',
+                broker_code     => 'VRTC',
+                default_account => 'USD',
+            },
+        ]);
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -3921,7 +4026,7 @@ subtest 'signup event' => sub {
 
     undef @emit_args;
     my $vr_args = {
-        loginid    => $virtual_client2->loginid,
+        loginid    => $customer_vr->get_client_loginid('VRTC'),
         properties => {
             type     => 'trading',
             subtype  => 'virtual',
@@ -3932,32 +4037,30 @@ subtest 'signup event' => sub {
                 utm_term           => 'term',
                 date_first_contact => '2019-11-28'
             }}};
-    $virtual_client2->set_default_account('USD');
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
-    my $result  = $handler->($vr_args);
+    my $result  = $handler->($vr_args, $service_contexts);
     ok $result, 'Success result';
+    $customer_vr->create_client(
+        name        => 'CR',
+        broker_code => 'CR'
+    );
 
-    my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test2@bin.com',
-    });
     my $real_args = {
-        loginid    => $test_client2->loginid,
+        loginid    => $customer_vr->get_client_loginid('CR'),
         properties => {
             type => 'real',
         }};
-    $user2->add_client($test_client2);
 
     undef @emit_args;
-    is exception { $handler->($real_args) }, undef, 'Event processed successfully';
+    is exception { $handler->($real_args, $service_contexts) }, undef, 'Event processed successfully';
     is_deeply \@emit_args,
         [
         'verify_false_profile_info',
         {
-            loginid    => $test_client2->loginid,
-            first_name => $test_client2->first_name,
-            last_name  => $test_client2->last_name,
+            loginid    => $customer_vr->get_client_loginid('CR'),
+            first_name => $customer_vr->get_first_name(),
+            last_name  => $customer_vr->get_last_name(),
         }
         ],
         'verify_false_profile_info event is emitted';
@@ -3967,7 +4070,6 @@ subtest 'duplicate dob and phone' => sub {
     # Data sent for virtual signup should be loginid, country and landing company. Other values are not defined for virtual
 
     my %common_attributes = (
-        broker_code      => 'CR',
         first_name       => '',
         last_name        => '',
         date_of_birth    => '1994-05-01',
@@ -3980,29 +4082,49 @@ subtest 'duplicate dob and phone' => sub {
 
     );
 
-    my $test_client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({%common_attributes, email => 'test24@bin.com'});
+    my $customer1 = BOM::Test::Customer->create(
+        %common_attributes,
+        email   => 'test24@bin.com',
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $test_client1 = $customer1->get_client_object('CR');
 
-    my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            %common_attributes,
-            email => 'test25@bin.com',
+    my $customer2 = BOM::Test::Customer->create(
+        %common_attributes,
+        email   => 'test25@bin.com',
+        clients => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $test_client2 = $customer2->get_client_object('CR');
 
-    });
-
-    $common_attributes{broker_code}   = 'MF';
     $common_attributes{date_of_birth} = '1994-05-02';
 
-    my $test_client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    my $customer3 = BOM::Test::Customer->create(
         %common_attributes,
-        email => 'test26@bin.com',
-    });
+        email   => 'test26@bin.com',
+        clients => [{
+                name        => 'MF',
+                broker_code => 'MF',
+            },
+        ]);
+    my $test_client3 = $customer3->get_client_object('MF');
 
-    my $test_client4 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    my $customer4 = BOM::Test::Customer->create(
         %common_attributes,
-        email => 'test27@bin.com',
-    });
+        email   => 'test27@bin.com',
+        clients => [{
+                name        => 'MF',
+                broker_code => 'MF',
+            },
+        ]);
+    my $test_client4 = $customer4->get_client_object('MF');
 
     $test_client4->account('USD');
-
     $test_client4->payment_agent({
         payment_agent_name    => 'Joe',
         email                 => 'joe@example.com',
@@ -4031,7 +4153,7 @@ subtest 'duplicate dob and phone' => sub {
 
         BOM::Config::Runtime->instance->app_config->anti_fraud->duplicate_dob_phone(1);
 
-        is exception { $handler->($real_args) }, undef, 'Event processed successfully';
+        is exception { $handler->($real_args, $service_contexts) }, undef, 'Event processed successfully';
         # clearing cache for the status
         $test_client2->status->all();
 
@@ -4052,7 +4174,7 @@ subtest 'duplicate dob and phone' => sub {
         $test_client2->status->clear_unwelcome();
 
         BOM::Config::Runtime->instance->app_config->anti_fraud->duplicate_dob_phone(0);
-        is exception { $handler->($real_args) }, undef, 'Event processed successfully';
+        is exception { $handler->($real_args, $service_contexts) }, undef, 'Event processed successfully';
 
         # clearing cache for the status
         $test_client2->status->all();
@@ -4075,7 +4197,7 @@ subtest 'duplicate dob and phone' => sub {
         # test_client4 has same DOB and phone number but is a payment agent, thus test_client3 should be able to signup
 
         $real_args->{loginid} = $test_client3->loginid;
-        is exception { $handler->($real_args) }, undef, 'Event processed successfully';
+        is exception { $handler->($real_args, $service_contexts) }, undef, 'Event processed successfully';
 
         # clearing cache for the status
         $test_client3 = BOM::User::Client->new({loginid => $test_client3->loginid});
@@ -4097,7 +4219,7 @@ subtest 'duplicate dob and phone' => sub {
             $test_client1->status->set('allow_duplicate_signup', 'test', 'test');
             $real_args->{loginid} = $test_client2->loginid;
             $test_client2->status->clear_unwelcome();
-            is exception { $handler->($real_args) }, undef, 'Event processed successfully';
+            is exception { $handler->($real_args, $service_contexts) }, undef, 'Event processed successfully';
 
             # clearing cache for the status
             $test_client2 = BOM::User::Client->new({loginid => $test_client2->loginid});
@@ -4117,7 +4239,7 @@ subtest 'duplicate dob and phone' => sub {
             $test_client1->status->clear_allow_duplicate_signup;
             $test_client2->status->clear_unwelcome;
             $real_args->{loginid} = $test_client2->loginid;
-            is exception { $handler->($real_args) }, undef, 'Event processed successfully';
+            is exception { $handler->($real_args, $service_contexts) }, undef, 'Event processed successfully';
             # clearing cache for the status
             $test_client2 = BOM::User::Client->new({loginid => $test_client2->loginid});
 
@@ -4131,13 +4253,12 @@ subtest 'duplicate dob and phone' => sub {
         };
 
     };
-
 };
 
 subtest 'wallet signup event' => sub {
-    my $virtual_wallet_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code      => 'VRW',
-        email            => 'virtual_wallet@binary.com',
+    my $virtual_wallet_customer = BOM::Test::Customer->create(
+        email_verified   => 1,
+        email_consent    => 1,
         first_name       => '',
         last_name        => '',
         date_of_birth    => undef,
@@ -4147,17 +4268,13 @@ subtest 'wallet signup event' => sub {
         address_city     => '',
         address_state    => '',
         address_postcode => '',
-    });
-    my $email = $virtual_wallet_client->email;
-
-    my $user = BOM::User->create(
-        email          => $virtual_wallet_client->email,
-        password       => "hello",
-        email_verified => 1,
-        email_consent  => 1,
-    );
-
-    $user->add_client($virtual_wallet_client);
+        clients          => [{
+                name            => 'VRW',
+                broker_code     => 'VRW',
+                default_account => 'USD',
+            },
+        ]);
+    my $virtual_wallet_client = $virtual_wallet_customer->get_client_object('VRW');
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -4168,7 +4285,7 @@ subtest 'wallet signup event' => sub {
     undef @identify_args;
     undef @track_args;
     my $vr_args = {
-        loginid    => $virtual_wallet_client->loginid,
+        loginid    => $virtual_wallet_customer->get_client_loginid('VRW'),
         properties => {
             type     => 'wallet',
             subtype  => 'virtual',
@@ -4179,9 +4296,8 @@ subtest 'wallet signup event' => sub {
                 utm_term           => 'term',
                 date_first_contact => '2019-11-28'
             }}};
-    $virtual_wallet_client->set_default_account('USD');
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{signup};
-    my $result  = $handler->($vr_args)->get;
+    my $result  = $handler->($vr_args, $service_contexts)->get;
     ok $result, 'Success result';
 
     my ($customer, %args) = @identify_args;
@@ -4194,6 +4310,14 @@ subtest 'wallet signup event' => sub {
         }
         },
         'context is properly set for signup';
+
+    my $user_data = BOM::Service::user(
+        context => $virtual_wallet_customer->get_user_service_context(),
+        command => 'get_all_attributes',
+        user_id => $virtual_wallet_customer->get_user_id(),
+    );
+    ok $user_data->{status} eq 'ok', 'User data fetched ok';
+    my $user_attributes = $user_data->{attributes};
 
     ($customer, %args) = @track_args;
     is_deeply \%args,
@@ -4210,16 +4334,16 @@ subtest 'wallet signup event' => sub {
             subtype         => 'virtual',
             currency        => $virtual_wallet_client->currency,
             landing_company => $virtual_wallet_client->landing_company->short,
-            country         => Locale::Country::code2country($virtual_wallet_client->residence),
-            date_joined     => $virtual_wallet_client->date_joined,
-            first_name      => $virtual_wallet_client->first_name,
+            country         => Locale::Country::code2country($user_attributes->{residence}),
+            date_joined     => $user_attributes->{date_joined},
+            first_name      => $user_attributes->{first_name},
             provider        => 'email',
             address         => {
                 street      => ' ',
                 town        => '',
                 state       => '',
                 postal_code => '',
-                country     => Locale::Country::code2country($virtual_wallet_client->residence),
+                country     => Locale::Country::code2country($user_attributes->{residence}),
             },
             brand         => 'deriv',
             email_consent => 1,
@@ -4234,30 +4358,18 @@ subtest 'wallet signup event' => sub {
 };
 
 subtest 'signup event email check for fraud ' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'fraud.email@gmail.com',
-    });
+    my $customerA = BOM::Test::Customer->create(
+        email   => 'fraud.email@gmail.com',
+        clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $clientA = $customerA->get_client_object('CR');
 
-    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'fraudemail@gmail.com',
-    });
-    my $email = $client->email;
-
-    my $user = BOM::User->create(
-        email    => $client->email,
-        password => 'hello'
-    );
-    my $user1 = BOM::User->create(
-        email    => $client1->email,
-        password => 'hello'
-    );
-    $user->add_client($client);
-    $user1->add_client($client1);
+    my $customerB = BOM::Test::Customer->create(
+        email   => 'fraudemail@gmail.com',
+        clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $clientB = $customerB->get_client_object('CR');
 
     my $cr_args = {
-        loginid    => $client->loginid,
+        loginid    => $clientA->loginid,
         new_user   => 1,
         properties => {
             type    => 'trading',
@@ -4284,23 +4396,23 @@ subtest 'signup event email check for fraud ' => sub {
     $fake_response->set_always(content => '{"result": {"status": "clear"}}');
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
-    $handler->($cr_args)->get;
+    $handler->($cr_args, $service_contexts)->get;
 
-    delete $client->{status};    #clear status cache
-    ok !$client->status->potential_fraud, 'No fraud status for clear result';
+    delete $clientA->{status};    #clear status cache
+    ok !$clientA->status->potential_fraud, 'No fraud status for clear result';
 
     $fake_response->set_always(
         content => '{"result": {"status": "suspected", "details": {"duplicate_emails":["fraud.email@gmail.com", "fraudemail@gmail.com"]}}}');
 
-    $handler->($cr_args)->get;
+    $handler->($cr_args, $service_contexts)->get;
 
-    delete $client->{status};    #clear status cache
-    ok $client->status->potential_fraud, 'has fraud status for suspected result';
-    like $client->status->potential_fraud->{reason}, qr/fraud\.email\@gmail\.com/, 'Status contains first email in reason';
-    like $client->status->potential_fraud->{reason}, qr/fraudemail\@gmail\.com/,   'Status contains second email in reason';
+    delete $clientA->{status};    #clear status cache
+    ok $clientA->status->potential_fraud, 'has fraud status for suspected result';
+    like $clientA->status->potential_fraud->{reason}, qr/fraud\.email\@gmail\.com/, 'Status contains first email in reason';
+    like $clientA->status->potential_fraud->{reason}, qr/fraudemail\@gmail\.com/,   'Status contains second email in reason';
 
-    delete $client1->{status};    #clear status cache
-    ok $client1->status->potential_fraud, 'Second account also has fraud status for suspected result';
+    delete $clientB->{status};    #clear status cache
+    ok $clientB->status->potential_fraud, 'Second account also has fraud status for suspected result';
 };
 
 subtest 'account closure track' => sub {
@@ -4322,12 +4434,12 @@ subtest 'account closure track' => sub {
         loginids_disabled => [$loginid],
         loginids_failed   => [],
         email_consent     => 0,
-        name              => $test_client->first_name,
+        name              => $test_customer->get_first_name(),
         new_campaign      => 1
     };
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{account_closure};
-    my $result         = $action_handler->($call_args)->get;
+    my $result         = $action_handler->($call_args, $service_contexts)->get;
     ok $result, 'Success result';
 
     ok @identify_args, 'Identify event is triggered';
@@ -4343,7 +4455,7 @@ subtest 'account closure track' => sub {
         event      => 'account_closure',
         properties => {
             closing_reason    => 'There is no reason',
-            name              => $test_client->first_name,
+            name              => $test_customer->get_first_name(),
             loginid           => $loginid,
             loginids_disabled => [$loginid],
             loginids_failed   => [],
@@ -4381,12 +4493,12 @@ subtest 'account closure - transactional' => sub {
         loginids_disabled => [$loginid],
         loginids_failed   => [],
         email_consent     => 0,
-        name              => $test_client->first_name,
+        name              => $test_customer->get_first_name(),
         new_campaign      => 1
     };
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{account_closure};
-    my $result         = $action_handler->($call_args)->get;
+    my $result         = $action_handler->($call_args, $service_contexts)->get;
     ok $result,             'Success result';
     ok @identify_args,      'Identify event is triggered';
     ok @transactional_args, 'CIO transactional is invoked';
@@ -4402,7 +4514,7 @@ subtest 'account closure - transactional' => sub {
         event      => 'track_account_closure',
         properties => {
             closing_reason    => 'There is no reason',
-            name              => $test_client->first_name,
+            name              => $test_customer->get_first_name(),
             loginid           => $loginid,
             loginids_disabled => [$loginid],
             loginids_failed   => [],
@@ -4451,7 +4563,7 @@ subtest 'transfer between accounts event' => sub {
         }};
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{transfer_between_accounts};
-    ok $action_handler->($args)->get, 'transfer_between_accounts triggered successfully';
+    ok $action_handler->($args, $service_contexts)->get, 'transfer_between_accounts triggered successfully';
     my ($customer, %args) = @track_args;
     is scalar(@identify_args), 0, 'identify is not called';
 
@@ -4491,7 +4603,7 @@ subtest 'transfer between accounts event' => sub {
     # Calling with `payment_agent_transfer` gateway should contain PaymentAgent fields
     $args->{properties}->{gateway_code} = 'payment_agent_transfer';
 
-    ok $action_handler->($args)->get, 'transfer_between_accounts triggered successfully';
+    ok $action_handler->($args, $service_contexts)->get, 'transfer_between_accounts triggered successfully';
     ($customer, %args) = @track_args;
     is scalar(@identify_args), 0, 'identify is not called';
 
@@ -4550,7 +4662,7 @@ subtest 'api token create' => sub {
         scopes  => ['read', 'payment']};
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{api_token_created};
-    my $result         = $action_handler->($call_args)->get;
+    my $result         = $action_handler->($call_args, $service_contexts)->get;
     ok $result, 'Success result';
 
     is scalar @identify_args, 0, 'No identify event is triggered';
@@ -4595,7 +4707,7 @@ subtest 'api token delete' => sub {
         scopes  => ['read', 'payment']};
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{api_token_deleted};
-    my $result         = $action_handler->($call_args)->get;
+    my $result         = $action_handler->($call_args, $service_contexts)->get;
     ok $result, 'Success result';
 
     is scalar @identify_args, 0, 'No identify event is triggered';
@@ -4627,15 +4739,24 @@ sub test_segment_customer {
 
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
+
+    my $user_data = BOM::Service::user(
+        context => $test_customer->get_user_service_context(),
+        command => 'get_all_attributes',
+        user_id => $test_client->binary_user_id,
+    );
+    ok $user_data->{status} eq 'ok', 'User data fetched ok';
+    my $user_attributes = $user_data->{attributes};
+
     if ($test_client->is_virtual) {
         is_deeply $customer->traits,
             {
-            'salutation' => $test_client->salutation,
-            'email'      => $test_client->email,
-            'first_name' => $test_client->first_name,
-            'last_name'  => $test_client->last_name,
-            'phone'      => $test_client->phone,
-            'country'    => Locale::Country::code2country($test_client->residence),
+            'salutation' => $user_attributes->{salutation},
+            'email'      => $user_attributes->{email},
+            'first_name' => $user_attributes->{first_name},
+            'last_name'  => $user_attributes->{last_name},
+            'phone'      => $user_attributes->{phone},
+            'country'    => Locale::Country::code2country($user_attributes->{residence}),
             'created_at' => Date::Utility->new($created_at)->datetime_iso8601,
             'currencies' => $currencies,
             'address'    => {
@@ -4643,7 +4764,7 @@ sub test_segment_customer {
                 town        => '',
                 state       => '',
                 postal_code => '',
-                country     => Locale::Country::code2country($test_client->residence),
+                country     => Locale::Country::code2country($user_attributes->{residence}),
             },
             'birthday'                  => undef,
             'age'                       => undef,
@@ -4656,20 +4777,20 @@ sub test_segment_customer {
             landing_companies           => $landing_companies,
             available_landing_companies => $available_landing_companies,
             provider                    => 'email',
-            unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
+            unsubscribed                => $user_attributes->{email_consent} ? 'false' : 'true',
             signup_brand                => 'deriv',
             },
             'Customer traits are set correctly for virtual account';
     } else {
-        my ($year, $month, $day) = split('-', $test_client->date_of_birth);
+        my ($year, $month, $day) = split('-', $user_attributes->{date_of_birth});
 
         is_deeply $customer->traits,
             {
-            'salutation' => $test_client->salutation,
-            'email'      => $test_client->email,
-            'first_name' => $test_client->first_name,
-            'last_name'  => $test_client->last_name,
-            'birthday'   => $test_client->date_of_birth,
+            'salutation' => $user_attributes->{salutation},
+            'email'      => $user_attributes->{email},
+            'first_name' => $user_attributes->{first_name},
+            'last_name'  => $user_attributes->{last_name},
+            'birthday'   => $user_attributes->{date_of_birth},
             'age'        => (
                 Time::Moment->new(
                     year  => $year,
@@ -4677,22 +4798,22 @@ sub test_segment_customer {
                     day   => $day
                 )->delta_years(Time::Moment->now_utc)
             ),
-            'phone'      => $test_client->phone,
+            'phone'      => $user_attributes->{phone},
             'created_at' => Date::Utility->new($created_at)->datetime_iso8601,
             'address'    => {
-                street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
-                town        => $test_client->address_city,
-                state       => BOM::Platform::Locale::get_state_by_id($test_client->state, $test_client->residence) // '',
-                postal_code => $test_client->address_postcode,
-                country     => Locale::Country::code2country($test_client->residence),
+                street      => $user_attributes->{address_line_1} . " " . $user_attributes->{address_line_2},
+                town        => $user_attributes->{address_city},
+                state       => BOM::Platform::Locale::get_state_by_id($user_attributes->{address_state}, $user_attributes->{residence}) // '',
+                postal_code => $user_attributes->{address_postcode},
+                country     => Locale::Country::code2country($user_attributes->{residence}),
             },
             'currencies'                => $currencies,
-            'country'                   => Locale::Country::code2country($test_client->residence),
+            'country'                   => Locale::Country::code2country($user_attributes->{residence}),
             mt5_loginids                => join(',', $test_client->user->mt5_logins),
             landing_companies           => $landing_companies,
             available_landing_companies => $available_landing_companies,
             provider                    => 'email',
-            unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
+            unsubscribed                => $user_attributes->{email_consent} ? 'false' : 'true',
             signup_brand                => 'deriv',
             },
             'Customer traits are set correctly';
@@ -4734,7 +4855,7 @@ subtest 'set financial assessment segment' => sub {
         'loginid' => $loginid,
     };
 
-    $action_handler->($args)->get;
+    $action_handler->($args, $service_contexts)->get;
     my ($customer, %returned_args) = @track_args;
     is_deeply({
             $args->{params}->%*,
@@ -4787,8 +4908,17 @@ subtest 'segment document upload' => sub {
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
     $action_handler->({
             loginid => $test_client->loginid,
-            file_id => $upload_info->{file_id}})->get;
-    BOM::Event::Process->new(category => 'track')->process({type => $emit_args[0], details => $emit_args[1]})->get;
+            file_id => $upload_info->{file_id}
+        },
+        $service_contexts
+    )->get;
+    BOM::Event::Process->new(category => 'track')->process({
+            type    => $emit_args[0],
+            details => $emit_args[1]
+        },
+        'Test Stream',
+        $service_contexts
+    )->get;
 
     my ($customer, %args) = @track_args;
     is $args{event},                                    'document_upload',        'track event is document_upload';
@@ -4828,8 +4958,17 @@ subtest 'edd document upload' => sub {
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
     $action_handler->({
             loginid => $test_client->loginid,
-            file_id => $upload_info->{file_id}})->get;
-    BOM::Event::Process->new(category => 'track')->process({type => $emit_args[0], details => $emit_args[1]})->get;
+            file_id => $upload_info->{file_id}
+        },
+        $service_contexts
+    )->get;
+    BOM::Event::Process->new(category => 'track')->process({
+            type    => $emit_args[0],
+            details => $emit_args[1]
+        },
+        'Test Stream',
+        $service_contexts
+    )->get;
 
     my ($customer, %args) = @track_args;
     is $args{event},                                    'document_upload', 'track event is document_upload';
@@ -4926,7 +5065,7 @@ sub onfido_resubmission_test {
 
     # For this test, we expect counter to be 0 due to empty checks
     @metrics = ();
-    $action_handler->($call_args)->get;
+    $action_handler->($call_args, $service_contexts)->get;
     cmp_deeply + {@metrics},
         +{
         'event.onfido.ready_for_authentication.dispatch' => {tags => ['country:COL']},
@@ -4972,7 +5111,7 @@ sub onfido_resubmission_test {
     $redis_events->set(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id, 1)->get;
     $redis_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
     @metrics = ();
-    $action_handler->($call_args)->get;
+    $action_handler->($call_args, $service_contexts)->get;
 
     cmp_deeply + {@metrics},
         +{
@@ -4995,7 +5134,7 @@ sub onfido_resubmission_test {
 
     # Resubmission flag should be off now and so we expect counter to remain the same
     @metrics = ();
-    $action_handler->($call_args)->get;
+    $action_handler->($call_args, $service_contexts)->get;
 
     cmp_deeply + {@metrics},
         +{
@@ -5016,7 +5155,7 @@ sub onfido_resubmission_test {
     # Activate the flag and run again
     $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     @metrics = ();
-    $action_handler->($call_args)->get;
+    $action_handler->($call_args, $service_contexts)->get;
     cmp_deeply + {@metrics},
         +{
         'event.onfido.ready_for_authentication.dispatch'     => {tags => ['country:COL']},
@@ -5035,7 +5174,7 @@ sub onfido_resubmission_test {
     $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, 4)->get;
     $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     @metrics = ();
-    $action_handler->($call_args)->get;
+    $action_handler->($call_args, $service_contexts)->get;
     cmp_deeply + {@metrics},
         +{
         'event.onfido.ready_for_authentication.dispatch'   => {tags => ['country:COL']},
@@ -5055,7 +5194,7 @@ sub onfido_resubmission_test {
     $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, 0)->get;
     $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     @metrics = ();
-    $action_handler->($call_args)->get;
+    $action_handler->($call_args, $service_contexts)->get;
 
     cmp_deeply + {@metrics},
         +{
@@ -5090,7 +5229,9 @@ sub onfido_resubmission_test {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
             cmp_deeply + {@metrics},
                 +{
                 'onfido.api.hit'                                => undef,
@@ -5120,16 +5261,16 @@ sub onfido_resubmission_test {
         request($req);
 
         $test_client->status->setnx('poi_name_mismatch', 'test', 'test');
-        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido', undef, 'onfido');
+        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido', undef, 'onfido', $service_contexts);
         ok !$test_client->status->age_verification, 'Could not set age verification: poi name mismatch';
 
         $test_client->status->clear_poi_name_mismatch;
         $test_client->status->setnx('poi_dob_mismatch', 'test', 'test');
-        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido', undef, 'onfido');
+        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido', undef, 'onfido', $service_contexts);
         ok !$test_client->status->age_verification, 'Could not set age verification: poi dob mismatch';
 
         $test_client->status->clear_poi_dob_mismatch;
-        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido', undef, 'onfido');
+        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido', undef, 'onfido', $service_contexts);
         ok $test_client->status->age_verification, 'Client is age verified';
         is_deeply \@emit_args,
             [
@@ -5140,8 +5281,8 @@ sub onfido_resubmission_test {
                     contact_url   => 'https://deriv.com/en/contact-us',
                     poi_url       => 'https://app.deriv.com/account/proof-of-identity?lang=en',
                     live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
-                    email         => $test_client->email,
-                    name          => $test_client->first_name,
+                    email         => $test_customer->get_email(),
+                    name          => $test_customer->get_first_name(),
                     website_name  => 'Deriv.com'
                 }}
             ],
@@ -5172,14 +5313,14 @@ subtest 'card deposits' => sub {
         payment_processor => 'xyz',
     };
 
-    BOM::Event::Actions::Client::payment_deposit($event_args)->get;
+    BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get;
 
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
     ok !$test_client->status->personal_details_locked, 'personal details are not locked - non-card payment method was used';
 
     $event_args->{payment_type} = 'CreditCard';
 
-    BOM::Event::Actions::Client::payment_deposit($event_args)->get;
+    BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get;
 
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
 
@@ -5201,7 +5342,7 @@ subtest 'payment agent deposits' => sub {
 
     undef @emit_args;
 
-    BOM::Event::Actions::Client::payment_deposit($event_args)->get;
+    BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get;
 
     is @emit_args, 0, 'validations in payment_deposit subroutine are skipped for payment agent deposits';
 
@@ -5245,7 +5386,10 @@ subtest 'POI flag removal' => sub {
             my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
             $action_handler->({
                     loginid => $test_client->loginid,
-                    file_id => $upload_info->{file_id}})->get;
+                    file_id => $upload_info->{file_id}
+                },
+                $service_contexts
+            )->get;
 
             ok !$test_client->status->_get('allow_poi_resubmission'), 'POI flag successfully gone';
             ok $test_client->status->_get('allow_poa_resubmission'),  'POI upload should not disable the POA flag';
@@ -5284,7 +5428,10 @@ subtest 'POA flag removal' => sub {
             my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
             $action_handler->({
                     loginid => $test_client->loginid,
-                    file_id => $upload_info->{file_id}})->get;
+                    file_id => $upload_info->{file_id}
+                },
+                $service_contexts
+            )->get;
 
             ok $test_client->status->_get('allow_poi_resubmission'),  'POA upload should not disable the POI flag';
             ok !$test_client->status->_get('allow_poa_resubmission'), 'POA flag successfully gone';
@@ -5320,11 +5467,11 @@ subtest 'account_reactivated' => sub {
     my $brand = request->brand;
     undef @emit_args;
 
-    is exception { $handler->($call_args) }, undef, 'Event processed successfully';
+    is exception { $handler->($call_args, $service_contexts) }, undef, 'Event processed successfully';
     $needs_verification = 1;
     mailbox_clear();
 
-    is exception { $handler->($call_args) }, undef, 'Event processed successfully';
+    is exception { $handler->($call_args, $service_contexts) }, undef, 'Event processed successfully';
     $msg = mailbox_search(
         subject => qr/has been reactivated/,
     );
@@ -5333,7 +5480,7 @@ subtest 'account_reactivated' => sub {
     $social_responsibility = 'required';
     mailbox_clear();
 
-    is exception { $handler->($call_args) }, undef, 'Event processed successfully';
+    is exception { $handler->($call_args, $service_contexts) }, undef, 'Event processed successfully';
     $msg = mailbox_search(subject => qr/has been reactivated/);
     ok $msg, 'Email to SR team is found';
     is_deeply $msg->{to}, [request->brand->emails('social_responsibility')], 'SR email address is correct';
@@ -5359,7 +5506,7 @@ subtest 'account_reactivated for track worker' => sub {
         loginid => $test_client->loginid,
         reason  => 'test reason'
     };
-    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'Event processed successfully';
     my (undef, %args) = @track_args;
 
     cmp_deeply(
@@ -5368,7 +5515,7 @@ subtest 'account_reactivated for track worker' => sub {
             context    => ignore(),
             event      => 'account_reactivated',
             properties => {
-                first_name       => $test_client->first_name,
+                first_name       => $test_customer->get_first_name(),
                 loginid          => $test_client->loginid,
                 brand            => 'deriv',
                 profile_url      => $brand->profile_url({language => uc(request->language // 'es')}),
@@ -5377,7 +5524,7 @@ subtest 'account_reactivated for track worker' => sub {
                 needs_poi        => bool(0),
                 lang             => 'ES',
                 new_campaign     => 1,
-                email            => $test_client->email
+                email            => $test_customer->get_email(),
             }
         },
         'track event params'
@@ -5405,7 +5552,7 @@ subtest 'account_reactivated for transactional track worker' => sub {
         loginid => $test_client->loginid,
         reason  => 'test reason'
     };
-    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'Event processed successfully';
     my (undef, %args) = @track_args;
 
     cmp_deeply(
@@ -5414,7 +5561,7 @@ subtest 'account_reactivated for transactional track worker' => sub {
             context    => ignore(),
             event      => 'track_account_reactivated',
             properties => {
-                first_name       => $test_client->first_name,
+                first_name       => $test_customer->get_first_name(),
                 loginid          => $test_client->loginid,
                 brand            => 'deriv',
                 profile_url      => $brand->profile_url({language => uc(request->language // 'es')}),
@@ -5423,8 +5570,7 @@ subtest 'account_reactivated for transactional track worker' => sub {
                 needs_poi        => bool(0),
                 lang             => 'ES',
                 new_campaign     => 1,
-                email            => $test_client->email
-            }
+                email            => $test_customer->get_email()}
         },
         'track event params'
     );
@@ -5469,7 +5615,7 @@ subtest 'withdrawal_limit_reached' => sub {
 
     throws_ok(
         sub {
-            $handler->()->get;
+            $handler->(undef, $service_contexts)->get;
         },
         qr/\bClient login ID was not given\b/,
         'Expected exception thrown, clientid was not given'
@@ -5477,7 +5623,7 @@ subtest 'withdrawal_limit_reached' => sub {
 
     throws_ok(
         sub {
-            $handler->({loginid => 'CR0'})->get;
+            $handler->({loginid => 'CR0'}, $service_contexts)->get;
         },
         qr/\bCould not instantiate client for login ID CR0\b/,
         'Expected exception thrown, clientid was not found'
@@ -5485,25 +5631,25 @@ subtest 'withdrawal_limit_reached' => sub {
 
     $fully_authenticated = 1;
     $is_poa_pending      = 1;
-    $handler->($call_args);
+    $handler->($call_args, $service_contexts);
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
     ok !$test_client->status->allow_document_upload, 'Allow document upload not set';
 
     $fully_authenticated = 1;
     $is_poa_pending      = 0;
-    $handler->($call_args);
+    $handler->($call_args, $service_contexts);
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
     ok !$test_client->status->allow_document_upload, 'Allow document upload not set';
 
     $fully_authenticated = 0;
     $is_poa_pending      = 1;
-    $handler->($call_args);
+    $handler->($call_args, $service_contexts);
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
     ok !$test_client->status->allow_document_upload, 'Allow document upload not set';
 
     $fully_authenticated = 0;
     $is_poa_pending      = 0;
-    $handler->($call_args);
+    $handler->($call_args, $service_contexts);
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
     is $test_client->status->reason('allow_document_upload'), 'WITHDRAWAL_LIMIT_REACHED', 'Allow Document upload with custom reason set';
 
@@ -5512,9 +5658,8 @@ subtest 'withdrawal_limit_reached' => sub {
 };
 
 subtest 'New uploaded POA document notification' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer    = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $test_client = $customer->get_client_object('CR');
 
     $test_client->status->setnx('age_verification', 'test', 'test');
 
@@ -5543,13 +5688,11 @@ subtest 'New uploaded POA document notification' => sub {
 };
 
 subtest 'POA email notification' => sub {
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $client_cr   = $customer_cr->get_client_object('CR');
 
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-    });
+    my $customer_mf = BOM::Test::Customer->create(clients => [{name => 'MF', broker_code => 'MF'}]);
+    my $client_mf   = $customer_mf->get_client_object('MF');
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->mock(fully_authenticated => sub { return 1 });
@@ -5609,7 +5752,7 @@ subtest 'allow poi_poa resubmission' => sub {
     };
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{poi_poa_resubmission};
-    my $result  = $handler->($param)->get;
+    my $result  = $handler->($param, $service_contexts)->get;
     ok $result, 'Success result';
 
     my ($customer, %r_args) = @track_args;
@@ -5772,10 +5915,10 @@ subtest 'verify address' => sub {
     my $handler   = BOM::Event::Process->new(category => 'generic')->actions->{verify_address};
     my $call_args = {};
 
-    like exception { $handler->($call_args)->get }, qr/No client login ID supplied\?/, 'Expected exception for empty args';
+    like exception { $handler->($call_args, $service_contexts)->get }, qr/No client login ID supplied\?/, 'Expected exception for empty args';
 
     $call_args->{loginid} = 'CR0';
-    like exception { $handler->($call_args)->get }, qr/Could not instantiate client for login ID CR0/,
+    like exception { $handler->($call_args, $service_contexts)->get }, qr/Could not instantiate client for login ID CR0/,
         'Expected exception when bogus loginid is given';
 
     $call_args->{loginid} = $test_client->loginid;
@@ -5783,7 +5926,7 @@ subtest 'verify address' => sub {
     $fully_authenticated  = 0;
     $dd_bag               = {};
 
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     $test_client->status->_build_all;
     ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
@@ -5797,7 +5940,7 @@ subtest 'verify address' => sub {
     $fully_authenticated         = 0;
     $dd_bag                      = {};
 
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     $test_client->status->_build_all;
     ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
@@ -5812,7 +5955,7 @@ subtest 'verify address' => sub {
     $fully_authenticated         = 0;
     $dd_bag                      = {};
 
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     $test_client->status->_build_all;
     ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
@@ -5828,7 +5971,7 @@ subtest 'verify address' => sub {
     $fully_authenticated         = 1;
     $dd_bag                      = {};
 
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     $test_client->status->_build_all;
     ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
@@ -5843,7 +5986,7 @@ subtest 'verify address' => sub {
     $fully_authenticated         = 1;
     $dd_bag                      = {};
 
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     $test_client->status->_build_all;
     ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
@@ -5863,7 +6006,7 @@ subtest 'verify address' => sub {
     $check_already_performed     = 1;
     $address_verification_future = undef;
 
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     $test_client->status->_build_all;
     ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
@@ -5883,7 +6026,7 @@ subtest 'verify address' => sub {
     $address_verification_future = undef;
     $verify_future               = Future->fail('failure');
 
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     $test_client->status->_build_all;
     ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
@@ -5913,7 +6056,7 @@ subtest 'verify address' => sub {
 
     ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     $test_client->status->_build_all;
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'        => undef,
@@ -5960,7 +6103,7 @@ subtest 'verify address' => sub {
     $redis_hset_data             = {};
     $verify_details              = {};
 
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     $test_client->status->_build_all;
     ok $test_client->status->smarty_streets_validated, 'smarty verified';
     cmp_deeply $dd_bag,
@@ -5995,7 +6138,7 @@ subtest 'verify address' => sub {
     $check_already_performed     = 0;
     $address_verification_future = undef;
 
-    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'           => undef,
@@ -6026,7 +6169,7 @@ subtest 'verify address' => sub {
             $redis_hset_data             = {};
             $verify_details              = {};
 
-            is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+            is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
             $test_client->status->_build_all;
             ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
             cmp_deeply $dd_bag,
@@ -6073,7 +6216,7 @@ subtest 'verify address' => sub {
             $redis_hset_data             = {};
             $verify_details              = {};
 
-            is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+            is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
             $test_client->status->_build_all;
             ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
             cmp_deeply $dd_bag,
@@ -6121,7 +6264,7 @@ subtest 'verify address' => sub {
             $redis_hset_data             = {};
             $verify_details              = {};
 
-            is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+            is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
             $test_client->status->_build_all;
             ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
             cmp_deeply $dd_bag,
@@ -6168,7 +6311,7 @@ subtest 'verify address' => sub {
             $redis_hset_data             = {};
             $verify_details              = {};
 
-            is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+            is exception { $handler->($call_args, $service_contexts)->get }, undef, 'The event made it alive';
             $test_client->status->_build_all;
             ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
             cmp_deeply $dd_bag,
@@ -6207,9 +6350,8 @@ subtest 'Deriv X events' => sub {
         trading_platform_password_change_failed trading_platform_investor_password_reset_request trading_platform_investor_password_changed
         trading_platform_investor_password_change_failed);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $client      = $customer_cr->get_client_object('CR');
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -6227,7 +6369,7 @@ subtest 'Deriv X events' => sub {
 
         undef @track_args;
         no strict 'refs';
-        &{"BOM::Event::Actions::Client::$event"}($payload)->get;
+        &{"BOM::Event::Actions::Client::$event"}($payload, $service_contexts)->get;
 
         my ($customer, %args) = @track_args;
         is $args{event},                  $event,                             "$event event name";
@@ -6237,9 +6379,8 @@ subtest 'Deriv X events' => sub {
 };
 
 subtest 'request_change_email' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $test_client = $customer_cr->get_client_object('CR');
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -6257,18 +6398,17 @@ subtest 'request_change_email' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{request_change_email};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'OK result';
     is scalar @track_args, 7, 'OK event';
-    my ($customer, %args) = @track_args;
+    my ($dummy, %args) = @track_args;
     is $args{event},                  'request_change_email',          "event name";
     is $args{properties}{first_name}, $args->{properties}{first_name}, "event properties";
 };
 
 subtest 'verify_change_email' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $test_client = $customer_cr->get_client_object('CR');
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -6286,9 +6426,9 @@ subtest 'verify_change_email' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_change_email};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'OK result';
-    my ($customer, %args) = @track_args;
+    my ($dummy, %args) = @track_args;
     is $args{event},                  'verify_change_email',           "event event name";
     is $args{properties}{first_name}, $args->{properties}{first_name}, "event properties";
     is scalar @track_args,            7,                               'OK event';
@@ -6297,9 +6437,8 @@ subtest 'verify_change_email' => sub {
 subtest 'verify_change_email - transactional' => sub {
     BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $test_client = $customer_cr->get_client_object('CR');
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -6320,7 +6459,7 @@ subtest 'verify_change_email - transactional' => sub {
     undef @transactional_args;
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_change_email};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'OK result';
     my ($customer, %args_got) = @track_args;
     is $args_got{event},                  'track_verify_change_email',     "event event name";
@@ -6331,9 +6470,8 @@ subtest 'verify_change_email - transactional' => sub {
 };
 
 subtest 'confirm_change_email' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $test_client = $customer_cr->get_client_object('CR');
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -6351,7 +6489,7 @@ subtest 'confirm_change_email' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{confirm_change_email};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'OK result';
     my ($customer, %args) = @track_args;
     is $args{event},                  'confirm_change_email',          "event name";
@@ -6362,9 +6500,8 @@ subtest 'confirm_change_email' => sub {
 subtest 'confirm_change_email - transactional' => sub {
     BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $test_client = $customer_cr->get_client_object('CR');
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -6383,7 +6520,7 @@ subtest 'confirm_change_email - transactional' => sub {
     undef @track_args;
     undef @transactional_args;
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{confirm_change_email};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'OK result';
     my ($customer, %args_got) = @track_args;
     is $args_got{event},                  'track_confirm_change_email',    "event name";
@@ -6396,21 +6533,17 @@ subtest 'confirm_change_email - transactional' => sub {
 };
 
 subtest 'crypto_withdrawal_email event' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    $client->email('test@deriv.com');
-    $client->first_name('Jane');
-    $client->last_name('Doe');
-    $client->salutation('MR');
-    $client->save;
-
-    my $user = BOM::User->create(
-        email          => $client->email,
-        password       => "1234",
+    my $customer_cr = BOM::Test::Customer->create(
+        first_name     => 'Jane',
+        last_name      => 'Doe',
+        salutation     => 'MR',
         email_verified => 1,
-    )->add_client($client);
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $client = $customer_cr->get_client_object('CR');
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -6431,7 +6564,9 @@ subtest 'crypto_withdrawal_email event' => sub {
             transaction_status => 'LOCKED',
             reference_no       => 1,
             title              => 'Your ETH withdrawal is in progress',
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     my ($customer, %args) = @track_args;
 
@@ -6449,7 +6584,9 @@ subtest 'crypto_withdrawal_email event' => sub {
             transaction_status => 'CANCELLED',
             reference_no       => 1,
             title              => 'Your ETH withdrawal is cancelled',
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     ($customer, %args) = @track_args;
 
@@ -6467,7 +6604,9 @@ subtest 'crypto_withdrawal_email event' => sub {
             transaction_status => 'SENT',
             reference_no       => 1,
             title              => 'Your ETH withdrawal is successful',
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     ($customer, %args) = @track_args;
 
@@ -6501,7 +6640,9 @@ subtest 'crypto_withdrawal_email event' => sub {
             transaction_status => 'REVERTED',
             reference_no       => 1,
             title              => 'Your ETH withdrawal is returned',
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     ($customer, %args) = @track_args;
 
@@ -6527,21 +6668,18 @@ subtest 'crypto_withdrawal_email event' => sub {
 
 subtest 'crypto_withdrawal_email transactional' => sub {
     BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
 
-    $client->email('transactional@deriv.com');
-    $client->first_name('Jane');
-    $client->last_name('Doe');
-    $client->salutation('MR');
-    $client->save;
-
-    my $user = BOM::User->create(
-        email          => $client->email,
-        password       => "1234",
+    my $customer_cr = BOM::Test::Customer->create(
+        first_name     => 'Jane',
+        last_name      => 'Doe',
+        salutation     => 'MR',
         email_verified => 1,
-    )->add_client($client);
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $client = $customer_cr->get_client_object('CR');
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
@@ -6564,7 +6702,9 @@ subtest 'crypto_withdrawal_email transactional' => sub {
                 transaction_status => 'LOCKED',
                 reference_no       => 1,
                 title              => 'Your ETH withdrawal is in progress',
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
         ok @transactional_args, 'CIO transactional is invoked';
@@ -6585,7 +6725,9 @@ subtest 'crypto_withdrawal_email transactional' => sub {
                 transaction_status => 'REVERTED',
                 reference_no       => 1,
                 title              => 'Your ETH withdrawal is returned',
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
 
@@ -6624,7 +6766,9 @@ subtest 'crypto_withdrawal_email transactional' => sub {
                 transaction_status => 'SENT',
                 reference_no       => 1,
                 title              => 'Your ETH withdrawal is successful',
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
 
@@ -6662,7 +6806,9 @@ subtest 'crypto_withdrawal_email transactional' => sub {
                 transaction_status => 'CANCELLED',
                 reference_no       => 1,
                 title              => 'Your ETH withdrawal is cancelled',
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
         ok @transactional_args, 'CIO transactional is invoked';
@@ -6699,13 +6845,13 @@ subtest 'deposit limits breached' => sub {
 
     $cumulative_total = 100;
 
-    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+    BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get();
 
     ok !$test_client->status->allow_document_upload, 'allow_document_upload not triggered for ewallet deposit';
 
     $event_args->{payment_type} = 'CreditCard';
 
-    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+    BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get();
 
     ok !$test_client->status->allow_document_upload, 'allow_document_upload not triggered for credit card deposit < 500';
 
@@ -6715,7 +6861,7 @@ subtest 'deposit limits breached' => sub {
 
     $cumulative_total = 500;
 
-    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+    BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get();
 
     ok !$test_client->status->allow_document_upload, 'allow_document_upload not triggered for credit card deposit >= 500 (but the country!)';
 
@@ -6725,12 +6871,12 @@ subtest 'deposit limits breached' => sub {
     $test_client->save;
 
     $test_client->status->set('age_verification', 'test', 'test');
-    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+    BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get();
     ok !$test_client->status->allow_document_upload,   'allow_document_upload not triggered for credit card deposit >= 500 (age verified)';
     ok !$test_client->status->df_deposit_requires_poi, 'df_deposit_requires_poi not triggered for credit card deposit >= 500 (age verified)';
 
     $test_client->status->clear_age_verification;
-    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+    BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get();
 
     $test_client->status->_build_all;
     ok $test_client->status->allow_document_upload,   'allow_document_upload triggered for credit card deposit >= 500';
@@ -6751,7 +6897,7 @@ subtest 'deposit limits breached' => sub {
         $event_args->{amount}   = 1;
         $cumulative_total       = 1;
 
-        BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+        BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get();
 
         ok !$test_sibling->status->allow_document_upload,   'allow_document_upload not triggered yet';
         ok !$test_sibling->status->df_deposit_requires_poi, 'df_deposit_requires_poi not triggered yet';
@@ -6760,7 +6906,7 @@ subtest 'deposit limits breached' => sub {
         $event_args->{amount} = 2;
         $cumulative_total = 3;
 
-        BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+        BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get();
 
         ok !$test_sibling->status->allow_document_upload,   'allow_document_upload not triggered yet';
         ok !$test_sibling->status->df_deposit_requires_poi, 'df_deposit_requires_poi not triggered yet';
@@ -6769,7 +6915,7 @@ subtest 'deposit limits breached' => sub {
         $event_args->{amount} = 1;
         $cumulative_total = 4;
 
-        BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+        BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get();
 
         $test_sibling->status->_build_all;
         ok $test_sibling->status->allow_document_upload,   'allow_document_upload triggered';
@@ -6785,7 +6931,7 @@ subtest 'deposit limits breached' => sub {
             my $loginid = $test_sibling->loginid;
 
             $log->clear();
-            BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+            BOM::Event::Actions::Client::payment_deposit($event_args, $service_contexts)->get();
 
             $log->contains_ok(qr/Failed to check for deposit limits of the client $loginid: test/, 'expecte fail message logged');
 
@@ -6806,9 +6952,7 @@ subtest 'new account opening' => sub {
     undef @identify_args;
     undef @track_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $param = {
         event            => 'account_opening_new',
@@ -6817,11 +6961,11 @@ subtest 'new account opening' => sub {
         live_chat_url    => 'https://www.binary.com/en/contact.html?is_livechat_open=true',
         code             => 'CODE',
         language         => 'EN',
-        email            => $test_client->email,
+        email            => $customer_cr->get_email(),
     };
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{account_opening_new};
-    my $result  = $handler->($param)->get;
+    my $result  = $handler->($param, $service_contexts)->get;
     ok $result, 'Success result';
     my ($customer, %args) = @track_args;
     is $args{event}, 'account_opening_new', "got account_opening_new";
@@ -6832,16 +6976,15 @@ subtest 'new account opening' => sub {
         verification_url => 'https://verification_url.com/',
         live_chat_url    => 'https://www.binary.com/en/contact.html?is_livechat_open=true',
         code             => 'CODE',
-        email            => $test_client->email,
+        email            => $customer_cr->get_email(),
         },
         'event properties are ok';
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
-my $pa_test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});
-$pa_test_client->set_default_account('USD');
+my $pa_test_customer = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR', default_account => 'USD'}]);
+my $pa_test_client   = $pa_test_customer->get_client_object('CR');
+
 $pa_test_client->payment_agent({
     payment_agent_name    => "Joe",
     email                 => 'joe@example.com',
@@ -6867,7 +7010,7 @@ subtest 'pa transfer confirm' => sub {
 
     my $param = {
         'loginid'           => $test_client->loginid,
-        'pa_email'          => $pa_test_client->email,
+        'pa_email'          => $pa_test_customer->get_email(),
         'pa_last_name'      => 'pItT',
         'website_name'      => undef,
         'client_loginid'    => 'CR10005',
@@ -6886,7 +7029,7 @@ subtest 'pa transfer confirm' => sub {
     };
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{pa_transfer_confirm};
-    my $result  = $handler->($param)->get;
+    my $result  = $handler->($param, $service_contexts)->get;
     ok $result, 'Success result';
 
     my ($customer, %r_args) = @track_args;
@@ -6926,7 +7069,7 @@ subtest 'pa withdraw confirm' => sub {
 
     my $param = {
         'loginid'           => $test_client->loginid,
-        'email'             => $test_client->email,
+        'email'             => $test_customer->get_email(),
         'pa_last_name'      => 'pItT',
         'website_name'      => undef,
         'client_loginid'    => 'CR00007',
@@ -6945,7 +7088,7 @@ subtest 'pa withdraw confirm' => sub {
     };
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{pa_withdraw_confirm};
-    my $result  = $handler->($param)->get;
+    my $result  = $handler->($param, $service_contexts)->get;
     ok $result, 'Success result';
 
     my ($customer, %r_args) = @track_args;
@@ -6953,19 +7096,19 @@ subtest 'pa withdraw confirm' => sub {
     is $r_args{event}, 'pa_withdraw_confirm', "Event=pa_withdraw_confirm";
     cmp_deeply $r_args{properties},
         {
-        email          => $test_client->email,
+        email          => $test_customer->get_email(),
         brand          => 'deriv',
         client_name    => 'bRaD pItT',
         client_loginid => 'CR00007',
         currency       => 'USD',
         lang           => 'ID',
         loginid        => $test_client->loginid,
-        email          => $test_client->email,
+        email          => $test_customer->get_email(),
         pa_name        => 'Xoe',
         amount         => '10',
         pa_loginid     => $pa_test_client->loginid,
-        pa_first_name  => $pa_test_client->first_name,
-        pa_last_name   => $pa_test_client->last_name,
+        pa_first_name  => $pa_test_customer->get_first_name(),
+        pa_last_name   => $pa_test_customer->get_last_name(),
         },
         'event properties are ok';
 
@@ -6973,9 +7116,8 @@ subtest 'pa withdraw confirm' => sub {
 };
 
 subtest 'underage_account_closed' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR', default_account => 'USD'}]);
+    my $client      = $customer_cr->get_client_object('CR');
 
     undef @track_args;
 
@@ -6985,7 +7127,10 @@ subtest 'underage_account_closed' => sub {
             loginid    => $client->loginid,
             properties => {
                 tnc_approval => 'https://deriv.com/en/terms-and-conditions',
-            }})->get;
+            }
+        },
+        $service_contexts
+    )->get;
     my ($customer, %returned_args) = @track_args;
 
     is $returned_args{event},                 'underage_account_closed', 'track event name is set correctly';
@@ -6994,9 +7139,8 @@ subtest 'underage_account_closed' => sub {
 
 subtest 'underage_account_closed transactional email' => sub {
     BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);    #activate transactional.
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR', default_account => 'USD'}]);
+    my $client      = $customer_cr->get_client_object('CR');
 
     undef @track_args;
     undef @transactional_args;
@@ -7007,7 +7151,10 @@ subtest 'underage_account_closed transactional email' => sub {
             loginid    => $client->loginid,
             properties => {
                 tnc_approval => 'https://deriv.com/en/terms-and-conditions',
-            }})->get;
+            }
+        },
+        $service_contexts
+    )->get;
     my ($customer, %returned_args) = @track_args;
 
     ok @transactional_args, 'CIO transactional is invoked';
@@ -7137,7 +7284,9 @@ subtest 'Onfido DOB checks' => sub {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
             cmp_deeply + {@metrics},
                 +{
                 'onfido.api.hit'                                     => undef,
@@ -7214,7 +7363,9 @@ subtest 'Onfido DOB checks' => sub {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
                         check_url => $check_href,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
                 cmp_deeply + {@metrics},
                     +{
                     'onfido.api.hit'                                     => undef,
@@ -7273,7 +7424,9 @@ subtest 'Onfido DOB checks' => sub {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
                         check_url => $check_href,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
                 cmp_deeply + {@metrics},
                     +{
                     'onfido.api.hit'                                     => undef,
@@ -7331,7 +7484,9 @@ subtest 'Onfido DOB checks' => sub {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
             cmp_deeply + {@metrics},
                 +{
                 'onfido.api.hit'                                     => undef,
@@ -7404,7 +7559,9 @@ subtest 'Onfido DOB checks' => sub {
             lives_ok {
                 BOM::Event::Actions::Client::client_verification({
                         check_url => $check_href,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
             }
             'the event made it alive!';
 
@@ -7448,7 +7605,9 @@ subtest 'Onfido DOB checks' => sub {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
                         check_url => $check_href,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
                 cmp_deeply + {@metrics},
                     +{
                     'onfido.api.hit'                                     => undef,
@@ -7494,8 +7653,8 @@ subtest 'Onfido DOB checks' => sub {
         $emissions                 = {};
         $test_client->date_of_birth('1989-10-10');
         $test_client->save;
-        $reported_first_name = $test_client->first_name;
-        $reported_last_name  = $test_client->last_name;
+        $reported_first_name = $test_customer->get_first_name();
+        $reported_last_name  = $test_customer->get_last_name();
 
         $vrtc_client->status->clear_disabled();
         $vrtc_client->status->_build_all();
@@ -7509,7 +7668,9 @@ subtest 'Onfido DOB checks' => sub {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
             cmp_deeply + {@metrics},
                 +{
                 'onfido.api.hit'                            => undef,
@@ -7569,7 +7730,9 @@ subtest 'Onfido DOB checks' => sub {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
                         check_url => $check_href,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
 
                 cmp_deeply + {@metrics},
                     +{
@@ -7611,8 +7774,8 @@ subtest 'Onfido DOB checks' => sub {
         $emissions       = {};
         $test_client->date_of_birth('1989-10-11');
         $test_client->save;
-        $reported_first_name = $test_client->first_name;
-        $reported_last_name  = $test_client->last_name;
+        $reported_first_name = $test_customer->get_first_name();
+        $reported_last_name  = $test_customer->get_last_name();
 
         $vrtc_client->status->clear_disabled();
         $vrtc_client->status->_build_all();
@@ -7627,7 +7790,9 @@ subtest 'Onfido DOB checks' => sub {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
             cmp_deeply + {@metrics},
                 +{
                 'onfido.api.hit'                                => undef,
@@ -7697,7 +7862,9 @@ subtest 'Onfido DOB checks' => sub {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
                         check_url => $check_href,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
                 cmp_deeply + {@metrics},
                     +{
                     'onfido.api.hit'                            => undef,
@@ -7826,7 +7993,9 @@ subtest 'Onfido Name Mismatch' => sub {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
 
             cmp_deeply + {@metrics},
                 +{
@@ -7897,7 +8066,9 @@ subtest 'Onfido Name Mismatch' => sub {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
                         check_url => $check_href,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
                 cmp_deeply + {@metrics},
                     +{
                     'onfido.api.hit'                            => undef,
@@ -8021,7 +8192,9 @@ subtest 'Onfido Rejected CS notification' => sub {
         lives_ok {
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
         }
         'the event made it alive!';
 
@@ -8043,7 +8216,9 @@ subtest 'Onfido Rejected CS notification' => sub {
         lives_ok {
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
         }
         'the event made it alive!';
 
@@ -8063,8 +8238,8 @@ subtest 'Onfido Rejected CS notification' => sub {
         $report_result   = 'clear';
         $test_client->date_of_birth('1989-10-11');
         $test_client->save;
-        $reported_first_name = $test_client->first_name;
-        $reported_last_name  = $test_client->last_name;
+        $reported_first_name = $test_customer->get_first_name();
+        $reported_last_name  = $test_customer->get_last_name();
 
         $test_client->status->clear_disabled();
         $test_client->status->clear_age_verification();
@@ -8082,7 +8257,9 @@ subtest 'Onfido Rejected CS notification' => sub {
         lives_ok {
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
         }
         'the event made it alive!';
 
@@ -8104,7 +8281,9 @@ subtest 'Onfido Rejected CS notification' => sub {
         lives_ok {
             BOM::Event::Actions::Client::client_verification({
                     check_url => $check_href,
-                })->get;
+                },
+                $service_contexts
+            )->get;
         }
         'the event made it alive!';
 
@@ -8124,24 +8303,17 @@ subtest 'Onfido Rejected CS notification' => sub {
 };
 
 subtest 'store applicant if it does not exist in db' => sub {
-    my $test_client01 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $test_client01->email('test01@deriv.com');
-    $test_client01->first_name('top');
-    $test_client01->last_name('side');
-    $test_client01->salutation('MR');
-    $test_client01->save;
-
-    my $test_user = BOM::User->create(
-        email          => $test_client01->email,
-        password       => "1234",
+    my $customer_cr = BOM::Test::Customer->create(
         email_verified => 1,
-    )->add_client($test_client01);
-
-    $test_client01->binary_user_id($test_user->id);
-    $test_client01->user($test_user);
-    $test_client01->save;
+        first_name     => 'top',
+        last_name      => 'side',
+        salutation     => 'MR',
+        clients        => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
 
     lives_ok {
         my $onfido            = BOM::Event::Actions::Client::_onfido();
@@ -8191,7 +8363,7 @@ subtest 'store applicant if it does not exist in db' => sub {
                         'stamp'        => '2025-01-12 14:29:37.440662',
                         'api_type'     => 'deprecated',
                         'download_uri' => 'http://localhost:4039/v3.4/checks/newcheck/download',
-                        'tags'         => ['automated', 'CR', $test_client01->loginid, 'IDN', 'brand:deriv'],
+                        'tags'         => ['automated', 'CR', $customer_cr->get_client_loginid('CR'), 'IDN', 'brand:deriv'],
                         'applicant_id' => $applicant_id,
                         'id'           => 'supasus',
                         'status'       => 'complete',
@@ -8202,11 +8374,13 @@ subtest 'store applicant if it does not exist in db' => sub {
         $check_href = '/v2/applicants/some-id/checks/supasus';
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         my $check_newdata = BOM::Database::UserDB::rose_db()->dbic->run(
             fixup => sub {
-                $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client01->user_id);
+                $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $customer_cr->get_user_id());
             });
 
         is $check_newdata->{id}, $applicant_id, 'the applicant was stored';
@@ -8334,7 +8508,7 @@ subtest 'store check coming from webhook even if there is no check record in db'
                     ));
             });
 
-        BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+        BOM::Event::Actions::Client::client_verification({check_url => $check_href}, $service_contexts)->get;
 
         my $check_newdata = BOM::Database::UserDB::rose_db()->dbic->run(
             fixup => sub {
@@ -8373,7 +8547,7 @@ subtest 'store check coming from webhook even if there is no check record in db'
                 });
 
             $check_href = '/v2/applicants/some-id/checks/newcheck2';
-            BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+            BOM::Event::Actions::Client::client_verification({check_url => $check_href}, $service_contexts)->get;
 
             my $check_newdata = BOM::Database::UserDB::rose_db()->dbic->run(
                 fixup => sub {
@@ -8407,31 +8581,27 @@ subtest 'crypto_withdrawal_rejected_email_v2' => sub {
     );
     request($req);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my $email = 'nobody@deriv.com';
-    $client->email($email);
-    $client->first_name('Alice');
-    $client->last_name('Bob');
-    $client->salutation('MR');
-    $client->set_default_account($currency_code);
-    $client->save;
-    my $fiat_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $fiat_client->email($email);
-    $fiat_client->account('USD');
-    $fiat_client->save;
-
-    my $user = BOM::User->create(
-        email          => $client->email,
-        password       => "1234",
+    my $customer_cr = BOM::Test::Customer->create(
         email_verified => 1,
-    )->add_client($client);
+        first_name     => 'Alice',
+        last_name      => 'Bob',
+        salutation     => 'MR',
+        clients        => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => $currency_code,
+            },
+        ]);
+    my $client = $customer_cr->get_client_object('CR');
+
     my $client_fiat_account = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($client->loginid);
     is $client_fiat_account, undef, 'no fiat account curency yet';
-    $user->add_client($fiat_client);
+
+    $customer_cr->create_client(
+        name            => 'CR_FIAT',
+        broker_code     => 'CR',
+        default_account => 'USD'
+    );
 
     $client_fiat_account = BOM::Platform::Utility::get_fiat_sibling_account_currency_for($client->loginid);
     is $client_fiat_account, 'USD', 'correct fiat account curency';
@@ -8447,7 +8617,9 @@ subtest 'crypto_withdrawal_rejected_email_v2' => sub {
                 currency      => $currency_code,
                 live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
                 reference_no  => 1
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
         ok 1, 'is ok';
@@ -8489,7 +8661,9 @@ subtest 'crypto_withdrawal_rejected_email_v2' => sub {
                 currency      => $currency_code,
                 live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
                 reference_no  => 1
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
         is $args{event}, 'track_crypto_withdrawal_rejected_email_v2', "got correct event name";
@@ -8509,7 +8683,9 @@ subtest 'crypto_withdrawal_rejected_email_v2' => sub {
                 currency      => $currency_code,
                 live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
                 reference_no  => 1
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
         ok 1, 'is ok';
@@ -8550,7 +8726,9 @@ subtest 'crypto_withdrawal_rejected_email_v2' => sub {
                 currency      => $currency_code,
                 live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
                 reference_no  => 1
-            })->get;
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
         ok 1, 'is ok';
@@ -8592,20 +8770,17 @@ subtest 'account_verification_for_pending_payout event' => sub {
 
     undef @track_args;
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test@deriv.com',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR', default_account => 'USD'}]);
 
     my $args = {
-        loginid    => $client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
-            email => $client->email,
+            email => $customer_cr->get_email(),
             date  => "28 Mar 2022"
         }};
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{account_verification_for_pending_payout};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
     my ($customer, %returned_args) = @track_args;
@@ -8621,27 +8796,22 @@ subtest 'authenticated_with_scans event' => sub {
     );
     request($req);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    $client->email('test2@deriv.com');
-    $client->first_name('Jane');
-    $client->last_name('Doe');
-    $client->salutation('MR');
-    $client->save;
-
-    my $user = BOM::User->create(
-        email          => $client->email,
-        password       => "1234",
+    my $customer_cr = BOM::Test::Customer->create(
         email_verified => 1,
-    )->add_client($client);
-
-    undef @track_args;
+        first_name     => 'Jane',
+        last_name      => 'Doe',
+        salutation     => 'MR',
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
     BOM::Event::Actions::Client::authenticated_with_scans({
-            loginid => $client->loginid,
-        })->get;
+            loginid => $customer_cr->get_client_loginid('CR'),
+        },
+        $service_contexts
+    )->get;
 
     my ($customer, %args) = @track_args;
 
@@ -8649,17 +8819,17 @@ subtest 'authenticated_with_scans event' => sub {
 
     cmp_deeply $args{properties},
         {
-        'email'         => $client->email,
-        'first_name'    => $client->first_name,
+        'email'         => $customer_cr->get_email(),
+        'first_name'    => $customer_cr->get_first_name(),
         'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
         'lang'          => 'EN',
         'brand'         => 'deriv',
         'contact_url'   => 'https://deriv.com/en/contact-us',
-        'loginid'       => $client->loginid,
+        'loginid'       => $customer_cr->get_client_loginid('CR'),
         },
         'event properties are ok';
 
-    is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 
     # give a latest_poi_by
@@ -8673,29 +8843,29 @@ subtest 'authenticated_with_scans event' => sub {
     undef @track_args;
 
     BOM::Event::Actions::Client::authenticated_with_scans({
-            loginid => $client->loginid,
-        })->get;
+            loginid => $customer_cr->get_client_loginid('CR'),
+        },
+        $service_contexts
+    )->get;
 
     ($customer, %args) = @track_args;
 
     is $args{event}, 'authenticated_with_scans', "got correct event name";
-
     cmp_deeply $args{properties},
         {
-        'email'         => $client->email,
-        'first_name'    => $client->first_name,
+        'email'         => $customer_cr->get_email(),
+        'first_name'    => $customer_cr->get_first_name(),
         'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
         'lang'          => 'EN',
         'brand'         => 'deriv',
         'contact_url'   => 'https://deriv.com/en/contact-us',
-        'loginid'       => $client->loginid,
+        'loginid'       => $customer_cr->get_client_loginid('CR'),
         'latest_poi_by' => 'idv',
         },
         'event properties are ok';
 
-    is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
-
 };
 
 subtest 'authenticated_with_scans transactional Email' => sub {
@@ -8707,29 +8877,26 @@ subtest 'authenticated_with_scans transactional Email' => sub {
     );
     request($req);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    $client->email('transactional2@deriv.com');
-    $client->first_name('Jane');
-    $client->last_name('Doe');
-    $client->salutation('MR');
-    $client->save;
-
-    my $user = BOM::User->create(
-        email          => $client->email,
-        password       => "1234",
+    my $customer_cr = BOM::Test::Customer->create(
         email_verified => 1,
-    )->add_client($client);
+        first_name     => 'Jane',
+        last_name      => 'Doe',
+        salutation     => 'MR',
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
 
     subtest "authenticated_with_scans - poi by MANUAL" => sub {
         undef @track_args;
         undef @transactional_args;
 
         BOM::Event::Actions::Client::authenticated_with_scans({
-                loginid => $client->loginid,
-            })->get;
+                loginid => $customer_cr->get_client_loginid('CR'),
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
 
@@ -8738,17 +8905,17 @@ subtest 'authenticated_with_scans transactional Email' => sub {
 
         cmp_deeply $args{properties},
             {
-            'email'         => $client->email,
-            'first_name'    => $client->first_name,
+            'email'         => $customer_cr->get_email(),
+            'first_name'    => $customer_cr->get_first_name(),
             'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
             'lang'          => 'EN',
             'brand'         => 'deriv',
             'contact_url'   => 'https://deriv.com/en/contact-us',
-            'loginid'       => $client->loginid,
+            'loginid'       => $customer_cr->get_client_loginid('CR'),
             },
             'event properties are ok';
 
-        is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+        is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "got correct customer loginid";
         ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     };
 
@@ -8765,8 +8932,10 @@ subtest 'authenticated_with_scans transactional Email' => sub {
         undef @transactional_args;
 
         BOM::Event::Actions::Client::authenticated_with_scans({
-                loginid => $client->loginid,
-            })->get;
+                loginid => $customer_cr->get_client_loginid('CR'),
+            },
+            $service_contexts
+        )->get;
 
         my ($customer, %args) = @track_args;
 
@@ -8775,18 +8944,18 @@ subtest 'authenticated_with_scans transactional Email' => sub {
 
         cmp_deeply $args{properties},
             {
-            'email'         => $client->email,
-            'first_name'    => $client->first_name,
+            'email'         => $customer_cr->get_email(),
+            'first_name'    => $customer_cr->get_first_name(),
             'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
             'lang'          => 'EN',
             'brand'         => 'deriv',
             'contact_url'   => 'https://deriv.com/en/contact-us',
-            'loginid'       => $client->loginid,
+            'loginid'       => $customer_cr->get_client_loginid('CR'),
             'latest_poi_by' => 'idv',
             },
             'event properties are ok';
 
-        is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+        is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "got correct customer loginid";
         ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     };
 
@@ -8803,12 +8972,10 @@ subtest 'request payment withdraw' => sub {
     undef @identify_args;
     undef @track_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
             first_name       => 'Backend',
             verification_url => 'https://Binary.url',
@@ -8818,11 +8985,11 @@ subtest 'request payment withdraw' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{request_payment_withdraw};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
     my ($customer, %args) = @track_args;
-    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
@@ -8836,12 +9003,10 @@ subtest 'verify email closed account other' => sub {
     undef @identify_args;
     undef @track_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
             first_name       => 'Backend',
             verification_url => 'https://Binary.url',
@@ -8852,11 +9017,11 @@ subtest 'verify email closed account other' => sub {
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_other};
 
-    my $result = $handler->($args)->get;
+    my $result = $handler->($args, $service_contexts)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
     my ($customer, %args) = @track_args;
-    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
@@ -8872,12 +9037,10 @@ subtest 'verify email closed account other transactional email ' => sub {
     undef @track_args;
     undef @transactional_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
             first_name       => 'Backend',
             verification_url => 'https://Binary.url',
@@ -8888,12 +9051,12 @@ subtest 'verify email closed account other transactional email ' => sub {
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_other};
 
-    my $result = $handler->($args)->get;
+    my $result = $handler->($args, $service_contexts)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
     ok @transactional_args, 'CIO transactional is invoked';
     my ($customer, %args) = @track_args;
-    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
 };
@@ -8910,12 +9073,10 @@ subtest 'verify email closed account reset password transactional' => sub {
     undef @track_args;
     undef @transactional_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
             first_name       => 'Backend',
             verification_url => 'https://Binary.url',
@@ -8926,12 +9087,12 @@ subtest 'verify email closed account reset password transactional' => sub {
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_reset_password};
 
-    my $result = $handler->($args)->get;
+    my $result = $handler->($args, $service_contexts)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
     ok @transactional_args, 'CIO transactional is invoked';
     my ($customer, %args) = @track_args;
-    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(0);    #deactivate transactional.
 
@@ -8947,12 +9108,10 @@ subtest 'verify email closed account reset password' => sub {
     undef @identify_args;
     undef @track_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
             first_name       => 'Backend',
             verification_url => 'https://Binary.url',
@@ -8963,11 +9122,11 @@ subtest 'verify email closed account reset password' => sub {
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_reset_password};
 
-    my $result = $handler->($args)->get;
+    my $result = $handler->($args, $service_contexts)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
     my ($customer, %args) = @track_args;
-    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
@@ -8981,12 +9140,10 @@ subtest 'verify email closed account opening' => sub {
     undef @identify_args;
     undef @track_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
             first_name       => 'Backend',
             verification_url => 'https://Binary.url',
@@ -8996,7 +9153,7 @@ subtest 'verify email closed account opening' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_account_opening};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
 };
@@ -9012,12 +9169,10 @@ subtest 'verify email closed account opening transactional' => sub {
     undef @identify_args;
     undef @track_args;
     undef @transactional_args;
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
             first_name       => 'Backend',
             verification_url => 'https://Binary.url',
@@ -9027,7 +9182,7 @@ subtest 'verify email closed account opening transactional' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_account_opening};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
     ok @transactional_args, 'CIO transactional is invoked';
@@ -9049,7 +9204,7 @@ subtest 'self tagging affiliates' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{self_tagging_affiliates};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
 };
@@ -9075,7 +9230,7 @@ subtest 'self tagging affiliates transactional email' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{self_tagging_affiliates};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
     my ($customer, %returned_args) = @track_args;
     ok @transactional_args, 'CIO transactional is invoked';
     is $returned_args{event}, 'track_self_tagging_affiliates', 'track event name is set correctly';
@@ -9095,49 +9250,47 @@ subtest 'bonus_reject|approve' => sub {
     undef @identify_args;
     undef @track_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
-            full_name => $test_client->full_name,
+            full_name => $customer_cr->get_full_name(),
             brand     => $req->brand_name,
             language  => 'EN',
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{bonus_approve};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
 
     ok $result, 'Success result';
     my ($customer, %args) = @track_args;
     is_deeply $args->{properties},
         {
-        full_name => $test_client->full_name,
+        full_name => $customer_cr->get_full_name(),
         brand     => 'deriv',
         language  => 'EN',
         },
         'Bonus approved';
-    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 
     undef @identify_args;
     undef @track_args;
 
     $handler = BOM::Event::Process->new(category => 'track')->actions->{bonus_reject};
-    $result  = $handler->($args)->get;
+    $result  = $handler->($args, $service_contexts)->get;
 
     ok $result, 'Success result';
     ($customer, %args) = @track_args;
     is_deeply $args->{properties},
         {
-        full_name => $test_client->full_name,
+        full_name => $customer_cr->get_full_name(),
         brand     => 'deriv',
         language  => 'EN',
         },
         'Bonus rejected';
-    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
@@ -9152,32 +9305,30 @@ subtest 'bonus_reject transactional email' => sub {
     undef @track_args;
     undef @transactional_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
-            full_name => $test_client->full_name,
+            full_name => $customer_cr->get_full_name(),
             brand     => $req->brand_name,
             language  => 'EN',
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{bonus_reject};
-    my $result  = $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
 
     ok $result, 'Success result';
     my ($customer, %args) = @track_args;
 
     is_deeply $args->{properties},
         {
-        full_name => $test_client->full_name,
+        full_name => $customer_cr->get_full_name(),
         brand     => 'deriv',
         language  => 'EN',
         },
         'Bonus rejected';
-    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    is $args{properties}->{loginid}, $customer_cr->get_client_loginid('CR'), "Got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     ok @transactional_args,                                    'CIO transactional is invoked';
     is $args{event}, 'track_bonus_reject', 'track event name is set correctly';
@@ -9195,23 +9346,21 @@ subtest 'request edd document upload' => sub {
     undef @identify_args;
     undef @track_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR',}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
-            first_name    => $test_client->first_name,
-            email         => $test_client->email,
+            first_name    => $customer_cr->get_first_name(),
+            email         => $customer_cr->get_email(),
             login_url     => 'https://oauth.deriv.com/oauth2/authorize?app_id=16929',
             expiry_date   => '',
             live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{request_edd_document_upload};
-    my $result  = $handler->($args)->get;
-    ok $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
+    ok $handler->($args, $service_contexts)->get;
     my ($customer, %args) = @track_args;
     is $args{event}, 'request_edd_document_upload', "event name";
     ok $result, 'Success result';
@@ -9230,23 +9379,21 @@ subtest 'request edd document upload transactional' => sub {
     undef @track_args;
     undef @transactional_args;
 
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
 
     my $args = {
-        loginid    => $test_client->loginid,
+        loginid    => $customer_cr->get_client_loginid('CR'),
         properties => {
-            first_name    => $test_client->first_name,
-            email         => $test_client->email,
+            first_name    => $customer_cr->get_first_name(),
+            email         => $customer_cr->get_email(),
             login_url     => 'https://oauth.deriv.com/oauth2/authorize?app_id=16929',
             expiry_date   => '',
             live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
         }};
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{request_edd_document_upload};
-    my $result  = $handler->($args)->get;
-    ok $handler->($args)->get;
+    my $result  = $handler->($args, $service_contexts)->get;
+    ok $handler->($args, $service_contexts)->get;
     my ($customer, %args) = @track_args;
     is $args{event}, 'track_request_edd_document_upload', "event name";
     ok $result, 'Success result';
@@ -9257,30 +9404,28 @@ subtest 'request edd document upload transactional' => sub {
 };
 
 subtest 'account status set event' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test33@bin.com',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $client      = $customer_cr->get_client_object('CR');
 
     ok !$client->status->disabled, 'No disabled status set';
     delete $client->{status};                                                           #clear status cache
 
     my $args = {
-        loginid  => $client->loginid,
+        loginid  => $customer_cr->get_client_loginid('CR'),
         username => 'system',
         status   => 'disabled',
         reason   => 'Incomplete/false details'
     };
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{sideoffice_set_account_status};
-    my $result  = $handler->($args);
+    my $result  = $handler->($args, $service_contexts);
     ok $result,                   'Success result';
     ok $client->status->disabled, 'Disabled status is set';
     is $client->status->disabled->{reason}, 'Incomplete/false details', 'Status reason is correct';
 
     # Test that we dont override the reason for disabled status
     $client->status->disabled->{reason} = 'Old reason';
-    $result = $handler->($args);
+    $result = $handler->($args, $service_contexts);
     ok !$result, 'not Success result';
     is $client->status->disabled->{reason}, 'Old reason', 'Status reason was not changed';
 
@@ -9289,26 +9434,25 @@ subtest 'account status set event' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine('get_open_contracts', sub { return [1]; });
 
-    $result = $handler->($args);
+    $result = $handler->($args, $service_contexts);
     ok !$result,                           'Not success result';
     ok !$client->status->_get('disabled'), 'Disabled status was not set if there is contracts are open';
 };
 
 subtest 'account status remove event' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test33@bin.com',
-    });
+    my $customer_cr = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR'}]);
+    my $client      = $customer_cr->get_client_object('CR');
+
     $client->status->setnx('disabled', 'test', 'test');
     ok $client->status->disabled, 'status set';
 
     my $args = {
-        loginid => $client->loginid,
+        loginid => $customer_cr->get_client_loginid('CR'),
         status  => 'disabled',
     };
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{sideoffice_remove_account_status};
-    my $result  = $handler->($args);
+    my $result  = $handler->($args, $service_contexts);
     ok $result,                            'Success result';
     ok !$client->status->_get('disabled'), 'Disabled status is removed';
 };

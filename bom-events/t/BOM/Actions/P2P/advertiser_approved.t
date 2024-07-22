@@ -5,12 +5,15 @@ use Test::More;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Test::Customer;
 use BOM::User;
 use BOM::Test::Email;
 use BOM::Event::Actions::P2P;
 use BOM::Event::Process;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $mock_emitter = new Test::MockModule('BOM::Platform::Event::Emitter');
 my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
@@ -34,22 +37,25 @@ $mock_segment->redefine(
         return Future->done(1);
     });
 
-my $client                          = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 my $advertiser_approved_track_event = 'p2p_advertiser_approved';
 
-BOM::User->create(
-    email    => $client->email,
-    password => 'xxx',
-)->add_client($client);
-$client->account('USD');
+my $test_customer = BOM::Test::Customer->create(
+    residence => 'id',
+    clients   => [{
+            name            => 'CR',
+            broker_code     => 'CR',
+            default_account => 'USD',
+        },
+    ]);
 
+my $client = $test_customer->get_client_object('CR');
 $client->status->set('allow_document_upload', 'system', 'manually set');
 
 mailbox_clear();
 undef @track_args;
 undef @track_events;
-BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client => $client});
-my $msg = mailbox_search(to => $client->email);
+BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client => $client}, $service_contexts);
+my $msg = mailbox_search(to => $test_customer->get_email());
 
 is $msg,                                    undef, 'no email sent if client has allow_document_upload for other reason';
 is scalar @track_args + scalar @track_args, 0,     'no track events sent';
@@ -60,8 +66,8 @@ $client->status->set('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED'
 mailbox_clear();
 undef @track_args;
 undef @track_events;
-BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid});
-$msg = mailbox_search(to => $client->email);
+BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid}, $service_contexts);
+$msg = mailbox_search(to => $test_customer->get_email());
 
 is $msg,                                      undef, 'no email sent if client is not approved';
 is scalar @track_args + scalar @track_events, 0,     'no track events sent';
@@ -71,8 +77,8 @@ $client->p2p_advertiser_create(name => 'bob');
 
 mailbox_clear();
 undef @track_events;
-BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid});
-$msg = mailbox_search(to => $client->email);
+BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid}, $service_contexts);
+$msg = mailbox_search(to => $test_customer->get_email());
 
 is $msg->{subject},      'You can now use Deriv P2P', 'email received - subject';
 is scalar @track_events, 1,                           'track event sent';
@@ -83,7 +89,11 @@ is $event->{args}->{loginid}, $client->loginid,                 'event emitted -
 undef @track_args;
 BOM::Event::Process->new(category => 'track')->process({
         type    => $advertiser_approved_track_event,
-        details => {loginid => $client->loginid}})->get;
+        details => {loginid => $client->loginid}
+    },
+    'Test Stream',
+    $service_contexts
+)->get;
 my $track_event = $track_args[0];
 is $track_event->{properties}{loginid}, $client->loginid, 'event fired - loginid';
 

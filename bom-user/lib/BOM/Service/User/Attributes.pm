@@ -336,6 +336,11 @@ our %ATTRIBUTES = (
         get_handler => \&BOM::Service::User::Attributes::Get::get_user_data,
         set_handler => \&BOM::Service::User::Attributes::Update::set_user_trading_password
     },
+    ua_fingerprint => {
+        type        => 'string',
+        get_handler => \&BOM::Service::User::Attributes::Get::get_not_supported,
+        set_handler => sub { return undef; },                                      # This attr is only used in totp context
+    },
     utm_campaign => {
         type        => 'string',
         get_handler => \&BOM::Service::User::Attributes::Get::get_user_data,
@@ -376,7 +381,10 @@ Returns a reference to the hash %ATTRIBUTES which contains all the user attribut
 =cut
 
 sub get_all_attributes {
-    return \%ATTRIBUTES;
+    my %filtered_attributes = map { $_ => $ATTRIBUTES{$_} }
+        grep { $ATTRIBUTES{$_}{get_handler} != \&BOM::Service::User::Attributes::Get::get_not_supported } keys %ATTRIBUTES;
+
+    return \%filtered_attributes;
 }
 
 =head2 get_requested_attributes

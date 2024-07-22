@@ -24,10 +24,12 @@ sub create_user {
     my $email = shift;
 
     my $user = BOM::User->create(
-        email          => $email,
-        password       => "something something darkside...",
-        email_verified => 1,
-        email_consent  => 1,
+        email           => $email,
+        password        => "something something darkside...",
+        email_verified  => 1,
+        email_consent   => 1,
+        secret_key      => '',
+        is_totp_enabled => 0,
     );
 
     # Attach a bunch of clients to the user, only one of which is enabled and has real data

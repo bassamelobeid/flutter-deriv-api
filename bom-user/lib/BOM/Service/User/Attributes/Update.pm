@@ -157,7 +157,7 @@ sub _update_attributes {
     my $parameters = [];
 
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::update_attributes not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to update_attributes not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     die "Attribute parameters must be an array reference" unless ref $attributes eq "HASH";
@@ -190,11 +190,15 @@ sub _update_attributes {
             }
         }
 
+        my $user   = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+        my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+
         # Some attributes are immutable and cannot be changed but its ...variable
         unless ($force_flag) {
             # It will already have been checked if an attribute is set/unset and matched so if we
             # see it then its not allowed to be set and fail straight away
-            my $immutable_attributes = BOM::Service::User::Attributes::Get::get_immutable_attributes($request, 'immutable_attributes');
+            my $immutable_attributes =
+                BOM::Service::User::Attributes::Get::get_immutable_attributes($request, 'immutable_attributes', undef, $user, $client);
             for my $attribute (keys %$parameters) {
                 # Check each attribute against the immutable list, if it is immutable and already set then
                 # we should throw an error, if its unset we will allow setting it, there is little point in
@@ -215,11 +219,14 @@ sub _update_attributes {
             # Handle the not_exist scenario, if not_exist is set we must read the value and
             # only save if it is not defined
             if (   !$nx_flag
-                || !defined $attribute_handler->{get_handler}->($request, $attribute_handler->{remap} // $attribute, $attribute_handler->{type}))
+                || !
+                defined $attribute_handler->{get_handler}
+                ->($request, $attribute_handler->{remap} // $attribute, $attribute_handler->{type}, $user, $client))
             {
                 # Execute the handler for the attribute
                 my $result =
-                    $attribute_handler->{set_handler}->($request, $attribute_handler->{remap} // $attribute, $attribute_handler->{type}, $value);
+                    $attribute_handler->{set_handler}
+                    ->($request, $attribute_handler->{remap} // $attribute, $attribute_handler->{type}, $value, $user, $client);
                 # Might be nothing changed, in which case no result returned
                 if (defined $result) {
                     if (defined $result->{save_handlers}) {
@@ -240,22 +247,22 @@ sub _update_attributes {
                 }
             }
         }
+
+        # Note to the reader, any data outside the base user/client tables may be saved directly in
+        # the set handler. This is to avoid the overhead of loading the user/client object and saving
+        # it for every attribute touch. This is a tradeoff between performance and consistency.
+
+        # We are guaranteed that the user and client objects are in the cache because correlation_id
+        for my $save_handler (sort keys %requested_saves) {
+            die "Invalid save handler: $save_handler" if (!exists $save_handler_map{$save_handler});
+            $save_handler_map{$save_handler}->($request, $user, $client);
+        }
+        for my $final_handler (sort keys %requested_finals) {
+            die "Invalid finalise handler: $final_handler" if (!exists $finalise_handler_map{$final_handler});
+            $finalise_handler_map{$final_handler}->($request, $user, $client);
+        }
     } else {
         die "No valid attributes found";
-    }
-
-    # Note to the reader, any data outside the base user/client tables may be saved directly in
-    # the set handler. This is to avoid the overhead of loading the user/client object and saving
-    # it for every attribute touch. This is a tradeoff between performance and consistency.
-
-    # We are guaranteed that the user and client objects are in the cache because correlation_id
-    for my $save_handler (sort keys %requested_saves) {
-        die "Invalid save handler: $save_handler" if (!exists $save_handler_map{$save_handler});
-        $save_handler_map{$save_handler}->($request);
-    }
-    for my $final_handler (sort keys %requested_finals) {
-        die "Invalid finalise handler: $final_handler" if (!exists $finalise_handler_map{$final_handler});
-        $finalise_handler_map{$final_handler}->($request);
     }
 
     return {
@@ -282,8 +289,8 @@ Note: This is ROSE behind the client and so how you get the member value is crit
 =cut
 
 sub set_client_data {
-    my ($request, $attribute, $type, $value) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     if (_value_has_changed($client->$attribute, $value, $type)) {
         my @handlers = ('client');
         my @affected = ();
@@ -348,8 +355,8 @@ This subroutine sets the financial assessment data for the default client and re
 =cut
 
 sub set_financial_assessment {
-    my ($request, $attribute, $type, $value) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     if (_value_has_changed($client->{$attribute}, $value, $type)) {
         $client->{$attribute} = $value;
         return {
@@ -377,8 +384,8 @@ If the attribute is 'email' and the user has social signup, it sets the 'has_soc
 =cut
 
 sub set_user_email {
-    my ($request, $attribute, $type, $value) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
         my @affected = ();
         my @handlers = ();
@@ -430,8 +437,8 @@ Note: The function will update the field value. If the new value is undefined, i
 =cut
 
 sub set_user_dx_trading_password {
-    my ($request, $attribute, $type, $value) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
         # The function will update the field value
         # TODO - Move that code in here
@@ -465,8 +472,8 @@ Note: The function will update the field value. If the new value is undefined, i
 =cut
 
 sub set_user_trading_password {
-    my ($request, $attribute, $type, $value) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
         # The function will update the field value
         # TODO - Move that code in here
@@ -500,8 +507,8 @@ If the new value is false, it removes all other social accounts connected to the
 =cut
 
 sub set_user_has_social_signup {
-    my ($request, $attribute, $type, $value) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
         $user->{$attribute} = $value;
         return {
@@ -529,8 +536,8 @@ Note: There is a consideration to move the setting of the attribute to the save 
 =cut
 
 sub set_user_totp_fields {
-    my ($request, $attribute, $type, $value) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     # TODO: Note might be better of NOT setting here but in the save handler we need to do an
     # TODO: "on-change" handling of is_totp_enabled and trash some tokens.
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
@@ -558,8 +565,8 @@ This subroutine is currently not implemented. It is intended to set the phone nu
 =cut
 
 sub set_user_phone_number_verified {
-    my ($request, $attribute, $type, $value) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
         $user->{$attribute} = $value;
         return {
@@ -594,8 +601,8 @@ If the 'password_update_reason' flag is set to 'reset_password' and the user has
 =cut
 
 sub set_user_password {
-    my ($request, $attribute, $type, $value) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
 
         if (!defined $value) {
@@ -669,8 +676,8 @@ If the new value does not pass the regex check, the function throws an error.
 =cut
 
 sub set_user_preferred_language {
-    my ($request, $attribute, $type, $value) = @_;
-    my $user = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+
     if (_value_has_changed($user->{$attribute}, $value, $type)) {
         # Check value for consistency BEFORE we do any as there is a 'hidden' DB validation
         # we don't want to trip the signal so lets pre-validate
@@ -720,8 +727,8 @@ This subroutine is currently not implemented. It is intended to set the feature 
 =cut
 
 sub set_feature_flags {
-    my ($request, $attribute, $type, $value) = @_;
-    if (_value_has_changed(BOM::Service::User::Attributes::Get::get_feature_flags($request, $attribute, $type), $value, $type)) {
+    my ($request, $attribute, $type, $value, $user, $client) = @_;
+    if (_value_has_changed(BOM::Service::User::Attributes::Get::get_feature_flags($request, $attribute, $type, $user, $client), $value, $type)) {
         return {
             save_handlers     => [qw(user_feature_flags)],
             finalise_handlers => [],
@@ -801,8 +808,10 @@ sub _value_has_changed {
     } elsif ($type eq 'json') {
         # Compare top level keys and values
         return (keys %$value1 != keys %$value2 || grep { !exists $value2->{$_} || $value1->{$_} ne $value2->{$_} } keys %$value1);
+    } elsif ($type eq 'date') {
+        return $value1 ne $value2 ? 1 : 0;
     } else {
-        die "if_values_differ, unsupported type: $type.";
+        die "BOM::Service::User::Attributes::Update::_value_has_changed, unsupported type: $type.";
     }
 }
 

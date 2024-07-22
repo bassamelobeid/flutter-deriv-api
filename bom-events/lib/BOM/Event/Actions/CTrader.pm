@@ -34,12 +34,13 @@ Series of operation to perform for newly created ctrader acccount.
 =cut
 
 sub ctrader_account_created {
-    my $params = shift;
+    my ($params, $service_contexts) = @_;
 
-    die 'Loginid needed'        unless $params->{loginid};
-    die 'Binary user id needed' unless $params->{binary_user_id};
-    die 'CTID UserId needed'    unless $params->{ctid_userid};
-    die 'Account type needed'   unless $params->{account_type};
+    die 'Loginid needed'           unless $params->{loginid};
+    die 'Binary user id needed'    unless $params->{binary_user_id};
+    die 'CTID UserId needed'       unless $params->{ctid_userid};
+    die 'Account type needed'      unless $params->{account_type};
+    die "Missing service_contexts" unless $service_contexts;
 
     my $myaffiliates_config = BOM::Config::third_party()->{myaffiliates};
     my $my_affiliates       = BOM::MyAffiliates->new();
@@ -107,9 +108,11 @@ Perform sync of ctrader account contact details and ctid email.
 =cut
 
 sub sync_info {
-    my $params = shift;
+    my ($params, $service_contexts) = @_;
 
-    die 'Loginid needed' unless $params->{loginid};
+    die 'Loginid needed'           unless $params->{loginid};
+    die "Missing service_contexts" unless $service_contexts;
+
     my $retry_count = $params->{retry_count} // 0;
 
     my $client = BOM::User::Client->new({loginid => $params->{loginid}});

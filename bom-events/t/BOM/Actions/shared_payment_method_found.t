@@ -9,38 +9,36 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User;
 use BOM::Event::Process;
 use BOM::Test::Email qw(mailbox_clear);
+use BOM::Test::Customer;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Context qw(request);
 
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'test1@bin.com',
-});
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+
+my $test_customer = BOM::Test::Customer->create(
+    residence => 'id',
+    clients   => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+    ]);
+my $test_client = $test_customer->get_client_object('CR');
 
 my $test_client_MF = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
-    email       => 'test1@bin.com',
+    email       => $test_customer->get_email(),
 });
 
-my $email = $test_client->email;
-my $user  = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
-    email_verified => 1,
-);
-$user->add_client($test_client);
+my $shared_customer = BOM::Test::Customer->create(
+    residence => 'id',
+    clients   => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+    ]);
 
-my $shared_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => 'test2@bin.com',
-});
-my $shared_user = BOM::User->create(
-    email          => $shared_client->email,
-    password       => "hello",
-    email_verified => 1,
-);
-$shared_user->add_client($shared_client);
-my @track_args;
+my $shared_client = $shared_customer->get_client_object('CR');
+
 my $payment_method      = 'VISA';
 my $payment_method_text = join(' ', '| Payment method:', $payment_method);
 
@@ -60,7 +58,9 @@ subtest 'Shared PM event' => sub {
             client_loginid => $test_client->loginid,
             shared_loginid => $shared_client->loginid,
             payment_method => $payment_method,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     ok $test_client->status->cashier_locked,        'Client has cashier_locked status';
     ok $test_client->status->shared_payment_method, 'Client has shared_payment_method status';
@@ -73,17 +73,15 @@ subtest 'Shared PM event' => sub {
 
     subtest 'Shared PM stacking the loginid list' => sub {
         for my $loginid (qw/CR23571113 MX23571113 MF23571113 MLT23571113/) {
-            my $next_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => $loginid =~ /([A-Z]+)/,
-                loginid     => $loginid,
-                email       => join('', 'asdf', '+', $loginid, '@test.com'),
-            });
-            my $next_user = BOM::User->create(
-                email          => $next_client->email,
-                password       => "hello",
-                email_verified => 1,
-            );
-            $next_user->add_client($next_client);
+            my $next_customer = BOM::Test::Customer->create(
+                residence => 'id',
+                clients   => [{
+                        loginid     => $loginid,
+                        broker_code => $loginid =~ /([A-Z]+)/,
+                        name        => $loginid =~ /([A-Z]+)/,
+                    },
+                ]);
+            my $next_client = $next_customer->get_client_object($loginid =~ /([A-Z]+)/);
 
             subtest 'Sharing with loginid ' . $next_client->loginid => sub {
                 my $current_reason = $test_client->status->_get('shared_payment_method')->{reason};
@@ -91,7 +89,9 @@ subtest 'Shared PM event' => sub {
                         client_loginid => $test_client->loginid,
                         shared_loginid => $next_client->loginid,
                         payment_method => $payment_method,
-                    })->get;
+                    },
+                    $service_contexts
+                )->get;
                 # Replace text from "| Payment method" till the end with an empty string
                 $current_reason =~ s/\| Payment method.*$//;
 
@@ -109,13 +109,16 @@ subtest 'Shared PM event' => sub {
                             client_loginid => $test_client->loginid,
                             shared_loginid => $next_client->loginid,
                             payment_method => $payment_method,
-                        })->get;
+                        },
+                        $service_contexts
+                    )->get;
 
                     is $test_client->status->reason('shared_payment_method'), $current_reason, 'Repeated loginid is not stacked';
                 };
             };
         }
-        $user->add_client($test_client_MF);
+
+        $test_client->user->add_client($test_client_MF);
         $test_client_MF->account('EUR');
 
         subtest 'Shared PM loginid list with random reasons from CS' => sub {
@@ -132,23 +135,24 @@ subtest 'Shared PM event' => sub {
                 subtest "Sharing with loginid $new_loginid" => sub {
                     $test_client->status->upsert('shared_payment_method', 'staff', $reason);
 
-                    my $next_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                        broker_code => $new_loginid =~ /([A-Z]+)/,
-                        loginid     => $new_loginid,
-                        email       => join('', 'test', '+', $new_loginid, '@test.com'),
-                    });
-                    my $next_user = BOM::User->create(
-                        email          => $next_client->email,
-                        password       => "hello",
-                        email_verified => 1,
-                    );
-                    $next_user->add_client($next_client);
+                    my $next_customer = BOM::Test::Customer->create(
+                        residence => 'id',
+                        clients   => [{
+                                loginid     => $new_loginid,
+                                broker_code => $new_loginid =~ /([A-Z]+)/,
+                                name        => $new_loginid =~ /([A-Z]+)/,
+                            },
+                        ]);
+
+                    my $next_client = $next_customer->get_client_object($new_loginid =~ /([A-Z]+)/);
 
                     $action_handler->({
                             client_loginid => $test_client->loginid,
                             shared_loginid => $next_client->loginid,
                             payment_method => $payment_method,
-                        })->get;
+                        },
+                        $service_contexts
+                    )->get;
 
                     # Replace text from "| Payment method" till the end with an empty string
                     $reason =~ s/\| Payment method.*$//;
@@ -170,16 +174,9 @@ subtest 'Shared PM event' => sub {
 };
 
 subtest 'multiple loginids sent in params' => sub {
-    my $shared_client_another = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test3@bin.com',
-    });
-    my $shared_user_another = BOM::User->create(
-        email          => $shared_client_another->email,
-        password       => "hello",
-        email_verified => 1,
-    );
-    $shared_user_another->add_client($shared_client_another);
+    my $shared_customer_another = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR',},]);
+
+    my $shared_client_another = $shared_customer_another->get_client_object('CR');
 
     my $mocker_client = Test::MockModule->new(ref($shared_client));
     $mocker_client->mock(
@@ -203,7 +200,9 @@ subtest 'multiple loginids sent in params' => sub {
             client_loginid => $test_client->loginid,
             shared_loginid => $shared_client->loginid . ',' . $shared_client_another->loginid,
             payment_method => $payment_method,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     ok $test_client->status->cashier_locked,        'Client has cashier_locked status';
     ok $test_client->status->shared_payment_method, 'Client has shared_payment_method status';
@@ -240,8 +239,9 @@ subtest 'check status is copied to both account in case of diel account' => sub 
     );
 
     my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'test_from@bin.com',
+        broker_code    => 'CR',
+        email          => 'test_from@bin.com',
+        binary_user_id => $user_from->id,
     });
 
     $user_from->add_client($client_from);
@@ -299,7 +299,9 @@ subtest 'check status is copied to both account in case of diel account' => sub 
             client_loginid => $client_from->loginid,
             shared_loginid => $shared_diel_client_mf->loginid,
             payment_method => $payment_method,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     is scalar @emissions, 2, "Two events are send";
 
@@ -367,7 +369,9 @@ subtest 'Already age verified client' => sub {
             client_loginid => $test_client->loginid,
             shared_loginid => $shared_client->loginid,
             payment_method => $payment_method,
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     ok $test_client->status->cashier_locked,         'Client has cashier_locked status';
     ok $test_client->status->shared_payment_method,  'Client has shared_payment_method status';
@@ -381,28 +385,21 @@ subtest 'Already age verified client' => sub {
 };
 
 subtest 'wallets' => sub {
+    my $wallet1_customer = BOM::Test::Customer->create(clients => [{name => 'CRW', broker_code => 'CRW', account_type => 'doughflow'}]);
+    my $wallet1          = $wallet1_customer->get_client_object('CRW');
+    my $wallet1_loginid  = $wallet1->loginid;
 
-    my $wallet1 =
-        BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW', account_type => 'doughflow', email => 'wallet1@test.com'});
-    BOM::User->create(
-        email    => $wallet1->email,
-        password => 'x'
-    )->add_client($wallet1);
-    my $wallet1_loginid = $wallet1->loginid;
-
-    my $wallet2 =
-        BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW', account_type => 'doughflow', email => 'wallet2@test.com'});
-    BOM::User->create(
-        email    => $wallet2->email,
-        password => 'x'
-    )->add_client($wallet2);
-    my $wallet2_loginid = $wallet2->loginid;
+    my $wallet2_customer = BOM::Test::Customer->create(clients => [{name => 'CRW', broker_code => 'CRW', account_type => 'doughflow'}]);
+    my $wallet2          = $wallet2_customer->get_client_object('CRW');
+    my $wallet2_loginid  = $wallet2->loginid;
 
     $action_handler->({
             client_loginid => $wallet1->doughflow_pin,
             shared_loginid => $wallet2->doughflow_pin,
             payment_method => 'xyz',
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     ok $wallet1->status->cashier_locked,        'Sharee has cashier_locked status';
     ok $wallet1->status->shared_payment_method, 'Sharee shared_payment_method status';
@@ -411,7 +408,7 @@ subtest 'wallets' => sub {
 
     ok $wallet2->status->cashier_locked,        'Sharer has cashier_locked status';
     ok $wallet2->status->shared_payment_method, 'Sharer has shared_payment_method status';
-    like $wallet2->status->shared_payment_method->{reason}, qr/$wallet1_loginid/, 'shared_payment_method reason contains sharee loginid';
+    like $wallet2->status->shared_payment_method->{reason}, qr/$wallet1_loginid/, 'shared_payment_method reason contains shared loginid';
     ok $wallet2->status->allow_document_upload, 'Sharer has allow_document_upload status';
 };
 

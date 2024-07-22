@@ -7,11 +7,14 @@ use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::P2PWithClient;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use P2P;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 BOM::Test::Helper::P2PWithClient::bypass_sendbird();
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $escrow = BOM::Test::Helper::P2PWithClient::create_escrow();
 my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
@@ -222,7 +225,8 @@ for my $test_data (@data_for_notification_tests) {
                 type    => $test_data->{event},
                 details => $test_data->{data},
             },
-            'some_stream'
+            'some_stream',
+            $service_contexts
         );
 
         $redis->get_reply for map { $test_data->{expected}->{$_} } keys $test_data->{expected}->%*;

@@ -38,9 +38,7 @@ This subroutine saves the client object. It first retrieves the client object us
 =cut
 
 sub save_client {
-    my ($request) = @_;
-    my $user      = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    my $client    = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
 
     # Save the default client object
     if (not $client->save()) {
@@ -105,8 +103,7 @@ This subroutine saves the client financial_assessment object. It first retrieves
 =cut
 
 sub save_client_financial_assessment {
-    my ($request) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
     $client->set_financial_assessment($request->{attributes}{client_financial_assessment});
 }
 

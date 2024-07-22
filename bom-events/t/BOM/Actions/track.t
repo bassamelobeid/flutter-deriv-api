@@ -21,6 +21,8 @@ use BOM::User;
 use BOM::Service;
 use BOM::Platform::Locale qw(get_state_by_id);
 
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+
 my $test_customer = BOM::Test::Customer->create(
     email_verified => 1,
     clients        => [{
@@ -33,7 +35,7 @@ my $test_customer = BOM::Test::Customer->create(
         },
     ]);
 my $test_client = $test_customer->get_client_object('CR');
-my $user        = BOM::User->new(id => $test_customer->get_user_id());
+my $user        = $test_client->user;
 
 my (@identify_args, @track_args, @transactional_args);
 
@@ -96,21 +98,38 @@ subtest 'General event validation - filtering by brand' => sub {
     );
     request($req);
 
-    like exception { BOM::Event::Services::Track::track_event(event => 'login')->get },
+    like exception { BOM::Event::Services::Track::track_event(event => 'login', service_contexts => $service_contexts)->get },
         qr/login tracking triggered with an invalid or no loginid and no client. Please inform backend team if it continues to occur./,
         'Missing loginid exception';
 
-    like exception { BOM::Event::Services::Track::track_event(event => 'login', loginid => 'CR1234')->get },
+    like exception { BOM::Event::Services::Track::track_event(event => 'login', loginid => 'CR1234', service_contexts => $service_contexts)->get },
         qr/login tracking triggered with an invalid or no loginid and no client. Please inform backend team if it continues to occur./,
         'Invalid loginid exception';
 
-    like exception { BOM::Event::Services::Track::track_event(event => 'UNKNOWN', loginid => $test_client->loginid)->get },
-        qr/Unknown event <UNKNOWN> tracking request was triggered/,
-        'Unknown event exception';
+    like exception {
+        BOM::Event::Services::Track::track_event(
+            event            => 'UNKNOWN',
+            loginid          => $test_client->loginid,
+            service_contexts => $service_contexts
+        )->get
+    }, qr/Unknown event <UNKNOWN> tracking request was triggered/, 'Unknown event exception';
+
+    like exception {
+        BOM::Event::Services::Track::track_event(
+            event      => 'login',
+            loginid    => $test_customer->get_client_loginid('CR'),
+            properties => {a => 1}
+        )->get
+    }, qr/Missing service_contexts/, 'Missing service contexts exception';
 
     $segment_response = Future->fail('dummy test failure');
-    like exception { BOM::Event::Services::Track::track_event(event => 'login', loginid => $test_client->loginid)->get }, qr/dummy test failure/,
-        'Correct exception raised';
+    like exception {
+        BOM::Event::Services::Track::track_event(
+            event            => 'login',
+            loginid          => $test_client->loginid,
+            service_contexts => $service_contexts
+        )->get
+    }, qr/dummy test failure/, 'Correct exception raised';
     is @identify_args, 0, 'Segment identify is not invoked';
     ok @track_args, 'Segment track is invoked';
     my ($customer, %args) = @track_args;
@@ -132,9 +151,10 @@ subtest 'General event validation - filtering by brand' => sub {
     undef @track_args;
     $segment_response = Future->done(1);
     ok BOM::Event::Services::Track::track_event(
-        event      => 'login',
-        loginid    => $test_client->loginid,
-        properties => {a => 1},
+        event            => 'login',
+        loginid          => $test_client->loginid,
+        properties       => {a => 1},
+        service_contexts => $service_contexts,
     )->get, 'event emitted successfully';
     is @identify_args, 0, 'Segment identify is not invoked';
     ok @track_args, 'Segment track is invoked';
@@ -151,7 +171,8 @@ subtest 'General event validation - filtering by brand' => sub {
         event                => 'login',
         client               => $test_client,
         properties           => {browser => 'fire-chrome'},
-        is_identify_required => 1
+        is_identify_required => 1,
+        service_contexts     => $service_contexts
     )->get, 'event emitted successfully';
     ok @identify_args, 'Segment identify is invoked';
     ok @track_args,    'Segment track is invoked';
@@ -189,7 +210,9 @@ subtest 'General event validation - filtering by brand' => sub {
             loginid              => $test_client->loginid,
             properties           => {a => 1},
             is_identify_required => 1,
-            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand                => Brands->new(name => 'deriv'),
+            service_contexts     => $service_contexts
+        )->get, 'event emitted successfully';
         ok @identify_args, 'Segment identify is invoked';
         ok @track_args,    'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -204,7 +227,7 @@ subtest 'General event validation - filtering by brand' => sub {
         undef @identify_args;
 
         my $response = BOM::Service::user(
-            context    => $test_customer->get_user_service_context(),
+            context    => $service_contexts->{user},
             command    => 'update_attributes',
             user_id    => $test_customer->get_user_id(),
             attributes => {email_consent => 1});
@@ -220,7 +243,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 origin => 'client',
             },
             is_identify_required => 1,
-            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand                => Brands->new(name => 'deriv'),
+            service_contexts     => $service_contexts
+        )->get, 'event emitted successfully';
 
         ok @identify_args, 'Segment identify is invoked';
         ok @track_args,    'Segment track is invoked';
@@ -255,7 +280,7 @@ subtest 'General event validation - filtering by brand' => sub {
         undef @identify_args;
 
         my $response = BOM::Service::user(
-            context    => $test_customer->get_user_service_context(),
+            context    => $service_contexts->{user},
             command    => 'update_attributes',
             user_id    => $test_customer->get_user_id(),
             attributes => {email_consent => 0});
@@ -269,7 +294,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 email_consent  => 0,
             },
             is_identify_required => 1,
-            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand                => Brands->new(name => 'deriv'),
+            service_contexts     => $service_contexts
+        )->get, 'event emitted successfully';
         ok @identify_args, 'Segment identify is invoked';
         ok @track_args,    'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -311,7 +338,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 unsubscribed => 1,
             },
             is_identify_required => 1,
-            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand                => Brands->new(name => 'deriv'),
+            service_contexts     => $service_contexts
+        )->get, 'event emitted successfully';
         ok @identify_args, 'Segment identify is invoked';
         ok @track_args,    'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -341,7 +370,7 @@ subtest 'General event validation - filtering by brand' => sub {
         undef @identify_args;
 
         my $response = BOM::Service::user(
-            context    => $test_customer->get_user_service_context(),
+            context    => $service_contexts->{user},
             command    => 'update_attributes',
             user_id    => $test_customer->get_user_id(),
             attributes => {email_consent => 1});
@@ -357,7 +386,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 origin => 'client',
             },
             is_identify_required => 1,
-            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand                => Brands->new(name => 'deriv'),
+            service_contexts     => $service_contexts
+        )->get, 'event emitted successfully';
         ok @identify_args, 'Segment identify is invoked';
         ok @track_args,    'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -402,7 +433,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 currency => 'USD',
                 remark   => 'test123',
             },
-            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand            => Brands->new(name => 'deriv'),
+            service_contexts => $service_contexts
+        )->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
         ok @track_args, 'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -441,7 +474,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 is_agent_to_client => 0,
                 loginid            => $test_client->loginid,
             },
-            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand            => Brands->new(name => 'deriv'),
+            service_contexts => $service_contexts
+        )->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
         ok @track_args, 'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -487,7 +522,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 lang           => 'ID',
                 loginid        => $test_client->loginid,
             },
-            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand            => Brands->new(name => 'deriv'),
+            service_contexts => $service_contexts
+        )->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
         ok @track_args, 'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -525,7 +562,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 amount   => '-10',
                 currency => 'USD',
             },
-            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand            => Brands->new(name => 'deriv'),
+            service_contexts => $service_contexts
+        )->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
         ok @track_args, 'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -561,7 +600,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 gateway_code       => 'payment_agent_transfer',
                 is_agent_to_client => 0,
             },
-            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand            => Brands->new(name => 'deriv'),
+            service_contexts => $service_contexts
+        )->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
         ok @track_args, 'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -606,7 +647,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 lang           => 'ID',
                 loginid        => $test_client->loginid,
             },
-            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand            => Brands->new(name => 'deriv'),
+            service_contexts => $service_contexts
+        )->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
         ok @track_args, 'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -641,7 +684,7 @@ subtest 'General event validation - filtering by brand' => sub {
         undef @identify_args;
 
         my $response = BOM::Service::user(
-            context    => $test_customer->get_user_service_context(),
+            context    => $service_contexts->{user},
             command    => 'update_attributes',
             user_id    => $test_customer->get_user_id(),
             attributes => {preferred_language => 'RU'});
@@ -654,7 +697,9 @@ subtest 'General event validation - filtering by brand' => sub {
                 unsubscribed => 1,
                 lang         => 'ES',
             },
-            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+            brand            => Brands->new(name => 'deriv'),
+            service_contexts => $service_contexts
+        )->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
         ok @track_args, 'Segment track is invoked';
         ($customer, %args) = @track_args;
@@ -691,7 +736,8 @@ subtest 'General event validation - filtering by brand' => sub {
                 language   => 'EN',
             }};
         ok BOM::Event::Services::Track::track_event(
-            event => 'request_change_email',
+            event            => 'request_change_email',
+            service_contexts => $service_contexts,
             $args->%*
         )->get;
         ok @track_args,          'Segment track is invoked by default';
@@ -699,7 +745,8 @@ subtest 'General event validation - filtering by brand' => sub {
         BOM::Config::Runtime->instance->app_config->customerio->transactional_emails(1);
         undef @track_args;
         ok BOM::Event::Services::Track::track_event(
-            event => 'request_change_email',
+            event            => 'request_change_email',
+            service_contexts => $service_contexts,
             $args->%*
         )->get;
         ok @track_args,         'Segment track is invoked';
@@ -732,7 +779,8 @@ subtest 'General event validation - filtering by brand' => sub {
             });
         like exception {
             BOM::Event::Services::Track::track_event(
-                event => 'request_change_email',
+                event            => 'request_change_email',
+                service_contexts => $service_contexts,
                 $args->%*
             )->get
         }, qr{API ERROR};
@@ -759,7 +807,8 @@ subtest 'General event validation - filtering by brand' => sub {
         #test for failure mapper failure.
         like exception {
             BOM::Event::Services::Track::track_event(
-                event => 'request_change_email',
+                event            => 'request_change_email',
+                service_contexts => $service_contexts,
                 $args->%*
             )->get
         }, qr{No match found for transactional Event};
@@ -769,22 +818,30 @@ subtest 'General event validation - filtering by brand' => sub {
 sub test_segment_customer {
     my ($customer, $args) = @_;
 
-    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
-    is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
-    my ($year, $month, $day) = split('-', $test_client->date_of_birth);
+    my $user_data = BOM::Service::user(
+        context => $service_contexts->{user},
+        command => 'get_all_attributes',
+        user_id => $test_customer->get_user_id(),
+    );
+    ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+    $user_data = $user_data->{attributes};
 
-    my $has_exclude_until = $test_client->get_self_exclusion  ? $test_client->get_self_exclusion->exclude_until : undef;
-    my $unsubscribed      = $test_client->user->email_consent ? 'false'                                         : 'true';
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    is $customer->user_id, $test_customer->get_user_id(), 'User id is binary user id';
+    my ($year, $month, $day) = split('-', $user_data->{date_of_birth});
+
+    my $has_exclude_until = $test_client->get_self_exclusion ? $test_client->get_self_exclusion->exclude_until : undef;
+    my $unsubscribed      = $user_data->{email_consent}      ? 'false'                                         : 'true';
     if (defined($args->{properties}->{unsubscribed} || $has_exclude_until)) {
         $unsubscribed = 'true';
     }
 
     my $expected_traits = {
-        'salutation' => $test_client->salutation,
-        'email'      => $test_client->email,
-        'first_name' => $test_client->first_name,
-        'last_name'  => $test_client->last_name,
-        'birthday'   => $test_client->date_of_birth,
+        'salutation' => $user_data->{salutation},
+        'email'      => $user_data->{email},
+        'first_name' => $user_data->{first_name},
+        'last_name'  => $user_data->{last_name},
+        'birthday'   => $user_data->{date_of_birth},
         'age'        => (
             Time::Moment->new(
                 year  => $year,
@@ -792,17 +849,17 @@ sub test_segment_customer {
                 day   => $day
             )->delta_years(Time::Moment->now_utc)
         ),
-        'phone'      => $test_client->phone,
-        'created_at' => Date::Utility->new($test_client->date_joined)->datetime_iso8601,
+        'phone'      => $user_data->{phone},
+        'created_at' => Date::Utility->new($user_data->{date_joined})->datetime_iso8601,
         'address'    => {
-            street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
-            town        => $test_client->address_city,
-            state       => BOM::Platform::Locale::get_state_by_id($test_client->state, $test_client->residence) // '',
-            postal_code => $test_client->address_postcode,
-            country     => Locale::Country::code2country($test_client->residence),
+            street      => $user_data->{address_line_1} . " " . $user_data->{address_line_2},
+            town        => $user_data->{address_city},
+            state       => BOM::Platform::Locale::get_state_by_id($user_data->{address_state}, $user_data->{residence}) // '',
+            postal_code => $user_data->{address_postcode},
+            country     => Locale::Country::code2country($user_data->{residence}),
         },
         'currencies'                => '',
-        'country'                   => Locale::Country::code2country($test_client->residence),
+        'country'                   => Locale::Country::code2country($user_data->{residence}),
         'mt5_loginids'              => join(',', sort($user->get_mt5_loginids)),
         landing_companies           => 'svg',
         available_landing_companies => 'labuan,svg',

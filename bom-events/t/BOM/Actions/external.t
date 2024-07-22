@@ -10,6 +10,9 @@ use BOM::Event::Services;
 use BOM::User::IdentityVerification;
 use BOM::Platform::Utility;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
+use BOM::Test::Customer;
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
@@ -54,7 +57,7 @@ subtest 'send_idv_configuration' => sub {
             return $app_config_mock->original('check_for_update')->(@_);
         });
 
-    BOM::Event::Actions::External::send_idv_configuration->get;
+    BOM::Event::Actions::External::send_idv_configuration(undef, $service_contexts)->get;
     is exists($emissions->{idv_configuration}), 1, 'idv_configuration event emitted';
 
     my $config = BOM::Platform::Utility::idv_configuration();
@@ -69,7 +72,7 @@ subtest 'send_idv_configuration' => sub {
     $emissions = {};
     $forced    = undef;
 
-    BOM::Event::Actions::External::send_idv_configuration({force_update => 1})->get;
+    BOM::Event::Actions::External::send_idv_configuration({force_update => 1}, $service_contexts)->get;
     is exists($emissions->{idv_configuration}), 1, 'idv_configuration event emitted';
 
     my $config = BOM::Platform::Utility::idv_configuration();
@@ -118,10 +121,10 @@ subtest 'idv_configuration_disable_provider' => sub {
         });
 
     my $args = {};
-    dies_ok { BOM::Event::Actions::External::idv_configuration_disable_provider($args)->get } 'Exception thrown in no provider';
+    dies_ok { BOM::Event::Actions::External::idv_configuration_disable_provider($args, $service_contexts)->get } 'Exception thrown in no provider';
 
     $args = {provider => 'provider_a'};
-    BOM::Event::Actions::External::idv_configuration_disable_provider($args)->get;
+    BOM::Event::Actions::External::idv_configuration_disable_provider($args, $service_contexts)->get;
     is $redis->get(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'provider_a')->get, 1, 'provider disabled redis key set';
 
     my $config           = BOM::Platform::Utility::idv_configuration();
@@ -179,10 +182,10 @@ subtest 'idv_configuration_enable_provider' => sub {
     ok !$provider_enabled, 'provider is disabled';
 
     my $args = {};
-    dies_ok { BOM::Event::Actions::External::idv_configuration_enable_provider($args)->get } 'Exception thrown in no provider';
+    dies_ok { BOM::Event::Actions::External::idv_configuration_enable_provider($args, $service_contexts)->get } 'Exception thrown in no provider';
 
     $args = {provider => 'provider_a'};
-    BOM::Event::Actions::External::idv_configuration_enable_provider($args)->get;
+    BOM::Event::Actions::External::idv_configuration_enable_provider($args, $service_contexts)->get;
     is $redis->get(BOM::User::IdentityVerification::IDV_CONFIGURATION_OVERRIDE . 'provider_a')->get, undef, 'provider disabled redis key deleted';
 
     is exists($emissions->{idv_configuration}), 1, 'idv_configuration event emitted';

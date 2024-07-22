@@ -6,8 +6,11 @@ use Test::Fatal;
 use Test::MockModule;
 use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::User::Client;
 use BOM::Event::Actions::Client;
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $client;
 my $offset = 0;
@@ -18,79 +21,75 @@ $mock_events->mock(emit => sub { $emitted->{$_[0]} = $_[1] });
 
 subtest 'name checks' => sub {
 
-    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'namechange1@test.com',
-        first_name  => 'brad',
-        last_name   => 'pitt',
-    });
-
-    BOM::User->create(
-        email    => $client->email,
-        password => 'test',
-    )->add_client($client);
-
-    $client->account('USD');
+    my $test_customer = BOM::Test::Customer->create(
+        first_name => 'brad',
+        last_name  => 'pitt',
+        clients    => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+    $client = $test_customer->get_client_object('CR');
     $client->db->dbic->dbh->do("UPDATE audit.client SET stamp = '2020-01-01'::TIMESTAMP WHERE loginid = ?", undef, $client->loginid);
 
     my $offset = 0;
 
     change_name('bob', 'smith');
-    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
+    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid}, $service_contexts);
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked before first deposit';
     ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     df_deposit(100);
-    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
+    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid}, $service_contexts);
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after first deposit';
     ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     change_name('smith', 'bob');
-    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
+    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid}, $service_contexts);
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after name flip';
     ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     change_name('bob', 'smyth');
-    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
+    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid}, $service_contexts);
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after minor change';
     ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     $client->status->setnx('age_verification', 'test');
     change_name('maria', 'juana');
-    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
+    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid}, $service_contexts);
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked on age verified client';
     ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     $client->status->clear_age_verification;
     change_name('mary', 'jane');
-    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
+    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid}, $service_contexts);
     ok my $status = BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'withdrawal locked after big change';
     is $status->{reason}, 'Excessive name changes after first deposit - pending POI', 'correct reason';
     ok defined($emitted->{account_with_false_info_locked}), 'email sent';
 
     undef $emitted;
-    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
+    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid}, $service_contexts);
     ok !defined($emitted->{account_with_false_info_locked}), 'email not sent if already withdrawal_locked';
 
     # legacy client with no name set
-    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'namechange2@test.com',
-        first_name  => '',
-        last_name   => '',
-    });
-
-    BOM::User->create(
-        email    => $client->email,
-        password => 'test',
-    )->add_client($client);
+    $test_customer = BOM::Test::Customer->create(
+        first_name => '',
+        last_name  => '',
+        clients    => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+    $client = $test_customer->get_client_object('CR');
     $client->db->dbic->dbh->do("UPDATE audit.client SET stamp = '2020-01-01'::TIMESTAMP + INTERVAL '1 day ' * ? WHERE loginid = ?",
         undef, $offset, $client->loginid);
 
     df_deposit(100);
     change_name('new', 'name');
     undef $emitted;
-    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
+    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid}, $service_contexts);
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after set name from empty';
     ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 };
@@ -105,9 +104,11 @@ subtest 'deposit event' => sub {
     $client->account('USD');
 
     BOM::Event::Actions::Client::payment_deposit({
-        loginid            => $client->loginid,
-        account_identifier => $client->account->id
-    });
+            loginid            => $client->loginid,
+            account_identifier => $client->account->id
+        },
+        $service_contexts
+    );
     cmp_deeply($emitted->{check_name_changes_after_first_deposit}, {loginid => $client->loginid}, 'event emitted from deposit');
 };
 

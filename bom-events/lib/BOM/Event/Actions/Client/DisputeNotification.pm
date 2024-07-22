@@ -59,8 +59,10 @@ returns, undef.
 =cut
 
 sub dispute_notification {
+    my ($args, $service_contexts) = @_;
 
-    my $args = shift;
+    die "Missing service_contexts" unless $service_contexts;
+
     my ($provider, $data) = @{$args}{qw/provider data/};
 
     my $handler = $notification_handlers{$provider};

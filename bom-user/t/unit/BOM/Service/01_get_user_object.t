@@ -13,16 +13,20 @@ use BOM::User;
 use BOM::User::Client;
 use Time::HiRes qw(tv_interval gettimeofday);
 
-# Mock the BOM::User module
-my $mock_user         = Test::MockModule->new('BOM::User');
-my $new_call_count    = 0;                                    # Reset the counter
+my $mock_user   = Test::MockModule->new('BOM::User');
+my $mock_helper = Test::MockModule->new('BOM::Service::Helpers');
+my $mock_core   = Test::MockModule->new('CORE::GLOBAL');
+
+my $new_call_count    = 0;    # Reset the counter
 my $requested_user_id = 0;
+my $client_count      = 0;
 
 use constant {CACHE_SIZE => 3};
 
 sub init_test {
     $new_call_count                             = 0;
     $requested_user_id                          = 0;
+    $client_count                               = 1;
     $BOM::Service::Helpers::user_object_cache   = Cache::LRU->new(size => CACHE_SIZE);
     $BOM::Service::Helpers::client_object_cache = Cache::LRU->new(size => CACHE_SIZE);
 }
@@ -35,14 +39,25 @@ $mock_user->mock(
         $requested_user_id = $args{id};
         return $requested_user_id > 100
             ? undef
-            : {
+            : bless {
             hey_look => 'I am a mock user object',
-            id       => $requested_user_id
-            };
+            id       => $requested_user_id,
+            },
+            'BOM::User';
+    });
+
+# Mock the 'loginids' method
+$mock_user->mock(
+    loginids => sub {
+        return $client_count;
+    });
+
+$mock_helper->mock(
+    _get_loginid_count => sub {
+        return $client_count;
     });
 
 # Stop the booby traps going off!!
-my $mock_core = Test::MockModule->new('CORE::GLOBAL');
 $mock_core->mock('caller', sub { return 'BOM::Service::ValidNamespace' });
 
 subtest 'Check for exception on non-existent user' => sub {
@@ -154,7 +169,28 @@ subtest 'Check cache is flushed thru after CACHE_SIZE calls' => sub {
     isnt($user, $user2, 'user objects are different');
 };
 
-$mock_core->unmock('caller');
-$mock_user->unmock('new');
+subtest 'Check cache is flushed after if number of client accounts changes' => sub {
+    init_test();
+    my $user = BOM::Service::Helpers::get_user_object(1, 'correlation_id_001');
+    is($new_call_count,    1, 'new called once');
+    is($requested_user_id, 1, 'requested user id is 1');
+    is($user->{id},        1, 'user object id is correct');
+
+    $user = BOM::Service::Helpers::get_user_object(1, 'correlation_id_001');
+    is($new_call_count,    1, 'new called once');
+    is($requested_user_id, 1, 'requested user id is 1');
+    is($user->{id},        1, 'user object id is correct');
+
+    # Changing the client count should flush cache and we should see a new
+    $client_count = 2;
+    $user         = BOM::Service::Helpers::get_user_object(1, 'correlation_id_001');
+    is($new_call_count,    2, 'new called twice');
+    is($requested_user_id, 1, 'requested user id is 1');
+    is($user->{id},        1, 'user object id is correct');
+};
+
+$mock_user->unmock_all();
+$mock_helper->unmock_all();
+$mock_core->unmock_all();
 
 done_testing();

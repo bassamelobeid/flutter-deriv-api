@@ -64,9 +64,9 @@ Returns C<1> on success, C<undef> otherwise.
 =cut
 
 async sub set_age_verification {
-    my ($client, $provider, $redis, $poi_method) = @_;
+    my ($client, $provider, $redis, $poi_method, $service_contexts) = @_;
 
-    croak 'poi_mehod is required' unless $poi_method;
+    croak 'poi_method is required' unless $poi_method;
 
     my $reason = "$provider - age verified";
     my $staff  = 'system';
@@ -88,7 +88,7 @@ async sub set_age_verification {
 
     $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $status_code, $reason);
 
-    _email_client_age_verified($client);
+    _email_client_age_verified($client, $service_contexts);
 
     $setter->($client);
 
@@ -128,7 +128,7 @@ async sub set_age_verification {
     if ($client->get_poa_status eq 'pending' && $acquire_lock) {
         _send_CS_email_POA_pending($client);
     }
-    BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client => $client});
+    BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client => $client}, $service_contexts);
 
     return 1;
 }
@@ -277,7 +277,9 @@ Returns undef
 =cut
 
 sub _email_client_age_verified {
-    my ($client) = @_;
+    my ($client, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $brand = request->brand;
 
@@ -288,6 +290,15 @@ sub _email_client_age_verified {
     # p2p will handle notification for this case
     return if ($client->status->reason('allow_document_upload') // '') eq 'P2P_ADVERTISER_CREATED';
 
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $client->binary_user_id,
+        attributes => [qw(email first_name preferred_language)],
+    );
+    die "User-service read failed: $user_data->{message}" unless ($user_data->{status} eq 'ok');
+    $user_data = $user_data->{attributes};
+
     my $website_name = $brand->website_name;
 
     try {
@@ -295,12 +306,12 @@ sub _email_client_age_verified {
             age_verified => {
                 loginid    => $client->loginid,
                 properties => {
-                    email         => $client->email,
-                    name          => $client->first_name,
+                    email         => $user_data->{email},
+                    name          => $user_data->{first_name},
                     website_name  => $website_name,
-                    contact_url   => $brand->contact_url({language => uc($client->user->preferred_language // request->language // 'en')}),
-                    poi_url       => $brand->authentication_url({language => uc($client->user->preferred_language // request->language // 'en')}),
-                    live_chat_url => $brand->live_chat_url({language => uc($client->user->preferred_language // request->language // 'en')}),
+                    contact_url   => $brand->contact_url({language => uc($user_data->{preferred_language} // request->language // 'en')}),
+                    poi_url       => $brand->authentication_url({language => uc($user_data->{preferred_language} // request->language // 'en')}),
+                    live_chat_url => $brand->live_chat_url({language => uc($user_data->{preferred_language} // request->language // 'en')}),
                 }});
     } catch ($e) {
         $log->warn($e);
@@ -318,7 +329,9 @@ Only triggering by user ids is supported for now.
 =cut
 
 sub trigger_cio_broadcast {
-    my $data = shift;
+    my ($data, $service_contexts) = @_;
+
+    die "Missing service_contexts" unless $service_contexts;
 
     my $campaign_id = delete $data->{campaign_id};
     unless ($campaign_id) {
@@ -361,7 +374,7 @@ sub handle_duplicated_documents {
 
     return undef if $disabled_feature;
 
-    my ($client, $document, $provider) = @_;
+    my ($client, $document, $provider, $service_contexts) = @_;
 
     my $owner = BOM::User->new(id => $document->{binary_user_id});
 
@@ -405,12 +418,20 @@ sub handle_duplicated_documents {
             language => uc($client->user->preferred_language // request->language // 'en'),
         };
 
+        my $user_data = BOM::Service::user(
+            context    => $service_contexts->{user},
+            command    => 'get_attributes',
+            user_id    => $client->binary_user_id,
+            attributes => [qw(email)],
+        );
+        die "User-service read failed: $user_data->{message}" unless ($user_data->{status} eq 'ok');
+
         BOM::Platform::Event::Emitter::emit(
             duplicated_document_account_closed => {
                 loginid    => $client->loginid,
                 properties => {
                     tnc_approval => $brand->tnc_approval_url($params),
-                    email        => $client->email,
+                    email        => $user_data->{attributes}{email},
                 }});
     }
 

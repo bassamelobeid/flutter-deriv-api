@@ -26,6 +26,8 @@ use List::Util qw(uniq);
 use Date::Utility;
 use BOM::User;
 use BOM::User::Client;
+use UUID::Tiny;
+use Net::Domain qw( hostname );
 
 use constant DOCUMENT_EXPIRATION_REMINDER_LOCK       => 'DOCUMENT::EXPIRATION::REMINDER::';
 use constant DOCUMENT_EXPIRATION_REMINDER_TTL        => 86400 * 30;                           # don't bother the client for another 30 DAYS
@@ -51,8 +53,16 @@ Runs pending checks again.
 async sub run {
     my ($self) = @_;
 
-    await $self->expiring_today;
-    await $self->soon_to_be_expired;
+    my $service_contexts = {
+        user => {
+            correlation_id => UUID::Tiny::create_UUID_as_string(UUID::Tiny::UUID_V4),
+            auth_token     => "Unused but required to be present",
+            environment    => hostname() . ' BOM::Event::Script::DocumentExpirationReminder ' . $$,
+        },
+    };
+
+    await $self->expiring_today($service_contexts);
+    await $self->soon_to_be_expired($service_contexts);
 }
 
 =head2 expiring_today
@@ -62,7 +72,7 @@ Process the notification for those clients whose POI are expiring today
 =cut
 
 async sub expiring_today {
-    my ($self) = @_;
+    my ($self, $service_contexts) = @_;
 
     my $mt5_config = BOM::Config::MT5->new;
     my $offset     = 0;
@@ -85,7 +95,7 @@ async sub expiring_today {
         $offset += scalar $list->@*;
 
         for my $record ($list->@*) {
-            await $self->notify_expiring_today($record);
+            await $self->notify_expiring_today($record, $service_contexts);
 
             $last = $record;
         }
@@ -109,7 +119,7 @@ Process the soon to be expired queue.
 =cut
 
 async sub soon_to_be_expired {
-    my ($self) = @_;
+    my ($self, $service_contexts) = @_;
 
     my $mt5_config = BOM::Config::MT5->new;
     my $offset     = 0;
@@ -134,9 +144,11 @@ async sub soon_to_be_expired {
 
         for my $record ($list->@*) {
             await $self->notify_soon_to_be_expired({
-                $record->%*,
-                expiration_date => $expiration,
-            });
+                    $record->%*,
+                    expiration_date => $expiration,
+                },
+                $service_contexts
+            );
             $last = $record;
         }
 
@@ -168,23 +180,25 @@ Returns C<undef>
 =cut
 
 async sub notify_expiring_today {
-    my ($self, $record) = @_;
+    my ($self, $record, $service_contexts) = @_;
 
     my $user = BOM::User->new(id => $record->{binary_user_id});
-
     return undef unless $user;
 
-    my ($loginid) = $user->bom_real_loginids;
-
-    return undef unless $loginid;
-
-    my $client = BOM::User::Client->new({loginid => $loginid});
-
+    my $client = $user->get_default_client();
     return undef unless $client;
+
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $record->{binary_user_id},
+        attributes => [qw(email)],
+    );
+    die undef unless ($user_data->{status} eq 'ok');
 
     return undef if await $self->notify_locked($record);
 
-    $self->update_notified_at($user->id);
+    $self->update_notified_at($record->{binary_user_id});
 
     BOM::Platform::Event::Emitter::emit(
         'document_expiring_today',
@@ -193,7 +207,7 @@ async sub notify_expiring_today {
             properties => {
                 authentication_url => request->brand->authentication_url,
                 live_chat_url      => request->brand->live_chat_url,
-                email              => $client->email,
+                email              => $user_data->{attributes}{email},
             }});
 
     return undef;
@@ -237,23 +251,25 @@ Returns C<undef>
 =cut
 
 async sub notify_soon_to_be_expired {
-    my ($self, $record) = @_;
+    my ($self, $record, $service_contexts) = @_;
 
     my $user = BOM::User->new(id => $record->{binary_user_id});
-
     return undef unless $user;
 
-    my ($loginid) = $user->bom_real_loginids;
-
-    return undef unless $loginid;
-
-    my $client = BOM::User::Client->new({loginid => $loginid});
-
+    my $client = $user->get_default_client();
     return undef unless $client;
+
+    my $user_data = BOM::Service::user(
+        context    => $service_contexts->{user},
+        command    => 'get_attributes',
+        user_id    => $record->{binary_user_id},
+        attributes => [qw(email)],
+    );
+    die undef unless ($user_data->{status} eq 'ok');
 
     return undef if await $self->notify_locked($record);
 
-    $self->update_notified_at($user->id);
+    $self->update_notified_at($record->{binary_user_id});
 
     BOM::Platform::Event::Emitter::emit(
         'document_expiring_soon',
@@ -263,7 +279,7 @@ async sub notify_soon_to_be_expired {
                 expiration_date    => $record->{expiration_date}->epoch,
                 authentication_url => request->brand->authentication_url,
                 live_chat_url      => request->brand->live_chat_url,
-                email              => $client->email,
+                email              => $user_data->{attributes}{email},
             }});
 
     return undef;

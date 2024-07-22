@@ -9,6 +9,7 @@ use Test::MockModule;
 use BOM::Event::Actions::Anonymization;
 use BOM::Test;
 use BOM::Test::Email;
+use BOM::Test::Customer;
 use BOM::Config::Runtime;
 use BOM::User;
 use BOM::User::Client;
@@ -24,11 +25,13 @@ use IO::Async::Loop;
 use BOM::Event::Services;
 use LandingCompany::Registry;
 use BOM::Platform::Doughflow;
+use BOM::Service;
 
-my $redis      = BOM::Event::Actions::Anonymization::_redis_payment_write();
-my $redis_mock = Test::MockModule->new('Net::Async::Redis');
-my $df_queue   = [];
-my $df_partial = [];
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+my $redis            = BOM::Event::Actions::Anonymization::_redis_payment_write();
+my $redis_mock       = Test::MockModule->new('Net::Async::Redis');
+my $df_queue         = [];
+my $df_partial       = [];
 
 $redis_mock->mock(
     'zadd',
@@ -63,40 +66,53 @@ $mock_config->mock(
         },
     });
 
-my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my $mocked_emitter                 = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my $user_service_anonymize_allowed = 1;
+
+# Replace the command in the user service command map with a mocked method that allows
+# us to control the return value of the anonymize_allowed command
+my $response = BOM::Service::admin(
+    command  => 'replace_command',
+    service  => 'user',
+    function => 'anonymize_allowed',
+    code     => sub {
+        return {
+            status            => 'ok',
+            command           => 'anonymize_allowed',
+            anonymize_allowed => $user_service_anonymize_allowed,
+        };
+    },
+);
+is $response->{status}, 'ok', 'Mocked user service anonymize_allowed command';
 
 subtest client_anonymization => sub {
     my $BRANDS = BOM::Platform::Context::request()->brand();
 
-    # Mock BOM::User module
-    my $mock_user_module = Test::MockModule->new('BOM::User');
-    $mock_user_module->mock('valid_to_anonymize', sub { return 0 });
+    # User service says client can't be anonymised
+    $user_service_anonymize_allowed = 0;
 
-    my $user = BOM::User->create(
-        email    => random_email_address,
-        password => BOM::User::Password::hashpw('password'));
-
-    # Add a CR client to the user
-    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
+    my $customer = BOM::Test::Customer->create(
+        residence   => 'id',
         date_joined => Date::Utility->new()->_minus_years(10)->datetime_yyyymmdd_hhmmss,
-    });
-    $user->add_client($cr_client);
+        clients     => [{
+                name        => 'CR',
+                broker_code => 'CR'
+            },
+        ]);
 
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client()->get;
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client(undef, $service_contexts)->get;
     is $result, undef, "Return undef when loginid is not provided.";
 
     mailbox_clear();
-    $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid})->get;
+    $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $customer->get_client_loginid('CR')}, $service_contexts)->get;
     my $msg = mailbox_search(subject => qr/Anonymization report for/);
-
     # It should send an notification email to compliance
-    like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance receive an email if user shouldn't anonymize./);
-    like($msg->{body},    qr/has at least one active client/,             qq/Compliance receive an email if user shouldn't anonymize./);
+    like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance receive an email if user shouldn't anonymize. (subject)/);
+    like($msg->{body},    qr/has at least one active client/,             qq/Compliance receive an email if user shouldn't anonymize. (body)/);
 
     mailbox_clear();
     $df_partial = [];
-    $result     = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => 'MX009'})->get;
+    $result     = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => 'MX009'}, $service_contexts)->get;
     $msg        = mailbox_search(subject => qr/Anonymization report for/);
 
     # It should send an notification email to compliance dpo team
@@ -111,29 +127,29 @@ subtest client_anonymization => sub {
 };
 
 subtest client_anonymization_vrtc_without_siblings => sub {
-    my $BRANDS = BOM::Platform::Context::request()->brand();
-
-    my $user = BOM::User->create(
-        email    => random_email_address,
-        password => BOM::User::Password::hashpw('password'));
-
-    # Add a VRTC client to the user
-    my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
+    my $customer = BOM::Test::Customer->create(
+        residence   => 'id',
         date_joined => Date::Utility->new()->_minus_months(1)->datetime_yyyymmdd_hhmmss,
-    });
-    $user->add_client($vrtc_client);
+        clients     => [{
+                name        => 'VRTC',
+                broker_code => 'VRTC'
+            },
+        ]);
+    my $user = $customer->get_client_object('VRTC')->user;
 
     my $user_connect = BOM::Database::Model::UserConnect->new;
     $user_connect->insert_connect(
-        $user->{id},
-        $user->{email},
+        $customer->get_user_id(),
+        $customer->get_email(),
         {
             user => {
                 identity => {
                     provider              => 'google',
                     provider_identity_uid => "test_uid"
                 }}});
+
+    # Will fail for reasons other than its allowed
+    $user_service_anonymize_allowed = 1;
 
     # Mock BOM::Event::Actions::Anonymization module
     my $mock_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
@@ -156,13 +172,16 @@ subtest client_anonymization_vrtc_without_siblings => sub {
             return Future->fail(0);
         });
 
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid})->get;
-    ok($result, 'Returns 1 after user anonymized.');
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $customer->get_client_loginid('VRTC')}, $service_contexts)->get;
+    is($result, undef, 'Returns failed after user was not anonymized.');
 
     # Retrieve anonymized user from database by id
     my @anonymized_clients = $user->clients(include_disabled => 1);
 
     isnt $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was NOT anonymized' for @anonymized_clients;
+
+    # All is well, we want anon to work now
+    $user_service_anonymize_allowed = 1;
 
     # Bypass CloseIO API calling and mock success response
     $mock_closeio->mock('anonymize_user', 1);
@@ -174,7 +193,7 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     $mock_s3_desk->mock('anonymize_user', sub { return Future->done(1) });
 
     $df_partial = [];
-    $result     = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid})->get;
+    $result     = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $customer->get_client_loginid('VRTC')}, $service_contexts)->get;
     is($result, 1, 'Returns 1 after user anonymized.');
 
     # Check user social login connects anonymized
@@ -209,33 +228,30 @@ subtest client_anonymization_vrtc_without_siblings => sub {
 };
 
 subtest client_anonymization_vrtc_with_siblings => sub {
-    my $BRANDS = BOM::Platform::Context::request()->brand();
-
-    my $user = BOM::User->create(
-        email    => random_email_address,
-        password => BOM::User::Password::hashpw('password'));
-
-    # Add a VRTC client to the user
-    my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        date_joined => Date::Utility->new()->_minus_months(1)->datetime_yyyymmdd_hhmmss,
-    });
-    $user->add_client($vrtc_client);
-
-    # Add a CR client to the user
-    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
+    my $customer = BOM::Test::Customer->create(
+        residence   => 'id',
         date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
-    });
-    $user->add_client($cr_client);
+        clients     => [{
+                name        => 'VRTC',
+                broker_code => 'VRTC'
+            },
+            {
+                name        => 'CR',
+                broker_code => 'CR'
+            },
+        ]);
+    my $user = $customer->get_client_object('VRTC')->user;
+
+    # User service says client can't be anonymised
+    $user_service_anonymize_allowed = 0;
 
     # Mock BOM::Event::Actions::Anonymization module
     my $mock_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
     $mock_anonymization->mock('_send_anonymization_report', sub { return 1 });
 
     $df_partial = [];
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid})->get;
-    is($result, 1, 'Returns 1 after user anonymized.');
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $customer->get_client_loginid('VRTC')}, $service_contexts)->get;
+    is($result, undef, 'Returns undef after user anonymize fails.');
 
     # Retrieve anonymized user from database by id
     my @anonymized_clients = $user->clients(include_disabled => 1);
@@ -249,30 +265,26 @@ subtest client_anonymization_vrtc_with_siblings => sub {
 
 subtest anonymize_clients => sub {
     my $BRANDS = BOM::Platform::Context::request()->brand();
-    my (@lines, @clients, @users);
-    # Mock BOM::User module
-    my $mock_user_module = Test::MockModule->new('BOM::User');
-    $mock_user_module->mock('valid_to_anonymize', sub { return 0 });
+    my (@lines, @users);
 
     # Create an array of active loginids to be like csv read output.
     for (my $i = 0; $i <= 5; $i++) {
-        $users[$i] = BOM::User->create(
-            email    => random_email_address,
-            password => BOM::User::Password::hashpw('password'));
-
-        # Add a CR client to the user
-        $clients[$i] = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
+        my $customer = BOM::Test::Customer->create(
+            residence   => 'id',
             date_joined => Date::Utility->new()->_minus_years(10)->datetime_yyyymmdd_hhmmss,
-        });
-        $users[$i]->add_client($clients[$i]);
-        push @lines, [$clients[$i]->loginid];
+            clients     => [{
+                    name        => 'CR',
+                    broker_code => 'CR'
+                },
+            ]);
+        $users[$i] = $customer->get_user_id();
+        push @lines, [$customer->get_client_loginid('CR')];
     }
-    my $result = BOM::Event::Actions::Anonymization::anonymize_clients()->get;
+    my $result = BOM::Event::Actions::Anonymization::anonymize_clients(undef, $service_contexts)->get;
     is $result, undef, "Return undef when client's list is not provided.";
 
     mailbox_clear();
-    $result = BOM::Event::Actions::Anonymization::anonymize_clients({'data' => \@lines})->get;
+    $result = BOM::Event::Actions::Anonymization::anonymize_clients({'data' => \@lines}, $service_contexts)->get;
     my $msg = mailbox_search(subject => qr/Anonymization report for/);
 
     # It should send an notification email to compliance dpo team
@@ -280,7 +292,8 @@ subtest anonymize_clients => sub {
     like($msg->{body},    qr/has at least one active client/,             qq/Failure reason is correct/);
     cmp_deeply($msg->{to}, [$BRANDS->emails('compliance_dpo')], qq/Email should send to the compliance dpo team./);
 
-    $mock_user_module->mock('valid_to_anonymize', sub { return 1 });
+    # User service says client can't be anonymised
+    $user_service_anonymize_allowed = 0;
 
     # Bypass CloseIO API calling and mock error response
     my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
@@ -295,7 +308,7 @@ subtest anonymize_clients => sub {
     $mock_s3_desk->mock('anonymize_user', sub { return Future->fail(0) });
 
     mailbox_clear();
-    $result = BOM::Event::Actions::Anonymization::anonymize_clients({'data' => \@lines})->get;
+    $result = BOM::Event::Actions::Anonymization::anonymize_clients({'data' => \@lines}, $service_contexts)->get;
     is($result, 1, 'Returns 1 after user anonymized.');
 
     $msg = mailbox_search(subject => qr/Anonymization report for/);
@@ -304,6 +317,9 @@ subtest anonymize_clients => sub {
     like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance report including failures and successes./);
     like($msg->{body},    qr/Anonymization failed for \d+ clients/,       qq/Failure reason is correct/);
     cmp_deeply($msg->{to}, [$BRANDS->emails('compliance_dpo')], qq/Email should send to the compliance dpo team./);
+
+    # User service says client is OK to be anonymised
+    $user_service_anonymize_allowed = 1;
 
     $mock_closeio->mock('anonymize_user', 1);
 
@@ -324,14 +340,14 @@ subtest anonymize_clients => sub {
 
     $df_partial = [];
 
-    $result = BOM::Event::Actions::Anonymization::anonymize_clients({'data' => \@lines})->get;
+    $result = BOM::Event::Actions::Anonymization::anonymize_clients({'data' => \@lines}, $service_contexts)->get;
     is($result, 1, 'Returns 1 after user anonymized.');
 
     my $df_anon = [];
 
-    foreach my $user (@users) {
+    foreach my $user_id (@users) {
         # Retrieve anonymized user from database by id
-        my $anonymized_user    = BOM::User->new(id => $user->id);
+        my $anonymized_user    = BOM::User->new(id => $user_id);
         my @anonymized_clients = $anonymized_user->clients(include_disabled => 1);
 
         foreach my $anonymized_client (@anonymized_clients) {
@@ -357,8 +373,8 @@ subtest auto_anonymize_candidates => sub {
     my @emitted_data;
     $mocked_emitter->mock(emit => sub { push @emitted_data, $_[1]->{data}->@* });
 
-    is BOM::Event::Actions::Anonymization::auto_anonymize_candidates()->get(), 1, 'Auto anonymization triggered sucessfully';
-    is scalar @emitted_data,                                                   0, 'Bulk anonymization is not called';
+    is BOM::Event::Actions::Anonymization::auto_anonymize_candidates({}, $service_contexts)->get(), 1, 'Auto anonymization triggered sucessfully';
+    is scalar @emitted_data,                                                                        0, 'Bulk anonymization is not called';
 
     $collector_db->run(
         ping => sub {
@@ -384,8 +400,8 @@ subtest auto_anonymize_candidates => sub {
             );
         });
 
-    is BOM::Event::Actions::Anonymization::auto_anonymize_candidates()->get(), 1, 'Auto anonymization triggered sucessfully';
-    is scalar @emitted_data,                                                   2, 'Anonymization is called twice';
+    is BOM::Event::Actions::Anonymization::auto_anonymize_candidates({}, $service_contexts)->get(), 1, 'Auto anonymization triggered sucessfully';
+    is scalar @emitted_data,                                                                        2, 'Anonymization is called twice';
     is_deeply \@emitted_data, [qw(CR101 MF101)],
         'Loginids are correctly passed to the anonymization process - only one of siblings account (MF101, MF102) is processed';
 
@@ -405,8 +421,8 @@ subtest auto_anonymize_candidates => sub {
 
     undef @emitted_data;
     BOM::Config::Runtime->instance->app_config->compliance->auto_anonymization_daily_limit(1);
-    is BOM::Event::Actions::Anonymization::auto_anonymize_candidates()->get(), 1, 'Auto anonymization triggered sucessfully';
-    is scalar @emitted_data,                                                   1, 'Anonymization is called once';
+    is BOM::Event::Actions::Anonymization::auto_anonymize_candidates({}, $service_contexts)->get(), 1, 'Auto anonymization triggered sucessfully';
+    is scalar @emitted_data,                                                                        1, 'Anonymization is called once';
     is_deeply \@emitted_data, [qw(CR101)], 'Canidates are limited by the dynamic app config';
     BOM::Config::Runtime->instance->app_config->compliance->auto_anonymization_daily_limit(50);
 
@@ -423,7 +439,7 @@ subtest bulk_anonymization => sub {
     subtest 'bulk_anonymization with invalid data' => sub {
         my $args = {};
 
-        my $result = BOM::Event::Actions::Anonymization::bulk_anonymization($args)->get;
+        my $result = BOM::Event::Actions::Anonymization::bulk_anonymization($args, $service_contexts)->get;
 
         is scalar @emitted_events, 0,     'No events should be emitted when there is no data';
         is $result,                undef, 'Returns undef when there is no data';
@@ -432,7 +448,7 @@ subtest bulk_anonymization => sub {
     subtest 'Data to be processed in one event' => sub {
         my $args = {'data' => ['CR101', 'MF101']};
 
-        BOM::Event::Actions::Anonymization::bulk_anonymization($args)->get;
+        BOM::Event::Actions::Anonymization::bulk_anonymization($args, $service_contexts)->get;
 
         my $expected_events = [{'anonymize_clients', {'data' => ['CR101', 'MF101']}},];
 
@@ -443,7 +459,7 @@ subtest bulk_anonymization => sub {
         my $args = {'data' => ['CR101', 'MF101', 'CR102', 'MF102']};
         undef @emitted_events;
 
-        BOM::Event::Actions::Anonymization::bulk_anonymization($args)->get;
+        BOM::Event::Actions::Anonymization::bulk_anonymization($args, $service_contexts)->get;
 
         my $expected_events = [{'anonymize_clients', {'data' => ['CR101', 'MF101']}}, {'anonymize_clients', {'data' => ['CR102', 'MF102']}},];
 
@@ -464,6 +480,9 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
     my @user_clients = ();
     $mock_client_module->mock('get_user_loginids_list', sub { return @user_clients });
 
+    # User service says client is OK to be anonymised
+    $user_service_anonymize_allowed = 1;
+
     # Bypass CloseIO API calling and mock success response
     my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
     $mock_closeio->mock('anonymize_user', 1);
@@ -476,46 +495,38 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
     my $mock_s3_desk = Test::MockModule->new('BOM::Platform::Desk');
     $mock_s3_desk->mock('anonymize_user', sub { return Future->done(1) });
 
-    my $email = random_email_address;
-
-    my $client_details = {
+    # Create a customer
+    my $customer = BOM::Test::Customer->create(
+        residence   => 'id',
         date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
-        broker_code => 'VRTC',
-    };
-
-    # Create a user
-    my $user = BOM::User->create(
-        email    => $email,
-        password => BOM::User::Password::hashpw('password'));
-    my $user_id = $user->id;
-
-    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
-
-    $client_details->{broker_code} = 'CR';
-    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
-
-    # Add clients to the user.
-    $user->add_client($vr_client);
-    $user->add_client($cr_client);
+        clients     => [{
+                name        => 'CR',
+                broker_code => 'CR'
+            },
+            {
+                name        => 'VRTC',
+                broker_code => 'VRTC'
+            },
+        ]);
 
     # @user_clients used in mocking process.
     push @user_clients,
         ({
-            v_buid    => $user_id,
-            v_loginid => $vr_client->loginid
+            v_buid    => $customer->get_user_id(),
+            v_loginid => $customer->get_client_loginid('VRTC'),
         },
         {
-            v_buid    => $user_id,
-            v_loginid => $cr_client->loginid
+            v_buid    => $customer->get_user_id(),
+            v_loginid => $customer->get_client_loginid('CR'),
         });
 
     # Anonymize user
     $df_partial = [];
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid})->get;
-
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $customer->get_client_loginid('CR')}, $service_contexts)->get;
     is($result, 1, 'Returns 1 after user anonymized.');
+
     # Retrieve anonymized user from database by id
-    my $anonymized_user    = BOM::User->new(id => $user_id);
+    my $anonymized_user    = BOM::User->new(id => $customer->get_user_id());
     my @anonymized_clients = $anonymized_user->clients(include_disabled => 1);
 
     my $df_anon = [];
@@ -537,6 +548,9 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
 };
 
 subtest 'Anonymization disabled accounts' => sub {
+    # User service says client is ok to be anonymized
+    $user_service_anonymize_allowed = 1;
+
     # Mock BOM::User module
     my $mock_user_module = Test::MockModule->new('BOM::User');
     $mock_user_module->mock(valid_to_anonymize => 1);
@@ -557,37 +571,30 @@ subtest 'Anonymization disabled accounts' => sub {
     my $mock_s3_desk = Test::MockModule->new('BOM::Platform::Desk');
     $mock_s3_desk->mock('anonymize_user', sub { return Future->done(1) });
 
-    my $email = random_email_address;
-
-    # Create a user
-    my $user = BOM::User->create(
-        email    => $email,
-        password => BOM::User::Password::hashpw('password'));
-    my $user_id = $user->id;
-
-    my $client_details = {
+    # Create a customer
+    my $customer = BOM::Test::Customer->create(
+        residence   => 'id',
         date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
-        broker_code => 'VRTC',
-    };
-    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+        clients     => [{
+                name        => 'CR',
+                broker_code => 'CR'
+            },
+            {
+                name        => 'VRTC',
+                broker_code => 'VRTC'
+            },
+        ]);
 
-    $client_details->{broker_code} = 'CR';
-    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
-
-    # Disable CR client before anonymization
-    $cr_client->status->set('disabled', 'system', 'Some reason for disabling');
-
-    # Add clients to the user.
-    $user->add_client($vr_client);
-    $user->add_client($cr_client);
+    $customer->get_client_object('CR')->status->set('disabled', 'system', 'Some reason for disabling');
 
     # Anonymize user
     $df_partial = [];
 
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid})->get;
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $customer->get_client_loginid('CR')}, $service_contexts)->get;
     is($result, 1, 'Returns 1 after user anonymized.');
 
     # Retrieve anonymized user from database by id
+    my $user               = BOM::User->new(id => $customer->get_user_id());
     my @anonymized_clients = $user->clients(include_disabled => 1);
 
     is $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was anonymized' for @anonymized_clients;
@@ -600,6 +607,9 @@ subtest 'Anonymization disabled accounts' => sub {
 };
 
 subtest 'DF Anonymization skips crypto accounts' => sub {
+    # User service says client is ok to be anonymized
+    $user_service_anonymize_allowed = 1;
+
     # Mock BOM::User module
     my $mock_user_module = Test::MockModule->new('BOM::User');
     $mock_user_module->mock(valid_to_anonymize => 1);
@@ -616,35 +626,26 @@ subtest 'DF Anonymization skips crypto accounts' => sub {
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
     $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
 
-    my $email = random_email_address;
-
-    # Create a user
-    my $user = BOM::User->create(
-        email    => $email,
-        password => BOM::User::Password::hashpw('password'));
-    my $user_id = $user->id;
-
-    my $client_details = {
+    # Create a customer
+    my $customer = BOM::Test::Customer->create(
+        residence   => 'id',
         date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
-        broker_code => 'VRTC',
-    };
-    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
-
-    $client_details->{broker_code} = 'CR';
-    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
-    $cr_client->account('BTC');
-
-    # Disable CR client before anonymization
-    $cr_client->status->set('disabled', 'system', 'Some reason for disabling');
-
-    # Add clients to the user.
-    $user->add_client($vr_client);
-    $user->add_client($cr_client);
+        clients     => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'BTC',
+            },
+            {
+                name        => 'VRTC',
+                broker_code => 'VRTC'
+            },
+        ]);
+    $customer->get_client_object('CR')->status->set('disabled', 'system', 'Some reason for disabling');
 
     # Anonymize user
     $df_partial = [];
 
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid})->get;
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $customer->get_client_loginid('CR')}, $service_contexts)->get;
     is($result, 1, 'Returns 1 after user anonymized.');
 
     cmp_bag $df_partial, [], 'Nothing added to the DF queue';
@@ -672,7 +673,7 @@ subtest 'DF anonymization done' => sub {
         $stats_inc = {};
         $log->clear();
 
-        ok BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Event processed';
+        ok BOM::Event::Actions::Anonymization::df_anonymization_done($payload, $service_contexts)->get, 'Event processed';
 
         my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report/);
         ok !$msg, 'No email was sent';
@@ -688,7 +689,7 @@ subtest 'DF anonymization done' => sub {
         $stats_inc = {};
         $log->clear();
 
-        ok BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Event processed';
+        ok BOM::Event::Actions::Anonymization::df_anonymization_done($payload, $service_contexts)->get, 'Event processed';
 
         my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report/);
         ok !$msg, 'No email was sent';
@@ -698,7 +699,20 @@ subtest 'DF anonymization done' => sub {
     };
 
     ## Create a user
-    my $loginid = get_loginid('emailanon11111@binary.com');
+    my $customer1 = BOM::Test::Customer->create(
+        residence   => 'id',
+        date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
+        clients     => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+            {
+                name        => 'VRTC',
+                broker_code => 'VRTC'
+            },
+        ]);
+
+    my $loginid = $customer1->get_client_loginid('CR');
 
     subtest 'DF result is OK' => sub {
         my $BRANDS  = BOM::Platform::Context::request()->brand();
@@ -712,7 +726,7 @@ subtest 'DF anonymization done' => sub {
         $log->clear();
         $stats_inc = {};
 
-        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload, $service_contexts)->get;
 
         is($result, 1, 'Returns 1 after user anonymized.');
 
@@ -742,7 +756,7 @@ subtest 'DF anonymization done' => sub {
         $log->clear();
         $stats_inc = {};
 
-        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload, $service_contexts)->get;
 
         is($result, 1, 'Returns 1 after user anonymized.');
 
@@ -773,7 +787,7 @@ subtest 'DF anonymization done' => sub {
         $stats_inc  = {};
         $df_partial = [];
 
-        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload, $service_contexts)->get;
 
         is($result, 1, 'Returns 1 after user anonymized.');
 
@@ -806,7 +820,7 @@ subtest 'DF anonymization done' => sub {
         $redis->set('DF_ANONYMIZATION_RETRY_COUNTER::' . $loginid, 100)->get;
         $df_partial = [];
 
-        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload, $service_contexts)->get;
 
         is($result, 1, 'Returns 1 after user anonymized.');
 
@@ -827,11 +841,38 @@ subtest 'DF anonymization done' => sub {
     };
 
     subtest 'Mixed results' => sub {
-        ## Create a user
-        my $loginid2 = get_loginid('emailanon22222@binary.com');
+        ## Create a customer
+        my $customer2 = BOM::Test::Customer->create(
+            residence   => 'id',
+            date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
+            clients     => [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+                {
+                    name        => 'VRTC',
+                    broker_code => 'VRTC'
+                },
+            ]);
+
+        my $customer3 = BOM::Test::Customer->create(
+            residence   => 'id',
+            date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
+            clients     => [{
+                    name        => 'CR',
+                    broker_code => 'CR',
+                },
+                {
+                    name        => 'VRTC',
+                    broker_code => 'VRTC'
+                },
+            ]);
 
         ## Create a user
-        my $loginid3 = get_loginid('emailanon33333@binary.com');
+        my $loginid2 = $customer2->get_client_loginid('CR');
+
+        ## Create a user
+        my $loginid3 = $customer3->get_client_loginid('CR');
 
         my $payload = {
             $loginid => {
@@ -851,7 +892,7 @@ subtest 'DF anonymization done' => sub {
         $redis->set('DF_ANONYMIZATION_RETRY_COUNTER::' . $loginid, 100)->get;
         $df_partial = [];
 
-        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload, $service_contexts)->get;
 
         is($result, 1, 'Returns 1 after user anonymized.');
 
@@ -878,22 +919,12 @@ subtest 'DF anonymization done' => sub {
     $mock->unmock_all;
 };
 
-sub get_loginid {
-    my $user = BOM::User->create(
-        email    => shift,
-        password => BOM::User::Password::hashpw('password'));
-    my $user_id = $user->id;
-
-    my $client_details = {
-        date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
-        broker_code => 'VRTC',
-    };
-    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
-
-    $client_details->{broker_code} = 'CR';
-    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
-
-    return $cr_client->loginid;
-}
+# Restore the original method in the user service command map
+$response = BOM::Service::admin(
+    command  => 'restore_command',
+    service  => 'user',
+    function => 'anonymize_allowed',
+);
+is $response->{status}, 'ok', 'Restored user service anonymize_allowed command';
 
 done_testing()

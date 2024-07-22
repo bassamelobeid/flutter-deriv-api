@@ -19,8 +19,7 @@ This subroutine triggers a proof of identity (POI) check for a user. It first re
 =cut
 
 sub poi_check {
-    my ($request) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
     BOM::Platform::Event::Emitter::emit('poi_check_rules', {loginid => $client->loginid});
 }
 
@@ -39,8 +38,7 @@ This subroutine triggers a synchronization of Onfido details for a user. It firs
 =cut
 
 sub onfido_sync {
-    my ($request) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
 }
 
@@ -59,9 +57,7 @@ This subroutine sends a password reset confirmation message for a user. It first
 =cut
 
 sub user_password {
-    my ($request) = @_;
-    my $user      = BOM::Service::Helpers::get_user_object($request->{user_id}, $request->{context}->{correlation_id});
-    my $client    = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
 
     # Send out the messaging
     BOM::Platform::Event::Emitter::emit(
@@ -90,8 +86,7 @@ This subroutine triggers a synchronization of user details to MT5, CTRADER, and 
 =cut
 
 sub user_email {
-    my ($request) = @_;
-    my $client = BOM::Service::Helpers::get_client_object($request->{user_id}, $request->{context}->{correlation_id});
+    my ($request, $user, $client) = @_;
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',     {loginid => $client->loginid});
     BOM::Platform::Event::Emitter::emit('sync_user_to_CTRADER', {loginid => $client->loginid});
     BOM::Platform::Event::Emitter::emit('sync_onfido_details',  {loginid => $client->loginid}) unless $client->is_virtual;

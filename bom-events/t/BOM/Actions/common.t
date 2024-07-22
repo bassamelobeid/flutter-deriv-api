@@ -14,6 +14,7 @@ use IO::Async::Loop;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Email;
+use BOM::Test::Customer;
 use BOM::Test::Helper::Client qw(invalidate_object_cache);
 use BOM::Platform::Context    qw( request );
 
@@ -21,7 +22,8 @@ use BOM::Event::Actions::Common;
 use BOM::User;
 use BOM::Config::Runtime;
 
-my $app_config = BOM::Config::Runtime->instance->app_config;
+my $app_config       = BOM::Config::Runtime->instance->app_config;
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 my $client_mock = Test::MockModule->new('BOM::User::Client');
 my $mocked_poa_status;
@@ -127,6 +129,7 @@ subtest 'set_age_verification' => sub {
                 poa_email                       => 0,
                 p2p_advertiser_approval_changed => 1,
                 vr_age_verified                 => 1,
+                mf_age_verified                 => 1,
             }
         },
         {
@@ -163,6 +166,7 @@ subtest 'set_age_verification' => sub {
                 age_verification                => 1,
                 poa_email                       => 0,
                 p2p_advertiser_approval_changed => 1,
+                vr_age_verified                 => 1,
                 mf_age_verified                 => 1,
             }
         },
@@ -201,6 +205,8 @@ subtest 'set_age_verification' => sub {
                 poa_email                       => 0,
                 age_verification                => 1,
                 p2p_advertiser_approval_changed => 1,
+                vr_age_verified                 => 1,
+                mf_age_verified                 => 1,
             }
         },
         {
@@ -216,6 +222,8 @@ subtest 'set_age_verification' => sub {
                 poa_email                       => 0,
                 age_verification                => 1,
                 p2p_advertiser_approval_changed => 1,
+                vr_age_verified                 => 1,
+                mf_age_verified                 => 1,
             }
         },
         {
@@ -231,6 +239,8 @@ subtest 'set_age_verification' => sub {
                 poa_email                       => 0,
                 age_verification                => 1,
                 p2p_advertiser_approval_changed => 1,
+                vr_age_verified                 => 1,
+                mf_age_verified                 => 1,
             }
         },
         {
@@ -246,6 +256,8 @@ subtest 'set_age_verification' => sub {
                 poa_email                       => 0,
                 age_verification                => 1,
                 p2p_advertiser_approval_changed => 1,
+                vr_age_verified                 => 1,
+                mf_age_verified                 => 1,
             }
         },
         {
@@ -261,6 +273,8 @@ subtest 'set_age_verification' => sub {
             side_effects => {
                 age_verification                => 1,
                 p2p_advertiser_approval_changed => 1,
+                vr_age_verified                 => 1,
+                mf_age_verified                 => 1,
             }
         },
     ];
@@ -273,26 +287,33 @@ subtest 'set_age_verification' => sub {
         $mocked_allowed_landing_companies_for_age_verification_sync = $scenario->{allowed_lc_sync} // [];
 
         subtest $title => sub {
-            my $user = BOM::User->create(
-                email          => $email,
-                password       => 'hey you',
+            my $test_customer = BOM::Test::Customer->create(
                 email_verified => 1,
+                clients        => [{
+                        name        => 'CR',
+                        broker_code => 'CR'
+                    },
+                    {
+                        name        => 'MF',
+                        broker_code => 'MF'
+                    },
+                    {
+                        name        => 'VRTC',
+                        broker_code => 'VRTC'
+                    },
+                ]);
+
+            my $user_data = BOM::Service::user(
+                context => $service_contexts->{user},
+                command => 'get_all_attributes',
+                user_id => $test_customer->get_user_id(),
             );
+            ok $user_data->{status} eq 'ok', 'user data retrieved successfully';
+            $user_data = $user_data->{attributes};
 
-            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'CR',
-                email       => $email,
-            });
-
-            my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MF',
-                email       => $email,
-            });
-
-            my $vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-            });
+            my $client    = $test_customer->get_client_object('CR');
+            my $client_mf = $test_customer->get_client_object('MF');
+            my $vr        = $test_customer->get_client_object('VRTC');
 
             # since we would like to test change in this status, better to don't mock it
             if ($scenario->{df_deposit_requires_poi}) {
@@ -312,11 +333,8 @@ subtest 'set_age_verification' => sub {
                 $is_idv_validated = 0;
             }
 
-            $user->add_client($vr);
-            $user->add_client($client);
-            $user->add_client($client_mf);
-
-            $mocked_countries_list = {$client->residence => {require_age_verified_for_synthetic => $scenario->{require_age_verified_for_synthetic}}};
+            $mocked_countries_list =
+                {$user_data->{residence} => {require_age_verified_for_synthetic => $scenario->{require_age_verified_for_synthetic}}};
 
             $upsert_calls = {};
             @emissions    = [];
@@ -327,7 +345,7 @@ subtest 'set_age_verification' => sub {
 
             my $redis_events_write = _redis_events_write();
             $redis_events_write->connect->get;
-            my $res = BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write, $poi_method)->get;
+            my $res = BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write, $poi_method, $service_contexts)->get;
 
             my @mailbox = BOM::Test::Email::email_list();
             my $emails  = +{map { $_->{subject} => 1 } @mailbox};
@@ -346,8 +364,8 @@ subtest 'set_age_verification' => sub {
                     {
                         'properties' => {
                             'website_name'  => 'Deriv.com',
-                            'name'          => $client->first_name,
-                            'email'         => $client->email,
+                            'name'          => $user_data->{first_name},
+                            'email'         => $user_data->{email},
                             'contact_url'   => 'https://deriv.com/en/contact-us',
                             'poi_url'       => 'https://app.deriv.com/account/proof-of-identity?lang=en',
                             'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true'
@@ -377,7 +395,7 @@ subtest 'set_age_verification' => sub {
             if ($side_effects->{poa_email}) {
                 ok exists $emails->{'Pending POA document for: ' . $client->loginid}, 'Pending POA email sent';
 
-                BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write, $poi_method)->get;
+                BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write, $poi_method, $service_contexts)->get;
 
                 @mailbox = BOM::Test::Email::email_list();
 
@@ -419,16 +437,18 @@ subtest 'set_age_verification' => sub {
 };
 
 subtest 'trigger_cio_broadcast' => sub {
-    is BOM::Event::Actions::Common::trigger_cio_broadcast({}),                 0, 'no campaign_id';
-    is BOM::Event::Actions::Common::trigger_cio_broadcast({campaign_id => 1}), 0, 'no user ids';
+    is BOM::Event::Actions::Common::trigger_cio_broadcast({},                 $service_contexts), 0, 'no campaign_id';
+    is BOM::Event::Actions::Common::trigger_cio_broadcast({campaign_id => 1}, $service_contexts), 0, 'no user ids';
 
     my $cio_mock = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
     $cio_mock->redefine(trigger_broadcast_by_ids => sub { @_ });
     my @res = BOM::Event::Actions::Common::trigger_cio_broadcast({
-        campaign_id => 1,
-        ids         => [1, 2],
-        xyz         => 'abc'
-    });
+            campaign_id => 1,
+            ids         => [1, 2],
+            xyz         => 'abc'
+        },
+        $service_contexts
+    );
     cmp_deeply(\@res, [ignore(), 1, [1, 2], {xyz => 'abc'}], 'trigger_broadcast_by_ids called correctly');
 };
 
@@ -446,13 +466,15 @@ subtest 'underage handling' => sub {
     );
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $user->email,
+        broker_code    => 'CR',
+        email          => $user->email,
+        binary_user_id => $user->id,
     });
 
     my $from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'underage+prev@binary.com',
+        broker_code    => 'CR',
+        email          => 'underage+prev@binary.com',
+        binary_user_id => $user->id,
     });
 
     my $emissions    = {};
@@ -632,16 +654,6 @@ subtest '_send_CS_email_POA_pending' => sub {
 };
 
 subtest 'handle duplicated documents' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my $loginid = $client->loginid;
-    my $virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
-    my $sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
     my $user = BOM::User->create(
         email          => 'dup+owner@test.com',
         password       => 'secreto',
@@ -649,25 +661,38 @@ subtest 'handle duplicated documents' => sub {
         email_consent  => 1,
     );
 
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $user->email,
+        binary_user_id => $user->id,
+    });
+    my $virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'VRTC',
+        email          => $user->email,
+        binary_user_id => $user->id,
+    });
+    my $sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $user->email,
+        binary_user_id => $user->id,
+    });
     $user->add_client($virtual);
     $user->add_client($client);
     $user->add_client($sibling);
-    $client->binary_user_id($user->id);
-    $client->save;
+    my $loginid = $client->loginid;
 
-    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
     my $user2 = BOM::User->create(
         email          => 'first+owner@test.com',
         password       => 'secreto',
         email_verified => 1,
         email_consent  => 1,
     );
-
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $user2->email,
+        binary_user_id => $user2->id,
+    });
     $user2->add_client($client2);
-    $client2->binary_user_id($user2->id);
-    $client2->save;
 
     my $cli_mock      = Test::MockModule->new(ref($client));
     my $siblings_info = {};
@@ -735,7 +760,7 @@ subtest 'handle duplicated documents' => sub {
         $virtual->status->_build_all;
         $sibling->status->_build_all;
 
-        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'onfido');
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'onfido', $service_contexts);
 
         $virtual->status->_build_all;
         $client->status->_build_all;
@@ -783,7 +808,7 @@ subtest 'handle duplicated documents' => sub {
         $virtual->status->_build_all;
         $sibling->status->_build_all;
 
-        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'onfido');
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'onfido', $service_contexts);
 
         $virtual->status->_build_all;
         $client->status->_build_all;
@@ -829,7 +854,7 @@ subtest 'handle duplicated documents' => sub {
         $client->status->_build_all;
         $sibling->status->_build_all;
 
-        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'Onfido');
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'Onfido', $service_contexts);
 
         $virtual->status->_build_all;
         $client->status->_build_all;
@@ -898,7 +923,7 @@ subtest 'handle duplicated documents' => sub {
         $client->status->_build_all;
         $sibling->status->_build_all;
 
-        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'client');
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'client', $service_contexts);
 
         $virtual->status->_build_all;
         $client->status->_build_all;
@@ -958,7 +983,7 @@ subtest 'handle duplicated documents' => sub {
         $client->status->_build_all;
         $sibling->status->_build_all;
 
-        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'idv');
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'idv', $service_contexts);
 
         $virtual->status->_build_all;
         $client->status->_build_all;
@@ -1018,7 +1043,7 @@ subtest 'handle duplicated documents' => sub {
         $client->status->_build_all;
         $sibling->status->_build_all;
 
-        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'Onfido');
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'Onfido', $service_contexts);
 
         $virtual->status->_build_all;
         $client->status->_build_all;
@@ -1078,7 +1103,7 @@ subtest 'handle duplicated documents' => sub {
         $client->status->_build_all;
         $sibling->status->_build_all;
 
-        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'Onfido');
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'Onfido', $service_contexts);
 
         $virtual->status->_build_all;
         $client->status->_build_all;
@@ -1144,7 +1169,7 @@ subtest 'handle duplicated documents' => sub {
         $virtual->status->_build_all;
         $sibling->status->_build_all;
 
-        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'onfido');
+        BOM::Event::Actions::Common::handle_duplicated_documents($client, $document, 'onfido', $service_contexts);
 
         $virtual->status->_build_all;
         $client->status->_build_all;

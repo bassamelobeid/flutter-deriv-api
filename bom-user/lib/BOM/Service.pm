@@ -17,10 +17,13 @@ use JSON::MaybeXS         qw(encode_json decode_json);
 use UUID::Tiny;
 
 use BOM::User;
+use BOM::Config;
 use BOM::User::Client;
+use BOM::Service::User;
 use BOM::Service::User::Attributes::Get;
 use BOM::Service::User::Attributes::Update;
 use BOM::Service::User::Status::LoginHistory;
+use BOM::Service::User::Status::Anonymize;
 use BOM::Service::Helpers;
 
 =head1 NAME
@@ -46,6 +49,25 @@ appropriate handlers.
 =cut
 
 my %COMMAND_MAP = (
+    admin => {
+        'replace_command' => {
+            function   => \&replace_command,
+            parameters => {
+                command  => {type => SCALAR},
+                service  => {type => SCALAR},
+                function => {type => SCALAR},
+                code     => {type => CODEREF},
+            },
+        },
+        'restore_command' => {
+            function   => \&restore_command,
+            parameters => {
+                command  => {type => SCALAR},
+                service  => {type => SCALAR},
+                function => {type => SCALAR},
+            },
+        },
+    },
     user => {
         # ATTRIBUTES
         'get_attributes' => {
@@ -121,6 +143,47 @@ my %COMMAND_MAP = (
         },
 
         # Status
+        'add_login_history' => {
+            function             => \&BOM::Service::User::Status::LoginHistory::add_login_history,
+            cache_flush_on_error => 1,
+            parameters           => {
+                context     => {type => HASHREF},
+                command     => {type => SCALAR},
+                user_id     => {type => SCALAR},
+                app_id      => {type => SCALAR},
+                country     => {type => SCALAR},
+                ip_address  => {type => SCALAR},
+                environment => {type => SCALAR},
+                error       => {type => SCALAR},
+            },
+        },
+        'anonymize_allowed' => {
+            function             => \&BOM::Service::User::Status::Anonymize::anonymize_allowed,
+            cache_flush_on_error => 0,
+            parameters           => {
+                context => {type => HASHREF},
+                command => {type => SCALAR},
+                user_id => {type => SCALAR},
+            },
+        },
+        'anonymize_status' => {
+            function             => \&BOM::Service::User::Status::Anonymize::anonymize_status,
+            cache_flush_on_error => 0,
+            parameters           => {
+                context => {type => HASHREF},
+                command => {type => SCALAR},
+                user_id => {type => SCALAR},
+            },
+        },
+        'anonymize_user' => {
+            function             => \&BOM::Service::User::Status::Anonymize::anonymize_user,
+            cache_flush_on_error => 1,
+            parameters           => {
+                context => {type => HASHREF},
+                command => {type => SCALAR},
+                user_id => {type => SCALAR},
+            },
+        },
         'get_login_history' => {
             function             => \&BOM::Service::User::Status::LoginHistory::get_login_history,
             cache_flush_on_error => 0,
@@ -140,23 +203,21 @@ my %COMMAND_MAP = (
                 }
             },
         },
-        'add_login_history' => {
-            function             => \&BOM::Service::User::Status::LoginHistory::add_login_history,
-            cache_flush_on_error => 1,
-            parameters           => {
-                context     => {type => HASHREF},
-                command     => {type => SCALAR},
-                user_id     => {type => SCALAR},
-                app_id      => {type => SCALAR},
-                country     => {type => SCALAR},
-                ip_address  => {type => SCALAR},
-                environment => {type => SCALAR},
-                error       => {type => SCALAR},
-            },
-        },
     },
     wallet => {},
 );
+
+my %COMMAND_BACKUPS = ();
+
+=head2 admin
+
+Executes service admin commands, see individual command documentation for details
+
+=cut
+
+sub admin {
+    return _dispatch_command($COMMAND_MAP{admin}, @_);
+}
 
 =head2 user
 
@@ -180,7 +241,32 @@ Returns a hash reference containing the command execution result.
 =cut
 
 sub user {
-    return _dispatch_command($COMMAND_MAP{user}, @_);
+    return BOM::Service::User::dispatch_command($COMMAND_MAP{user}, @_);
+}
+
+=head2 wallet
+
+    my $result = BOM::Service::wallet($command, $binary_user_id, $parameters, $correlation_id);
+
+Executes a wallet-related command by dispatching it to the appropriate service handler within the wallet services command map. This method leverages the private `_dispatch_command` method, tailored for wallet commands.
+
+=over 4
+
+=item * C<$command> (String) - The name of the command to execute.
+
+=item * C<$user_id> (String/Number) - User identifier, numeric or string uuid/email
+
+=item * C<$context> (Hashref) - Hash ref containing correlation id and access token.
+
+Other parameters are command specific, see user service website API for details
+
+=back
+
+Returns a hash reference containing the command execution result.
+=cut
+
+sub wallet {
+    return BOM::Service::Wallet::dispatch_command($COMMAND_MAP{wallet}, @_);
 }
 
 =head2 user_email
@@ -227,31 +313,6 @@ sub get_user_id_from_client_id {
     }
 }
 
-=head2 wallet
-
-    my $result = BOM::Service::wallet($command, $binary_user_id, $parameters, $correlation_id);
-
-Executes a wallet-related command by dispatching it to the appropriate service handler within the wallet services command map. This method leverages the private `_dispatch_command` method, tailored for wallet commands.
-
-=over 4
-
-=item * C<$command> (String) - The name of the command to execute.
-
-=item * C<$user_id> (String/Number) - User identifier, numeric or string uuid/email
-
-=item * C<$context> (Hashref) - Hash ref containing correlation id and access token.
-
-Other parameters are command specific, see user service website API for details
-
-=back
-
-Returns a hash reference containing the command execution result.
-=cut
-
-sub wallet {
-    return _dispatch_command($COMMAND_MAP{wallet}, @_);
-}
-
 =head2 random_uuid
 
 This subroutine generates a random UUID using the UUID::Tiny module. It specifically generates a UUID of version 4.
@@ -271,6 +332,104 @@ sub random_uuid {
 }
 
 # Everything below this line is private and should not be used outside of this module
+
+=head2 replace_command
+
+This subroutine replaces a command in the command map with a new function. This is useful for testing purposes, allowing for the replacement of a command with a mock function.
+
+=over 4
+
+=item * C<$service> (String) - The name of the service the command is in.
+
+=item * C<$command> (String) - The name of the command to replace.
+
+=item * C<$function> (Code) - Code reference to be used.
+
+=item * Returns a hash reference containing the command execution result.
+
+=back
+
+=cut
+
+sub replace_command {
+    my ($request) = @_;
+    my $command   = $request->{command};
+    my $service   = $request->{service};
+    my $function  = $request->{function};
+    my $code      = $request->{code};
+
+    if (!$ENV{HARNESS_ACTIVE} || BOM::Config::on_production()) {
+        return {
+            status  => 'error',
+            command => $command,
+            message => 'Command replacement not allowed outside of testing environment',
+        };
+    }
+
+    if (exists $COMMAND_MAP{$service}{$function} && $service ne 'admin') {
+        $COMMAND_BACKUPS{"$service:$function"} = $COMMAND_MAP{$service}{$function}{function};
+        $COMMAND_MAP{$service}{$function}{function} = $code;
+        return {
+            status  => 'ok',
+            command => $command,
+            message => 'Command replaced successfully',
+        };
+    } else {
+        return {
+            status  => 'error',
+            command => $command,
+            message => 'Service/Command not found',
+        };
+    }
+}
+
+=head2 restore_command
+
+This subroutine restores a command back to its original status.
+
+=over 4
+
+=item * C<$service> (String) - The name of the service the command is in.
+
+=item * C<$command> (String) - The name of the command to replace.
+
+=item * C<$function> (Code) - Code reference to be used.
+
+=item * Returns a hash reference containing the command execution result.
+
+=back
+
+=cut
+
+sub restore_command {
+    my ($request) = @_;
+    my $command   = $request->{command};
+    my $service   = $request->{service};
+    my $function  = $request->{function};
+
+    if (!$ENV{HARNESS_ACTIVE} || BOM::Config::on_production()) {
+        return {
+            status  => 'error',
+            command => $command,
+            message => 'Command replacement not allowed outside of testing environment',
+        };
+    }
+
+    if (exists $COMMAND_BACKUPS{"$service:$function"} && exists $COMMAND_MAP{$service}{$function} && $service ne 'admin') {
+        $COMMAND_MAP{$service}{$function}{function} = $COMMAND_BACKUPS{"$service:$function"};
+        return {
+            status  => 'ok',
+            command => $command,
+            message => 'Command restored successfully',
+        };
+    } else {
+        return {
+            status  => 'error',
+            command => $command,
+            message => 'Service/Command not found',
+        };
+    }
+}
 
 =head2 _dispatch_command
 
@@ -298,7 +457,7 @@ sub _dispatch_command {
     # This breaks the rule that the service will never throw errors, if you hit this you are
     # doing something very wrong, such code should never make it to prod.
     unless (caller() =~ /^BOM::Service/) {
-        die "Access denied!! Calls to BOM::Service::_dispatch_command not allowed outside of the BOM::Service namespace: " . caller() . "\n";
+        die "Access denied!! Calls to _dispatch_command not allowed outside of the BOM::Service namespace: " . caller() . "\n";
     }
 
     my $result;
@@ -327,27 +486,6 @@ sub _dispatch_command {
                 );
             } catch ($e) {
                 die "Request parameter validation failed. $e";
-            }
-
-            # Validate user_id format (numeric or UUID)
-            unless (looks_like_number($request{user_id})
-                || $request{user_id} =~ /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/
-                || $request{user_id} =~ /^.+@.+\..+$/)
-            {
-                die "The user_id must be numeric, valid UUID v4 or email";
-            }
-
-            # Validate context
-            try {
-                validate_with(
-                    params => $request{context},
-                    spec   => {
-                        correlation_id => {type => SCALAR},
-                        auth_token     => {type => SCALAR},
-                        environment    => {type => SCALAR},
-                    });
-            } catch ($e) {
-                die "Context validation failed. $e";
             }
 
             $validation_passed = 1;
@@ -408,7 +546,6 @@ sub _dispatch_command {
 
         # If we're not in prod also add the full error message
         $result->{error} = $error unless BOM::Config::on_production();
-
     };
     return $result;
 }

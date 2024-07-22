@@ -15,10 +15,12 @@ use BOM::RPC::v3::Accounts;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Token::API;
 use BOM::User;
+use BOM::Service;
 use BOM::User::AuditLog;
 use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::Config::Runtime;
+use Log::Any       qw($log);
 use JSON::WebToken qw(encode_jwt);
 use BOM::User::WalletMigration;
 
@@ -751,61 +753,87 @@ rpc(
     "account_security",
     auth => ['trading', 'wallet'],
     sub {
-        my $params        = shift;
-        my $token_details = $params->{token_details};
-        my $loginid       = $token_details->{loginid};
-        my $totp_action   = $params->{args}->{totp_action};
+        my $params      = shift;
+        my $totp_action = $params->{args}->{totp_action};
 
-        my $client = BOM::User::Client->new({loginid => $loginid});
-        my $user   = BOM::User->new(email => $client->email);
-
-        my $status = $user->{is_totp_enabled} // 0;
+        my $user_data = BOM::Service::user(
+            context    => $params->{user_service_context},
+            command    => 'get_attributes',
+            user_id    => $params->{user_id},
+            attributes => [qw(secret_key is_totp_enabled)],
+        );
+        return BOM::RPC::v3::Utility::client_error() unless $user_data->{status} eq 'ok';
+        $user_data = $user_data->{attributes};
 
         # Get the Status of TOTP Activation
         if ($totp_action eq 'status') {
-            return {totp => {is_enabled => $status}};
+            return {totp => {is_enabled => $user_data->{is_totp_enabled}}};
         }
         # Generate a new Secret Key if not already enabled
         elsif ($totp_action eq 'generate') {
-            # return error if already enabled
-            return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already enabled.')) if $status;
-            # generate new secret key if it doesn't exits
-            $user->update_totp_fields(secret_key => BOM::User::TOTP->generate_key)
-                unless $user->{is_totp_enabled};
-            # convert the key into base32 before sending
-            return {totp => {secret_key => encode_base32($user->{secret_key})}};
+            if ($user_data->{is_totp_enabled}) {
+                # return error if already enabled
+                return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already enabled.'));
+            } else {
+                # Generate a new secret key, update the user and return the key
+                my $new_key          = BOM::User::TOTP->generate_key;
+                my $service_response = BOM::Service::user(
+                    context    => $params->{user_service_context},
+                    command    => 'update_attributes',
+                    user_id    => $params->{user_id},
+                    attributes => {secret_key => $new_key});
+                unless ($service_response->{status} eq 'ok') {
+                    $log->error("Error in updating user attributes: $service_response->{message}");
+                    return BOM::RPC::v3::Utility::client_error();
+                }
+                # convert the key into base32 before sending
+                return {totp => {secret_key => encode_base32($new_key)}};
+            }
         }
         # Enable or Disable 2FA
         elsif ($totp_action eq 'enable' || $totp_action eq 'disable') {
             # return error if user wants to enable 2fa and it's already enabled
             return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already enabled.'))
-                if ($status == 1 && $totp_action eq 'enable');
+                if ($user_data->{is_totp_enabled} == 1 && $totp_action eq 'enable');
             # return error if user wants to disable 2fa and it's already disabled
             return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already disabled.'))
-                if ($status == 0 && $totp_action eq 'disable');
-
+                if ($user_data->{is_totp_enabled} == 0 && $totp_action eq 'disable');
             # verify the provided OTP with secret key from user
             my $otp    = $params->{args}->{otp};
-            my $verify = BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
+            my $verify = BOM::User::TOTP->verify_totp($user_data->{secret_key}, $otp);
             return _create_error('InvalidOTP', BOM::Platform::Context::localize('OTP verification failed')) unless ($otp and $verify);
 
             my $ua_fingerprint = $params->{token_details}->{ua_fingerprint};
             if ($totp_action eq 'enable') {
                 # enable 2FA
-                $user->update_totp_fields(
-                    is_totp_enabled => 1,
-                    ua_fingerprint  => $ua_fingerprint
+                my $service_response = BOM::Service::user(
+                    context    => $params->{user_service_context},
+                    command    => 'update_attributes',
+                    user_id    => $params->{user_id},
+                    attributes => {
+                        is_totp_enabled => 1,
+                        ua_fingerprint  => $ua_fingerprint
+                    },
                 );
+                $user_data->{is_totp_enabled} = 1 if $service_response->{status} eq 'ok';
+                $log->error("Error in updating user attributes: $service_response->{message}") unless $service_response->{status} eq 'ok';
             } elsif ($totp_action eq 'disable') {
                 # disable 2FA and reset secret key. Next time a new secret key should be generated
-                $user->update_totp_fields(
-                    is_totp_enabled => 0,
-                    secret_key      => '',
-                    ua_fingerprint  => $ua_fingerprint
+                my $service_response = BOM::Service::user(
+                    context    => $params->{user_service_context},
+                    command    => 'update_attributes',
+                    user_id    => $params->{user_id},
+                    attributes => {
+                        is_totp_enabled => 0,
+                        secret_key      => '',
+                        ua_fingerprint  => $ua_fingerprint
+                    },
                 );
+                $user_data->{is_totp_enabled} = 0 if $service_response->{status} eq 'ok';
+                $log->error("Error in updating user attributes: $service_response->{message}") unless $service_response->{status} eq 'ok';
             }
 
-            return {totp => {is_enabled => $user->{is_totp_enabled}}};
+            return {totp => {is_enabled => $user_data->{is_totp_enabled}}};
         }
     });
 

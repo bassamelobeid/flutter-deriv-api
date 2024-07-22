@@ -13,46 +13,38 @@ use Log::Any::Test;
 use Log::Any                                   qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+use BOM::Test::Customer;
 use BOM::User;
 use BOM::Event::Process;
 use JSON::MaybeUTF8        qw(decode_json_utf8);
 use BOM::Platform::Context qw(request);
 use BOM::Event::Actions::Client;
 
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
+
 subtest '[Payops] Update account status' => sub {
     # Setup 3 accounts
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'abcd1234@example.com',
-        first_name  => 'ABCD'
-    });
-    $client->set_default_account('USD');
-
-    my $test_sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $test_sibling->set_default_account('LTC');
-
-    my $test_virtual = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => $client->email
-    });
-
-    my $test_user = BOM::User->create(
-        email          => $client->email,
-        password       => "hello",
+    my $customer = BOM::Test::Customer->create(
+        place_of_birth => 'co',
         email_verified => 1,
-    );
-    $test_user->add_client($client);
-    $test_user->add_client($test_sibling);
-    $test_user->add_client($test_virtual);
-    $client->place_of_birth('co');
-    $client->binary_user_id($test_user->id);
-    $client->save;
-    $test_sibling->binary_user_id($test_user->id);
-    $test_sibling->save;
-    $test_virtual->binary_user_id($test_user->id);
-    $test_virtual->save;
+        date_joined    => Date::Utility->new()->_minus_years(10)->datetime_yyyymmdd_hhmmss,
+        clients        => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+            {
+                name            => 'CR_SIBLING',
+                broker_code     => 'CR',
+                default_account => 'LTC',
+            },
+            {
+                name        => 'VRTC',
+                broker_code => 'VRTC',
+            }]);
+    my $client       = $customer->get_client_object('CR');
+    my $test_sibling = $customer->get_client_object('CR_SIBLING');
+    my $test_virtual = $customer->get_client_object('VRTC');
 
     my @statuses = qw/
         age_verification  cashier_locked  unwelcome  withdrawal_locked
@@ -77,12 +69,12 @@ subtest '[Payops] Update account status' => sub {
     for my $status (@statuses) {
         my $args = {
             status  => $status,
-            loginid => $client->loginid,
+            loginid => $customer->get_client_loginid('CR'),
             reason  => 'Attempted to deposit into account using more than one credit card'
         };
 
         my $handler = BOM::Event::Process->new(category => 'generic')->actions->{payops_event_update_account_status};
-        $handler->($args);
+        $handler->($args, $service_contexts);
 
         delete $client->{status};    #clear status cache
                                      # check the results
@@ -92,13 +84,13 @@ subtest '[Payops] Update account status' => sub {
         delete $client->{status};    #clear status cache
                                      # ensure we dont override the existing result
         $client->status->$status->{reason} = 'Old reason';
-        $handler->($args);
+        $handler->($args, $service_contexts);
         is $client->status->$status->{reason}, 'Old reason', "Status reason was not changed for $status";
 
         delete $client->{status};    #clear status cache
                                      # ensure we can clear it
         $args->{clear} = 1;
-        $handler->($args);
+        $handler->($args, $service_contexts);
         is $client->status->$status, undef, "The $status status is clear on the client";
 
         # Exclude those self propagated statuses
@@ -107,7 +99,7 @@ subtest '[Payops] Update account status' => sub {
         # Do the similar but on bring the sibilings along :-)
         $args->{set} = 'real';
         delete $args->{clear};
-        $handler->($args);
+        $handler->($args, $service_contexts);
         # Target itself
         delete $client->{status};          #clear status cache
                                            # check the results
@@ -122,7 +114,7 @@ subtest '[Payops] Update account status' => sub {
         # Try to clear it
         $args->{clear} = 'real';
         delete $args->{set};
-        $handler->($args);
+        $handler->($args, $service_contexts);
         # Target itself
         delete $client->{status};          #clear status cache
                                            # check the results
@@ -135,7 +127,7 @@ subtest '[Payops] Update account status' => sub {
         # Do the similar but on bring the ALL sibilings along :evil:
         $args->{set} = 'all';
         delete $args->{clear};
-        $handler->($args);
+        $handler->($args, $service_contexts);
         # Target itself
         delete $client->{status};          #clear status cache
                                            # check the results
@@ -156,7 +148,7 @@ subtest '[Payops] Update account status' => sub {
         # Try to clear it
         $args->{clear} = 'all';
         delete $args->{set};
-        $handler->($args);
+        $handler->($args, $service_contexts);
         # Target itself
         delete $client->{status};          #clear status cache
                                            # check the results
@@ -173,11 +165,14 @@ subtest '[Payops] Update account status' => sub {
 };
 
 subtest '[Payops] Request POO' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'abcd1234@example.com',
-        first_name  => 'ABCD'
-    });
+    my $customer = BOM::Test::Customer->create(
+        first_name => 'ABCD',
+        clients    => [{
+                name        => 'CR',
+                broker_code => 'CR'
+            }]);
+
+    my $client = $customer->get_client_object('CR');
 
     my $args = {
         loginid                  => $client->loginid,
@@ -185,7 +180,7 @@ subtest '[Payops] Request POO' => sub {
         payment_service_provider => 'VISA'
     };
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{payops_event_request_poo};
-    $handler->($args);
+    $handler->($args, $service_contexts);
     my $poo_list = $client->proof_of_ownership->list();
     my $found    = 0;
     $found = scalar grep { $_->{trace_id} == 1 } $poo_list->@*;
@@ -201,57 +196,52 @@ subtest 'payops event email' => sub {
         'track_event',
         sub {
             $track_properties = +{@_};
-
+            delete $track_properties->{service_contexts};
             return Future->done;
         });
 
-    ## Test client loginid
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    my $user = BOM::User->create(
-        email         => 'unit_test@binary.com',
-        password      => 'secret',
-        email_consent => 1,
-    );
-
-    $user->add_client($client);
-    $client->binary_user_id($user->id);
-    $client->user($user);
-    $client->save;
+    my $customer = BOM::Test::Customer->create(
+        residence      => 'id',
+        email_verified => 1,
+        email_consent  => 1,
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR'
+            },
+        ]);
 
     $track_properties = undef;
 
     $handler->({
             event_name => 'payops_event_email',
             subject    => 'testing with client login id',
-            loginid    => $client->loginid,
+            loginid    => $customer->get_client_loginid('CR'),
             template   => 'test',
             contents   => 'Testing CR',
             properties => {
                 test => 1,
                 abc  => 'abc',
             },
-        })->get;
+        },
+        $service_contexts
+    )->get;
 
     cmp_deeply $track_properties,
         +{
         event      => 'payops_event_email',
         properties => {
-            email          => 'unit_test@binary.com',
+            email          => $customer->get_email(),
             phone          => '+15417543010',
             email_template => 'test',
             subject        => 'testing with client login id',
             contents       => 'Testing CR',
             country        => 'id',
-            language       => 'EN',
+            language       => 'en',
             test           => '1',
             abc            => 'abc',
             email_consent  => 1
         },
-        loginid => $client->loginid,
+        loginid => $customer->get_client_loginid('CR'),
         },
         'Expected track event triggered';
 };

@@ -6,6 +6,7 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Customer;
 use BOM::User::Password;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData               qw(create_underlying);
@@ -28,6 +29,7 @@ use Test::Warn;
 use constant CONTRACT_START_DATE   => 1413892500;
 use constant FOUR_HOURS_IN_SECONDS => 60 * 60 * 4;
 
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -65,36 +67,23 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-# init db
-my $email       = 'abc@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::User::Password::hashpw($password);
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $email
-});
+my $test_customer = BOM::Test::Customer->create(
+    residence => 'id',
+    clients   => [{
+            name        => 'CR',
+            broker_code => 'CR',
+        },
+        {
+            name            => 'CR_SIB',
+            broker_code     => 'CR',
+            default_account => 'LTC',
+        },
+    ]);
 
-my $test_sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $test_client->email
-});
-$test_sibling->set_default_account('LTC');
-
-my $test_loginid = $test_client->loginid;
-my $user         = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
-$user->add_client($test_client);
-$user->add_client($test_sibling);
+my $test_client  = $test_customer->get_client_object('CR');
+my $test_sibling = $test_customer->get_client_object('CR_SIB');
 
 $test_client->status->set('age_verification', 'test_name', 'test_reason');
-$test_client->binary_user_id($user->id);
-$test_client->save;
-
-$test_sibling->status->set('age_verification', 'test_name', 'test_reason');
-$test_sibling->binary_user_id($user->id);
-$test_sibling->save;
 
 my $req_args = {
     client    => $test_client,
@@ -107,7 +96,7 @@ subtest 'Freshly created client - no account' => sub {
     # expected table cell values, expressed as regular expressions
     my $expected_content = {
         profile => [[
-                $test_client->first_name . ' ' . $test_client->last_name,
+                $test_customer->get_first_name() . ' ' . $test_customer->get_last_name(),
                 $test_client->loginid, 'No Currency Selected',
                 'Retail',              '.+ to .+ \(inclusive\)'
             ],
@@ -115,7 +104,7 @@ subtest 'Freshly created client - no account' => sub {
         overview => [['', '', '', '', '', '', '']],
     };
 
-    test_email_statement($req_args, $expected_content);
+    test_email_statement($test_customer, $req_args, $expected_content);
 };
 
 subtest 'Professional client - no transactions' => sub {
@@ -123,12 +112,15 @@ subtest 'Professional client - no transactions' => sub {
     $test_client->status->set("professional");
 
     my $expected_content = {
-        profile =>
-            [[$test_client->first_name . ' ' . $test_client->last_name, $test_client->loginid, 'USD', 'Professional', '.+ to .+ \(inclusive\)'],],
+        profile => [[
+                $test_customer->get_first_name() . ' ' . $test_customer->get_last_name(),
+                $test_client->loginid, 'USD', 'Professional', '.+ to .+ \(inclusive\)'
+            ],
+        ],
         overview => [['^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '0\.00$', '^0\.00$']],
     };
 
-    test_email_statement($req_args, $expected_content);
+    test_email_statement($test_customer, $req_args, $expected_content);
 };
 
 subtest 'client with payments, trades and P2P' => sub {
@@ -275,7 +267,7 @@ subtest 'client with payments, trades and P2P' => sub {
     my $order = BOM::Test::Helper::P2P::create_order(
         amount    => 50,
         advert_id => $advert->{id},
-        client    => $test_client
+        client    => $test_client,
     );
     $advertiser->p2p_order_cancel(id => $order->{id});
 
@@ -289,8 +281,11 @@ subtest 'client with payments, trades and P2P' => sub {
     my $date_format = $now->date_yyyymmdd . ' \d{2}:\d{2}:\d{2}';
 
     my $expected_content = {
-        profile =>
-            [[$test_client->first_name . ' ' . $test_client->last_name, $test_client->loginid, 'USD', 'Professional', '.+ to .+ \(inclusive\)'],],
+        profile => [[
+                $test_customer->get_first_name() . ' ' . $test_customer->get_last_name(),
+                $test_client->loginid, 'USD', 'Professional', '.+ to .+ \(inclusive\)'
+            ],
+        ],
         overview     => [['^0\.00$', '^50100\.00$', '^\-2074.00', '^\-614\.00$', '^0\.00$', '47412\.00$', '^47886.00$']],
         close_trades => [[
                 $date_format, '\d+',
@@ -325,7 +320,7 @@ subtest 'client with payments, trades and P2P' => sub {
         ],
     };
 
-    test_email_statement($req_args, $expected_content);
+    test_email_statement($test_customer, $req_args, $expected_content);
 
     subtest 'Offerings unavailable' => sub {
         my $mock_lc = Test::MockModule->new('LandingCompany');
@@ -333,25 +328,15 @@ subtest 'client with payments, trades and P2P' => sub {
 
         $expected_content->{overview} = [['^0\.00$', '^50100\.00$', '^\-2074.00', '47412\.00$']];
 
-        test_email_statement($req_args, $expected_content);
+        test_email_statement($test_customer, $req_args, $expected_content);
 
         $mock_lc->unmock_all;
     };
 };
 
 subtest 'payment agent' => sub {
-
-    my $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'pa@test.com',
-    });
-
-    BOM::User->create(
-        email    => $pa_client->email,
-        password => 'x',
-    )->add_client($pa_client);
-
-    $pa_client->account('USD');
+    my $pa_customer = BOM::Test::Customer->create(clients => [{name => 'CR', broker_code => 'CR', default_account => 'USD'}]);
+    my $pa_client   = $pa_customer->get_client_object('CR');
 
     $pa_client->payment_agent({
         payment_agent_name    => 'Joe',
@@ -367,18 +352,15 @@ subtest 'payment agent' => sub {
     $pa_client->save;
     $pa_client->get_payment_agent->set_countries(['id']);
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'id',
-        email       => 'pa_cli@test.com',
-    });
-
-    BOM::User->create(
-        email    => $client->email,
-        password => 'x',
-    )->add_client($client);
-
-    $client->account('USD');
+    my $pa_customer2 = BOM::Test::Customer->create(
+        residence => 'id',
+        clients   => [{
+                name            => 'CR',
+                broker_code     => 'CR',
+                default_account => 'USD',
+            },
+        ]);
+    my $client = $pa_customer2->get_client_object('CR');
 
     $pa_client->payment_free_gift(
         currency => 'USD',
@@ -411,7 +393,8 @@ subtest 'payment agent' => sub {
     };
 
     my $expected_content = {
-        profile       => [[$pa_client->first_name . ' ' . $pa_client->last_name, $pa_client->loginid, 'USD', 'Retail', '.+ to .+ \(inclusive\)'],],
+        profile =>
+            [[$pa_customer->get_first_name() . ' ' . $pa_customer->get_last_name(), $pa_client->loginid, 'USD', 'Retail', '.+ to .+ \(inclusive\)'],],
         overview      => [['^0\.00$', '^1099\.00$', '^-100.00', '^0\.00$', '^0\.00$', '999\.00$', '^999.00$']],
         payments      => [['\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', '\d+', '^1000.00$', '^$', '^deposit$'],],
         payment_agent => [
@@ -420,20 +403,20 @@ subtest 'payment agent' => sub {
         ],
     };
 
-    test_email_statement($req_args, $expected_content);
+    test_email_statement($pa_customer, $req_args, $expected_content);
 
 };
 
 sub test_email_statement {
-    my ($args, $expected) = @_;
+    my ($customer, $args, $expected) = @_;
 
     mailbox_clear();
-    my $status = BOM::Event::Actions::CustomerStatement::_send_email_statement($args);
+    my $status = BOM::Event::Actions::CustomerStatement::_send_email_statement($args, $service_contexts);
 
     is $status->{status_code}, 1, 'email has been sent';
 
     my @msgs = mailbox_search(
-        email   => $args->{client}->email,
+        email   => $customer->get_email(),
         subject => qr/Statement from .+ to .+/
     );
 

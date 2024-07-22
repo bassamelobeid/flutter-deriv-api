@@ -3,12 +3,15 @@ use warnings;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
+use BOM::Test::Customer;
 use BOM::Database::CommissionDB;
 use BOM::Event::Process;
 use Test::More;
 use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
+
+my $service_contexts = BOM::Test::Customer::get_service_contexts();
 
 subtest "ctrader_account_created" => sub {
     my $myaffiliate_mock           = Test::MockModule->new('BOM::MyAffiliates');
@@ -61,36 +64,35 @@ subtest "ctrader_account_created" => sub {
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{ctrader_account_created};
     my $args           = {};
 
-    like exception { $action_handler->($args)->get; }, qr/Loginid needed/, 'correct exception when loginid is missing';
+    like exception { $action_handler->($args, $service_contexts)->get; }, qr/Loginid needed/, 'correct exception when loginid is missing';
     $args->{loginid} = 'CR90000000';
-    like exception { $action_handler->($args)->get; }, qr/Binary user id needed/, 'correct exception when binary_user_id is missing';
+    like exception { $action_handler->($args, $service_contexts)->get; }, qr/Binary user id needed/,
+        'correct exception when binary_user_id is missing';
     $args->{binary_user_id} = 1;
-    like exception { $action_handler->($args)->get; }, qr/CTID UserId needed/, 'correct exception when ctid_userid is missing';
+    like exception { $action_handler->($args, $service_contexts)->get; }, qr/CTID UserId needed/, 'correct exception when ctid_userid is missing';
     $args->{ctid_userid} = 123456;
-    like exception { $action_handler->($args)->get; }, qr/Account type needed/, 'correct exception when account_type is missing';
+    like exception { $action_handler->($args, $service_contexts)->get; }, qr/Account type needed/, 'correct exception when account_type is missing';
     $args->{account_type} = 'real';
 
-    my $result = $action_handler->($args);
+    my $result = $action_handler->($args, $service_contexts);
     ok $result, 'Success parterid check and set upon ctrader account creation';
 
 };
 
 subtest 'sync_info' => sub {
-    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'ctradersyncinfo@test.com',
-        first_name  => 'AAAA',
-        last_name   => 'BBBB',
-        residence   => 'id'
-    });
+    my $test_customer = BOM::Test::Customer->create(
+        email_verified => 1,
+        first_name     => 'AAAA',
+        last_name      => 'BBBB',
+        residence      => 'id',
+        clients        => [{
+                name        => 'CR',
+                broker_code => 'CR',
+            },
+        ]);
+    my $test_client = $test_customer->get_client_object('CR');
 
-    my $user = BOM::User->create(
-        email    => $test_client->email,
-        password => BOM::User::Password::hashpw('password'));
-    $user->add_client($test_client);
     $test_client->user->add_loginid("CTR100000", 'ctrader', 'real', 'USD', {login => 100000});
-    $test_client->binary_user_id($user->id);
-    $test_client->save;
 
     my $mocked_ctrader = Test::MockModule->new('BOM::TradingPlatform::CTrader');
     $mocked_ctrader->redefine(
@@ -120,9 +122,9 @@ subtest 'sync_info' => sub {
         $emissions = [];
         my $args = {};
 
-        like exception { $action_handler->($args)->get; }, qr/Loginid needed/, 'correct exception when loginid is missing';
+        like exception { $action_handler->($args, $service_contexts)->get; }, qr/Loginid needed/, 'correct exception when loginid is missing';
         $args->{loginid} = $test_client->loginid;
-        $action_handler->($args);
+        $action_handler->($args, $service_contexts);
         is(scalar @$emissions, 0, 'Event emitted once');
     };
 
@@ -137,7 +139,7 @@ subtest 'sync_info' => sub {
             });
 
         my $args = {loginid => $test_client->loginid};
-        $action_handler->($args);
+        $action_handler->($args, $service_contexts);
         is(scalar @$emissions, 1, 'Event emitted with retry');
         cmp_deeply(
             $emissions->[0],
@@ -165,7 +167,7 @@ subtest 'sync_info' => sub {
             loginid     => $test_client->loginid,
             retry_count => 5
         };
-        $action_handler->($args);
+        $action_handler->($args, $service_contexts);
         is(scalar @$emissions, 0, 'Event not emitted with retry count at 5');
     };
 
