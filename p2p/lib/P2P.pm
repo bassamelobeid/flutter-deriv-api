@@ -2782,35 +2782,38 @@ sub _p2p_order_confirm_verification {
             $redis->zadd(P2P_ORDER_TIMEDOUT_AT, $adjusted_expiry, $cli_redis_item) if $adjusted_expiry > $order_timedout_at;
         }
 
-        my $url = BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($param{source});
-        $url .= "/p2p?action=p2p_order_confirm&order_id=$order_id&code=$code&lang=" . request->language if $url;
+        if (my $url = BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($param{source})) {
 
-        BOM::Platform::Event::Emitter::emit(
-            p2p_order_confirm_verify => {
-                loginid          => $self->loginid,
-                verification_url => $url,
-                code             => $code,
-                order_id         => $order_id,
-                order_amount     => $order->{amount},
-                order_currency   => $order->{account_currency},
-                buyer_name       => $order->{advert_type} eq 'buy' ? $order->{advertiser_name} : $order->{client_name},
-                live_chat_url    => request->brand->live_chat_url({
-                        app_id   => request->app_id,
-                        language => request->language
-                    }
-                ),
-                password_reset_url => request->brand->password_reset_url({
-                        source   => request->app_id,
-                        language => request->language
-                    }
-                ),
-            });
+            $url .= "/p2p" if $url !~ /\/p2p$/;    #this line can be removed once "/p2p" is added to DP2P verification_uri in oauth.apps DB table
+            $url .= "?action=p2p_order_confirm&order_id=$order_id&code=$code&lang=" . request->language;
 
-        BOM::Platform::Event::Emitter::emit(
-            p2p_order_updated => {
-                client_loginid => $self->loginid,
-                order_id       => $order_id,
-            });
+            BOM::Platform::Event::Emitter::emit(
+                p2p_order_confirm_verify => {
+                    loginid          => $self->loginid,
+                    verification_url => $url,
+                    code             => $code,
+                    order_id         => $order_id,
+                    order_amount     => $order->{amount},
+                    order_currency   => $order->{account_currency},
+                    buyer_name       => $order->{advert_type} eq 'buy' ? $order->{advertiser_name} : $order->{client_name},
+                    live_chat_url    => request->brand->live_chat_url({
+                            app_id   => request->app_id,
+                            language => request->language
+                        }
+                    ),
+                    password_reset_url => request->brand->password_reset_url({
+                            source   => request->app_id,
+                            language => request->language
+                        }
+                    ),
+                });
+
+            BOM::Platform::Event::Emitter::emit(
+                p2p_order_updated => {
+                    client_loginid => $self->loginid,
+                    order_id       => $order_id,
+                });
+        }
 
         $redis->rpush($history_key, time . '|Requested email');
 

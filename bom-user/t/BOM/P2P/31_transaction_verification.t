@@ -212,7 +212,7 @@ subtest 'bad verification codes' => sub {
     undef $emitted_events;
 
     cmp_deeply(
-        exception { $advertiser->p2p_order_confirm(id => $order->{id}) },
+        exception { $advertiser->p2p_order_confirm(id => $order->{id}, source => $app_id) },
         {error_code => 'OrderEmailVerificationRequired'},
         'confirmation needed'
     );
@@ -225,12 +225,12 @@ subtest 'bad verification codes' => sub {
         })->token;
 
     cmp_deeply(
-        exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => $bad_code) },
+        exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => $bad_code, source => $app_id) },
         {error_code => 'InvalidVerificationToken'},
         'cannot use token created for other purpose'
     );
 
-    my $err = exception { $advertiser->p2p_order_confirm(id => $order->{id}) };
+    my $err = exception { $advertiser->p2p_order_confirm(id => $order->{id}, source => $app_id) };
     is $err->{error_code}, 'ExcessiveVerificationRequests', 'error code for retry within 1 min';
     cmp_ok 60 - $err->{message_params}->[0], '<=', 1, 'message param for retry within 1 min';    # allow for 1 sec delay
 
@@ -242,7 +242,7 @@ subtest 'bad verification codes' => sub {
         })->token;
 
     cmp_deeply(
-        exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => $bad_code) },
+        exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => $bad_code, source => $app_id) },
         {error_code => 'InvalidVerificationToken'},
         'cannot use token created for other client'
     );
@@ -250,7 +250,7 @@ subtest 'bad verification codes' => sub {
     $redis->zrem('P2P::ORDER::VERIFICATION_EVENT', 'REQUEST_BLOCK|' . $order->{id} . '|' . $advertiser->loginid);
 
     cmp_deeply(
-        exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => rand()) },
+        exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => rand(), source => $app_id) },
         {error_code => 'InvalidVerificationToken'},
         'cannot use random code'
     );
@@ -258,7 +258,7 @@ subtest 'bad verification codes' => sub {
     undef $emitted_events;
 
     cmp_deeply(
-        exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => $good_code) },
+        exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => $good_code, source => $app_id) },
         {
             error_code     => 'ExcessiveVerificationFailures',
             message_params => [30],
