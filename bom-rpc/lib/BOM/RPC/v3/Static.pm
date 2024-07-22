@@ -230,24 +230,29 @@ sub _currencies_config {
 
     my $suspended_currencies = BOM::Config::CurrencyConfig::get_suspended_crypto_currencies();
 
-    my %currencies_config = map {
-        $_ => {
-            fractional_digits         => $amt_precision->{$_},
-            type                      => LandingCompany::Registry::get_currency_type($_),
-            stake_default             => get_exchangerates_limit($default_stakes->{$_}, $_),
-            is_suspended              => $suspended_currencies->{$_} ? 1 : 0,
-            is_deposit_suspended      => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'deposit'),
-            is_withdrawal_suspended   => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'withdrawal'),
-            name                      => LandingCompany::Registry::get_currency_definition($_)->{name},
+    my %currencies_config = ();
+    foreach my $currency (@all_currencies) {
+        my $currency_definition = LandingCompany::Registry::get_currency_definition($currency);
+
+        $currencies_config{$currency} = {
+            fractional_digits         => $amt_precision->{$currency},
+            type                      => $currency_definition->{type},
+            stake_default             => get_exchangerates_limit($default_stakes->{$currency}, $currency),
+            is_suspended              => $suspended_currencies->{$currency} ? 1 : 0,
+            is_deposit_suspended      => BOM::RPC::v3::Utility::verify_cashier_suspended($currency, 'deposit'),
+            is_withdrawal_suspended   => BOM::RPC::v3::Utility::verify_cashier_suspended($currency, 'withdrawal'),
+            name                      => $currency_definition->{name},
+            platform                  => $currency_definition->{platform},
             transfer_between_accounts => {
-                limits         => $transfer_limits->{$_},
-                limits_mt5     => $transfer_limits_mt5->{$_},
-                limits_dxtrade => $transfer_limits_dxtrade->{$_},
-                limits_derivez => $transfer_limits_derivez->{$_},
-                limits_ctrader => $transfer_limits_ctrader->{$_},
-                fees           => $transfer_fees->{$_},
-            }}
-    } @all_currencies;
+                limits         => $transfer_limits->{$currency},
+                limits_mt5     => $transfer_limits_mt5->{$currency},
+                limits_dxtrade => $transfer_limits_dxtrade->{$currency},
+                limits_derivez => $transfer_limits_derivez->{$currency},
+                limits_ctrader => $transfer_limits_ctrader->{$currency},
+                fees           => $transfer_fees->{$currency},
+            },
+        };
+    }
 
     return \%currencies_config;
 }

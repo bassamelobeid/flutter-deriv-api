@@ -47,13 +47,28 @@
                                     "type": "number",
                                     "minimum": 0
                                 },
+                                "platform": {
+                                    "type": "object",
+                                    "required": [
+                                        "cashier",
+                                        "ramp"
+                                    ],
+                                    "properties": {
+                                        "cashier": {
+                                            "type": "array"
+                                        },
+                                        "ramp": {
+                                            "type": "array"
+                                        }
+                                    }
+                                },
                                 "transfer_between_accounts": {
                                     "type": "object",
                                     "required": ["limits","fees"],
                                     "properties": {
                                         "limits": {
                                             "type": "object",
-                                            "required":["min","max"], 
+                                            "required":["min","max"],
                                             "properties": {
                                                 "min": {
                                                     "type": "number",

@@ -40,7 +40,7 @@ Constructor. Supported arguments:
 
 sub new {
     my ($class, %params) = @_;
-    die unless ($params{service} // '') =~ /^(banxa|wyre)$/;
+    die unless ($params{service} // '') eq 'banxa';
     return bless \%params, shift;
 }
 
@@ -116,22 +116,25 @@ sub create_order {
                     message_to_client => localize('This feature is only available for accounts with crypto as currency.'),
                 })}) if (not $currency or (LandingCompany::Registry::get_currency_type($currency) // '') ne 'crypto');
 
-    my $f;
     if ($self->service eq 'banxa') {
-        $f = $self->_banxa_order($params);
-    } elsif ($self->service eq 'wyre') {
-        $f = $self->_wyre_reservation($params->{client});
+        my $f = $self->_banxa_order($params);
+        return $f->catch(
+            sub {
+                my ($exception) = @_;
+                return Future->done({
+                        error => BOM::RPC::v3::Utility::create_error({
+                                code              => 'ConnectionError',
+                                message_to_client => $exception,
+                            })});
+            });
+    } else {
+        return Future->done({
+                error => BOM::RPC::v3::Utility::create_error({
+                        code              => 'OrderCreationError',
+                        message_to_client => localize('Cannot create an order for [_1]', $client->loginid),
+                    })});
     }
 
-    return $f->catch(
-        sub {
-            my ($exception) = @_;
-            return Future->done({
-                    error => BOM::RPC::v3::Utility::create_error({
-                            code              => 'ConnectionError',
-                            message_to_client => $exception,
-                        })});
-        });
 }
 
 =head2 _banxa_order
@@ -180,48 +183,6 @@ sub _banxa_order {
                 url   => $response->{data}{order}{checkout_url},
                 token => $response->{data}{order}{id},
             });
-        });
-}
-
-=head2 _wyre_reservation
-
-Creates a Wyre reservation.
-
-Returns a Future.
-
-=cut
-
-sub _wyre_reservation {
-    my ($self, $client) = @_;
-
-    my $config = $self->config;
-
-    my $data = {
-        referenceId       => $client->currency,
-        sourceCurrency    => 'USD',
-        destCurrency      => $client->currency,
-        country           => $client->residence,
-        referrerAccountId => $config->{api_account_id},
-        dest              => _get_crypto_deposit_address($client->loginid, $client->currency),
-        lockFields        => ["destCurrency", "country"],
-    };
-
-    my $content = encode_json_utf8($data);
-    $self->http_client->configure(+headers => {Authorization => 'Bearer ' . $config->{api_secret}});
-
-    return $self->http_client->POST($config->{api_url} . '/v3/orders/reserve', $content, content_type => 'application/json')->then(
-        sub {
-            my ($result) = @_;
-            my $response = decode_json_utf8($result->content);
-            return Future->done({
-                    error => BOM::RPC::v3::Utility::create_error({
-                            code              => 'OrderCreationError',
-                            message_to_client => localize('Cannot create a Wyre reservation for [_1]', $client->loginid),
-                        })}) if $response->{errorCode};
-
-            return Future->done({
-                    token => $response->{reservation},
-                    url   => $response->{url}});
         });
 }
 

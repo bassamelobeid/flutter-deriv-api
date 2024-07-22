@@ -148,10 +148,18 @@ subtest 'common' => sub {
         ->error_message_is('JPY transactions may not be performed with this account.', 'Correct error message for wrong default account');
 
     $params->{token} = $client_btc_token;
-    $params->{args}{type} = 'url';
+
+    $params->{args}{provider} = 'doughflow';
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('InvalidRequest', 'provider mismatch')
+        ->error_message_is("Requested provider is not supported for the account currency.", 'Correct error message for wrong provider');
+
+    $params->{args}{provider} = 'crypto';
+    $params->{args}{type}     = 'url';
     $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidRequest', '"type: url" is not supported for crypto accounts')
         ->error_message_is("Cashier API doesn't support the selected provider or operation.", 'Correct error message for wrong type: url (crypto)');
+    delete $params->{args}{provider};
+    delete $params->{args}{type};
 
     $params->{token} = $client_cr_token;
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
@@ -193,14 +201,14 @@ subtest 'common' => sub {
     warning {
         $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Domain not provided')
             ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
-            'Attempted to forward request to the cashier to default dogflow url when Domain not provided.');
+            'Attempted to forward request to the cashier to default doughflow url when Domain not provided.');
     };
     # set domain to valid default incase invalid domain is provided
     $params->{domain} = 'dummydomain.com';
     warning {
         $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Invalid domain provided')
             ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
-            'Attempted to forward request to the cashier to default dogflow url when Domain is not whitelisted.');
+            'Attempted to forward request to the cashier to default doughflow url when Domain is not whitelisted.');
     };
     # set valid domain
     $params->{domain} = 'binary.com';

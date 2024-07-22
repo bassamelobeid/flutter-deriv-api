@@ -8,6 +8,7 @@ use Scalar::Util qw( looks_like_number );
 use XML::Simple;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use JSON::MaybeUTF8            qw(:v1);
+use Format::Util::Numbers;
 
 has 'env' => (
     is       => 'ro',
@@ -106,11 +107,16 @@ sub validate {
         return "$f is required." unless defined $c->request_parameters->{$f};
     }
 
-    if (my $currency_code = $c->request_parameters->{'currency_code'}) {
-        my @currencies = qw(AUD EUR GBP USD JPY);
+    my $currency_code = $c->request_parameters->{'currency_code'};
+    # defaulted to 2 as it is required to validate the amount, bonus, fee
+    my $precision = 2;
+    if ($currency_code) {
+        my @currencies = qw(AUD EUR GBP USD JPY XRP);
         my $regex      = '(' . join('|', @currencies) . ')';
         return "Invalid currency $currency_code. Must be one of: " . join(', ', @currencies)
             unless $currency_code =~ /^$regex$/;
+
+        $precision = Format::Util::Numbers::get_precision_config()->{price}->{$currency_code};
     }
 
     foreach my $f ('trace_id', 'reference_number') {
@@ -121,7 +127,10 @@ sub validate {
     foreach my $f ('amount', 'bonus', 'fee') {
         next                              unless defined(my $v = $c->request_parameters->{$f});
         return "Invalid money amount: $v" unless looks_like_number($v);
-        return "Invalid money amount: $v" if $v =~ /\.\d{3}/ or $v =~ /\.$/;
+
+        # increment check precision greater than allowed
+        ++$precision;
+        return "Invalid money amount: $v" if $v =~ /\.\d{$precision}/ or $v =~ /\.$/;
 
         # extra validate for amount
         if ($f eq 'amount') {

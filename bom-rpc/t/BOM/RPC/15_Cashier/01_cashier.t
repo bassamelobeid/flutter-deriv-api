@@ -262,7 +262,7 @@ subtest 'Crypto cashier calls' => sub {
     my $fiat_error_response = {
         error => {
             code    => 'InvalidRequest',
-            message => 'Crypto cashier is unavailable for fiat currencies.',
+            message => 'Crypto cashier is unavailable for the provided currency.',
         }};
 
     my $api_response  = {};

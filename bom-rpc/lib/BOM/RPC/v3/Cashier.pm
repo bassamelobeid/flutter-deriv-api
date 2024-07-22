@@ -133,14 +133,14 @@ rpc "cashier", sub {
 
     my ($brand, $currency) = (request()->brand, $client->default_account->currency_code());
 
-    # We need it for backward compatibility, previously provider could be only doughflow
-    # and in realty we ignored this value.
-    if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
-        $provider = 'crypto';
-    } elsif ($provider eq 'crypto') {
+    my $currency_definition = LandingCompany::Registry::get_currency_definition($currency);
+    my $cashier_platforms   = $currency_definition->{platform}{cashier};
+    my $currency_provider   = $cashier_platforms->[0] // '';
+
+    if ($currency_definition->{type} eq 'fiat' and $provider eq 'crypto') {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidRequest',
-            message_to_client => localize("Crypto cashier is unavailable for fiat currencies."),
+            message_to_client => localize("Crypto cashier is unavailable for the provided currency."),
         });
     }
 
@@ -148,6 +148,13 @@ rpc "cashier", sub {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidRequest',
             message_to_client => localize("Cashier API doesn't support the selected provider or operation."),
+        });
+    }
+
+    if ($provider ne $currency_provider) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidRequest',
+            message_to_client => localize("Requested provider is not supported for the account currency."),
         });
     }
 
@@ -2239,7 +2246,7 @@ rpc 'cashier_withdrawal_cancel', sub {
     if (LandingCompany::Registry::get_currency_type($currency) ne 'crypto') {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidRequest',
-            message_to_client => localize('Crypto cashier is unavailable for fiat currencies.'),
+            message_to_client => localize('Crypto cashier is unavailable for the provided currency.'),
         });
     }
 
@@ -2263,7 +2270,7 @@ rpc 'cashier_payments', sub {
     if (LandingCompany::Registry::get_currency_type($currency) ne 'crypto') {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidRequest',
-            message_to_client => localize('Crypto cashier is unavailable for fiat currencies.'),
+            message_to_client => localize('Crypto cashier is unavailable for the provided currency.'),
         });
     }
 

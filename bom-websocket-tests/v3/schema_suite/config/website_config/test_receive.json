@@ -21,7 +21,7 @@
                     "description": "Feature flags related to the website/server for various features and options: \n - 'signup_with_optional_email_verification': Allow signup with optional email verification.",
                     "type": "array",
                     "items": {
-                        "type": "string"  
+                        "type": "string"
                     }
                 },
                 "currencies_config": {
@@ -74,6 +74,25 @@
                                 "name": {
                                     "description": "Name of the currency.",
                                     "type": "string"
+                                },
+                                "platform": {
+                                    "description": "List of cashier platforms supported for this currency. It is categorized by cashier and ramp (on-ramp, off-ramp) platforms.",
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "cashier",
+                                        "ramp"
+                                    ],
+                                    "properties": {
+                                        "cashier": {
+                                            "description": "Supported platforms for the cashier, this is passed to provider attribute of `cashier` call",
+                                            "type": "array"
+                                        },
+                                        "ramp": {
+                                            "description": "Supported platforms for the ramp (on-ramp, off-ramp)",
+                                            "type": "array"
+                                        }
+                                    }
                                 },
                                 "stake_default": {
                                     "description": "Default stake value for the currency.",

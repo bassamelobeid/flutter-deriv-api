@@ -101,22 +101,6 @@
                             "sensitive": 1
                         }
                     }
-                },
-                "wyre": {
-                    "description": "Wyre reservation data.",
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                        "token": {
-                            "description": "Wyre reservation id token",
-                            "type": "string",
-                            "sensitive": 1
-                        },
-                        "url": {
-                            "description": "Wyre reservation URL",
-                            "type": "string"
-                        }
-                    }
                 }
             }
         },

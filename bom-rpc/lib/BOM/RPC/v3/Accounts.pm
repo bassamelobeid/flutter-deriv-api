@@ -3321,7 +3321,7 @@ async_rpc service_token => sub {
                 });
         }
 
-        if ($service =~ /^(banxa|wyre)$/) {
+        if ($service eq 'banxa') {
             my $onramp = BOM::RPC::v3::Services::Onramp->new(service => $service);
             push @service_futures, $onramp->create_order($params)->then(
                 sub {

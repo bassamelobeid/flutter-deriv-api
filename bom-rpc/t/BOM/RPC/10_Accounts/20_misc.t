@@ -337,16 +337,6 @@ subtest 'service_token validation' => sub {
         });
     is($res->{error}->{code}, 'PermissionDenied', 'Banxa returns expected error for unofficial app id');
 
-    $args = {service => 'wyre'};
-    $res  = $c->tcall(
-        $method,
-        {
-            token       => $token,
-            source_type => 'official',
-            args        => $args
-        });
-    is($res->{error}->{code}, 'OrderCreationError', 'Wyre returns expected error for non crypto');
-
     $args = {service => 'dxtrade'};
     $res  = $c->tcall(
         $method,
