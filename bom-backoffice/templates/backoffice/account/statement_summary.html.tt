@@ -37,13 +37,24 @@
                                             [% FOR t IN summary %]
                                                 <tr>
                                                 [% IF t.$i && t.action_type == d  && t.payment_type_code == 'internal_transfer' %]
-                                                        <td>[% t.payment_gateway_code %]</td>
+                                                        [% link = t.payment_gateway_code %]
+                                                        [% IF transfer_type_urls.$link %]
+                                                            <td ><a href='[% transfer_type_urls.$link %]'>[% t.payment_gateway_code %]</a></td>
+                                                        [% ELSE %]
+                                                            <td> [% t.payment_gateway_code %] </td>
+                                                        [% END %]
                                                         <td>[% t.doughflow_processor %]</td>
                                                         <td>[% t.doughflow_method %]</td>
                                                         <td>[% t.amount %]</td>
                                                         [% total.$i.$d  = total.$i.$d + (t.amount || 0) %]
                                                 [% ELSIF t.$i && t.action_type == d %]
-                                                        <td>[% t.payment_system %]</td>
+                                                        [% link = t.payment_system %]
+                                                        [% IF transfer_type_urls.$link %]
+                                                            [% transfer_type_urls.$link %]
+                                                             <td ><a href='[% transfer_type_urls.$link %]'>[% t.payment_system %]</a></td>
+                                                        [% ELSE %]
+                                                            <td> [% t.payment_system %] </td>
+                                                        [% END %]
                                                         <td>[% t.doughflow_processor %]</td>
                                                         <td>[% t.doughflow_method %]</td>
                                                         <td>[% t.amount %]</td>
