@@ -984,4 +984,31 @@ subtest 'Phone Number Verification' => sub {
     $token_mock->unmock_all;
 };
 
+subtest 'Account opening type token' => sub {
+    my $params = {
+        args => {
+            verify_email   => 'test' . rand(999) . '.@binary.com',
+            type           => 'account_opening',
+            url_parameters => {},
+        }};
+
+    subtest 'is a 6 digit token' => sub {
+        my $verify_email_object = BOM::RPC::v3::VerifyEmail::Functions->new(%{$params});
+        $verify_email_object->create_token();
+        my $token = $verify_email_object->{code};
+
+        ok($token) =~ /\d{6}/, 'Expected a 6 digit token';
+    };
+
+    subtest 'is NOT a 6 digit token' => sub {
+        $params->{args}->{type} = 'account_verification';
+
+        my $verify_email_object = BOM::RPC::v3::VerifyEmail::Functions->new(%{$params});
+        $verify_email_object->create_token();
+        my $token = $verify_email_object->{code};
+
+        ok($token) !~ /\d{6}/, 'Expected an 8 digit token';
+    };
+};
+
 done_testing();

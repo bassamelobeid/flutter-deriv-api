@@ -25,8 +25,14 @@ use BOM::User::PhoneNumberVerification;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
 use List::Util                      qw/any/;
 use DataDog::DogStatsd::Helper      qw(stats_inc);
-use constant {REQUEST_EMAIL_TOKEN_TTL => 3600};
 use BOM::User::PhoneNumberVerification;
+use BOM::RPC::v3::NewAccount;
+
+use constant {REQUEST_EMAIL_TOKEN_TTL => 3600};
+
+# Constants used at the RPC verify email endpoint for 'account_opening' type
+use constant ACCOUNT_OPENING_OTP_ALPHABET => [0 .. 9];
+use constant ACCOUNT_OPENING_OTP_LENGTH   => 6;
 
 =head2 new
 
@@ -77,6 +83,11 @@ sub create_token {
     };
 
     my $type = $self->{args}->{type} // '';
+
+    if ($type eq 'account_opening') {
+        $params->{alphabet} = ACCOUNT_OPENING_OTP_ALPHABET;
+        $params->{length}   = ACCOUNT_OPENING_OTP_LENGTH;
+    }
 
     if ($type eq 'phone_number_verification') {
         $params->{alphabet}   = +BOM::User::PhoneNumberVerification::EMAIL_OTP_ALPHABET;
