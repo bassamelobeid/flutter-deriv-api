@@ -479,7 +479,6 @@ sub get_professional_status {
 }
 
 sub print_client_details {
-    $log->infof("%s: Printing client details", request()->id);
 
     my ($client, $client_aml_jurisdiction_risk, $is_readonly) = @_;
 
@@ -524,7 +523,6 @@ sub print_client_details {
     my $config = request()->brand->countries_instance->countries_list->{$client->residence};
     my $docs   = [];
     unless ($client->is_virtual) {
-        $log->infof("%s: Obtaining documents", request()->id);
 
         my @siblings = grep { LandingCompany::Registry->check_broker_from_loginid($_) } $user->loginids;
         for my $sibling_loginid (@siblings) {
@@ -560,7 +558,6 @@ SQL
                 })->@*;
 
         }
-        $log->infof("%s: Finished obtaining documents", request()->id);
 
     }
 
@@ -675,7 +672,6 @@ SQL
     my $idv_records = $idv_model->get_document_list;
     my $messages;
     if ($idv_records) {
-        $log->infof("%s: Looping verification records", request()->id);
         my $rejected_reasons = BOM::Platform::Utility::rejected_onfido_reasons();
         for my $idv_record ($idv_records->@*) {
             $messages                      = [];
@@ -754,7 +750,6 @@ SQL
     if ($login_locked > 0) {
         $login_locked_until = Date::Utility->new(time + $login_locked);
     } else {
-        $log->infof("%s: Checking login attempts", request()->id);
         $too_many_attempts = $client->user->dbic->run(
             fixup => sub {
                 $_->selectrow_arrayref('select users.too_many_login_attempts(?::BIGINT, ?::SMALLINT, ?::INTERVAL)',
@@ -805,9 +800,7 @@ SQL
     $idv_submissions_left = $idv_model->has_expired_document_chance() ? 1 : 0 if $idv_submissions_left <= 0 && $client->get_idv_status() eq 'expired';
 
     my $poo_access = BOM::Backoffice::Auth::has_authorisation(['AntiFraud', 'CS']);
-    $log->infof("%s: Checking POI", request()->id);
     my ($latest_poi_by) = $client->latest_poi_by({only_verified => 1});
-    $log->infof("%s: Finished checking POI ", request()->id);
 
     # checking if the client tax_residence(country) and landing company are part NPJ (TIN not required) so TAX IDENTIFICATION NUMBER will show NPJ country
 
@@ -943,7 +936,6 @@ SQL
         phone_number_verified              => $pnv->verified,
     };
 
-    $log->infof("%s: Finished printing client details", request()->id);
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
         || die BOM::Backoffice::Request::template()->error(), "\n";
 }
@@ -1891,7 +1883,6 @@ Returns  a Hash with
 =cut
 
 sub get_client_details {
-    $log->infof("%s: Getting client details", request()->id);
 
     my ($input, $url) = @_;
     my $loginid   = $input->{loginID};
@@ -1978,7 +1969,6 @@ sub get_client_details {
         );
     }
 
-    $log->infof("%s: Populating login ids", request()->id);
     my $user = $client->user;
     my @user_clients;
     push @user_clients, $client;
@@ -1997,8 +1987,6 @@ sub get_client_details {
     my @derivez_logins = sort $user->get_derivez_loginids;
     my @ctrader_logins = sort $user->get_ctrader_loginids;
 
-    $log->infof("%s: Finished populating login ids", request()->id);
-
     my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
     my $broker          = $client->broker;
     my $encoded_broker  = encode_entities($broker);
@@ -2011,7 +1999,6 @@ sub get_client_details {
 
     my %affiliate_mt5_accounts = map { 'MTR' . $_->{mt5_account_id} => $_ } @$affiliate_mt5_accounts_db;
 
-    $log->infof("%s: Finished getting client details", request()->id);
     return (
         client                 => $client,
         user                   => $user,
@@ -2160,7 +2147,6 @@ Returns  undef
 =cut
 
 sub client_search_and_navigation {
-    $log->infof("%s: Populating search and navigation", request()->id);
 
     my ($client, $self_post) = @_;
     Bar("NAVIGATION");
@@ -2225,7 +2211,6 @@ sub client_search_and_navigation {
     }
 
     print '</div>';
-    $log->infof("%s: Finished populating search and navigation", request()->id);
     return undef;
 }
 

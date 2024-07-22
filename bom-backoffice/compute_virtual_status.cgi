@@ -32,8 +32,6 @@ my $loginid = request()->param('loginID');
 
 die 'loginID is required' unless $loginid;
 
-$log->infof("%s: Computing virtual statuses for client %s", request()->id, $loginid);
-
 my $client = BOM::User::Client->get_client_instance($loginid);
 
 my %virtual_statuses = BOM::Backoffice::VirtualStatus::get($client);
@@ -44,8 +42,6 @@ my $template_param = {
 
 my $time_consumed = Time::HiRes::time() - $start_time;
 stats_timing('backoffice.compute_virtual_status', $time_consumed);
-
-$log->infof("%s: Computed virtual statuses", request()->id);
 
 print BOM::Backoffice::Request::template()->process('backoffice/account/read_only_statuses.html.tt', $template_param, undef, {binmode => ':utf8'})
     || die BOM::Backoffice::Request::template()->error(), "\n";

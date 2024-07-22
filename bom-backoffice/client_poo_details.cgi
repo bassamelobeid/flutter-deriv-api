@@ -33,8 +33,6 @@ my $loginid    = request()->param('loginID');
 
 die 'loginID is required' unless $loginid;
 
-$log->infof("%s: Computing proof of ownership details for client %s", request()->id, $loginid);
-
 my $client = BOM::User::Client->get_client_instance($loginid, 'backoffice_replica');
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -55,8 +53,6 @@ my $template_param = {
 
 my $time_consumed = Time::HiRes::time() - $start_time;
 stats_timing('backoffice.client_poo_details', $time_consumed);
-
-$log->infof("%s: Computed proof of ownership details", request()->id);
 
 print BOM::Backoffice::Request::template()->process('backoffice/account/proof_of_ownership.html.tt', $template_param, undef, {binmode => ':utf8'})
     || die BOM::Backoffice::Request::template()->error(), "\n";
